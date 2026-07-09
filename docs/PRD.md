@@ -2,15 +2,15 @@
 
 # SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda)
 
-> Versi: 2.0  
-> Tanggal: 08/07/2026  
+> Versi: 3.0 
+> Tanggal: 09/07/2026  
 > By: Naufal Fadhiil
 
 ---
 
 # 1. Project Overview
 
-## Product
+## A. Product
 
 **SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda)** merupakan platform berbasis web yang berfungsi sebagai **Decision Support Dashboard** dan **Emergency Information Distribution Platform** untuk membantu pemerintah desa dan masyarakat memperoleh informasi kebencanaan secara cepat, sederhana, dan terstruktur.
 
@@ -20,7 +20,7 @@ SIGAP mengintegrasikan data resmi dari BMKG serta sumber data pendukung lainnya 
 
 ---
 
-## Background
+## B. Background
 
 Desa Cibenda merupakan salah satu wilayah pesisir di Kabupaten Pangandaran yang memiliki potensi terdampak berbagai bencana alam seperti gempa bumi, tsunami, cuaca ekstrem, serta banjir.
 
@@ -32,13 +32,13 @@ Oleh karena itu, diperlukan sebuah platform yang mampu mengintegrasikan informas
 
 ---
 
-## Problem Statement
+## C. Problem Statement
 
 Warga Desa Cibenda mengalami kesulitan memperoleh informasi cuaca dan potensi bencana yang spesifik untuk wilayah mereka karena informasi berasal dari berbagai sumber, belum terpusat, belum disajikan dalam bentuk yang mudah dipahami, serta belum memiliki mekanisme distribusi informasi yang terstruktur hingga tingkat desa.
 
 ---
 
-## Goals
+## D. Goals
 
 - Menyediakan dashboard monitoring cuaca yang berfokus pada Desa Cibenda.
 - Menyediakan informasi gempa bumi terbaru dari BMKG.
@@ -51,7 +51,7 @@ Warga Desa Cibenda mengalami kesulitan memperoleh informasi cuaca dan potensi be
 
 ---
 
-## Target Users
+## E. Target Users
 
 ### Primary Users
 
@@ -62,7 +62,7 @@ Warga Desa Cibenda mengalami kesulitan memperoleh informasi cuaca dan potensi be
 
 ---
 
-### Secondary Users
+### F. Secondary Users
 
 - Kepala Desa
 - Perangkat Desa
@@ -70,6 +70,41 @@ Warga Desa Cibenda mengalami kesulitan memperoleh informasi cuaca dan potensi be
 - Relawan Desa
 - BPBD (Opsional)
 - Pemerintah Daerah (Opsional)
+
+---
+
+# User Roles
+
+## Public User
+
+Pengguna umum tidak memerlukan login untuk mengakses dashboard.
+
+Public User dapat:
+
+- Melihat dashboard monitoring.
+- Melihat informasi cuaca.
+- Melihat informasi gempa bumi.
+- Melihat status tsunami.
+- Melihat jalur evakuasi.
+- Melihat titik evakuasi.
+- Melihat kontak darurat.
+- Melihat pengumuman desa.
+
+---
+
+## Admin
+
+Admin merupakan perangkat desa yang memiliki akses ke Dashboard Admin.
+
+Admin dapat:
+
+- Login ke Dashboard Admin.
+- Melakukan validasi alert.
+- Mengelola broadcast.
+- Mengelola pengumuman.
+- Mengelola jalur evakuasi.
+- Mengelola titik evakuasi.
+- Mengelola kontak darurat.
 
 ---
 
@@ -107,11 +142,10 @@ Mengintegrasikan informasi resmi BMKG menjadi dashboard kesiapsiagaan desa yang 
 
 ### 4) Emergency Broadcast
 
-- Broadcast kepada Kepala Desa
-- Broadcast kepada RT/RW
-- Broadcast kepada Relawan
+- Broadcast Alert kepada Admin Desa
+- Validasi Alert oleh Admin
 - Broadcast kepada masyarakat
-- Riwayat broadcast
+- Riwayat Broadcast
 
 ### 5) Informasi Kesiapsiagaan
 
@@ -157,35 +191,59 @@ Fitur-fitur tersebut dapat dipertimbangkan sebagai pengembangan pada versi berik
 
 ---
 
-# 3. Tech Stack
+# 3. System Workflow
 
-## Frontend
+Alur utama sistem SIGAP adalah sebagai berikut:
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-
----
-
-## Backend
-
-- Node.js
-- Express.js
-- REST API
+1. BMKG mengirimkan data resmi (gempa, tsunami, cuaca).
+2. Scheduler melakukan sinkronisasi data secara berkala.
+3. Decision Engine mengevaluasi data berdasarkan Rule Threshold.
+4. Sistem menentukan Status Kesiapsiagaan Desa.
+5. Jika memenuhi kondisi alert, sistem mengirimkan notifikasi kepada Admin Desa.
+6. Admin melakukan validasi terhadap alert.
+7. Setelah divalidasi, sistem melakukan broadcast kepada masyarakat melalui media yang tersedia.
 
 ---
 
-## Database
+# 4. Rule-Based Decision Engine
 
-- PostgreSQL
+SIGAP menggunakan Rule-Based Decision Engine untuk menerjemahkan data resmi BMKG menjadi status kesiapsiagaan desa.
+
+Rule Engine tidak melakukan prediksi bencana.
+
+Seluruh keputusan dihasilkan berdasarkan threshold yang telah ditentukan, seperti:
+
+- Magnitudo gempa.
+- Radius gempa terhadap Kabupaten Pangandaran.
+- Status tsunami resmi BMKG.
+- Parameter kebencanaan lainnya yang tersedia dari BMKG.
+
+Output Decision Engine berupa:
+
+🟢 Normal
+
+🟡 Waspada
+
+🟠 Siaga
+
+🔴 Awas
+
+Status tersebut menjadi dasar proses validasi alert serta broadcast kepada masyarakat.
 
 ---
 
-## Maps
+# 5. Tech Stack
 
-- Leaflet
-- OpenStreetMap
+
+| Layer | Pilihan | Status |
+|---|---|---|
+| Frontend | React, TypeScript, Vite, Tailwind CSS | Final |
+| Backend | Node.js (REST API), struktur modular sesuai AWG Convention | Final |
+| Database | PostgreSQL | Final |
+| Realtime Layer | Firebase RTDB | Final  dipertahankan untuk prasyarat integrasi IoT & kebutuhan near-real-time |
+| Maps | Leaflet + OpenStreetMap | Final |
+| AI | Peringkasan teks cuaca/gempa & rekomendasi sederhana. **Tidak digunakan untuk prediksi bencana.** | Final (fungsi) / *Draft* Fallback plan |
+| Hosting | Production: server desa (arah program)  **TBD, menunggu konfirmasi Tim DevOps** | TBD |
 
 ---
 
@@ -204,9 +262,8 @@ Cron Job digunakan untuk:
 
 AI hanya digunakan untuk:
 
-- Ringkasan kondisi cuaca
-- Ringkasan informasi gempa
-- Rekomendasi aktivitas sederhana
+AI digunakan hanya sebagai Smart Summary Generator untuk mengubah data cuaca dan informasi gempa menjadi ringkasan yang lebih mudah dipahami masyarakat.
+AI tidak digunakan untuk melakukan prediksi, klasifikasi, maupun analisis kebencanaan.
 
 > AI tidak digunakan untuk melakukan prediksi bencana maupun analisis kebencanaan.
 
@@ -228,66 +285,45 @@ Database:
 
 ---
 
-# 4. External APIs
+# 6. External APIs
 
-## BMKG API
-
-Digunakan untuk memperoleh:
-
-- Informasi cuaca
-- Prakiraan cuaca
-- Informasi gempa bumi terbaru
-- Parameter gempa
-- Informasi potensi tsunami
-- Status peringatan tsunami
-
-Status
-
-> Wajib
+| Sumber | Kegunaan | Status |
+|---|---|---|
+| BMKG | Cuaca, prakiraan, info bencana, potensi tsunami | Wajib |
+| USGS | Data seismik | Wajib |
+| OpenWeatherMap | Cuaca real-time, komplementer BMKG | *Draft* Should |
+| OpenStreetMap | Lokasi desa, jalur & titik evakuasi | Wajib |
+| AI API | Ringkasan cuaca/gempa & rekomendasi sederhana | Wajib |
 
 ---
 
-## OpenStreetMap
+# 7. Success Criteria
 
-Digunakan untuk:
+SIGAP dianggap berhasil apabila:
 
-- Menampilkan lokasi Desa Cibenda
-- Jalur evakuasi
-- Titik evakuasi
-
-Status
-
-> Wajib
-
----
-
-## AI API
-
-Digunakan untuk:
-
-- Smart Weather Summary
-- Daily Recommendation
-
-Status
-
-> Opsional
+- Dashboard berhasil menampilkan data resmi BMKG.
+- Sistem dapat melakukan sinkronisasi data secara otomatis.
+- Decision Engine berhasil menghasilkan status kesiapsiagaan desa.
+- Admin dapat melakukan validasi alert.
+- Sistem dapat mengirimkan broadcast kepada penerima yang ditentukan.
+- Warga dapat mengakses dashboard tanpa login.
+- Informasi kesiapsiagaan mudah dipahami oleh masyarakat.
 
 ---
 
-## Broadcast Gateway
+# 8. Non-Functional Requirements
 
-Digunakan untuk:
-
-- WhatsApp Broadcast
-- SMS Broadcast
-
-Status
-
-> Phase Pengembangan Berikutnya
+- Dashboard harus responsif pada desktop dan perangkat mobile.
+- Dashboard menggunakan Bahasa Indonesia sebagai bahasa utama.
+- Informasi utama dapat dipahami dalam waktu kurang dari 3 detik setelah halaman dibuka.
+- Tampilan ramah bagi pengguna lanjut usia dengan ukuran teks yang cukup besar dan kontras warna yang jelas.
+- Sistem hanya menggunakan data resmi dari BMKG dan sumber terpercaya lainnya.
+- Seluruh informasi yang ditampilkan harus mencantumkan waktu pembaruan data (Last Updated).
 
 ---
 
-## Data SID (Sistem Informasi Desa)
+## Next Development 
+### Integrasi dengan Data SID (Sistem Informasi Desa)
 
 Digunakan untuk:
 
