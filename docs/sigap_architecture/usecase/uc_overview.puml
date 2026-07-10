@@ -1,0 +1,53 @@
+@startuml uc_overview
+left to right direction
+skinparam packageStyle rectangle
+title SIGAP - Use Case Overview
+
+actor "Warga Desa" as Warga
+actor "Admin / Operator" as Admin
+actor "Sumber Eksternal\n(BMKG/USGS/OWM/AI)" as Ext
+actor "Perangkat IoT\n(Indikator + Sirine)" as IoT
+
+rectangle "Sistem SIGAP" {
+  package "Monitoring Lingkungan" {
+    usecase "Lihat Dashboard Lingkungan" as UC1
+    usecase "Lihat Ringkasan AI" as UC2
+  }
+
+  package "Kesiapsiagaan & IoT" {
+    usecase "Lihat Info Kesiapsiagaan" as UC3
+    usecase "Terima Notifikasi Level Alert" as UC4
+    usecase "Verifikasi Level & Putuskan Tindakan" as UC8
+    usecase "Trigger Sirine" as UC9
+  }
+
+  package "Administrasi Konten" {
+    usecase "Kelola Pengumuman" as UC5
+    usecase "Kelola Kontak Darurat" as UC6
+    usecase "Kelola Titik & Jalur Evakuasi" as UC7
+  }
+}
+
+Warga --> UC1
+Warga --> UC2
+Warga --> UC3
+Warga --> UC4
+
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+
+Ext --> UC1
+Ext --> UC2
+IoT --> UC4
+UC9 --> IoT
+
+note bottom of UC9
+  Detail relasi (include/extend) tidak
+  digambarkan di file overview ini.
+  Lihat uc_kesiapsiagaan_iot.puml.
+end note
+
+@enduml

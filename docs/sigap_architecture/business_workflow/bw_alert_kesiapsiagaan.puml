@@ -1,0 +1,84 @@
+@startuml bw_alert_kesiapsiagaan
+title Proses 2 — Penyampaian Alert & Level Kesiapsiagaan
+
+' ============================
+' AS-IS
+' ============================
+
+partition "AS-IS" {
+
+    partition "Warga / Perangkat Desa" {
+        start
+
+        :Mengamati kondisi lingkungan secara langsung;
+        :Menerima informasi dari sumber tidak terstandar\n(radio, media sosial, kabar antarwarga);
+
+        if (Dianggap berbahaya?) then (Ya)
+            :Menyampaikan peringatan\nsecara verbal/manual;
+            :Membunyikan kentongan/toa\nsecara mandiri;
+        else (Tidak)
+            :Tidak ada tindakan\nterstandar;
+        endif
+
+        stop
+    }
+
+}
+
+' ============================
+' TO-BE
+' ============================
+
+partition "TO-BE" {
+
+    partition "Sistem SIGAP" {
+
+        start
+
+        :Evaluasi data lingkungan\nterhadap threshold;
+        :Tetapkan level kesiapsiagaan\n(Hijau/Kuning/Merah);
+        :Kirim level ke Dashboard;
+        :Kirim level ke Perangkat IoT;
+    }
+
+    partition "Perangkat IoT" {
+
+        :Tampilkan indikator level;
+    }
+
+    if (Level = Kuning atau Merah?) then (Ya)
+
+        partition "Operator" {
+
+            :Terima notifikasi perubahan level;
+
+            note right
+            Kanal notifikasi masih TBD
+            (PRD SIGAP v4.0 §7.1)
+            end note
+
+            :Verifikasi kondisi lapangan;
+
+            if (Aktivasi sirine?) then (Ya)
+                :Tekan tombol sirine;
+            else (Tidak)
+                :Tidak ada tindakan lanjutan;
+            endif
+        }
+
+        partition "Perangkat IoT" {
+            :Bunyikan sirine\nsesuai level;
+        }
+
+    else (Hijau)
+
+        partition "Perangkat IoT" {
+            :Sirine tidak dapat diaktifkan\n(safeguard by design);
+        }
+
+    endif
+
+    stop
+}
+
+@enduml

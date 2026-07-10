@@ -1,0 +1,28 @@
+@startuml uc_admin_dashboard
+left to right direction
+title SIGAP - Use Case: Administrasi Konten
+
+actor "Admin / Operator" as Admin
+
+rectangle "Sistem SIGAP" {
+  usecase "Login Admin" as UC0
+  usecase "Kelola Pengumuman" as UC5
+  usecase "Kelola Kontak Darurat" as UC6
+  usecase "Kelola Titik & Jalur Evakuasi" as UC7
+}
+
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+
+UC5 .> UC0 : <<include>>
+UC6 .> UC0 : <<include>>
+UC7 .> UC0 : <<include>>
+
+note bottom of UC0
+  Hak akses granular per role
+  (permission matrix) masih TBD
+  — lihat PRD 7.1 Isu Governance.
+end note
+
+@enduml

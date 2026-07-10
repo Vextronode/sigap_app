@@ -1,0 +1,54 @@
+@startuml uc_kesiapsiagaan_iot
+left to right direction
+title SIGAP — Use Case: Kesiapsiagaan & IoT (Indikator + Sirine)
+
+actor "Warga Desa" as Warga
+actor "Admin / Operator" as Admin
+actor "Perangkat IoT\n(Indikator + Sirine)" as IoT
+
+rectangle "Sistem SIGAP" {
+  usecase "Lihat Info Kesiapsiagaan" as UC3
+  usecase "Terima Notifikasi Level Alert" as UC4
+  usecase "Evaluasi Rule Threshold" as UC_rule
+  usecase "Kirim Level ke Perangkat IoT" as UC11
+  usecase "Verifikasi Level & Putuskan Tindakan" as UC8
+  usecase "Trigger Sirine" as UC9
+  usecase "Notifikasi Operator" as UC_notif
+}
+
+Warga --> UC3
+Warga --> UC4
+
+UC_rule .> UC11 : <<include>>
+UC11 --> IoT
+
+IoT --> UC8 : device menampilkan level
+UC8 .> UC_notif : <<include>>
+Admin --> UC8
+
+UC9 .> UC8 : <<extend>>
+note right of UC9
+  Extension point: hanya aktif
+  jika level = Kuning atau Merah.
+  Level Hijau tidak membuka opsi
+  ini (safeguard by design).
+end note
+Admin --> UC9
+UC9 --> IoT : bunyikan sirine
+
+note right of UC_notif
+  TBD - kanal notifikasi ke operator
+  belum ditentukan, berpotensi
+  bersinggungan dengan larangan
+  notifikasi WhatsApp untuk warga
+  (PRD 3.2 vs 7.1).
+end note
+
+note bottom of UC11
+  TBD - protokol komunikasi
+  platform -> device belum final
+  (kandidat: MQTT / REST polling).
+  Lihat PRD 4 Tech Stack.
+end note
+
+@enduml
