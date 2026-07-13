@@ -20,7 +20,9 @@ CREATE TABLE alert_log (
   severity     status_level NOT NULL,
   message      TEXT NOT NULL,
   source_rule  VARCHAR(100) NOT NULL, -- traceability ke rule pemicu
-  triggered_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  triggered_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  validated_by UUID REFERENCES users(id), -- Admin yang memvalidasi
+  validated_at TIMESTAMPTZ -- waktu validasi
 );
 
 -- Index untuk query dashboard (data terbaru per sumber/tipe)
