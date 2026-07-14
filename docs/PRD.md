@@ -21,7 +21,7 @@
 | 1.0 | 05/07/2026 | Draft awal oleh tim (fokus tunggal disaster-info) |
 | 2.0 | 06/07/2026 | Digabung dengan main context program; scope monitoring lingkungan dikembalikan; Epic 5 (kesiapsiagaan bencana) ditambahkan |
 | 3.0 | 06/07/2026 | Menambahkan Success Metrics, Non-Functional Requirements (level kebutuhan), perbaikan konsistensi Data Model, referensi eksplisit basis estimasi; format disesuaikan ke standar dokumen industri |
-| 4.0 | 09/07/2026 | Menambahkan scope **IoT sebagai penerima/aktuator** (indikator level fisik 3-warna + tombol sirine human-triggered) hasil klarifikasi Tech Lead. Menegaskan **IoT sebagai sumber data/sensor lapangan tetap Out of Scope** (tidak berubah). Menambahkan isu governance baru: protokol komunikasi platform↔device, jalur tombol sirine, dan notifikasi operator (berpotensi berbenturan dengan larangan notifikasi WhatsApp yang sudah ada di 3.2). Memperbarui Data Model, NFR Security, dan Isu Governance Terbuka. |
+| 4.0 | 09/07/2026 | Menambahkan scope IoT sebagai penerima/aktuator (indikator level fisik 3-warna + tombol sirine human-triggered) hasil klarifikasi Tech Lead. Menegaskan IoT sebagai sumber data/sensor lapangan tetap Out of Scope (tidak berubah). Menambahkan isu governance baru: protokol komunikasi platform↔device, jalur tombol sirine, dan notifikasi operator (berpotensi berbenturan dengan larangan notifikasi WhatsApp yang sudah ada di 3.2). Memperbarui Data Model, NFR Security, dan Isu Governance Terbuka. |
 
 ## Executive Summary
 
@@ -69,7 +69,7 @@ Mengintegrasikan monitoring lingkungan resmi dengan informasi kesiapsiagaan benc
 
 ## 2. Success Metrics *Draft*
 
-> **Perbaikan v3.** Bagian ini sebelumnya tidak ada di PRD manapun (gap kritis: tidak ada gate lain di program yang mengisi ini). Target di bawah adalah **kriteria level produk**, bukan SLA teknis presisi (SLA teknis mis. target latency spesifik didefinisikan di Architecture Document G3 berdasarkan constraint yang ditetapkan di Bagian 5).
+> **Perbaikan v3.** Target di bawah adalah **kriteria level produk**, bukan SLA teknis presisi (SLA teknis mis. target latency spesifik didefinisikan di Architecture Document G3 berdasarkan constraint yang ditetapkan di Bagian 5).
 
 ### 2.1 Kriteria Keberhasilan MVP
 
@@ -116,7 +116,7 @@ MVP dianggap berhasil jika seluruh kriteria di atas tercapai **dan** sistem tela
 - Autentikasi berbasis kategori akses (Public/Protected)
 - REST API v1 sebagai kontrak stabil untuk konsumen eksternal (Village Dashboard)
 
-**Kesiapsiagaan Fisik - IoT Indikator & Sirine** *(Baru, v4.0)*
+**Kesiapsiagaan Fisik - IoT Indikator & Sirine**
 - Perangkat indikator visual 3-level (Hijau/Waspada, Kuning/Siaga, Merah/Awas) terpasang di titik strategis desa, menampilkan level yang diteruskan oleh platform berdasarkan rule threshold yang sama dengan alert dashboard.
 - Mekanisme aktivasi sirine yang **dikendalikan manual oleh operator terlatih** (human-confirmed action) - bukan aktivasi otomatis oleh sistem.
 - **Safeguard by design:** level Hijau tidak dapat memicu sirine; hanya level Kuning/Merah yang membuka opsi aktivasi, dengan kategori bunyi berbeda per level.
@@ -142,7 +142,7 @@ MVP dianggap berhasil jika seluruh kriteria di atas tercapai **dan** sistem tela
 | Frontend | React, TypeScript, Vite, Tailwind CSS | Final |
 | Backend | Node.js (REST API), struktur modular sesuai AWG Convention | Final |
 | Database | PostgreSQL | Final |
-| Realtime Layer | Firebase RTDB | Final - dipertahankan untuk prasyarat integrasi IoT & kebutuhan near-real-time. *(v4.0: baris ini sudah relevan langsung dengan scope indikator+sirine, bukan lagi sekadar antisipasi roadmap.)* |
+| Realtime Layer | Firebase RTDB | Final - dipertahankan untuk prasyarat integrasi IoT & kebutuhan near-real-time. |
 | Maps | Leaflet + OpenStreetMap | Final |
 | AI | Peringkasan teks cuaca/gempa & rekomendasi sederhana. **Tidak digunakan untuk prediksi bencana.** | Final (fungsi) / *Draft* Fallback plan |
 | Hosting | Production: server desa (arah program)  **TBD, menunggu konfirmasi Tim DevOps** | TBD |
@@ -222,7 +222,7 @@ device_status_log     (id, device_id, level_sent, sent_at, ack_status**)        
 | Permission matrix admin - **struktur sistem sudah final** (role `admin`/`operator`, lihat Route/Access Design + `DD_rbac.md`). Penentuan siapa memegang role apa adalah kebijakan operasional mitra desa, bukan TBD arsitektur - ditutup dari daftar governance terbuka. | Closed (sistem) | Mitra desa menentukan penempatan personel secara internal |
 | Fallback AI API | Draft, perlu konfirmasi | Tech Lead |
 | Hosting produksi | TBD | Tim DevOps |
-| Jalur tombol sirine | **Final** - arsitektur hybrid: lokal fisik (selalu tersedia) + remote aplikasi (menyusul setelah komunikasi platform↔device rampung). Detail: `db/data-dictionary/DD_iot_kesiapsiagaan.md` | - |
+| Jalur tombol sirine | **Final** - arsitektur hybrid: lokal fisik (selalu tersedia) + remote aplikasi (menyusul setelah komunikasi platform↔device rampung). Detail: `sigap_app\docs\sigap_architecture\data_dictionary\DD_iot_kesiapsiagaan.md` | - |
 | Protokol komunikasi platform → perangkat IoT | **Final** - Firebase Realtime Database | - |
 | Kanal notifikasi ke operator saat level berubah - kebijakan terpisah dari larangan "notifikasi WhatsApp" 3.2 (yang berlaku untuk warga) | Draft - mekanisme diusulkan via integrasi SID (memanfaatkan PWA SID sebagai kanal pengiriman), menunggu sign-off Tim SID. Detail: `integration/SID_INTEGRATION_PROPOSAL.md` | Tech Lead SIGAP + Tech Lead SID |
 | **(Baru, v4.0)** Mekanisme konfirmasi tambahan sebelum aktivasi sirine (mitigasi human-factor/kepanikan operator) | TBD | Tech Lead + Tim IoT, idealnya divalidasi dengan operator terlatih |
