@@ -1,0 +1,107 @@
+openapi: 3.0.3
+info:
+  title: SIGAP API
+  description: >
+    Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda.
+    Kontrak resmi antara Backend dan Frontend, disusun berdasarkan
+    Route/Access Category Design dan Data Dictionary SIGAP.
+
+    Spesifikasi ini disegmentasi per domain (lihat folder paths/ dan
+    components/) agar mudah dibaca - bukan satu file besar. Struktur
+    domain mengikuti pembagian yang sama dengan db/schema/ dan
+    db/data-dictionary/: auth, users, environmental, iot-kesiapsiagaan,
+    content-admin, ai-summary.
+  version: "1.0.0"
+  contact:
+    name: Tech Lead SIGAP
+servers:
+  - url: https://api.sigap.cibenda.id/api
+    description: Production (placeholder - menunggu konfirmasi hosting, lihat PRD 4)
+  - url: https://staging-api.sigap.cibenda.id/api
+    description: Staging
+
+tags:
+  - name: Auth
+  - name: Environmental Data
+  - name: Alerts
+  - name: Devices
+  - name: Announcements
+  - name: Evacuation
+  - name: Emergency Contacts
+  - name: AI Summary
+  - name: Users
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  # -- Auth ------------------------------------------------------------
+  /public/auth/login:
+    $ref: './paths/auth.yaml#/login'
+  /protected/auth/me:
+    $ref: './paths/auth.yaml#/me'
+
+  # -- Environmental Data & Alerts --------------------------------------
+  /public/environmental-data:
+    $ref: './paths/environmental.yaml#/environmental-data'
+  /public/alerts:
+    $ref: './paths/environmental.yaml#/alerts'
+  /protected/alerts/{id}/validate:
+    $ref: './paths/environmental.yaml#/alert-validate'
+
+  # -- Devices (IoT Kesiapsiagaan) --------------------------------------
+  /public/devices:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/devices-public'
+  /protected/devices:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/devices-protected'
+  /protected/devices/{id}:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-by-id'
+  /protected/devices/{id}/status-log:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-status-log'
+  /protected/devices/{id}/siren-log:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-siren-log'
+  /protected/devices/{id}/trigger-siren:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-trigger-siren'
+
+  # -- Content Admin: Announcements, Evacuation, Emergency Contacts -----
+  /public/announcements:
+    $ref: './paths/content-admin.yaml#/announcements-public'
+  /protected/announcements:
+    $ref: './paths/content-admin.yaml#/announcements-protected'
+  /protected/announcements/{id}:
+    $ref: './paths/content-admin.yaml#/announcement-by-id'
+  /public/evacuation-points:
+    $ref: './paths/content-admin.yaml#/evacuation-points-public'
+  /protected/evacuation-points:
+    $ref: './paths/content-admin.yaml#/evacuation-points-protected'
+  /protected/evacuation-points/{id}:
+    $ref: './paths/content-admin.yaml#/evacuation-point-by-id'
+  /public/evacuation-routes:
+    $ref: './paths/content-admin.yaml#/evacuation-routes-public'
+  /protected/evacuation-routes:
+    $ref: './paths/content-admin.yaml#/evacuation-routes-protected'
+  /protected/evacuation-routes/{id}:
+    $ref: './paths/content-admin.yaml#/evacuation-route-by-id'
+  /public/emergency-contacts:
+    $ref: './paths/content-admin.yaml#/emergency-contacts-public'
+  /protected/emergency-contacts:
+    $ref: './paths/content-admin.yaml#/emergency-contacts-protected'
+  /protected/emergency-contacts/{id}:
+    $ref: './paths/content-admin.yaml#/emergency-contact-by-id'
+
+  # -- AI Summary --------------------------------------------------------
+  /public/ai-summary:
+    $ref: './paths/ai-summary.yaml#/ai-summary'
+
+  # -- Users ---------------------------------------------------------------
+  /protected/users:
+    $ref: './paths/users.yaml#/users'
+  /protected/users/{id}:
+    $ref: './paths/users.yaml#/user-by-id'

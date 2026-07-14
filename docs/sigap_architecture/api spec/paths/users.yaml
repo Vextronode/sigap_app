@@ -1,0 +1,65 @@
+# =====================================================================
+# users.yaml — path domain manajemen akun Users
+# =====================================================================
+
+users:
+  post:
+    tags: [Users]
+    summary: Buat akun admin/operator baru
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/users.yaml#/UserCreateRequest'
+    responses:
+      '201':
+        description: Berhasil dibuat
+        content:
+          application/json:
+            schema:
+              $ref: '../components/auth.yaml#/UserProfile'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+
+user-by-id:
+  put:
+    tags: [Users]
+    summary: Perbarui akun/role pengguna
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/users.yaml#/UserUpdateRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: '../components/auth.yaml#/UserProfile'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'
+  delete:
+    tags: [Users]
+    summary: Hapus akun pengguna
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    responses:
+      '204':
+        description: Berhasil dihapus
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'

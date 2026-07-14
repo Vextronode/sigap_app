@@ -1,0 +1,133 @@
+# =====================================================================
+# content-admin.yaml — schema domain Pengumuman, Evakuasi, Kontak Darurat
+# =====================================================================
+
+Announcement:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    title:
+      type: string
+    content:
+      type: string
+    created_by:
+      type: string
+      format: uuid
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+AnnouncementWriteRequest:
+  type: object
+  required: [title, content]
+  properties:
+    title:
+      type: string
+    content:
+      type: string
+
+EvacuationPoint:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    latitude:
+      type: number
+    longitude:
+      type: number
+    description:
+      type: string
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+EvacuationPointWriteRequest:
+  type: object
+  required: [name, latitude, longitude]
+  properties:
+    name:
+      type: string
+    latitude:
+      type: number
+    longitude:
+      type: number
+    description:
+      type: string
+
+EvacuationRoute:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    route_name:
+      type: string
+    geometry:
+      type: array
+      items:
+        type: object
+        properties:
+          lat:
+            type: number
+          lng:
+            type: number
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+EvacuationRouteWriteRequest:
+  type: object
+  required: [route_name, geometry]
+  properties:
+    route_name:
+      type: string
+    geometry:
+      type: array
+      items:
+        type: object
+        properties:
+          lat:
+            type: number
+          lng:
+            type: number
+
+EmergencyContact:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    institution:
+      type: string
+    phone_number:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+EmergencyContactWriteRequest:
+  type: object
+  required: [institution, phone_number]
+  properties:
+    institution:
+      type: string
+    phone_number:
+      type: string

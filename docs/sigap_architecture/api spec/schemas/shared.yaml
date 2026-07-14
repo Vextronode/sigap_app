@@ -1,0 +1,83 @@
+# =====================================================================
+# shared.yaml — komponen lintas domain: error, pagination, status level,
+# parameter umum (id/page/limit), dan response umum (401/403/404/429)
+# =====================================================================
+
+Error:
+  type: object
+  properties:
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          example: "Token tidak valid atau sudah kedaluwarsa"
+
+Pagination:
+  type: object
+  properties:
+    page:
+      type: integer
+    limit:
+      type: integer
+    total:
+      type: integer
+
+StatusLevel:
+  type: string
+  enum: [hijau, kuning, oranye, merah]
+  description: "hijau=Aman, kuning=Waspada, oranye=Siaga, merah=Awas"
+
+IdParam:
+  name: id
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+PageParam:
+  name: page
+  in: query
+  schema:
+    type: integer
+    default: 1
+
+LimitParam:
+  name: limit
+  in: query
+  schema:
+    type: integer
+    default: 20
+    maximum: 100
+
+Unauthorized:
+  description: Token tidak ada atau tidak valid
+  content:
+    application/json:
+      schema:
+        $ref: './shared.yaml#/Error'
+
+Forbidden:
+  description: Token valid, tetapi tidak memiliki permission yang dibutuhkan
+  content:
+    application/json:
+      schema:
+        $ref: './shared.yaml#/Error'
+
+NotFound:
+  description: Resource tidak ditemukan
+  content:
+    application/json:
+      schema:
+        $ref: './shared.yaml#/Error'
+
+RateLimited:
+  description: Melebihi batas rate limit
+  content:
+    application/json:
+      schema:
+        $ref: './shared.yaml#/Error'

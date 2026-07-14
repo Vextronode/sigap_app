@@ -1,0 +1,15 @@
+# =====================================================================
+# ai-summary.yaml — schema domain Ringkasan AI
+# =====================================================================
+
+AiSummaryResponse:
+  type: object
+  properties:
+    summary:
+      type: string
+    generated_at:
+      type: string
+      format: date-time
+    fallback:
+      type: boolean
+      description: "true jika AI API gagal dan ini adalah data mentah, bukan ringkasan"

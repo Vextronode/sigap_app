@@ -1,0 +1,170 @@
+# =====================================================================
+# iot-kesiapsiagaan.yaml — path domain Perangkat IoT (indikator + sirine)
+# =====================================================================
+
+devices-public:
+  get:
+    tags: [Devices]
+    summary: Daftar perangkat IoT (versi ringkas, untuk dashboard warga)
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../components/iot-kesiapsiagaan.yaml#/DevicePublic'
+
+devices-protected:
+  get:
+    tags: [Devices]
+    summary: Daftar perangkat IoT (versi lengkap)
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceFull'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+  post:
+    tags: [Devices]
+    summary: Tambah perangkat IoT baru
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceCreateRequest'
+    responses:
+      '201':
+        description: Perangkat berhasil ditambahkan
+        content:
+          application/json:
+            schema:
+              $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceFull'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+
+device-by-id:
+  put:
+    tags: [Devices]
+    summary: Perbarui data perangkat IoT
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceUpdateRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceFull'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'
+  delete:
+    tags: [Devices]
+    summary: Hapus perangkat IoT
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    responses:
+      '204':
+        description: Berhasil dihapus
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'
+
+device-status-log:
+  get:
+    tags: [Devices]
+    summary: Riwayat status level yang dikirim ke perangkat
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../components/shared.yaml#/PageParam'
+      - $ref: '../components/shared.yaml#/LimitParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceStatusLog'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+
+device-siren-log:
+  get:
+    tags: [Devices]
+    summary: Riwayat aktivasi sirine perangkat
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../components/shared.yaml#/PageParam'
+      - $ref: '../components/shared.yaml#/LimitParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../components/iot-kesiapsiagaan.yaml#/SirenActionLog'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+
+device-trigger-siren:
+  post:
+    tags: [Devices]
+    summary: >
+      Picu sirine dari jarak jauh (jalur remote_aplikasi).
+      Server menolak permintaan jika level device saat ini
+      bukan oranye/merah. operator_id diambil dari token,
+      tidak boleh dikirim di body.
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    responses:
+      '201':
+        description: Sirine berhasil dipicu
+        content:
+          application/json:
+            schema:
+              $ref: '../components/iot-kesiapsiagaan.yaml#/SirenActionLog'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+      '409':
+        description: >
+          Level device saat ini tidak mengizinkan aktivasi sirine
+          (bukan oranye/merah) — safeguard by design
+        content:
+          application/json:
+            schema:
+              $ref: '../components/shared.yaml#/Error'

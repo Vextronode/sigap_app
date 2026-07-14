@@ -1,0 +1,40 @@
+# =====================================================================
+# auth.yaml — path domain Auth
+# =====================================================================
+
+login:
+  post:
+    tags: [Auth]
+    summary: Login admin/operator
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/auth.yaml#/LoginRequest'
+    responses:
+      '200':
+        description: Login berhasil
+        content:
+          application/json:
+            schema:
+              $ref: '../components/auth.yaml#/LoginResponse'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+me:
+  get:
+    tags: [Auth]
+    summary: Profil pengguna yang sedang login
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: '../components/auth.yaml#/UserProfile'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'

@@ -1,0 +1,51 @@
+# =====================================================================
+# environmental.yaml — schema domain Data Lingkungan & Alert
+# =====================================================================
+
+EnvironmentalData:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    source:
+      type: string
+      enum: [BMKG, USGS, OpenWeatherMap]
+    type:
+      type: string
+      example: "curah_hujan"
+    value:
+      type: number
+    unit:
+      type: string
+      example: "mm"
+    recorded_at:
+      type: string
+      format: date-time
+
+Alert:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    alert_type:
+      type: string
+      example: "banjir"
+    severity:
+      $ref: './shared.yaml#/StatusLevel'
+    message:
+      type: string
+    source_rule:
+      type: string
+    triggered_at:
+      type: string
+      format: date-time
+    validated_by:
+      type: string
+      format: uuid
+      nullable: true
+    validated_at:
+      type: string
+      format: date-time
+      nullable: true

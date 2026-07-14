@@ -1,0 +1,82 @@
+# =====================================================================
+# environmental.yaml — path domain Data Lingkungan & Alert
+# =====================================================================
+
+environmental-data:
+  get:
+    tags: [Environmental Data]
+    summary: Daftar data lingkungan terkini (cuaca, seismik)
+    security: []
+    parameters:
+      - $ref: '../components/shared.yaml#/PageParam'
+      - $ref: '../components/shared.yaml#/LimitParam'
+      - name: type
+        in: query
+        schema:
+          type: string
+        description: Filter berdasarkan jenis data, mis. curah_hujan, seismik
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/environmental.yaml#/EnvironmentalData'
+                pagination:
+                  $ref: '../components/shared.yaml#/Pagination'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+alerts:
+  get:
+    tags: [Alerts]
+    summary: Daftar alert kesiapsiagaan
+    security: []
+    parameters:
+      - $ref: '../components/shared.yaml#/PageParam'
+      - $ref: '../components/shared.yaml#/LimitParam'
+      - name: severity
+        in: query
+        schema:
+          $ref: '../components/shared.yaml#/StatusLevel'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/environmental.yaml#/Alert'
+                pagination:
+                  $ref: '../components/shared.yaml#/Pagination'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+alert-validate:
+  patch:
+    tags: [Alerts]
+    summary: Validasi alert oleh admin/operator
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    responses:
+      '200':
+        description: Alert berhasil divalidasi
+        content:
+          application/json:
+            schema:
+              $ref: '../components/environmental.yaml#/Alert'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'

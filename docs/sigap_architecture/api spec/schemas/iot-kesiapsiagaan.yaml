@@ -1,0 +1,101 @@
+# =====================================================================
+# iot-kesiapsiagaan.yaml — schema domain Perangkat IoT (indikator + sirine)
+# =====================================================================
+
+DevicePublic:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    device_name:
+      type: string
+    latitude:
+      type: number
+    longitude:
+      type: number
+    current_level:
+      $ref: './shared.yaml#/StatusLevel'
+    status:
+      type: string
+      enum: [online, offline, degraded]
+
+DeviceFull:
+  allOf:
+    - $ref: './iot-kesiapsiagaan.yaml#/DevicePublic'
+    - type: object
+      properties:
+        firebase_ref_path:
+          type: string
+        last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+DeviceCreateRequest:
+  type: object
+  required: [device_name]
+  properties:
+    device_name:
+      type: string
+    latitude:
+      type: number
+    longitude:
+      type: number
+
+DeviceUpdateRequest:
+  type: object
+  properties:
+    device_name:
+      type: string
+    latitude:
+      type: number
+    longitude:
+      type: number
+
+DeviceStatusLog:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    device_id:
+      type: string
+      format: uuid
+    level_sent:
+      $ref: './shared.yaml#/StatusLevel'
+    sent_at:
+      type: string
+      format: date-time
+    sync_status:
+      type: string
+      nullable: true
+
+SirenActionLog:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    device_id:
+      type: string
+      format: uuid
+    trigger_source:
+      type: string
+      enum: [lokal_fisik, remote_aplikasi]
+    operator_id:
+      type: string
+      format: uuid
+      nullable: true
+    level_at_trigger:
+      type: string
+      enum: [oranye, merah]
+    triggered_at:
+      type: string
+      format: date-time

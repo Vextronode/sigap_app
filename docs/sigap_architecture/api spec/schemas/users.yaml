@@ -1,0 +1,30 @@
+# =====================================================================
+# users.yaml — schema domain manajemen akun Users
+# =====================================================================
+
+UserCreateRequest:
+  type: object
+  required: [name, email, password, roles]
+  properties:
+    name:
+      type: string
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+      format: password
+    roles:
+      type: array
+      items:
+        type: string
+
+UserUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+    roles:
+      type: array
+      items:
+        type: string

@@ -1,0 +1,18 @@
+# =====================================================================
+# ai-summary.yaml — path domain Ringkasan AI
+# =====================================================================
+
+ai-summary:
+  get:
+    tags: [AI Summary]
+    summary: Ringkasan bahasa sederhana kondisi cuaca/gempa terkini
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: '../components/ai-summary.yaml#/AiSummaryResponse'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
