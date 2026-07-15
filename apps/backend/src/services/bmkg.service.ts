@@ -1,124 +1,114 @@
 /**
  * Service untuk fetch & parsing data cuaca dari BMKG Public API,
- * lalu mengubahnya jadi bentuk `EnvironmentalDataInput[]` sesuai
- * kontrak resmi OpenAPI SIGAP (source: "BMKG").
+ * sesuai kontrak resmi `API_SPEC.md` v2.0 — endpoint /weather/current
+ * dan /weather/forecast.
  *
- * Task: BE - Service fetch & parsing API BMKG
+ * Task: SIG-117 - BE - Service fetch & parsing API BMKG
+ *
+ * BMKG Mapping (dari API_SPEC.md §8.1):
+ *   GET https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=<kode>
+ *   Field dipakai: t, hu, weather_desc, ws, wd, vs_text, local_datetime
  */
 
-import { requestWithFallback, requestWithRetry } from "../utils/httpRetryWrapper.js";
+import { requestWithRetry } from "../utils/httpRetryWrapper.js";
 import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
-import {
-  EnvironmentalDataInputListSchema,
-  type EnvironmentalDataInput,
-} from "../types/environmentalData.types.js";
+import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
-/** Kalau BMKG down dan belum ada cache tersimpan, kembalikan array kosong */
-const EMPTY_FALLBACK: EnvironmentalDataInput[] = [];
-
 export class BmkgService {
-  /**
-   * Ambil forecast BMKG berdasarkan kode wilayah adm4 (kode desa/kelurahan),
-   * lalu parsing jadi array EnvironmentalDataInput siap-insert ke DB.
-   * Throw error kalau gagal setelah semua retry.
-   */
-  static async fetchAndParseByAdm4(adm4Code: string): Promise<EnvironmentalDataInput[]> {
-    const raw = await requestWithRetry<BmkgApiResponse>(
+  /** Fetch mentah dari BMKG, dengan retry (lihat httpRetryWrapper.ts untuk SIG-122) */
+  private static fetchRaw(adm4Code: string): Promise<BmkgApiResponse> {
+    return requestWithRetry<BmkgApiResponse>(
       BMKG_BASE_URL,
       { params: { adm4: adm4Code } },
       { retries: 3, retryDelayMs: 1000, backoffFactor: 2, timeoutMs: 8000 }
     );
-
-    return this.parse(raw);
   }
 
-  /**
-   * Versi "safe": kalau BMKG down, kembalikan fallback (mis. array kosong,
-   * atau nanti bisa diganti cache terakhir dari DB) alih-alih throw.
-   */
-  static async fetchAndParseByAdm4Safe(
-    adm4Code: string,
-    fallback: EnvironmentalDataInput[] = EMPTY_FALLBACK
-  ): Promise<{ data: EnvironmentalDataInput[]; fromFallback: boolean }> {
-    const { data: raw, fromFallback } = await requestWithFallback<BmkgApiResponse | null>(
-      BMKG_BASE_URL,
-      null,
-      { params: { adm4: adm4Code } },
-      { retries: 3, retryDelayMs: 1000, backoffFactor: 2, timeoutMs: 8000 }
-    );
+  /** Untuk GET /weather/current — ambil slot waktu yang paling dekat dengan sekarang */
+  static async getCurrentWeather(adm4Code: string): Promise<CurrentWeather> {
+    const raw = await this.fetchRaw(adm4Code);
+    const items = this.flatten(raw);
+    const latest = this.pickClosestToNow(items);
 
-    if (fromFallback || !raw) {
-      return { data: fallback, fromFallback: true };
+    if (!latest) {
+      throw new Error(`Data cuaca BMKG kosong untuk adm4=${adm4Code}`);
     }
 
-    return { data: this.parse(raw), fromFallback: false };
+    return this.toCurrentWeather(latest);
   }
 
-  /**
-   * Pecah satu response BMKG (yang isinya banyak parameter per slot waktu)
-   * jadi banyak record EnvironmentalDataInput, satu record per parameter.
-   * Divalidasi pakai zod sebelum dikembalikan, biar data yang salah bentuk
-   * ketahuan di sini, bukan pas gagal insert ke DB.
-   */
-  private static parse(raw: BmkgApiResponse): EnvironmentalDataInput[] {
+  /** Untuk GET /weather/forecast — 3 hari ke depan, interval 3 jam (sesuai catatan API_SPEC.md §8.2) */
+  static async getForecast(adm4Code: string): Promise<ForecastItem[]> {
+    const raw = await this.fetchRaw(adm4Code);
+    const items = this.flatten(raw);
+    return items
+      .filter((item) => !!(item.local_datetime ?? item.datetime))
+      .map((item) => this.toForecastItem(item));
+  }
+
+  private static flatten(raw: BmkgApiResponse): BmkgCuacaItem[] {
     const firstEntry = raw.data?.[0];
-    const flatCuaca: BmkgCuacaItem[] = (firstEntry?.cuaca ?? []).flat();
-
-    const records: EnvironmentalDataInput[] = [];
-
-    for (const item of flatCuaca) {
-      const recordedAt = this.toIsoString(item.local_datetime ?? item.datetime);
-      if (!recordedAt) continue; // skip data tanpa timestamp valid
-
-      if (typeof item.tp === "number") {
-        records.push({
-          source: "BMKG",
-          type: "curah_hujan",
-          value: item.tp,
-          unit: "mm",
-          recorded_at: recordedAt,
-        });
-      }
-      if (typeof item.t === "number") {
-        records.push({
-          source: "BMKG",
-          type: "suhu",
-          value: item.t,
-          unit: "°C",
-          recorded_at: recordedAt,
-        });
-      }
-      if (typeof item.hu === "number") {
-        records.push({
-          source: "BMKG",
-          type: "kelembapan",
-          value: item.hu,
-          unit: "%",
-          recorded_at: recordedAt,
-        });
-      }
-      if (typeof item.ws === "number") {
-        records.push({
-          source: "BMKG",
-          type: "kecepatan_angin",
-          value: item.ws,
-          unit: "km/h",
-          recorded_at: recordedAt,
-        });
-      }
-    }
-
-    // Validasi akhir sebelum dikembalikan ke caller (mis. sebelum di-insert Prisma)
-    return EnvironmentalDataInputListSchema.parse(records);
+    return (firstEntry?.cuaca ?? []).flat();
   }
 
-  /** BMKG kadang kasih format "2026-07-14 07:00:00", perlu dinormalisasi ke ISO 8601 */
-  private static toIsoString(rawDatetime: string | undefined): string | null {
-    if (!rawDatetime) return null;
+  private static pickClosestToNow(items: BmkgCuacaItem[]): BmkgCuacaItem | null {
+    if (items.length === 0) return null;
+    const now = Date.now();
+    return items.reduce((closest, item) => {
+      const itemTime = new Date(this.toIso(item.local_datetime ?? item.datetime)).getTime();
+      const closestTime = new Date(this.toIso(closest.local_datetime ?? closest.datetime)).getTime();
+      return Math.abs(itemTime - now) < Math.abs(closestTime - now) ? item : closest;
+    });
+  }
+
+  private static toCurrentWeather(item: BmkgCuacaItem): CurrentWeather {
+    return {
+      temperature: item.t,
+      humidity: item.hu,
+      weather: item.weather_desc,
+      windSpeed: item.ws,
+      windDirection: item.wd ?? "",
+      visibility: item.vs_text ?? "",
+      updatedAt: this.toIso(item.local_datetime ?? item.datetime),
+    };
+  }
+
+  private static toForecastItem(item: BmkgCuacaItem): ForecastItem {
+    const iso = this.toIso(item.local_datetime ?? item.datetime);
+    return {
+      date: iso.slice(0, 10),
+      condition: item.weather_desc,
+      temperature: item.t,
+      rainProbability: this.estimateRainProbability(item),
+    };
+  }
+
+  /**
+   * ⚠️ PENTING: BMKG Public API TIDAK menyediakan field "probability of rain"
+   * secara langsung. Ini heuristik sementara dari curah hujan (tp, mm) dan
+   * deskripsi cuaca — BUKAN angka resmi BMKG.
+   *
+   * TODO: konfirmasi ke Naufal/tim apakah pendekatan ini bisa diterima,
+   * atau apakah ada sumber/rumus lain yang harus dipakai untuk rainProbability.
+   */
+  private static estimateRainProbability(item: BmkgCuacaItem): number {
+    const desc = item.weather_desc?.toLowerCase() ?? "";
+    const tp = item.tp ?? 0;
+
+    if (tp >= 20) return 90;
+    if (tp >= 5) return 70;
+    if (tp > 0 || desc.includes("hujan")) return 60;
+    return desc.includes("berawan") ? 20 : 0;
+  }
+
+  /** BMKG kadang kasih format "2026-07-14 07:00:00", normalisasi ke ISO 8601 */
+  private static toIso(rawDatetime: string | undefined): string {
+    if (!rawDatetime) return new Date().toISOString();
     const normalized = rawDatetime.includes("T") ? rawDatetime : rawDatetime.replace(" ", "T");
-    const date = new Date(normalized.endsWith("Z") ? normalized : `${normalized}Z`);
-    return isNaN(date.getTime()) ? null : date.toISOString();
+    const withZ = normalized.endsWith("Z") ? normalized : `${normalized}Z`;
+    const date = new Date(withZ);
+    return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
   }
 }
