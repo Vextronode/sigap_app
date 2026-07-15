@@ -1,14 +1,19 @@
 import { Router } from "express";
 import { BmkgService } from "../services/bmkg.service.js";
-import type { ApiErrorResponse, ApiSuccessResponse, CurrentWeather, ForecastItem } from "../types/weather.types.js";
+import type {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  CurrentWeather,
+  ForecastItem,
+} from "../types/weather.types.js";
 
-export const weatherRouter = Router();
+export const publicWeatherRouter = Router();
 
 // Kode wilayah adm4 untuk Desa Cibenda, Kecamatan Parigi, Kabupaten Pangandaran
 const DEFAULT_ADM4_CODE = process.env.BMKG_ADM4_CODE ?? "32.18.01.2008";
 
-/** GET /api/v1/weather/current — sesuai API_SPEC.md §8.1 */
-weatherRouter.get("/current", async (_req, res) => {
+/** GET /api/public/weather/current — sesuai API_SPEC.md §8.1 */
+publicWeatherRouter.get("/current", async (_req, res) => {
   try {
     const data = await BmkgService.getCurrentWeather(DEFAULT_ADM4_CODE);
     const response: ApiSuccessResponse<CurrentWeather> = {
@@ -28,8 +33,8 @@ weatherRouter.get("/current", async (_req, res) => {
   }
 });
 
-/** GET /api/v1/weather/forecast — sesuai API_SPEC.md §8.2 */
-weatherRouter.get("/forecast", async (_req, res) => {
+/** GET /api/public/weather/forecast — sesuai API_SPEC.md §8.2 */
+publicWeatherRouter.get("/forecast", async (_req, res) => {
   try {
     const data = await BmkgService.getForecast(DEFAULT_ADM4_CODE);
     const response: ApiSuccessResponse<ForecastItem[]> = {
