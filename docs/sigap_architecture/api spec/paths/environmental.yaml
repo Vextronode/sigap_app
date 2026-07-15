@@ -1,11 +1,11 @@
 # =====================================================================
-# environmental.yaml — path domain Data Lingkungan & Alert
+# environmental.yaml — path domain Data Lingkungan & Alert (historis)
 # =====================================================================
 
 environmental-data:
   get:
     tags: [Environmental Data]
-    summary: Daftar data lingkungan terkini (cuaca, seismik)
+    summary: Daftar data lingkungan terkini (cuaca, seismik) - historis
     security: []
     parameters:
       - $ref: '../components/shared.yaml#/PageParam'
@@ -21,21 +21,23 @@ environmental-data:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                data:
-                  type: array
-                  items:
-                    $ref: '../components/environmental.yaml#/EnvironmentalData'
-                pagination:
-                  $ref: '../components/shared.yaml#/Pagination'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../components/environmental.yaml#/EnvironmentalData'
+                    pagination:
+                      $ref: '../components/shared.yaml#/Pagination'
       '429':
         $ref: '../components/shared.yaml#/RateLimited'
 
 alerts:
   get:
     tags: [Alerts]
-    summary: Daftar alert kesiapsiagaan
+    summary: Riwayat/daftar alert kesiapsiagaan
     security: []
     parameters:
       - $ref: '../components/shared.yaml#/PageParam'
@@ -50,14 +52,16 @@ alerts:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                data:
-                  type: array
-                  items:
-                    $ref: '../components/environmental.yaml#/Alert'
-                pagination:
-                  $ref: '../components/shared.yaml#/Pagination'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../components/environmental.yaml#/Alert'
+                    pagination:
+                      $ref: '../components/shared.yaml#/Pagination'
       '429':
         $ref: '../components/shared.yaml#/RateLimited'
 
@@ -73,7 +77,12 @@ alert-validate:
         content:
           application/json:
             schema:
-              $ref: '../components/environmental.yaml#/Alert'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/environmental.yaml#/Alert'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':

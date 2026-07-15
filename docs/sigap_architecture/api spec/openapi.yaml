@@ -6,22 +6,26 @@ info:
     Kontrak resmi antara Backend dan Frontend, disusun berdasarkan
     Route/Access Category Design dan Data Dictionary SIGAP.
 
+    Envelope response: setiap response sukses mengikuti struktur
+    {status, code, message, data}; setiap response error mengikuti
+    struktur {status, code, message, errors}. Pengecualian: 204 No
+    Content tidak memiliki body sama sekali, sesuai konvensi HTTP.
+
     Spesifikasi ini disegmentasi per domain (lihat folder paths/ dan
-    components/) agar mudah dibaca - bukan satu file besar. Struktur
-    domain mengikuti pembagian yang sama dengan db/schema/ dan
-    db/data-dictionary/: auth, users, environmental, iot-kesiapsiagaan,
-    content-admin, ai-summary.
-  version: "1.0.0"
+    components/) agar mudah dibaca — bukan satu file besar.
+  version: "1.1.0"
   contact:
     name: Tech Lead SIGAP
 servers:
   - url: https://api.sigap.cibenda.id/api
-    description: Production (placeholder - menunggu konfirmasi hosting, lihat PRD 4)
+    description: Production (placeholder — menunggu konfirmasi hosting, lihat PRD §4)
   - url: https://staging-api.sigap.cibenda.id/api
     description: Staging
 
 tags:
   - name: Auth
+  - name: Weather
+  - name: Dashboard
   - name: Environmental Data
   - name: Alerts
   - name: Devices
@@ -48,7 +52,23 @@ paths:
   /protected/auth/me:
     $ref: './paths/auth.yaml#/me'
 
-  # -- Environmental Data & Alerts --------------------------------------
+  # -- Weather / Dashboard Aggregation (baru, dari review API_Spec.md) -
+  /public/weather/current:
+    $ref: './paths/weather.yaml#/weather-current'
+  /public/weather/forecast:
+    $ref: './paths/weather.yaml#/weather-forecast'
+  /public/earthquakes/latest:
+    $ref: './paths/weather.yaml#/earthquake-latest'
+  /public/tsunamis/status:
+    $ref: './paths/weather.yaml#/tsunami-status'
+  /public/alerts/current:
+    $ref: './paths/weather.yaml#/alert-current'
+  /public/dashboard:
+    $ref: './paths/weather.yaml#/dashboard'
+  /protected/admin/dashboard:
+    $ref: './paths/weather.yaml#/admin-dashboard'
+
+  # -- Environmental Data & Alerts (historis) ---------------------------
   /public/environmental-data:
     $ref: './paths/environmental.yaml#/environmental-data'
   /public/alerts:
