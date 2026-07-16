@@ -1,5 +1,6 @@
 import { CloudSun, Droplets, Thermometer, Wind } from "lucide-react";
 import { Card } from "../../../components/ui/Card";
+import { CardSkeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import type { CurrentWeather, WeatherForecastItem } from "../../../types/dashboard";
@@ -8,6 +9,10 @@ import { formatWeekday } from "../../../utils/date";
 type WeatherSectionProps = {
   weather: CurrentWeather | null;
   forecast: WeatherForecastItem[];
+  isWeatherLoading?: boolean;
+  isWeatherError?: boolean;
+  isForecastLoading?: boolean;
+  isForecastError?: boolean;
 };
 
 const weatherIcon = (condition: string) => {
@@ -17,10 +22,29 @@ const weatherIcon = (condition: string) => {
   return "Cerah";
 };
 
-export const WeatherSection = ({ weather, forecast }: WeatherSectionProps) => (
+export const WeatherSection = ({
+  weather,
+  forecast,
+  isWeatherLoading = false,
+  isWeatherError = false,
+  isForecastLoading = false,
+  isForecastError = false,
+}: WeatherSectionProps) => (
   <section aria-labelledby="weather">
     <SectionHeader id="weather" title="Monitoring Cuaca" icon={<CloudSun size={22} />} />
-    {weather ? (
+    {isWeatherLoading ? (
+      <div className="weather-grid">
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    ) : isWeatherError ? (
+      <StateMessage
+        type="error"
+        title="Cuaca gagal dimuat"
+        message="Data cuaca terkini belum dapat diambil dari API."
+      />
+    ) : weather ? (
       <div className="weather-grid">
         <Card className="metric-card">
           <span>Suhu terkini</span>
@@ -52,7 +76,20 @@ export const WeatherSection = ({ weather, forecast }: WeatherSectionProps) => (
     )}
 
     <Card className="forecast-card" aria-label="Prakiraan cuaca">
-      {forecast.length > 0 ? (
+      {isForecastLoading ? (
+        <div className="forecast-list">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      ) : isForecastError ? (
+        <StateMessage
+          type="error"
+          title="Prakiraan gagal dimuat"
+          message="Data prakiraan cuaca belum dapat diambil dari API."
+        />
+      ) : forecast.length > 0 ? (
         <div className="forecast-list">
           {forecast.slice(0, 4).map((item) => (
             <article className="forecast-item" key={`${item.date}-${item.condition}`}>

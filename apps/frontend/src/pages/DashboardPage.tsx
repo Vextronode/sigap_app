@@ -1,7 +1,3 @@
-import { RefreshCcw } from "lucide-react";
-import { Button } from "../components/ui/Button";
-import { CardSkeleton } from "../components/ui/Skeleton";
-import { StateMessage } from "../components/ui/StateMessage";
 import { AISummaryCard } from "../features/dashboard/components/AISummaryCard";
 import { Announcements } from "../features/dashboard/components/Announcements";
 import { CurrentAlertCard } from "../features/dashboard/components/CurrentAlertCard";
@@ -11,73 +7,98 @@ import { EvacuationRoutes } from "../features/dashboard/components/EvacuationRou
 import { PreparednessGuide } from "../features/dashboard/components/PreparednessGuide";
 import { TsunamiCard } from "../features/dashboard/components/TsunamiCard";
 import { WeatherSection } from "../features/dashboard/components/WeatherSection";
-import { useDashboardData } from "../features/dashboard/hooks/useDashboardData";
+import { useAnnouncements } from "../features/dashboard/hooks/useAnnouncements";
+import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
+import { useEarthquake } from "../features/dashboard/hooks/useEarthquake";
+import { useEmergencyContacts } from "../features/dashboard/hooks/useEmergencyContacts";
+import { useEvacuation } from "../features/dashboard/hooks/useEvacuation";
+import { useEvacuationRoutes } from "../features/dashboard/hooks/useEvacuationRoutes";
+import { useForecast } from "../features/dashboard/hooks/useForecast";
+import { useSummary } from "../features/dashboard/hooks/useSummary";
+import { useTsunami } from "../features/dashboard/hooks/useTsunami";
+import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
-
-const DashboardLoading = () => (
-  <div className="dashboard-stack" aria-label="Memuat dashboard">
-    <CardSkeleton />
-    <CardSkeleton />
-    <div className="dashboard-grid dashboard-grid--three">
-      <CardSkeleton />
-      <CardSkeleton />
-      <CardSkeleton />
-    </div>
-    <div className="dashboard-grid dashboard-grid--two">
-      <CardSkeleton />
-      <CardSkeleton />
-    </div>
-  </div>
-);
 
 export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
-  const { data, isLoading, isError, refetch, isFetching } = useDashboardData();
+  const weatherQuery = useWeather();
+  const forecastQuery = useForecast();
+  const earthquakeQuery = useEarthquake();
+  const tsunamiQuery = useTsunami();
+  const alertQuery = useCurrentAlert();
+  const summaryQuery = useSummary();
+  const announcementsQuery = useAnnouncements();
+  const contactsQuery = useEmergencyContacts();
+  const evacuationQuery = useEvacuation();
+  const evacuationRoutesQuery = useEvacuationRoutes();
 
-  if (isLoading) return <DashboardLoading />;
-
-  if (isError && !data) {
-    return (
-      <StateMessage
-        type="error"
-        title="Dashboard gagal dimuat"
-        message="Periksa koneksi atau pastikan backend SIGAP dapat diakses."
-        action={
-          <Button variant="secondary" onClick={() => void refetch()} icon={<RefreshCcw size={18} />}>
-            Muat ulang
-          </Button>
-        }
-      />
-    );
-  }
-
-  const weather = data?.weather ?? null;
-  const forecast = data?.forecast ?? [];
-  const earthquake = data?.earthquake ?? null;
-  const tsunami = data?.tsunami ?? null;
-  const alert = data?.alert ?? null;
-  const summary = data?.summary ?? null;
-  const announcements = data?.announcement ?? [];
-  const contacts = data?.contacts ?? [];
-  const evacuationPoints = data?.evacuation ?? [];
-  const evacuationRoutes = data?.evacuationRoutes ?? [];
+  const isFetching = [
+    weatherQuery,
+    forecastQuery,
+    earthquakeQuery,
+    tsunamiQuery,
+    alertQuery,
+    summaryQuery,
+    announcementsQuery,
+    contactsQuery,
+    evacuationQuery,
+    evacuationRoutesQuery,
+  ].some((query) => query.isFetching && !query.isLoading);
 
   return (
     <div className="dashboard-stack">
       {isFetching && <span className="refresh-indicator">Memperbarui data...</span>}
-      <CurrentAlertCard alert={alert} />
-      <AISummaryCard summary={summary} />
-      <WeatherSection weather={weather} forecast={forecast} />
+      <CurrentAlertCard
+        alert={alertQuery.data ?? null}
+        isLoading={alertQuery.isLoading}
+        isError={alertQuery.isError}
+      />
+      <AISummaryCard
+        summary={summaryQuery.data ?? null}
+        isLoading={summaryQuery.isLoading}
+        isError={summaryQuery.isError}
+      />
+      <WeatherSection
+        weather={weatherQuery.data ?? null}
+        forecast={forecastQuery.data ?? []}
+        isWeatherLoading={weatherQuery.isLoading}
+        isWeatherError={weatherQuery.isError}
+        isForecastLoading={forecastQuery.isLoading}
+        isForecastError={forecastQuery.isError}
+      />
       <div className="dashboard-grid dashboard-grid--two" id="earthquake">
-        <EarthquakeCard earthquake={earthquake} />
+        <EarthquakeCard
+          earthquake={earthquakeQuery.data ?? null}
+          isLoading={earthquakeQuery.isLoading}
+          isError={earthquakeQuery.isError}
+        />
         <div id="tsunami">
-          <TsunamiCard tsunami={tsunami} />
+          <TsunamiCard
+            tsunami={tsunamiQuery.data ?? null}
+            isLoading={tsunamiQuery.isLoading}
+            isError={tsunamiQuery.isError}
+          />
         </div>
       </div>
-      <EvacuationRoutes points={evacuationPoints} routes={evacuationRoutes} />
-      <EmergencyContacts contacts={contacts} />
+      <EvacuationRoutes
+        points={evacuationQuery.data ?? []}
+        routes={evacuationRoutesQuery.data ?? []}
+        isPointsLoading={evacuationQuery.isLoading}
+        isPointsError={evacuationQuery.isError}
+        isRoutesLoading={evacuationRoutesQuery.isLoading}
+        isRoutesError={evacuationRoutesQuery.isError}
+      />
+      <EmergencyContacts
+        contacts={contactsQuery.data ?? []}
+        isLoading={contactsQuery.isLoading}
+        isError={contactsQuery.isError}
+      />
       <PreparednessGuide />
-      <Announcements announcements={announcements} />
+      <Announcements
+        announcements={announcementsQuery.data ?? []}
+        isLoading={announcementsQuery.isLoading}
+        isError={announcementsQuery.isError}
+      />
     </div>
   );
 }
