@@ -22,6 +22,8 @@ model User {
 
   userRoles UserRole[]
 
+  @@index([email])
+
   @@map("users")
 }
 
@@ -34,6 +36,7 @@ model Role {
   userRoles       UserRole[]
 
   @@map("roles")
+  @@index([name])
 }
 
 model Permission {
@@ -44,6 +47,7 @@ model Permission {
   rolePermissions RolePermission[]
 
   @@map("permissions")
+  @@index([code])
 }
 
 model RolePermission {
