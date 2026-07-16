@@ -1,5 +1,5 @@
-import { comparePassword } from "../utils/password.utils.js";
-import { signToken } from "../utils/jwt.utils.js";
+import { comparePassword } from "../utils/password.util.js";
+import { signToken } from "../utils/jwt.util.js";
 import { findByEmail } from "../repositories/user.repository.js";
 
 export class AuthenticationError extends Error {}
