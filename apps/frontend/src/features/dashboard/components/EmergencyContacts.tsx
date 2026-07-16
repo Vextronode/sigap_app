@@ -1,18 +1,33 @@
 import { Building2, Contact, Phone, Shield, Truck, UserRound } from "lucide-react";
 import { SectionHeader } from "../../../components/common/SectionHeader";
+import { CardSkeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import type { EmergencyContact } from "../../../types/dashboard";
 
 type EmergencyContactsProps = {
   contacts: EmergencyContact[];
+  isLoading?: boolean;
+  isError?: boolean;
 };
 
 const icons = [UserRound, Shield, Building2, Truck, Contact, Phone];
 
-export const EmergencyContacts = ({ contacts }: EmergencyContactsProps) => (
+export const EmergencyContacts = ({ contacts, isLoading = false, isError = false }: EmergencyContactsProps) => (
   <section aria-labelledby="contacts">
     <SectionHeader id="contacts" title="Kontak Darurat" icon={<Contact size={22} />} />
-    {contacts.length > 0 ? (
+    {isLoading ? (
+      <div className="contact-grid">
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    ) : isError ? (
+      <StateMessage
+        type="error"
+        title="Kontak darurat gagal dimuat"
+        message="Daftar kontak darurat belum dapat diambil dari API."
+      />
+    ) : contacts.length > 0 ? (
       <div className="contact-grid">
         {contacts.map((contact, index) => {
           const Icon = icons[index % icons.length];

@@ -3,16 +3,16 @@ import { Sidebar } from "./Sidebar";
 import { TopNavbar } from "./TopNavbar";
 import { Footer } from "./Footer";
 import { MobileNav } from "./MobileNav";
-import { useDashboardData } from "../features/dashboard/hooks/useDashboardData";
+import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 
 export const MainLayout = () => {
-  const { data } = useDashboardData();
+  const { data: alert } = useCurrentAlert();
 
   return (
     <div className="app-shell">
-      <Sidebar alert={data?.alert} />
+      <Sidebar alert={alert ?? null} />
       <div className="app-shell__content">
-        <TopNavbar alert={data?.alert} />
+        <TopNavbar alert={alert ?? null} />
         <main className="main-content">
           <Outlet />
         </main>

@@ -1,15 +1,18 @@
 import { Megaphone } from "lucide-react";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import { Button } from "../../../components/ui/Button";
+import { CardSkeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import type { Announcement } from "../../../types/dashboard";
 import { formatDate } from "../../../utils/date";
 
 type AnnouncementsProps = {
   announcements: Announcement[];
+  isLoading?: boolean;
+  isError?: boolean;
 };
 
-export const Announcements = ({ announcements }: AnnouncementsProps) => (
+export const Announcements = ({ announcements, isLoading = false, isError = false }: AnnouncementsProps) => (
   <section aria-labelledby="announcements">
     <SectionHeader
       id="announcements"
@@ -17,7 +20,15 @@ export const Announcements = ({ announcements }: AnnouncementsProps) => (
       icon={<Megaphone size={22} />}
       action={<Button variant="ghost">Lihat semua</Button>}
     />
-    {announcements.length > 0 ? (
+    {isLoading ? (
+      <CardSkeleton />
+    ) : isError ? (
+      <StateMessage
+        type="error"
+        title="Pengumuman gagal dimuat"
+        message="Pengumuman desa belum dapat diambil dari API."
+      />
+    ) : announcements.length > 0 ? (
       <div className="announcement-list">
         {announcements.slice(0, 3).map((announcement) => (
           <article className={`announcement-item announcement-item--${announcement.priority.toLowerCase()}`} key={announcement.id}>
