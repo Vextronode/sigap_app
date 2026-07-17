@@ -1,1 +1,85 @@
 @import "tailwindcss";
+@keyframes radarPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.status-banner__icon-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-color: currentColor; 
+  z-index: -1; 
+  animation: radarPulse 2s infinite ease-out;
+}
+
+@media (max-width: 76px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%; /* Sembunyikan sidebar di kiri luar layar secara default */
+    width: 260px;
+    height: 100vh;
+    z-index: 50;
+    transition: left 0.3s ease-in-out;
+  }
+
+  /* Aktifkan kelas ini ketika tombol burger diklik */
+  .sidebar--open {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 40;
+    border: none;
+    cursor: default;
+  }
+  
+  .top-navbar__menu {
+    display: flex; /* Tombol burger muncul di layar handphone/tablet */
+  }
+}
+
+/* 2. TAMPILAN DESKTOP & LAPTOP XL (Layar >= 1024px) */
+@media (min-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0; /* Sidebar dipaksa SELALU NYALA menetap di sebelah kiri */
+    width: 260px;
+    height: 100vh;
+    z-index: 30;
+  }
+
+  /* Hilangkan/sembunyikan tombol burger di laptop karena sidebar sudah standby */
+  .top-navbar__menu {
+    display: none !important;
+  }
+
+  /* Hapus overlay di desktop agar tidak mengunci atau menggelapkan layar utama */
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+  /* INFO TAMBAHAN: Pastikan area konten dashboard kamu (di luar file sidebar) 
+     diberikan margin-left sebesar 260px agar tidak tertutup oleh sidebar yang menetap. 
+     Contoh kelas pembungkus konten utama kamu: */
+  .main-content {
+    margin-left: 260px;
+  }
+}

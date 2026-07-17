@@ -13,6 +13,7 @@
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
 import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
+import type { TsunamiStatus } from "../types/alert.types.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
@@ -47,6 +48,26 @@ export class BmkgService {
 
   return this.buildDashboardForecast(items);
 }
+
+  /**
+   * Status tsunami placeholder.
+   * Jika sumber resmi belum tersedia di backend, gunakan NORMAL sebagai default
+   * atau override via env `BMKG_TSUNAMI_STATUS`.
+   */
+  static async getTsunamiStatus(): Promise<TsunamiStatus> {
+    const configured = process.env.BMKG_TSUNAMI_STATUS?.toUpperCase();
+
+    if (
+      configured === "AWAS" ||
+      configured === "SIAGA" ||
+      configured === "WASPADA" ||
+      configured === "NORMAL"
+    ) {
+      return configured;
+    }
+
+    return "NORMAL";
+  }
 
   private static flatten(raw: BmkgApiResponse): BmkgCuacaItem[] {
     const firstEntry = raw.data?.[0];

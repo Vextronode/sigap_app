@@ -1,39 +1,22 @@
 import { Router } from "express";
-import { AlertStatusService } from "../services/alertStatus.service.js";
-
-import type {
-    ApiErrorResponse,
-    ApiSuccessResponse,
-} from "../types/weather.types.js";
-
-import type { CurrentAlert } from "../types/alert.types.js";
+import { AlertController } from "../controllers/alert.controller.js";
 
 export const publicAlertsRouter = Router();
 
 /**
  * GET /api/public/alerts
- * Mengambil status alert terkini berdasarkan Decision Engine.
+ * Mengambil alert terkini yang sudah disimpan oleh scheduler.
  */
-publicAlertsRouter.get("/", async (_req, res) => {
-    try {
-        const data = await AlertStatusService.getCurrentAlert();
+publicAlertsRouter.get("/", AlertController.getLatest);
 
-        const response: ApiSuccessResponse<CurrentAlert> = {
-            success: true,
-            message: "Current alert retrieved successfully.",
-            data,
-        };
+/**
+ * GET /api/public/alerts/current
+ * Alias untuk kontrak dokumentasi lama.
+ */
+publicAlertsRouter.get("/current", AlertController.getLatest);
 
-        res.status(200).json(response);
-    } catch (error) {
-        console.error("[GET /alerts]", error);
-
-        const response: ApiErrorResponse = {
-            success: false,
-            message: "Gagal mengambil data peringatan dini dari BMKG",
-            errors: [error instanceof Error ? error.message : String(error)],
-        };
-
-        res.status(502).json(response);
-    }
-});
+/**
+ * GET /api/public/alerts/history
+ * Mengambil riwayat alert.
+ */
+publicAlertsRouter.get("/history", AlertController.getHistory);

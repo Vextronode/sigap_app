@@ -25,7 +25,7 @@ export class AlertService {
     static async getCurrentAlert() {
         return prisma.alert.findFirst({
             orderBy: {
-                createdAt: "desc",
+                updatedAt: "desc",
             },
         });
     }
@@ -36,7 +36,7 @@ export class AlertService {
     static async getAllAlerts() {
         return prisma.alert.findMany({
             orderBy: {
-                createdAt: "desc",
+                updatedAt: "desc",
             },
         });
     }

@@ -1,4 +1,4 @@
-export type AlertLevel = "NORMAL" | "AMAN" | "WASPADA" | "SIAGA" | "AWAS";
+export type AlertLevel = "GREEN" | "YELLOW" | "ORANGE" | "RED";
 
 export type PriorityLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -48,11 +48,9 @@ export type TsunamiStatus = {
 
 export type CurrentAlert = {
   level: AlertLevel;
-  color: string;
-  reason: string;
-  generatedBy: string;
-  validated: boolean;
-  lastUpdated: string;
+  source: string;
+  description: string | null;
+  updatedAt: string;
 };
 
 export type AiSummary = {

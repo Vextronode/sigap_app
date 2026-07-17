@@ -7,27 +7,22 @@ type AlertMeta = {
 };
 
 export const alertMeta: Record<AlertLevel, AlertMeta> = {
-  AMAN: {
+  GREEN: {
     label: "Aman",
     tone: "safe",
     description: "Tidak ada ancaman bencana aktif saat ini.",
   },
-  NORMAL: {
-    label: "Normal",
-    tone: "safe",
-    description: "Sistem berjalan normal dan tidak ada peringatan aktif.",
-  },
-  WASPADA: {
+  YELLOW: {
     label: "Waspada",
     tone: "warning",
     description: "Tetap pantau informasi resmi dan siapkan langkah aman.",
   },
-  SIAGA: {
+  ORANGE: {
     label: "Siaga",
     tone: "orange",
     description: "Siapkan dokumen penting dan ikuti arahan pemerintah desa.",
   },
-  AWAS: {
+  RED: {
     label: "Awas",
     tone: "danger",
     description: "Ikuti instruksi resmi dan segera menuju titik evakuasi.",
@@ -37,15 +32,14 @@ export const alertMeta: Record<AlertLevel, AlertMeta> = {
 export const normalizeAlertLevel = (level?: string): AlertLevel => {
   const normalized = level?.toUpperCase();
   if (
-    normalized === "AMAN" ||
-    normalized === "NORMAL" ||
-    normalized === "WASPADA" ||
-    normalized === "SIAGA" ||
-    normalized === "AWAS"
+    normalized === "GREEN" ||
+    normalized === "YELLOW" ||
+    normalized === "ORANGE" ||
+    normalized === "RED"
   ) {
     return normalized;
   }
-  return "NORMAL";
+  return "GREEN";
 };
 
 export const getAlertMeta = (alert?: CurrentAlert | null) => {

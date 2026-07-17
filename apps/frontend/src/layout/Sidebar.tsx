@@ -16,6 +16,8 @@ import type { CurrentAlert } from "../types/dashboard";
 
 type SidebarProps = {
   alert?: CurrentAlert | null;
+  isLoading?: boolean;
+  isError?: boolean;
 };
 
 const sectionLinks = [
@@ -28,7 +30,7 @@ const sectionLinks = [
   { label: "Pengumuman", href: "/#announcements", icon: Megaphone },
 ];
 
-export const Sidebar = ({ alert }: SidebarProps) => {
+export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarProps) => {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const closeSidebar = useUiStore((state) => state.closeSidebar);
   const meta = getAlertMeta(alert);
@@ -66,10 +68,24 @@ export const Sidebar = ({ alert }: SidebarProps) => {
         </nav>
 
         <div className="sidebar__status">
-          <span className={`status-dot status-dot--${meta.tone}`} />
-          <div>
-            <strong>Status: {meta.label}</strong>
-            <span>Sistem terhubung</span>
+          <span className={`status-dot status-dot--${isError ? "neutral" : meta.tone}`} />
+          <div className="flex flex-col text-left leading-tight">
+            <strong>
+              {isLoading
+                ? "Status: Memuat"
+                : isError
+                  ? "Status: Tidak tersedia"
+                  : !alert
+                    ? "Status: Belum ada"
+                    : `Status: ${meta.label}`}
+            </strong>
+            <span className="text-xs text-gray-500 mt-0.5">
+              {isError 
+                ? "Koneksi alert belum tersedia" 
+                : !alert 
+                  ? "Menunggu alert tersimpan" 
+                  : "Sistem terhubung"}
+            </span>
           </div>
         </div>
       </aside>

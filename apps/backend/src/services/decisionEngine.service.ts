@@ -18,67 +18,96 @@
  * - Review nilai magnitude/radius di bawah ini bersama yang berwenang
  */
 
-import type { EarthquakeInfo } from "../types/earthquake.types.js";
 import { AlertLevel } from "../../generated/prisma/enums.js";
+import { ALERT_RULES } from "../config/alertRules.js";
 
-interface AlertRule {
-  /** Level alert sesuai enum Prisma */
-  level: AlertLevel;
-
-  matches: (magnitude: number, distanceKm: number) => boolean;
-
-  reason: (magnitude: number, distanceKm: number) => string;
-}
-
-// Diurutkan dari paling parah ke paling ringan — rule pertama yang cocok yang dipakai
-const RULES: AlertRule[] = [
-  {
-    level: AlertLevel.RED,
-    matches: (m, d) => m >= 7 || (m >= 6 && d <= 100),
-    reason: (m, d) =>
-      `Gempa Magnitudo ${m} dalam radius ${d} km — berpotensi merusak.`,
-  },
-  {
-    level: AlertLevel.ORANGE,
-    matches: (m, d) => m >= 6 || (m >= 5 && d <= 150),
-    reason: (m, d) =>
-      `Gempa Magnitudo ${m} dalam radius ${d} km.`,
-  },
-  {
-    level: AlertLevel.YELLOW,
-    matches: (m) => m >= 5,
-    reason: (m, d) =>
-      `Gempa Magnitudo ${m} dalam radius ${d} km.`,
-  },
-];
-
-const SAFE_DEFAULT: AlertRule = {
-  level: AlertLevel.GREEN,
-  matches: () => true,
-  reason: () => "Tidak ada indikasi bahaya terkini.",
-};
-
-export interface DecisionResult {
-  level: AlertLevel;
-  source: string;
-  description: string;
-}
+import type { DecisionInput, DecisionResult } from "../types/alert.types.js";
 
 export class DecisionEngineService {
-  /** Tentukan alert level berdasarkan data gempa terkini */
-  static evaluateFromEarthquake(
-    earthquake: EarthquakeInfo
-  ): DecisionResult {
-    const { magnitude, distanceToVillage } = earthquake;
+  static evaluate(input: DecisionInput): DecisionResult {
 
-    const rule =
-      RULES.find((r) => r.matches(magnitude, distanceToVillage)) ??
-      SAFE_DEFAULT;
+    const {
+      earthquake,
+      tsunamiStatus = "NORMAL",
+    } = input;
+
+    /**
+     * ============================
+     * PRIORITAS 1
+     * Status resmi BMKG Tsunami
+     * ============================
+     */
+
+    if (tsunamiStatus === "AWAS") {
+      return {
+        level: AlertLevel.RED,
+        source: "BMKG InaTEWS",
+        description:
+          "BMKG mengeluarkan status AWAS. Evakuasi segera.",
+      };
+    }
+
+    if (tsunamiStatus === "SIAGA") {
+      return {
+        level: AlertLevel.ORANGE,
+        source: "BMKG InaTEWS",
+        description:
+          "BMKG mengeluarkan status SIAGA.",
+      };
+    }
+
+    if (tsunamiStatus === "WASPADA") {
+      return {
+        level: AlertLevel.YELLOW,
+        source: "BMKG InaTEWS",
+        description:
+          "BMKG mengeluarkan status WASPADA.",
+      };
+    }
+
+    /**
+     * ============================
+     * PRIORITAS 2
+     * Gempa
+     * ============================
+     */
+      // Prioritas lebih tinggi dicek terlebih dahulu
+      if (earthquake) {
+        const radius = earthquake.distanceToVillage;
+        const magnitude = earthquake.magnitude;
+          if (
+          magnitude >= ALERT_RULES.earthquake.significantMagnitude &&
+          radius <= ALERT_RULES.radius.MEDIUM
+        ) {
+          return {
+            level: AlertLevel.ORANGE,
+            source: "BMKG",
+            description: `Gempa signifikan M${magnitude} dalam radius ${radius} km dari Desa Cibenda.`,
+          };
+        }
+
+        if (
+          magnitude >= ALERT_RULES.earthquake.monitoringMagnitude &&
+          radius <= ALERT_RULES.radius.HIGH
+        ) {
+          return {
+            level: AlertLevel.YELLOW,
+            source: "BMKG",
+            description: `Gempa M${magnitude} terdeteksi dalam radius ${radius} km dari Desa Cibenda. Tingkatkan kewaspadaan dan pantau informasi resmi BMKG.`,
+          };
+        }
+      }
+
+    /**
+     * ============================
+     * Default
+     * ============================
+     */
 
     return {
-      level: rule.level,
+      level: AlertLevel.GREEN,
       source: "BMKG",
-      description: rule.reason(magnitude, distanceToVillage),
+      description: "Tidak terdapat peringatan resmi BMKG.",
     };
   }
 }

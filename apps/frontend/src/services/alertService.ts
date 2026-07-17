@@ -10,11 +10,11 @@ type ValidateAlertPayload = {
 
 export const alertService = {
   getCurrent: async () => {
-    const response = await apiClient.get<ApiResponse<CurrentAlert>>("/alerts/current");
+    const response = await apiClient.get<ApiResponse<CurrentAlert | null>>("/public/alerts");
     return response.data.data;
   },
   getHistory: async () => {
-    const response = await apiClient.get<ApiResponse<CurrentAlert[]>>("/alerts/history");
+    const response = await apiClient.get<ApiResponse<CurrentAlert[]>>("/public/alerts/history");
     return response.data.data;
   },
   validate: async (payload: ValidateAlertPayload) => {

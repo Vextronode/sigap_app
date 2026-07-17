@@ -1,8 +1,7 @@
 import { EarthquakeService } from "../services/earthquake.service.js";
 import { DecisionEngineService } from "../services/decisionEngine.service.js";
 import { AlertService } from "../services/alert.service.js";
-
-let lastProcessedEarthquake: string | null = null;
+import { BmkgService } from "../services/bmkg.service.js";
 
 /**
  * Polling BMKG setiap interval tertentu.
@@ -15,19 +14,28 @@ export function startAlertScheduler(interval = 60_000) {
 
     const execute = async () => {
         try {
-            // Ambil data gempa terbaru dari BMKG
+            // Ambil data gempa dan status tsunami terbaru dari BMKG
             const earthquake = await EarthquakeService.getLatest();
-
-            // Hindari memproses gempa yang sama berulang kali
-            if (earthquake.updatedAt === lastProcessedEarthquake) {
-                return;
-            }
-
-            lastProcessedEarthquake = earthquake.updatedAt;
+            const tsunamiStatus = await BmkgService.getTsunamiStatus();
 
             // Jalankan Decision Engine
-            const result =
-                DecisionEngineService.evaluateFromEarthquake(earthquake);
+            const result = DecisionEngineService.evaluate({
+                earthquake,
+                tsunamiStatus,
+            });
+
+            const latestAlert = await AlertService.getCurrentAlert();
+            const isDuplicate =
+                latestAlert?.level === result.level &&
+                latestAlert?.source === result.source &&
+                latestAlert?.description === result.description;
+
+            if (isDuplicate) {
+                console.log(
+                    `[AlertScheduler] Skipped duplicate alert (${result.level})`
+                );
+                return;
+            }
 
             // Simpan ke database
             await AlertService.saveAlert(

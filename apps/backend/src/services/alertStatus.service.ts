@@ -16,8 +16,10 @@ export class AlertStatusService {
       const earthquake = await EarthquakeService.getLatest();
 
       // Hasil dari Decision Engine
-      const result =
-        DecisionEngineService.evaluateFromEarthquake(earthquake);
+      const result = DecisionEngineService.evaluate({
+        earthquake,
+        tsunamiStatus: "NORMAL",
+      });
 
       // Konversi ke CurrentAlert
       return {
