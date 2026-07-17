@@ -1,8 +1,8 @@
-import { comparePassword } from "../utils/password.utils.js";
-import { signToken } from "../utils/jwt.utils.js";
+import { comparePassword } from "../utils/password.util.js";
+import { signToken } from "../utils/jwt.util.js";
 import { findByEmail } from "../repositories/user.repository.js";
 
-export class AuthenticationError extends Error {}
+export class AuthenticationError extends Error { }
 
 export async function login(email: string, password: string) {
   const user = await findByEmail(email);

@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -66,4 +64,47 @@ model UserRole {
 
   @@id([userId, roleId])
   @@map("user_roles")
+}
+
+//
+// ==========================
+// SIGAP IoT Prototype Models
+// ==========================
+//
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+}
+
+enum AlertLevel {
+  GREEN
+  YELLOW
+  ORANGE
+  RED
+}
+
+model Device {
+  id         String       @id @default(uuid())
+  deviceCode String       @unique
+  name       String
+  status     DeviceStatus @default(OFFLINE)
+  lastSeen   DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("devices")
+}
+
+model Alert {
+  id          String     @id @default(uuid())
+  level       AlertLevel
+  source      String
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("alerts")
 }
