@@ -18,6 +18,7 @@ export type CurrentWeather = {
 };
 
 export type WeatherForecastItem = {
+  label: string;
   date: string;
   condition: string;
   temperature: number;
