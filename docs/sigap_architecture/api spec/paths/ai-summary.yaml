@@ -13,6 +13,11 @@ ai-summary:
         content:
           application/json:
             schema:
-              $ref: '../components/ai-summary.yaml#/AiSummaryResponse'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/ai-summary.yaml#/AiSummaryResponse'
       '429':
         $ref: '../components/shared.yaml#/RateLimited'

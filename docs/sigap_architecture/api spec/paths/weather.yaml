@@ -1,0 +1,155 @@
+# =====================================================================
+# weather.yaml — path domain Cuaca/Gempa/Tsunami & Dashboard Aggregation
+# =====================================================================
+
+weather-current:
+  get:
+    tags: [Weather]
+    summary: Cuaca terkini Desa Cibenda
+    security: []
+    parameters:
+      - name: village
+        in: query
+        required: false
+        schema:
+          type: string
+          default: cibenda
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/weather.yaml#/CurrentWeather'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+weather-forecast:
+  get:
+    tags: [Weather]
+    summary: Prakiraan cuaca 3 hari ke depan (interval 3 jam dari BMKG)
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../components/weather.yaml#/WeatherForecastItem'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+earthquake-latest:
+  get:
+    tags: [Weather]
+    summary: Informasi gempa terbaru dari BMKG
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/weather.yaml#/LatestEarthquake'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+tsunami-status:
+  get:
+    tags: [Weather]
+    summary: Status tsunami terbaru (BMKG InaTEWS)
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/weather.yaml#/TsunamiStatus'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+alert-current:
+  get:
+    tags: [Alerts]
+    summary: Alert kesiapsiagaan aktif terkini (record terakhir dari alert_log)
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      allOf:
+                        - $ref: '../components/environmental.yaml#/Alert'
+                      nullable: true
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+dashboard:
+  get:
+    tags: [Dashboard]
+    summary: Agregasi seluruh data dashboard warga dalam satu request
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/weather.yaml#/DashboardAggregation'
+      '429':
+        $ref: '../components/shared.yaml#/RateLimited'
+
+admin-dashboard:
+  get:
+    tags: [Dashboard]
+    summary: Ringkasan statistik Dashboard Admin
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/weather.yaml#/AdminDashboardSummary'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/shared.yaml#/Forbidden'

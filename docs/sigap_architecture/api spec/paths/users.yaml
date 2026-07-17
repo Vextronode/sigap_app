@@ -18,7 +18,12 @@ users:
         content:
           application/json:
             schema:
-              $ref: '../components/auth.yaml#/UserProfile'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/auth.yaml#/UserProfile'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -42,7 +47,12 @@ user-by-id:
         content:
           application/json:
             schema:
-              $ref: '../components/auth.yaml#/UserProfile'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/auth.yaml#/UserProfile'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -56,7 +66,7 @@ user-by-id:
       - $ref: '../components/shared.yaml#/IdParam'
     responses:
       '204':
-        description: Berhasil dihapus
+        description: Berhasil dihapus (No Content)
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':

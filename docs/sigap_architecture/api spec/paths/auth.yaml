@@ -19,7 +19,12 @@ login:
         content:
           application/json:
             schema:
-              $ref: '../components/auth.yaml#/LoginResponse'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/auth.yaml#/LoginResponse'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '429':
@@ -35,6 +40,11 @@ me:
         content:
           application/json:
             schema:
-              $ref: '../components/auth.yaml#/UserProfile'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/auth.yaml#/UserProfile'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'

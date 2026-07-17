@@ -16,9 +16,14 @@ announcements-public:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '../components/content-admin.yaml#/Announcement'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../components/content-admin.yaml#/Announcement'
 
 announcements-protected:
   post:
@@ -36,7 +41,12 @@ announcements-protected:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/Announcement'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/Announcement'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -60,7 +70,12 @@ announcement-by-id:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/Announcement'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/Announcement'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -74,7 +89,7 @@ announcement-by-id:
       - $ref: '../components/shared.yaml#/IdParam'
     responses:
       '204':
-        description: Berhasil dihapus
+        description: Berhasil dihapus (No Content)
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -93,9 +108,14 @@ evacuation-points-public:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '../components/content-admin.yaml#/EvacuationPoint'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../components/content-admin.yaml#/EvacuationPoint'
 
 evacuation-points-protected:
   post:
@@ -113,7 +133,12 @@ evacuation-points-protected:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/EvacuationPoint'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/EvacuationPoint'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -137,7 +162,12 @@ evacuation-point-by-id:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/EvacuationPoint'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/EvacuationPoint'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -151,7 +181,7 @@ evacuation-point-by-id:
       - $ref: '../components/shared.yaml#/IdParam'
     responses:
       '204':
-        description: Berhasil dihapus
+        description: Berhasil dihapus (No Content)
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -170,9 +200,14 @@ evacuation-routes-public:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '../components/content-admin.yaml#/EvacuationRoute'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../components/content-admin.yaml#/EvacuationRoute'
 
 evacuation-routes-protected:
   post:
@@ -190,7 +225,12 @@ evacuation-routes-protected:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/EvacuationRoute'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/EvacuationRoute'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -214,7 +254,12 @@ evacuation-route-by-id:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/EvacuationRoute'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/EvacuationRoute'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -228,7 +273,7 @@ evacuation-route-by-id:
       - $ref: '../components/shared.yaml#/IdParam'
     responses:
       '204':
-        description: Berhasil dihapus
+        description: Berhasil dihapus (No Content)
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -247,9 +292,14 @@ emergency-contacts-public:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '../components/content-admin.yaml#/EmergencyContact'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../components/content-admin.yaml#/EmergencyContact'
 
 emergency-contacts-protected:
   post:
@@ -267,7 +317,12 @@ emergency-contacts-protected:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/EmergencyContact'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/EmergencyContact'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -291,7 +346,12 @@ emergency-contact-by-id:
         content:
           application/json:
             schema:
-              $ref: '../components/content-admin.yaml#/EmergencyContact'
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/content-admin.yaml#/EmergencyContact'
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':
@@ -305,7 +365,7 @@ emergency-contact-by-id:
       - $ref: '../components/shared.yaml#/IdParam'
     responses:
       '204':
-        description: Berhasil dihapus
+        description: Berhasil dihapus (No Content)
       '401':
         $ref: '../components/shared.yaml#/Unauthorized'
       '403':

@@ -11,8 +11,10 @@ export const publicRouter = Router();
 // Authentication
 publicRouter.use("/auth", publicAuthRouter);
 
-// BMKG
+// Weather
 publicRouter.use("/weather", publicWeatherRouter);
+
+// BMKG
 publicRouter.use("/alerts", publicAlertsRouter);
 publicRouter.use("/earthquakes", publicEarthquakesRouter);
 
@@ -20,6 +22,4 @@ publicRouter.use("/earthquakes", publicEarthquakesRouter);
 publicRouter.use("/device", publicDeviceRouter);
 
 export const protectedRouter = Router();
-
-// Authentication (Protected)
 protectedRouter.use("/auth", protectedAuthRouter);
