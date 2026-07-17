@@ -32,8 +32,9 @@ export interface CurrentWeather {
 
 /** Satu item response bentuk `/weather/forecast` */
 export interface ForecastItem {
-  date: string; // YYYY-MM-DD
+  label: string;
+  date: string;
   condition: string;
   temperature: number;
-  rainProbability: number; // 0-100, lihat catatan heuristik di bmkg.service.ts
+  rainProbability: number;
 }

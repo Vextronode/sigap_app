@@ -41,17 +41,93 @@ export class BmkgService {
 
   /** Untuk GET /weather/forecast — 3 hari ke depan, interval 3 jam (sesuai catatan API_SPEC.md §8.2) */
   static async getForecast(adm4Code: string): Promise<ForecastItem[]> {
-    const raw = await this.fetchRaw(adm4Code);
-    const items = this.flatten(raw);
-    return items
-      .filter((item) => !!(item.local_datetime ?? item.datetime))
-      .map((item) => this.toForecastItem(item));
-  }
+  const raw = await this.fetchRaw(adm4Code);
+
+  const items = this.flatten(raw);
+
+  return this.buildDashboardForecast(items);
+}
 
   private static flatten(raw: BmkgApiResponse): BmkgCuacaItem[] {
     const firstEntry = raw.data?.[0];
     return (firstEntry?.cuaca ?? []).flat();
   }
+
+  private static buildDashboardForecast(
+  items: BmkgCuacaItem[]
+): ForecastItem[] {
+
+  const now = new Date();
+
+  const today = now.toISOString().slice(0, 10);
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+
+  const dayAfter = new Date(now);
+  dayAfter.setDate(now.getDate() + 2);
+
+  const tomorrowKey = tomorrow.toISOString().slice(0,10);
+  const dayAfterKey = dayAfter.toISOString().slice(0,10);
+
+  const current = this.pickClosestToNow(items);
+
+  const afternoon =
+    items.find((item) => {
+      const iso = this.toIso(item.local_datetime ?? item.datetime);
+
+      return (
+        iso.startsWith(today) &&
+        new Date(iso).getUTCHours() >= 15
+      );
+    }) ?? current;
+
+  const tomorrowForecast =
+    items.find((item) =>
+      this.toIso(item.local_datetime ?? item.datetime).startsWith(tomorrowKey)
+    );
+
+  const dayAfterForecast =
+    items.find((item) =>
+      this.toIso(item.local_datetime ?? item.datetime).startsWith(dayAfterKey)
+    );
+
+  const result: ForecastItem[] = [];
+
+  if (current) {
+    result.push({
+      ...this.toForecastItem(current),
+      label: "Hari Ini",
+    });
+  }
+
+  if (afternoon) {
+    result.push({
+      ...this.toForecastItem(afternoon),
+      label: "Sore Ini",
+    });
+  }
+
+  if (tomorrowForecast) {
+    result.push({
+      ...this.toForecastItem(tomorrowForecast),
+      label: new Intl.DateTimeFormat("id-ID", {
+        weekday: "short",
+      }).format(tomorrow),
+    });
+  }
+
+  if (dayAfterForecast) {
+    result.push({
+      ...this.toForecastItem(dayAfterForecast),
+      label: new Intl.DateTimeFormat("id-ID", {
+        weekday: "short",
+      }).format(dayAfter),
+    });
+  }
+
+  return result;
+}
 
   private static pickClosestToNow(items: BmkgCuacaItem[]): BmkgCuacaItem | null {
     if (items.length === 0) return null;
@@ -65,7 +141,7 @@ export class BmkgService {
 
   private static toCurrentWeather(item: BmkgCuacaItem): CurrentWeather {
     return {
-      temperature: item.t,
+      temperature: Math.round(item.t),
       humidity: item.hu,
       weather: item.weather_desc,
       windSpeed: item.ws,
@@ -78,6 +154,7 @@ export class BmkgService {
   private static toForecastItem(item: BmkgCuacaItem): ForecastItem {
     const iso = this.toIso(item.local_datetime ?? item.datetime);
     return {
+      label: "",
       date: iso.slice(0, 10),
       condition: item.weather_desc,
       temperature: item.t,
