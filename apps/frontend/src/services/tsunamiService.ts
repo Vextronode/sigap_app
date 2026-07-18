@@ -4,7 +4,7 @@ import type { TsunamiStatus } from "../types/dashboard";
 
 export const tsunamiService = {
   getStatus: async () => {
-    const response = await apiClient.get<ApiResponse<TsunamiStatus>>("/tsunamis/status");
+    const response = await apiClient.get<ApiResponse<TsunamiStatus>>("/public/tsunami/status");
     return response.data.data;
   },
 };

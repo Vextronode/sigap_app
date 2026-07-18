@@ -9,13 +9,13 @@ import { TsunamiCard } from "../features/dashboard/components/TsunamiCard";
 import { WeatherSection } from "../features/dashboard/components/WeatherSection";
 import { useAnnouncements } from "../features/dashboard/hooks/useAnnouncements";
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
-import { useEarthquake } from "../features/dashboard/hooks/useEarthquake";
+import { useLatestEarthquake } from "../features/dashboard/hooks/useLatestEarthquake";
 import { useEmergencyContacts } from "../features/dashboard/hooks/useEmergencyContacts";
 import { useEvacuation } from "../features/dashboard/hooks/useEvacuation";
 import { useEvacuationRoutes } from "../features/dashboard/hooks/useEvacuationRoutes";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
 import { useSummary } from "../features/dashboard/hooks/useSummary";
-import { useTsunami } from "../features/dashboard/hooks/useTsunami";
+import { useTsunamiStatus } from "../features/dashboard/hooks/useTsunamiStatus";
 import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
@@ -23,8 +23,8 @@ export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
   const weatherQuery = useWeather();
   const forecastQuery = useForecast();
-  const earthquakeQuery = useEarthquake();
-  const tsunamiQuery = useTsunami();
+  const earthquakeQuery = useLatestEarthquake();
+  const tsunamiQuery = useTsunamiStatus();
   const alertQuery = useCurrentAlert();
   const summaryQuery = useSummary();
   const announcementsQuery = useAnnouncements();

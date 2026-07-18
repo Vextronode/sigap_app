@@ -23,7 +23,7 @@
   animation: radarPulse 2s infinite ease-out;
 }
 
-@media (max-width: 76px) {
+@media (max-width: 768px) {
   .sidebar {
     position: fixed;
     top: 0;
@@ -82,4 +82,80 @@
   .main-content {
     margin-left: 260px;
   }
+}
+
+.metric-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.detail-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.detail-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.card-divider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.tsunami-visual{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    width:90px;
+    height:90px;
+
+    margin:0 auto 18px;
+
+    border-radius:9999px;
+
+    background:#ECFDF5;
+
+    color:#10B981;
+}
+
+.tsunami-status{
+    font-size:2rem !important;
+    font-weight:800 !important;
+    text-transform:uppercase !important;
+    
+}
+
+.tsunami-description{
+    max-width:260px !important;
+    margin:0 auto 22px !important;
+
+    text-align:center !important;
+
+    line-height:1.75 !important;
+
+    color:#6b7280 !important;
+
+    font-size:.95rem !important;
+
+    font-weight:500 !important;
 }
