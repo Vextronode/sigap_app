@@ -1,8 +1,10 @@
 import { Map } from "lucide-react";
 import { SectionHeader } from "../../../components/common/SectionHeader";
+import { Button } from "../../../components/ui/Button";
+import { Card } from "../../../components/ui/Card";
 import { CardSkeleton } from "../../../components/ui/Skeleton";
-import { StateMessage } from "../../../components/ui/StateMessage";
 import type { EvacuationPoint, EvacuationRoute } from "../../../types/dashboard";
+import { dummyEvacuation } from "../data/dummyData";
 import { EvacuationMap } from "./EvacuationMap";
 
 type EvacuationRoutesProps = {
@@ -21,36 +23,49 @@ export const EvacuationRoutes = ({
   isRoutesLoading = false,
   isPointsError = false,
   isRoutesError = false,
-}: EvacuationRoutesProps) => (
-  <section aria-labelledby="evacuation">
-    <SectionHeader id="evacuation" title="Jalur & Titik Evakuasi" icon={<Map size={22} />} />
-    {isPointsLoading || isRoutesLoading ? (
-      <div className="evacuation-layout">
-        <CardSkeleton />
-        <div className="evacuation-list">
+}: EvacuationRoutesProps) => {
+  const showFallback = isPointsError || isRoutesError || points.length === 0;
+
+  return (
+    <section aria-labelledby="evacuation">
+      <SectionHeader id="evacuation" title="Jalur & Titik Evakuasi" icon={<Map size={22} />} />
+      {isPointsLoading || isRoutesLoading ? (
+        <div className="evacuation-layout">
           <CardSkeleton />
-          <CardSkeleton />
+          <div className="evacuation-list">
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
         </div>
-      </div>
-    ) : isPointsError ? (
-      <StateMessage
-        type="error"
-        title="Titik evakuasi gagal dimuat"
-        message="Peta dan titik evakuasi belum dapat diambil dari API."
-      />
-    ) : (
-      <div className="evacuation-layout">
-        <EvacuationMap points={points} routes={isRoutesError ? [] : routes} />
-        <div className="evacuation-list">
-          {isRoutesError && (
-            <StateMessage
-              type="error"
-              title="Jalur evakuasi gagal dimuat"
-              message="Titik evakuasi tetap ditampilkan tanpa garis rute."
-            />
-          )}
-          {points.length > 0 ? (
-            points.slice(0, 4).map((point, index) => (
+      ) : showFallback ? (
+        <Card className="evacuation-preview">
+          <img
+            className="evacuation-preview__image"
+            src={dummyEvacuation.image}
+            alt={dummyEvacuation.title}
+            loading="lazy"
+          />
+          <div className="evacuation-preview__body">
+            <h3>{dummyEvacuation.title}</h3>
+            <p>{dummyEvacuation.description}</p>
+            <div className="evacuation-preview__details">
+              {dummyEvacuation.details.map((detail) => (
+                <div className="evacuation-preview__detail" key={detail.label}>
+                  <span>{detail.label}</span>
+                  <strong>{detail.value}</strong>
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="secondary" disabled>
+              {dummyEvacuation.buttonLabel}
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="evacuation-layout">
+          <EvacuationMap points={points} routes={routes} />
+          <div className="evacuation-list">
+            {points.slice(0, 4).map((point, index) => (
               <article className="evacuation-point" key={point.id}>
                 <span>{index + 1}</span>
                 <div>
@@ -59,12 +74,10 @@ export const EvacuationRoutes = ({
                 </div>
                 {point.capacity && <small>{point.capacity} org</small>}
               </article>
-            ))
-          ) : (
-            <StateMessage title="Titik belum tersedia" message="Belum ada titik evakuasi aktif." />
-          )}
+            ))}
+          </div>
         </div>
-      </div>
-    )}
-  </section>
-);
+      )}
+    </section>
+  );
+};

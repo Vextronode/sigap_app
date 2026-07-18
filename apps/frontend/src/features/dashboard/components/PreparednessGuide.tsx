@@ -1,31 +1,22 @@
 import { BookOpen } from "lucide-react";
 import { SectionHeader } from "../../../components/common/SectionHeader";
-
-const guides = [
-  {
-    title: "Panduan Gempa Bumi",
-    steps: ["Jangan panik, lindungi kepala.", "Menjauh dari kaca dan benda jatuh."],
-  },
-  {
-    title: "Panduan Tsunami",
-    steps: ["Jika gempa berlangsung lebih dari 20 detik, jauhi pantai.", "Menuju tempat tinggi minimal 20 meter."],
-  },
-];
+import { Button } from "../../../components/ui/Button";
+import { dummyPreparednessGuide } from "../data/dummyData";
 
 export const PreparednessGuide = () => (
   <section aria-labelledby="preparedness">
     <SectionHeader id="preparedness" title="Panduan Kesiapsiagaan" icon={<BookOpen size={22} />} />
     <div className="guide-grid">
-      {guides.map((guide) => (
+      {dummyPreparednessGuide.map((guide) => (
         <article className="guide-card" key={guide.title}>
-          <div className="guide-card__media">
+          <img className="guide-card__image" src={guide.image} alt={guide.title} loading="lazy" />
+          <div className="guide-card__body">
             <h3>{guide.title}</h3>
+            <p>{guide.description}</p>
+            <Button type="button" variant="secondary" disabled>
+              {guide.buttonLabel}
+            </Button>
           </div>
-          <ol>
-            {guide.steps.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
         </article>
       ))}
     </div>

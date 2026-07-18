@@ -1,3 +1,5 @@
+global.css
+
 * {
   box-sizing: border-box;
 }
@@ -433,6 +435,12 @@ svg {
   font-size: 1rem;
 }
 
+.ai-card__body {
+  margin: 0;
+  white-space: pre-line;
+  line-height: 1.75;
+}
+
 .section-header {
   display: flex;
   align-items: center;
@@ -593,6 +601,64 @@ svg {
   gap: 24px;
 }
 
+.evacuation-preview {
+  display: grid;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+}
+
+.evacuation-preview__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.evacuation-preview__body {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+
+.evacuation-preview__body h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.evacuation-preview__body p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.evacuation-preview__details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.evacuation-preview__detail {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surface-muted);
+  padding: 14px;
+}
+
+.evacuation-preview__detail span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.evacuation-preview__detail strong {
+  color: var(--text);
+  line-height: 1.45;
+}
+
 .map-card {
   min-height: 420px;
   padding: 0;
@@ -698,33 +764,31 @@ svg {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
-}
-
-.guide-card__media {
-  display: flex;
-  min-height: 150px;
-  align-items: flex-end;
-  background:
-    linear-gradient(180deg, rgba(0, 55, 176, 0.06), rgba(0, 0, 0, 0.68)),
-    var(--surface-muted);
-  color: #ffffff;
-  padding: 18px;
-}
-
-.guide-card__media h3 {
-  margin: 0;
-}
-
-.guide-card ol {
   display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 20px 24px 24px 48px;
+  grid-template-rows: auto 1fr;
 }
 
-.guide-card li::marker {
-  color: var(--primary);
-  font-weight: 900;
+.guide-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.guide-card__body {
+  display: grid;
+  gap: 14px;
+  padding: 20px 22px 24px;
+}
+
+.guide-card__body h3 {
+  margin: 0;
+}
+
+.guide-card__body p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.7;
 }
 
 .announcement-list {
@@ -1084,6 +1148,10 @@ svg {
     padding: 18px;
   }
 
+  .evacuation-preview__details {
+    grid-template-columns: 1fr;
+  }
+
   .evacuation-map {
     height: 260px;
     min-height: 260px;
@@ -1097,6 +1165,11 @@ svg {
   .contact-card {
     min-height: 118px;
     padding: 16px 8px;
+  }
+
+  .guide-card__body,
+  .evacuation-preview__body {
+    padding: 18px;
   }
 
   .footer {
