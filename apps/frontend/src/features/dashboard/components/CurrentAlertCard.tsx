@@ -1,8 +1,8 @@
 import { ShieldAlert } from "lucide-react";
 import { Skeleton } from "../../../components/ui/Skeleton";
-import { StateMessage } from "../../../components/ui/StateMessage";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
+import { dummyCurrentAlert } from "../data/dummyData";
 
 type CurrentAlertCardProps = {
   alert: CurrentAlert | null;
@@ -13,19 +13,19 @@ type CurrentAlertCardProps = {
 const formatKeIndonesia = (dateString?: string) => {
   if (!dateString) return "-";
   const date = new Date(dateString);
-  
+
   const opsi: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   };
 
-  const terformat = new Intl.DateTimeFormat('id-ID', opsi).format(date);
-  return terformat.replace(' pukul ', ' - ').replace(':', '.') + ' WIB';
+  const terformat = new Intl.DateTimeFormat("id-ID", opsi).format(date);
+  return terformat.replace(" pukul ", " - ").replace(":", ".") + " WIB";
 };
 
 export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: CurrentAlertCardProps) => {
@@ -39,26 +39,8 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
     );
   }
 
-  if (isError) {
-    return (
-      <StateMessage
-        type="error"
-        title="Status kesiapsiagaan gagal dimuat"
-        message="Status resmi belum dapat diambil. Bagian dashboard lain tetap tersedia."
-      />
-    );
-  }
-
-  if (!alert) {
-    return (
-      <StateMessage
-        title="Belum ada alert tersimpan"
-        message="Scheduler belum menyimpan alert terbaru ke database."
-      />
-    );
-  }
-
-  const meta = getAlertMeta(alert);
+  const displayAlert = alert && !isError ? alert : dummyCurrentAlert;
+  const meta = getAlertMeta(displayAlert);
   const isSafe = meta.tone === "safe";
 
   return (
@@ -66,14 +48,14 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
       <div className="status-banner__icon">
         <div className="status-banner__icon-bg relative">
           <div className="absolute inset-0 rounded-full bg-current opacity-70 animate-[ping_2s_infinite]" aria-hidden="true" />
-            {isSafe ? (
-              <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                <div className="w-3 h-5 border-r-[3.5px] border-b-[3.5px] border-emerald-500 rotate-45 translate-y-[-2px]" />
-              </div>
-            ) : (
-              <ShieldAlert size={46} className="text-white" aria-hidden="true"/>
-            )}        
-          </div>
+          {isSafe ? (
+            <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+              <div className="w-3 h-5 border-r-[3.5px] border-b-[3.5px] border-emerald-500 rotate-45 translate-y-[-2px]" />
+            </div>
+          ) : (
+            <ShieldAlert size={46} className="text-white" aria-hidden="true" />
+          )}
+        </div>
       </div>
 
       <h1 id="status-title" className="text-4xl font-extrabold -mt-1 mb-1 tracking-wide uppercase">
@@ -81,17 +63,15 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
       </h1>
 
       <p className="text-[15px] font-normal max-w-xl opacity-90 mb-5 leading-relaxed">
-        {alert?.description ?? meta.description}
+        {displayAlert.description ?? meta.description}
       </p>
 
       <div className="status-banner__meta flex flex-col items-center w-full">
         <div className="bg-black/15 px-5 py-1.5 rounded-full text-[13px] font-medium tracking-wide opacity-95">
-          Terakhir diperbarui: {formatKeIndonesia(alert?.updatedAt)}
-      </div>
+          Terakhir diperbarui: {formatKeIndonesia(displayAlert.updatedAt)}
+        </div>
 
-      <span className="text-xs opacity-75 mt-1">
-          Sumber data resmi: {alert?.source ?? "BMKG"}
-        </span>
+        <span className="text-xs opacity-75 mt-1">Sumber data resmi: {displayAlert.source ?? "BMKG"}</span>
       </div>
     </section>
   );
