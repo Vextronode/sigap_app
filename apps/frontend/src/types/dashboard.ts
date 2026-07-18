@@ -38,12 +38,10 @@ export type Earthquake = {
 };
 
 export type TsunamiStatus = {
-  status: string;
-  warningLevel: string;
+  status: "NORMAL" | "WASPADA" | "SIAGA" | "AWAS";
+  description: string;
   source: string;
   updatedAt: string;
-  waveHeight?: number;
-  safeLimit?: number;
 };
 
 export type CurrentAlert = {

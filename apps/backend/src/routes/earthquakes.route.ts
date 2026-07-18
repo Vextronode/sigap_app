@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { EarthquakeService } from "../services/earthquake.service.js";
 import type {
     ApiErrorResponse,
@@ -8,18 +8,17 @@ import type { EarthquakeInfo } from "../types/earthquake.types.js";
 
 export const publicEarthquakesRouter = Router();
 
-/** GET /api/public/earthquakes */
-publicEarthquakesRouter.get("/", async (_req, res) => {
+const handleLatestEarthquake = async (_req: Request, res: Response) => {
     try {
         const data = await EarthquakeService.getLatest();
 
         const response: ApiSuccessResponse<EarthquakeInfo> = {
             success: true,
-            message: "Earthquake information retrieved successfully.",
+            message: "Latest earthquake retrieved successfully.",
             data,
         };
 
-        res.json(response);
+        res.status(200).json(response);
     } catch (error) {
         console.error("[GET /Earthquakes] error:", error);
 
@@ -31,4 +30,10 @@ publicEarthquakesRouter.get("/", async (_req, res) => {
 
         res.status(502).json(response);
     }
-});
+};
+
+/** GET /api/public/earthquakes/latest */
+publicEarthquakesRouter.get("/latest", handleLatestEarthquake);
+
+/** GET /api/public/earthquakes */
+publicEarthquakesRouter.get("/", handleLatestEarthquake);

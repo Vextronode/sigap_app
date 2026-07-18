@@ -12,15 +12,30 @@ type EarthquakeCardProps = {
   isError?: boolean;
 };
 
-export const EarthquakeCard = ({ earthquake, isLoading = false, isError = false }: EarthquakeCardProps) => {
+export const EarthquakeCard = ({
+  earthquake,
+  isLoading = false,
+  isError = false,
+}: EarthquakeCardProps) => {
   if (isLoading) return <CardSkeleton />;
+
+  const hasTsunamiPotential =
+    earthquake?.potential?.toLowerCase().includes("berpotensi");
 
   return (
     <Card
       className="earthquake-card"
       title="Info Gempa Terkini"
-      icon={<Activity size={22} />}
-      action={earthquake ? <Badge tone="safe">{earthquake.potential}</Badge> : undefined}
+      icon={<Activity size={26} />}
+      action={
+        earthquake ? (
+          <Badge tone={hasTsunamiPotential ? "danger" : "safe"}>
+            {hasTsunamiPotential
+              ? "Berpotensi Tsunami"
+              : "Tidak Berpotensi Tsunami"}
+          </Badge>
+        ) : undefined
+      }
     >
       {isError ? (
         <StateMessage
@@ -30,28 +45,71 @@ export const EarthquakeCard = ({ earthquake, isLoading = false, isError = false 
         />
       ) : earthquake ? (
         <>
+          {/* Metric */}
           <div className="two-column-metric">
             <div>
-              <span>Magnitudo</span>
-              <strong>{earthquake.magnitude} M</strong>
+              <span className="metric-label">MAGNITUDO</span>
+              <strong className="metric-value">
+                {earthquake.magnitude} M
+              </strong>
             </div>
+
             <div>
-              <span>Kedalaman</span>
-              <strong>{earthquake.depth}</strong>
+              <span className="metric-label">KEDALAMAN</span>
+              <strong className="metric-value">
+                {earthquake.depth}
+              </strong>
             </div>
           </div>
+
+          {/* Lokasi */}
           <div className="detail-block">
-            <span>Lokasi pusat gempa</span>
-            <strong>{earthquake.location}</strong>
+            <span className="detail-label">
+              Lokasi Pusat Gempa
+            </span>
+
+            <strong className="detail-value">
+              {earthquake.location}
+            </strong>
           </div>
+
+          {/* Jarak */}
           <div className="inline-note">
             <span>Jarak dari Desa Cibenda</span>
-            <strong>~{earthquake.distanceToVillage} km</strong>
+
+            <strong>
+              ≈ {Math.abs(Number(earthquake.distanceToVillage))} km
+            </strong>
           </div>
-          <small className="muted">Pembaruan BMKG: {formatDateTime(earthquake.updatedAt)}</small>
+
+          <hr className="card-divider" />
+
+          {/* Metadata */}
+          <div className="detail-block">
+            <span className="detail-label">
+              Sumber Data
+            </span>
+
+            <strong className="detail-value">
+              BMKG
+            </strong>
+          </div>
+
+          <div className="detail-block">
+            <span className="detail-label">
+              Terjadi
+            </span>
+
+            <strong className="detail-value">
+              {formatDateTime(earthquake.updatedAt)}
+            </strong>
+          </div>
         </>
       ) : (
-        <StateMessage title="Data gempa belum tersedia" message="Informasi gempa terbaru belum dikirim oleh backend." />
+        <StateMessage
+          title="Data gempa belum tersedia"
+          message="Informasi gempa terbaru belum dikirim oleh backend."
+        />
       )}
     </Card>
   );

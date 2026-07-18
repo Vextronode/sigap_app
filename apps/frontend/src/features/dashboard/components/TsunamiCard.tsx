@@ -12,15 +12,37 @@ type TsunamiCardProps = {
   isError?: boolean;
 };
 
-export const TsunamiCard = ({ tsunami, isLoading = false, isError = false }: TsunamiCardProps) => {
+export const TsunamiCard = ({
+  tsunami,
+  isLoading = false,
+  isError = false,
+}: TsunamiCardProps) => {
   if (isLoading) return <CardSkeleton />;
+
+  const badgeTone =
+    tsunami?.status === "NORMAL"
+      ? "safe"
+      : tsunami?.status === "WASPADA"
+      ? "warning"
+      : tsunami?.status === "SIAGA"
+      ? "orange"
+      : "danger";
+
+  const badgeText =
+    tsunami?.status === "NORMAL"
+      ? "Tidak Berpotensi Tsunami"
+      : tsunami?.status === "WASPADA"
+      ? "Potensi Tsunami"
+      : tsunami?.status === "SIAGA"
+      ? "Siaga Tsunami"
+      : "Awas Tsunami";
 
   return (
     <Card
       className="tsunami-card"
       title="Status Tsunami"
-      icon={<Waves size={22} />}
-      action={tsunami ? <Badge tone={tsunami.status === "NORMAL" ? "safe" : "danger"}>{tsunami.status}</Badge> : undefined}
+      icon={<Waves size={26} />}
+      action={tsunami ? <Badge tone={badgeTone}>{badgeText}</Badge> : undefined}
     >
       {isError ? (
         <StateMessage
@@ -30,25 +52,49 @@ export const TsunamiCard = ({ tsunami, isLoading = false, isError = false }: Tsu
         />
       ) : tsunami ? (
         <>
+          {/* Icon */}
           <div className="tsunami-visual">
-            <Waves size={52} aria-hidden="true" />
+            <Waves size={58} aria-hidden="true" />
           </div>
-          <h3>{tsunami.warningLevel === "None" ? "Ketinggian Air Normal" : tsunami.warningLevel}</h3>
-          <p>{tsunami.source}</p>
-          <div className="two-column-metric tsunami-metric">
-            <div>
-              <strong>{tsunami.waveHeight !== undefined ? `${tsunami.waveHeight} m` : "Belum tersedia"}</strong>
-              <span>Saat ini</span>
-            </div>
-            <div>
-              <strong>{tsunami.safeLimit !== undefined ? `${tsunami.safeLimit} m` : "Belum tersedia"}</strong>
-              <span>Batas aman</span>
-            </div>
+
+          {/* Status */}
+          <div className="tsunami-status">
+            {tsunami.status}
           </div>
-          <small className="muted">Pembaruan: {formatDateTime(tsunami.updatedAt)}</small>
+
+          {/* Description */}
+          <p className="tsunami-description">
+            <span>{tsunami.description}</span>
+          </p>
+
+          <hr className="card-divider" />
+
+          {/* Metadata */}
+          <div className="detail-block">
+            <span className="detail-label">
+              Sumber Data
+            </span>
+
+            <strong className="detail-value">
+              {tsunami.source}
+            </strong>
+          </div>
+
+          <div className="detail-block">
+            <span className="detail-label">
+              Terakhir Diperbarui
+            </span>
+
+            <strong className="detail-value">
+              {formatDateTime(tsunami.updatedAt)}
+            </strong>
+          </div>
         </>
       ) : (
-        <StateMessage title="Status tsunami belum tersedia" message="Informasi resmi InaTEWS belum dikirim oleh backend." />
+        <StateMessage
+          title="Status tsunami belum tersedia"
+          message="Informasi resmi InaTEWS belum dikirim oleh backend."
+        />
       )}
     </Card>
   );

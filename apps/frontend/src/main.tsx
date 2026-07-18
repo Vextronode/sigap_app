@@ -7,6 +7,7 @@ import "./styles/global.css";
 import "./styles/variables.css";
 import "leaflet/dist/leaflet.css";
 
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

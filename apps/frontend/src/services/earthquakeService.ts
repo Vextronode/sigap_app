@@ -4,7 +4,7 @@ import type { Earthquake } from "../types/dashboard";
 
 export const earthquakeService = {
   getLatest: async () => {
-    const response = await apiClient.get<ApiResponse<Earthquake>>("/earthquakes/latest");
+    const response = await apiClient.get<ApiResponse<Earthquake>>("/public/earthquakes/latest");
     return response.data.data;
   },
 };
