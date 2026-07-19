@@ -91,13 +91,25 @@ export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarPr
   return (
     <>
       <aside className={`sidebar ${sidebarOpen ? "sidebar--open" : ""}`} aria-label="Navigasi utama">
-        <div className="sidebar__brand">
-          <Link to="/" onClick={handleDashboardClick} className="brand-mark" aria-label="SIGAP Desa Cibenda">
-            S
-          </Link>
-          <div>
-            <strong>SIGAP</strong>
-            <span>Desa Cibenda</span>
+        <div className="sidebar__brand flex items-center p-4 relative justify-between">
+          <div className="flex items-center">
+            <Link 
+              to="/" 
+              onClick={handleDashboardClick} 
+              aria-label="SIGAP Desa Cibenda"
+              className="-ml-1.5 mr-3 flex-shrink-0 block"
+            >
+              <img 
+                src="/assets/image/lambang-kabupaten-pangandaran.webp" 
+                alt="Lambang Kabupaten Pangandaran" 
+                className="w-14 h-14 object-contain" 
+              />
+            </Link>
+
+            <div className="flex flex-col leading-tight">
+              <strong className="text-gray-900 font-bold">SIGAP</strong>
+              <span className="text-xs text-gray-500">Desa Cibenda</span>
+            </div>
           </div>
           <button className="sidebar__close" type="button" onClick={closeSidebar} aria-label="Tutup menu">
             <X size={22} />
