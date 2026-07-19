@@ -1,5 +1,5 @@
 import { ShieldAlert } from "lucide-react";
-import { Skeleton } from "../../../components/ui/Skeleton";
+// import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
@@ -32,9 +32,9 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
   if (isLoading) {
     return (
       <section className="status-banner status-banner--safe" aria-label="Memuat status kesiapsiagaan">
-        <Skeleton className="status-banner__icon" />
+        {/* <Skeleton className="status-banner__icon" />
         <Skeleton className="skeleton--title" />
-        <Skeleton className="skeleton--line skeleton--short" />
+        <Skeleton className="skeleton--line skeleton--short" /> */}
       </section>
     );
   }
