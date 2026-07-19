@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   Cloud,
@@ -6,10 +7,9 @@ import {
   Map,
   Megaphone,
   Radio,
-  Waves,
   X,
 } from "lucide-react";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
 import { getAlertMeta } from "../utils/status";
 import type { CurrentAlert } from "../types/dashboard";
@@ -21,13 +21,12 @@ type SidebarProps = {
 };
 
 const sectionLinks = [
-  { label: "Cuaca", href: "/#weather", icon: Cloud },
-  { label: "Gempa", href: "/#earthquake", icon: Radio },
-  { label: "Tsunami", href: "/#tsunami", icon: Waves },
-  { label: "Jalur Evakuasi", href: "/#evacuation", icon: Map },
-  { label: "Kontak Darurat", href: "/#contacts", icon: Contact },
-  { label: "Panduan", href: "/#preparedness", icon: BookOpen },
-  { label: "Pengumuman", href: "/#announcements", icon: Megaphone },
+  { label: "Cuaca", href: "#weather", icon: Cloud },
+  { label: "Gempa / Tsunami", href: "#earthquake", icon: Radio },
+  { label: "Jalur Evakuasi", href: "#evacuation", icon: Map },
+  { label: "Kontak Darurat", href: "#contacts", icon: Contact },
+  { label: "Panduan", href: "#preparedness", icon: BookOpen },
+  { label: "Pengumuman", href: "#announcements", icon: Megaphone },
 ];
 
 export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarProps) => {
@@ -35,11 +34,65 @@ export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarPr
   const closeSidebar = useUiStore((state) => state.closeSidebar);
   const meta = getAlertMeta(alert);
 
+  const [activeHash, setActiveHash] = useState(window.location.hash);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveHash(window.location.hash);
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  useEffect(() => {
+    const sections = sectionLinks
+      .map((link) => document.querySelector(link.href))
+      .filter((el): el is Element => el !== null);
+
+    const observerOptions = {
+      root: null,
+      rootMargin: "-20% 0px -60% 0px", 
+      threshold: 0,
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute("id");
+          if (id) {
+            setActiveHash(`#${id}`);
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    sections.forEach((section) => observer.observe(section));
+
+    const handleScrollTopDetection = () => {
+      if (window.scrollY < 150) {
+        setActiveHash("");
+      }
+    };
+    window.addEventListener("scroll", handleScrollTopDetection);
+
+    return () => {
+      sections.forEach((section) => observer.unobserve(section));
+      window.removeEventListener("scroll", handleScrollTopDetection);
+    };
+  }, []);
+
+  const handleDashboardClick = () => {
+    closeSidebar();
+    setActiveHash("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <>
       <aside className={`sidebar ${sidebarOpen ? "sidebar--open" : ""}`} aria-label="Navigasi utama">
         <div className="sidebar__brand">
-          <Link to="/" onClick={closeSidebar} className="brand-mark" aria-label="SIGAP Desa Cibenda">
+          <Link to="/" onClick={handleDashboardClick} className="brand-mark" aria-label="SIGAP Desa Cibenda">
             S
           </Link>
           <div>
@@ -52,14 +105,26 @@ export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarPr
         </div>
 
         <nav className="sidebar__nav">
-          <NavLink to="/" onClick={closeSidebar} className={({ isActive }) => (isActive ? "active" : undefined)}>
+          <Link 
+            to="/" 
+            onClick={handleDashboardClick} 
+            className={activeHash === "" || activeHash === "#" ? "active" : undefined}
+          >
             <Home size={20} />
             Dashboard
-          </NavLink>
+          </Link>
+
           {sectionLinks.map((item) => {
             const Icon = item.icon;
+            const isMenuLinkActive = activeHash === item.href;
+            
             return (
-              <a href={item.href} key={item.href} onClick={closeSidebar}>
+              <a 
+                href={item.href} 
+                key={item.href} 
+                onClick={() => { closeSidebar(); setActiveHash(item.href); }}
+                className={isMenuLinkActive ? "active" : undefined}
+              >
                 <Icon size={20} />
                 {item.label}
               </a>
