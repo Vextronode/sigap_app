@@ -106,12 +106,12 @@ export const dummyAnnouncements: Announcement[] = [
 ];
 
 export const dummyContacts: EmergencyContact[] = [
-  { institution: "\u{1F691} Ambulans", phone: "119" },
-  { institution: "\u{1F692} Pemadam Kebakaran", phone: "113" },
-  { institution: "\u{1F693} Polisi", phone: "110" },
-  { institution: "\u{1F3E5} Puskesmas Cimerak", phone: "(0265) 000000" },
-  { institution: "\u{1F46E} BPBD Pangandaran", phone: "(0265) 000001" },
-  { institution: "\u260E Kepala Desa Cibenda", phone: "08xxxxxxxxxx" },
+  { institution: "Ambulans", phone: "119" },
+  { institution: "Pemadam Kebakaran", phone: "113" },
+  { institution: "Polisi", phone: "110" },
+  { institution: "Puskesmas Pangandaran", phone: "(0265) 0001" },
+  { institution: "BPBD Pangandaran", phone: "(0265) 0001" },
+  { institution: "Kepala Desa Cibenda", phone: "08xxxx" },
 ];
 
 export type PreparednessGuideItem = {
