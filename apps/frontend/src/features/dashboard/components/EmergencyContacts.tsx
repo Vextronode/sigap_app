@@ -1,4 +1,4 @@
-import { Building2, Contact, Phone, Shield, Truck, UserRound } from "lucide-react";
+import { Building2, Contact, Phone, Shield, Ambulance, Hospital, Landmark, Siren } from "lucide-react";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import { CardSkeleton } from "../../../components/ui/Skeleton";
 import type { EmergencyContact } from "../../../types/dashboard";
@@ -10,7 +10,14 @@ type EmergencyContactsProps = {
   isError?: boolean;
 };
 
-const icons = [UserRound, Shield, Building2, Truck, Contact, Phone];
+const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  "ambulans": Ambulance,
+  "pemadam": Siren,
+  "polisi": Shield,
+  "puskesmas": Hospital,
+  "bpbd": Building2,
+  "kepala desa": Landmark,
+};
 
 export const EmergencyContacts = ({ contacts, isLoading = false, isError = false }: EmergencyContactsProps) => {
   const displayContacts = isError || contacts.length === 0 ? dummyContacts : contacts;
@@ -26,20 +33,25 @@ export const EmergencyContacts = ({ contacts, isLoading = false, isError = false
         </div>
       ) : (
         <div className="contact-grid">
-          {displayContacts.map((contact, index) => {
-            const Icon = icons[index % icons.length];
+          {displayContacts.map((contact) => {
+            const lowerInst = contact.institution.toLowerCase();
+            const matchedKey = Object.keys(iconMap).find(key => lowerInst.includes(key));
+            const Icon = matchedKey ? iconMap[matchedKey] : Phone;
+
             const phone = contact.phone ?? contact.phoneNumber ?? "";
-            const isNationalCenter = phone === "112" || contact.institution.toLowerCase().includes("call center");
+            const isNationalCenter = phone === "112" || lowerInst.includes("call center");
 
             return (
               <a
-                className={`contact-card ${isNationalCenter ? "contact-card--danger" : ""}`}
+                className={`text-base contact-card ${isNationalCenter ? "contact-card--danger" : ""}`}
                 href={phone ? `tel:${phone}` : undefined}
                 key={`${contact.institution}-${phone}`}
               >
-                <Icon size={28} aria-hidden="true" />
+                <Icon size={32} aria-hidden="true" />
                 <strong>{contact.institution}</strong>
-                <span>{phone || "Nomor belum tersedia"}</span>
+                <span className={`text-lg font-normal mt-1 
+                  ${isNationalCenter ? "text-red-200" : "text-slate-400"}`}
+                >{phone || "Nomor belum tersedia"}</span>
               </a>
             );
           })}
