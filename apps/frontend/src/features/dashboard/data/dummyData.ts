@@ -114,14 +114,6 @@ export const dummyContacts: EmergencyContact[] = [
   { institution: "Kepala Desa Cibenda", phone: "08xxxx" },
 ];
 
-export type PreparednessGuideItem = {
-  title: string;
-  description: string;
-  image: string;
-  href: string;
-  buttonLabel: string;
-};
-
 export const dummyEvacuation = {
   image: "/assets/image/peta-evakuasi.webp",
   title: "Peta Jalur Evakuasi Desa Cibenda",
@@ -143,20 +135,3 @@ export const dummyEvacuation = {
   ],
   buttonLabel: "Lihat Peta Evakuasi",
 } as const;
-
-export const dummyPreparednessGuide: PreparednessGuideItem[] = [
-  {
-    title: "Panduan Gempa Bumi",
-    description: "Pelajari langkah perlindungan diri saat gempa agar keluarga tetap aman sampai kondisi stabil.",
-    image: "/assets/image/earthquake-ilustration.webp",
-    href: "#",
-    buttonLabel: "Baca Panduan Lengkap",
-  },
-  {
-    title: "Panduan Tsunami",
-    description: "Ikuti alur evakuasi pesisir dan naik ke area lebih tinggi bila ada peringatan resmi.",
-    image: "/assets/image/tsunami-ilustration.webp",
-    href: "#",
-    buttonLabel: "Baca Panduan Lengkap",
-  },
-];
