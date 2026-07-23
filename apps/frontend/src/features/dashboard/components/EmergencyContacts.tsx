@@ -49,9 +49,11 @@ export const EmergencyContacts = ({ contacts, isLoading = false, isError = false
               >
                 <Icon size={32} aria-hidden="true" />
                 <strong>{contact.institution}</strong>
-                <span className={`text-lg font-normal mt-1 
-                  ${isNationalCenter ? "text-red-200" : "text-slate-400"}`}
-                >{phone || "Nomor belum tersedia"}</span>
+                <span className={`text-lg font-normal mt-1 ${
+                  isNationalCenter ? "text-red-600" : "opacity-70"
+                }`}>
+                  {phone || "Nomor belum tersedia"}
+                </span>
               </a>
             );
           })}

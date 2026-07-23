@@ -28,7 +28,7 @@ export const TopNavbar = ({ alert, isLoading = false, isError = false }: TopNavb
       </button>
       <div className="top-navbar__title">
         <strong>SIGAP Desa Cibenda</strong>
-        <span>Sistem Informasi Gawat Darurat</span>
+        <span>Sistem Informasi Gawat Darurat & Monitoring Cuaca</span>
       </div>
       <div className="top-navbar__actions">
         <Badge tone={isError ? "neutral" : meta.tone}>
