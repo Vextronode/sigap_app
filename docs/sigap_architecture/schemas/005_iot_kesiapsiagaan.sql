@@ -33,7 +33,7 @@ CREATE TABLE device_status_log (
   device_id    UUID NOT NULL REFERENCES iot_devices(id),
   level_sent   status_level NOT NULL,
   sent_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  -- terakhir tersinkron ke device (bukan acknowledgment manual).
+    -- Status sinkronisasi terakhir saat device berhasil polling data ini.
   sync_status  VARCHAR(20)
 );
 

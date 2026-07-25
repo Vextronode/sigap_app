@@ -1,6 +1,6 @@
 # Data Dictionary - Domain: IoT Kesiapsiagaan (Indikator + Sirine)
 
-> Status: **yellow**. Dua keputusan governance masih terbuka (jalur tombol sirine, protokol komunikasi platform↔device) - lihat PRD SIGAP v4.0 7.1. Field yang bergantung padanya ditandai eksplisit di bawah, bukan diasumsikan.
+> Status: **light_green**. Arsitektur hybrid (lokal fisik + remote aplikasi) dan protokol komunikasi (REST Polling) sudah final - lihat ADR-012, ADR-013. Implementasi jalur remote aplikasi sengaja ditangguhkan (bukan TBD yang menghambat), lihat ADR-012.
 
 ## Entity: `iot_devices`
 
@@ -25,7 +25,7 @@
 | device_id | UUID (FK → iot_devices.id) | Device terkait | - |
 | level_sent | ENUM `status_level` | Level yang dikirim sistem ke device | `"merah"` |
 | sent_at | TIMESTAMPTZ | Waktu pengiriman | - |
-| ack_status | VARCHAR(20), NULLABLE | TBD - hanya terisi jika device network-connected & mengirim acknowledgment | `"acked"` / `NULL` |
+| sync_status | VARCHAR(20), NULLABLE | Status sinkronisasi terakhir saat device berhasil polling data ini | `"synced"` / `NULL` |
 
 ## Entity: `siren_action_log`
 
@@ -33,8 +33,9 @@
 |---|---|---|---|
 | id | UUID | Primary key | - |
 | device_id | UUID (FK → iot_devices.id) | Device yang sirine-nya dibunyikan | - |
-| operator_id | UUID (FK → users.id), NULLABLE | TBD - hanya terisi jika tombol network-connected & operator teridentifikasi sistem. `NULL` jika jalur lokal murni (berarti tidak ada audit trail digital) | - |
+| operator_id | UUID (FK → users.id), NULLABLE | Terisi hanya jika trigger_source = remote_aplikasi (ditegakkan lewat CHECK constraint di database, lihat ADR-014). NULL jika trigger_source = lokal_fisik. | - |
 | level_at_trigger | ENUM `status_level` | Level saat tombol ditekan - **hanya boleh `oranye` atau `merah`** (safeguard by design, dikunci di level database via CHECK constraint) | `"merah"` |
 | triggered_at | TIMESTAMPTZ | Waktu sirine dibunyikan | - |
+| trigger_source | ENUM `siren_trigger_source` | Jalur aktivasi: `lokal_fisik` atau `remote_aplikasi` (ADR-012) | `"lokal_fisik"` |
 
-**Konsekuensi jika jalur tombol ternyata lokal murni (bukan network-connected):** `operator_id` akan selalu `NULL`, dan tabel ini menjadi log yang hanya mencatat "sirine di device X dibunyikan pada level Y", tanpa mencatat siapa pelakunya. Ini keterbatasan yang perlu disadari tim sebelum FE membangun tampilan yang menampilkan `operator_id` seolah selalu tersedia.
+**Konsekuensi desain (final, ADR-012/ADR-014):** untuk aksi via lokal_fisik, audit trail mencatat perangkat dan waktu, tetapi tidak mencatat identitas operator secara digital — ini konsekuensi yang disadari dan diterima, bukan keterbatasan sementara.
