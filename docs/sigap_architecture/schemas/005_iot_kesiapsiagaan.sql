@@ -9,7 +9,6 @@
 --   2. Remote aplikasi — operator dapat memicu sirine dari luar lokasi
 --      (mis. saat dinas luar) melalui aplikasi, diteruskan platform ke
 --      device. Menyusul setelah jalur komunikasi platform<->device siap.
--- Komunikasi platform -> device: Firebase Realtime Database.
 -- =====================================================================
 
 CREATE TYPE siren_trigger_source AS ENUM ('lokal_fisik', 'remote_aplikasi');
@@ -21,9 +20,6 @@ CREATE TABLE iot_devices (
   longitude          NUMERIC(9,6),
   status             device_connectivity NOT NULL DEFAULT 'offline',
   current_level      status_level NOT NULL DEFAULT 'hijau',
-  -- Path referensi ke node Firebase Realtime Database yang disinkronkan
-  -- dengan device ini (mis. "devices/iot_dev_003/level").
-  firebase_ref_path  VARCHAR(255),
   last_seen_at       TIMESTAMPTZ,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -37,7 +33,6 @@ CREATE TABLE device_status_log (
   device_id    UUID NOT NULL REFERENCES iot_devices(id),
   level_sent   status_level NOT NULL,
   sent_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  -- Status sinkronisasi berdasarkan koneksi Firebase RTDB saat data
   -- terakhir tersinkron ke device (bukan acknowledgment manual).
   sync_status  VARCHAR(20)
 );

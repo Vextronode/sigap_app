@@ -1,0 +1,96 @@
+# =====================================================================
+# device-gateway.yaml — path domain Device Gateway (M2M)
+# Perangkat IoT memanggil endpoint ini langsung (REST Polling, ADR-013),
+# menggunakan autentikasi device (X-Device-Key), bukan token pengguna.
+# =====================================================================
+
+device-poll-level:
+  get:
+    tags: [Device Gateway]
+    summary: >
+      Perangkat melakukan polling level kesiapsiagaan terkini.
+      Dipanggil perangkat setiap 15 detik (interval ditentukan firmware).
+    security:
+      - deviceApiKey: []
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/device-gateway.yaml#/DeviceLevelResponse'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'
+
+device-heartbeat:
+  post:
+    tags: [Device Gateway]
+    summary: >
+      Perangkat mengirim heartbeat agar backend menandai status
+      online dan memperbarui last_seen_at. Dipanggil setiap 60 detik.
+    security:
+      - deviceApiKey: []
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../components/device-gateway.yaml#/HeartbeatRequest'
+    responses:
+      '204':
+        description: Heartbeat diterima (No Content)
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'
+
+device-siren-events:
+  post:
+    tags: [Device Gateway]
+    summary: >
+      Perangkat melaporkan aktivasi sirine yang terjadi melalui jalur
+      lokal fisik, untuk dicatat ke siren_action_log secara asinkron.
+      Tidak memerlukan operator_id (lihat ADR-014).
+    security:
+      - deviceApiKey: []
+    parameters:
+      - $ref: '../components/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/device-gateway.yaml#/SirenEventReportRequest'
+    responses:
+      '201':
+        description: Event tercatat
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../components/iot-kesiapsiagaan.yaml#/SirenActionLog'
+      '401':
+        $ref: '../components/shared.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/shared.yaml#/NotFound'
+      '409':
+        description: level_at_trigger bukan oranye/merah — safeguard by design
+        content:
+          application/json:
+            schema:
+              $ref: '../components/shared.yaml#/ErrorEnvelope'

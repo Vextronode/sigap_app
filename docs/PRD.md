@@ -142,7 +142,6 @@ MVP dianggap berhasil jika seluruh kriteria di atas tercapai **dan** sistem tela
 | Frontend | React, TypeScript, Vite, Tailwind CSS | Final |
 | Backend | Node.js (REST API), struktur modular sesuai AWG Convention | Final |
 | Database | PostgreSQL | Final |
-| Realtime Layer | Firebase RTDB | Final - dipertahankan untuk prasyarat integrasi IoT & kebutuhan near-real-time. |
 | Maps | Leaflet + OpenStreetMap | Final |
 | AI | Peringkasan teks cuaca/gempa & rekomendasi sederhana. **Tidak digunakan untuk prediksi bencana.** | Final (fungsi) / *Draft* Fallback plan |
 | Hosting | Production: server desa (arah program)  **TBD, menunggu konfirmasi Tim DevOps** | TBD |
@@ -223,7 +222,7 @@ device_status_log     (id, device_id, level_sent, sent_at, ack_status**)        
 | Fallback AI API | Draft, perlu konfirmasi | Tech Lead |
 | Hosting produksi | TBD | Tim DevOps |
 | Jalur tombol sirine | **Final** - arsitektur hybrid: lokal fisik (selalu tersedia) + remote aplikasi (menyusul setelah komunikasi platform↔device rampung). Detail: `sigap_app\docs\sigap_architecture\data_dictionary\DD_iot_kesiapsiagaan.md` | - |
-| Protokol komunikasi platform → perangkat IoT | **Final** - Firebase Realtime Database | - |
+| Protokol komunikasi platform → perangkat IoT | **Final** - REST Polling backend | - |
 | Kanal notifikasi ke operator saat level berubah - kebijakan terpisah dari larangan "notifikasi WhatsApp" 3.2 (yang berlaku untuk warga) | Draft - mekanisme diusulkan via integrasi SID (memanfaatkan PWA SID sebagai kanal pengiriman), menunggu sign-off Tim SID. Detail: `integration/SID_INTEGRATION_PROPOSAL.md` | Tech Lead SIGAP + Tech Lead SID |
 | **(Baru, v4.0)** Mekanisme konfirmasi tambahan sebelum aktivasi sirine (mitigasi human-factor/kepanikan operator) | TBD | Tech Lead + Tim IoT, idealnya divalidasi dengan operator terlatih |
 | **(Baru, v4.0)** Update dokumen: scope IoT-sebagai-aktuator ini perlu disinkronkan ke SIGAP Backlog Jira-Ready v2 (Epic/Story baru + estimasi SP belum masuk hitungan 9) | TBD | Tech Lead |

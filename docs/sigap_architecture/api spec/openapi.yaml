@@ -89,6 +89,14 @@ paths:
     $ref: './paths/iot-kesiapsiagaan.yaml#/device-siren-log'
   /protected/devices/{id}/trigger-siren:
     $ref: './paths/iot-kesiapsiagaan.yaml#/device-trigger-siren'
+ 
+  # -- Device Gateway (M2M — perangkat IoT langsung ke backend) --------
+  /device/{id}/level:
+    $ref: './paths/device-gateway.yaml#/device-poll-level'
+  /device/{id}/heartbeat:
+    $ref: './paths/device-gateway.yaml#/device-heartbeat'
+  /device/{id}/siren-events:
+    $ref: './paths/device-gateway.yaml#/device-siren-events'
 
   # -- Content Admin: Announcements, Evacuation, Emergency Contacts -----
   /public/announcements:

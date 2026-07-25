@@ -1,0 +1,40 @@
+# =====================================================================
+# device-gateway.yaml — schema domain Device Gateway (M2M, perangkat IoT
+# memanggil backend langsung, bukan lewat token pengguna)
+# Ditambahkan sesuai ADR-013: REST Polling langsung ke backend.
+# =====================================================================
+
+DeviceLevelResponse:
+  type: object
+  properties:
+    level:
+      $ref: '../components/shared.yaml#/StatusLevel'
+    updated_at:
+      type: string
+      format: date-time
+      description: Waktu terakhir level ini ditetapkan oleh backend
+
+HeartbeatRequest:
+  type: object
+  properties:
+    firmware_version:
+      type: string
+      example: "1.0.3"
+      nullable: true
+
+SirenEventReportRequest:
+  type: object
+  required: [level_at_trigger, triggered_at]
+  description: >
+    Dikirim perangkat untuk melaporkan aktivasi sirine yang terjadi
+    melalui jalur lokal fisik (tombol langsung di device). Tidak
+    menyertakan operator_id — jalur lokal tidak memiliki identitas
+    operator digital (lihat ADR-014).
+  properties:
+    level_at_trigger:
+      type: string
+      enum: [oranye, merah]
+      description: Safeguard yang sama dengan trigger remote (ADR-011)
+    triggered_at:
+      type: string
+      format: date-time

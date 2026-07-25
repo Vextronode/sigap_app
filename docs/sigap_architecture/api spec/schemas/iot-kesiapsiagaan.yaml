@@ -25,8 +25,6 @@ DeviceFull:
     - $ref: './iot-kesiapsiagaan.yaml#/DevicePublic'
     - type: object
       properties:
-        firebase_ref_path:
-          type: string
         last_seen_at:
           type: string
           format: date-time
