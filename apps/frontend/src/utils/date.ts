@@ -28,10 +28,26 @@ export const formatTime = (value?: string) => {
 };
 
 export const formatDateTime = (value?: string) => {
-  if (!value) return "Belum tersedia";
+  if (!value) {
+    return {
+      time: "--:-- WIB",
+      date: "Belum tersedia",
+    };
+  }
+
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return `${timeFormatter.format(date)} WIB - ${dateFormatter.format(date)}`;
+
+  if (Number.isNaN(date.getTime())) {
+    return {
+      time: "--:-- WIB",
+      date: value,
+    };
+  }
+
+  return {
+    time: `${timeFormatter.format(date)} WIB`,
+    date: dateFormatter.format(date),
+  };
 };
 
 export const formatWeekday = (value: string) => {
