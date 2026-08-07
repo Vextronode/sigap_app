@@ -1,5 +1,4 @@
-import { Waves } from "lucide-react";
-import { Badge } from "../../../components/ui/Badge";
+import { GiBigWave } from "react-icons/gi";
 import { Card } from "../../../components/ui/Card";
 import { CardSkeleton } from "../../../components/ui/Skeleton";
 import type { TsunamiStatus } from "../../../types/dashboard";
@@ -12,22 +11,24 @@ type TsunamiCardProps = {
   isError?: boolean;
 };
 
-const getTone = (status?: TsunamiStatus["status"]) => {
+type TsunamiTone = "safe" | "warning" | "orange" | "danger";
+
+const getTone = (status?: TsunamiStatus["status"]): TsunamiTone | null => {
   switch (status) {
     case "AWAS":
-      return "danger" as const;
+      return "danger";
     case "SIAGA":
-      return "orange" as const;
+      return "orange";
     case "WASPADA":
-      return "warning" as const;
+      return "warning";
     case "NORMAL":
-      return "safe" as const;
+      return "safe";
     default:
-      return null; 
+      return null;
   }
 };
 
-const getBadgeText = (status?: TsunamiStatus["status"]) => {
+const getStatusLabel = (status?: TsunamiStatus["status"]) => {
   switch (status) {
     case "AWAS":
       return "AWAS";
@@ -36,10 +37,17 @@ const getBadgeText = (status?: TsunamiStatus["status"]) => {
     case "WASPADA":
       return "WASPADA";
     case "NORMAL":
-      return "TIDAK BERPOTENSI TSUNAMI - NORMAL";
+      return "NORMAL";
     default:
       return null;
   }
+};
+
+const toneConfig: Record<TsunamiTone, { dot: string; text: string }> = {
+  safe: { dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+  warning: { dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
+  orange: { dot: "bg-orange-500", text: "text-orange-600 dark:text-orange-400" },
+  danger: { dot: "bg-red-500", text: "text-red-600 dark:text-red-400" },
 };
 
 export const TsunamiCard = ({
@@ -50,8 +58,8 @@ export const TsunamiCard = ({
   if (isLoading) return <CardSkeleton />;
 
   const displayTsunami = isError ? null : tsunami;
-  const badgeTone = getTone(displayTsunami?.status);
-  const badgeText = getBadgeText(displayTsunami?.status);
+  const tone = getTone(displayTsunami?.status);
+  const statusLabel = getStatusLabel(displayTsunami?.status);
 
   const formattedDate = displayTsunami
     ? formatDateTime(displayTsunami.updatedAt)
@@ -62,18 +70,16 @@ export const TsunamiCard = ({
       <div className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400">
-            <Waves size={24} aria-hidden="true" />
+            <GiBigWave size={24} aria-hidden="true" />
           </div>
 
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h3 className="text-sm font-semibold text-foreground">
-                Status Tsunami
-              </h3>
-              <span className="text-xs font-medium text-muted-foreground">
-                Pantai Cibenda & Sekitarnya
-              </span>
-            </div>
+            <h3 className="text-base font-bold text-foreground">
+              Status Tsunami
+            </h3>
+            <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
+              Desa Cibenda 
+            </span>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
               {displayTsunami
@@ -83,32 +89,40 @@ export const TsunamiCard = ({
           </div>
         </div>
 
-        {badgeTone && badgeText ? (
-          <Badge
-            tone={badgeTone}
-            className={cn(
-              "w-fit border px-3 py-1 text-[11px] font-semibold tracking-[0.18em]",
-              badgeTone === "safe"
-                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                : badgeTone === "warning"
-                  ? "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                  : badgeTone === "orange"
-                    ? "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400"
-                    : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400",
-            )}
-          >
-            {badgeText}
-          </Badge>
-        ) : (
-          <span className="text-xs font-medium text-muted-foreground">
-            Status belum tersedia
-          </span>
-        )}
+        <div className="flex shrink-0 items-center">
+          {tone && statusLabel ? (
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span
+                  className={cn(
+                    "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                    toneConfig[tone].dot
+                  )}
+                  aria-hidden="true"
+                />
+                <span
+                  className={cn(
+                    "relative inline-flex h-2.5 w-2.5 rounded-full",
+                    toneConfig[tone].dot
+                  )}
+                  aria-hidden="true"
+                />
+              </span>
+              <span className={cn("text-sm font-bold uppercase tracking-wide", toneConfig[tone].text)}>
+                {statusLabel}
+              </span>
+            </div>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground">
+              Status belum tersedia
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 border-t border-[color:var(--border)] px-5 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
         <div>
-          <div>Sumber</div>
+          <div className="text-[color:var(--text-muted)]">Sumber</div>
 
           <div className="mt-1 text-sm font-semibold uppercase tracking-normal text-foreground">
             {displayTsunami?.source ?? "BMKG InaTEWS"}
@@ -116,7 +130,7 @@ export const TsunamiCard = ({
         </div>
 
         <div className="text-right">
-          <div>Update</div>
+          <div className="text-[color:var(--text-muted)]">Update</div>
 
           <div className="mt-1 leading-4 normal-case">
             {formattedDate ? (
