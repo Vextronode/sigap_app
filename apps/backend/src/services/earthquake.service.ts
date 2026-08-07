@@ -121,9 +121,8 @@ export class EarthquakeService {
 
   static async getPangandaran(): Promise<EarthquakeInfo | null> {
     const raw = await this.fetchCached<BmkgEarthquakeListResponse>(
-      BMKG_GEMPA_DIRASAKAN_URL,
+      BMKG_GEMPA_TERKINI_URL,
     );
-    console.log("PANGANDARAN_RADIUS_KM =", PANGANDARAN_RADIUS_KM);
 
     return this.findNearestEarthquake(
       raw.Infogempa.gempa ?? [],
@@ -170,7 +169,7 @@ export class EarthquakeService {
         DESA_CIBENDA_COORDINATES.longitude,
       ),
       felt: raw.Dirasakan ?? "",
-      potential: raw.Potensi,
+      potential: raw.Potensi ?? "",
       shakemap: raw.Shakemap ? `${SHAKEMAP_BASE_URL}${raw.Shakemap}` : "",
       updatedAt,
     };
