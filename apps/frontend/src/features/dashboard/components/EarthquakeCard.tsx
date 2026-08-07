@@ -85,6 +85,19 @@ const variantConfig: Record<
 
 const formatDistance = (distance: number) => `≈ ${Math.abs(distance)} KM`;
 
+type TsunamiBadge = { tone: "safe" | "danger"; text: string };
+
+const getTsunamiBadge = (potential: string | undefined): TsunamiBadge | null => {
+  const normalized = potential?.trim().toLowerCase();
+  if (normalized === "tidak berpotensi tsunami") {
+    return { tone: "safe", text: "TIDAK BERPOTENSI TSUNAMI" };
+  }
+  if (normalized === "berpotensi tsunami") {
+    return { tone: "danger", text: "BERPOTENSI TSUNAMI" };
+  }
+  return null;
+};
+
 export const EarthquakeCard = ({
   title,
   earthquake,
@@ -96,26 +109,18 @@ export const EarthquakeCard = ({
   const variant = getVariant(title);
   const config = variantConfig[variant];
   const displayEarthquake = isError ? null : earthquake;
-  const isTsunamiPotential =
-    displayEarthquake?.potential?.toLowerCase().includes("berpotensi") ?? false;
-  const cardBorderClass =
-    variant === "west-java" && isTsunamiPotential
-      ? "border-red-500/30"
-      : config.accentBorder;
-  const badgeTone = isTsunamiPotential ? "danger" : config.badgeTone;
-  const badgeText = isTsunamiPotential
-    ? "BERPOTENSI TSUNAMI"
-    : "TIDAK BERPOTENSI TSUNAMI";
+  const tsunamiBadge =
+  variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.potential);
+  const isDanger = tsunamiBadge?.tone === "danger";
+
+  const cardBorderClass = isDanger ? "border-red-500/30" : config.accentBorder;
+  const dataToneClass = isDanger ? "text-red-600 dark:text-red-400" : config.valueClassName;
+  const noteToneClass = isDanger
+    ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+    : config.noteClassName;
+
   const RegionIcon = config.icon;
   const regionLabel = title.replace(/^Info Gempa\s*/i, "");
-  const dataToneClass =
-    variant === "west-java" && isTsunamiPotential
-      ? "text-red-600 dark:text-red-400"
-      : config.valueClassName;
-  const noteToneClass =
-    variant === "west-java" && isTsunamiPotential
-      ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
-      : config.noteClassName;
 
   if (!displayEarthquake) {
     return (
@@ -168,7 +173,7 @@ export const EarthquakeCard = ({
   }
 
   const formattedDate = formatDateTime(displayEarthquake.updatedAt);
-  const iconClassName = isTsunamiPotential
+  const iconClassName = isDanger
     ? "bg-red-500/10 text-red-600 dark:text-red-400 ring-1 ring-red-500/20"
     : config.iconClassName;
 
@@ -201,18 +206,20 @@ export const EarthquakeCard = ({
             </div>
           </div>
 
-          <Badge
-            tone={badgeTone}
-            className={cn(
-              "mt-3 w-fit border px-3 py-1 text-[10px] font-semibold tracking-[0.18em]",
-              config.badgeClassName,
-              variant === "west-java" && isTsunamiPotential
-                ? "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
-                : ""
-            )}
-          >
-            {badgeText}
-          </Badge>
+          {tsunamiBadge && (
+            <Badge
+              tone={tsunamiBadge.tone}
+              className={cn(
+                "mt-3 w-fit border px-3 py-1 text-[10px] font-semibold tracking-[0.18em]",
+                config.badgeClassName,
+                isDanger
+                  ? "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
+                  : ""
+              )}
+            >
+              {tsunamiBadge.text}
+            </Badge>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col px-5 py-5">

@@ -21,8 +21,9 @@ const getTone = (status?: TsunamiStatus["status"]) => {
     case "WASPADA":
       return "warning" as const;
     case "NORMAL":
-    default:
       return "safe" as const;
+    default:
+      return null; 
   }
 };
 
@@ -35,8 +36,9 @@ const getBadgeText = (status?: TsunamiStatus["status"]) => {
     case "WASPADA":
       return "WASPADA";
     case "NORMAL":
-    default:
       return "TIDAK BERPOTENSI TSUNAMI - NORMAL";
+    default:
+      return null;
   }
 };
 
@@ -81,21 +83,27 @@ export const TsunamiCard = ({
           </div>
         </div>
 
-        <Badge
-          tone={badgeTone}
-          className={cn(
-            "w-fit border px-3 py-1 text-[11px] font-semibold tracking-[0.18em]",
-            badgeTone === "safe"
-              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-              : badgeTone === "warning"
-                ? "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                : badgeTone === "orange"
-                  ? "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400"
-                  : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400",
-          )}
-        >
-          {badgeText}
-        </Badge>
+        {badgeTone && badgeText ? (
+          <Badge
+            tone={badgeTone}
+            className={cn(
+              "w-fit border px-3 py-1 text-[11px] font-semibold tracking-[0.18em]",
+              badgeTone === "safe"
+                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : badgeTone === "warning"
+                  ? "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  : badgeTone === "orange"
+                    ? "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                    : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400",
+            )}
+          >
+            {badgeText}
+          </Badge>
+        ) : (
+          <span className="text-xs font-medium text-muted-foreground">
+            Status belum tersedia
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-2 border-t border-[color:var(--border)] px-5 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
