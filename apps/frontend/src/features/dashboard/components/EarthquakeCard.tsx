@@ -1,7 +1,8 @@
 import { Globe, Map, MapPin, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
-import { CardSkeleton } from "../../../components/ui/Skeleton";
+import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import type { Earthquake } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
 import { formatDateTime } from "../../../utils/date";
@@ -83,7 +84,7 @@ const variantConfig: Record<
   },
 };
 
-const formatDistance = (distance: number) => `≈ ${Math.abs(distance)} KM`;
+const formatDistance = (distance: number) => `± ${Math.abs(distance)} KM`;
 
 type TsunamiBadge = { tone: "safe" | "danger"; text: string };
 
@@ -98,17 +99,55 @@ const getTsunamiBadge = (potential: string | undefined): TsunamiBadge | null => 
   return null;
 };
 
+type ShakemapImageProps = {
+  url: string;
+  alt: string;
+};
+
+const ShakemapImage = ({ url, alt }: ShakemapImageProps) => {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  return (
+    <>
+      <img
+        src={url}
+        alt={alt}
+        className={cn(
+          "h-full w-full object-cover transition-opacity duration-300",
+          status === "loaded" ? "opacity-100" : "opacity-0"
+        )}
+        onLoad={() => setStatus("loaded")}
+        onError={() => setStatus("error")}
+      />
+      {status === "loading" && (
+        <Skeleton className="absolute inset-0 h-full w-full !rounded-none" />
+      )}
+      {status === "error" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
+          <Map className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+          <p className="text-xs font-medium text-muted-foreground">
+            Gambar Peta Lokasi Guncangan
+            <br />
+            Belum Tersedia Oleh BMKG
+          </p>
+        </div>
+      )}
+    </>
+  );
+};
+
 export const EarthquakeCard = ({
   title,
   earthquake,
   isLoading = false,
   isError = false,
 }: EarthquakeCardProps) => {
+  const displayEarthquake = isError ? null : earthquake;
+  const shakemapUrl = displayEarthquake?.shakemap;
+
   if (isLoading) return <CardSkeleton />;
 
   const variant = getVariant(title);
   const config = variantConfig[variant];
-  const displayEarthquake = isError ? null : earthquake;
   const tsunamiBadge =
   variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.potential);
   const isDanger = tsunamiBadge?.tone === "danger";
@@ -141,7 +180,7 @@ export const EarthquakeCard = ({
               <RegionIcon className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className={cn("text-sm font-semibold leading-tight", config.titleClassName)}>
+              <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
                 Info Gempa
               </p>
               <p className="text-xs font-medium text-muted-foreground">
@@ -185,6 +224,27 @@ export const EarthquakeCard = ({
       )}
     >
       <div className="flex h-full min-h-[420px] flex-col justify-between">
+        {variant === "pangandaran" && (
+          <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden border-b border-[color:var(--border)] bg-muted sm:aspect-video">
+            {shakemapUrl ? (
+              <ShakemapImage
+                key={shakemapUrl}
+                url={shakemapUrl}
+                alt={`Peta guncangan gempa ${displayEarthquake.location}`}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
+                <Map className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                <p className="text-xs font-medium text-muted-foreground">
+                  Gambar Peta Lokasi Guncangan
+                  <br />
+                  Belum Tersedia Oleh BMKG
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="border-b border-[color:var(--border)] px-5 py-4">
           <div className="flex items-start gap-3">
             <div
@@ -197,7 +257,7 @@ export const EarthquakeCard = ({
             </div>
 
             <div className="min-w-0">
-              <p className={cn("text-sm font-semibold", config.titleClassName)}>
+              <p className={cn("text-base font-bold", config.titleClassName)}>
                 Info Gempa
               </p>
               <p className="text-xs font-medium text-muted-foreground">
@@ -225,8 +285,8 @@ export const EarthquakeCard = ({
         <div className="flex flex-1 flex-col px-5 py-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Magnitude
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
+                Magnitudo
               </span>
               <div className="mt-1 flex items-baseline gap-1">
                 <strong className={cn("text-[2.5rem] font-extrabold leading-none", dataToneClass)}>
@@ -237,11 +297,11 @@ export const EarthquakeCard = ({
                 </span>
               </div>
             </div>
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="text-right">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
                 Kedalaman
               </span>
-              <div className="mt-1 flex items-baseline gap-2">
+              <div className="mt-1 flex items-baseline justify-end gap-2">
                 <strong className={cn("text-[1.65rem] font-extrabold leading-none", dataToneClass)}>
                   {displayEarthquake.depth}
                 </strong>
@@ -250,7 +310,7 @@ export const EarthquakeCard = ({
           </div>
 
           <div className="mt-5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
               Lokasi Pusat Gempa:
             </span>
             <p className="mt-2 text-sm font-semibold leading-6 text-foreground">
@@ -261,7 +321,7 @@ export const EarthquakeCard = ({
           <div className={cn("mt-5 rounded-2xl border px-4 py-4", noteToneClass)}>
             <div className="grid grid-cols-[1fr_auto] items-center gap-4">
               <div>
-                <p className="text-[13px] opacity-90">
+                <p className="text-[13px] font-medium text-[color:var(--text-muted)]">
                   Jarak dari Desa Cibenda
                 </p>
               </div>
@@ -277,13 +337,13 @@ export const EarthquakeCard = ({
 
           <div className="mt-auto grid grid-cols-2 gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             <div>
-              <div>Sumber Data</div>
+              <div className="text-[color:var(--text-muted)]">Sumber Data</div>
               <div className="mt-1 text-sm font-semibold uppercase tracking-normal text-foreground">
                 BMKG
               </div>
             </div>
             <div className="text-right">
-              <div>Terjadi</div>
+              <div className="text-[color:var(--text-muted)]">Terjadi</div>
               <div className="mt-1 text-right leading-4 normal-case">
                 <p className="text-xs font-semibold leading-tight text-foreground">
                   {formattedDate.time}
