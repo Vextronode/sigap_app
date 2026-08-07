@@ -81,25 +81,27 @@ export default function DashboardPage() {
           title="Monitoring Gempa Bumi"
           icon={<TriangleAlert size={22} />}
         />
-        <div className="dashboard-grid dashboard-grid--three">
-          <EarthquakeCard
-            title="Info Gempa Indonesia"
-            earthquake={indonesiaEarthquakeQuery.data ?? null}
-            isLoading={indonesiaEarthquakeQuery.isLoading}
-            isError={indonesiaEarthquakeQuery.isError}
-          />
-          <EarthquakeCard
-            title="Info Gempa Jawa Barat"
-            earthquake={westJavaEarthquakeQuery.data ?? null}
-            isLoading={westJavaEarthquakeQuery.isLoading}
-            isError={westJavaEarthquakeQuery.isError}
-          />
+        <div className="dashboard-stack">
           <EarthquakeCard
             title="Info Gempa Pangandaran"
             earthquake={pangandaranEarthquakeQuery.data ?? null}
             isLoading={pangandaranEarthquakeQuery.isLoading}
             isError={pangandaranEarthquakeQuery.isError}
           />
+          <div className="dashboard-grid dashboard-grid--two">
+            <EarthquakeCard
+              title="Info Gempa Indonesia"
+              earthquake={indonesiaEarthquakeQuery.data ?? null}
+              isLoading={indonesiaEarthquakeQuery.isLoading}
+              isError={indonesiaEarthquakeQuery.isError}
+            />
+            <EarthquakeCard
+              title="Info Gempa Jawa Barat"
+              earthquake={westJavaEarthquakeQuery.data ?? null}
+              isLoading={westJavaEarthquakeQuery.isLoading}
+              isError={westJavaEarthquakeQuery.isError}
+            />
+          </div>
         </div>
       </section>
       <section aria-labelledby="tsunami">

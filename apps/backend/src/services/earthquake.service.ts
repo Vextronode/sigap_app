@@ -4,11 +4,8 @@
  * Sumber data:
  * - autogempa.json          : Gempa terbaru Indonesia
  * - gempaterkini.json       : Daftar 15 gempa M5+ Indonesia
- * - gempadirasakan.json     : Daftar gempa yang dirasakan
- *
- * Dashboard menggunakan proximity filtering
- * untuk memilih gempa yang relevan bagi
- * kartu Jawa Barat dan Desa Cibenda.
+ * - gempadirasakan.json     : Daftar gempa yang dirasakan (tidak dipakai saat ini —
+ *                             endpoint ini tidak mengirim field Potensi maupun Shakemap)
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
@@ -23,8 +20,8 @@ const BMKG_AUTOGEMPA_URL =
   "https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json";
 const BMKG_GEMPA_TERKINI_URL =
   "https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.json";
-const BMKG_GEMPA_DIRASAKAN_URL =
-  "https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json";
+// const BMKG_GEMPA_DIRASAKAN_URL =
+//   "https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json";
 const SHAKEMAP_BASE_URL = "https://data.bmkg.go.id/DataMKG/TEWS/";
 
 const EARTHQUAKE_CACHE_TTL_MS = Number(
@@ -32,8 +29,18 @@ const EARTHQUAKE_CACHE_TTL_MS = Number(
 );
 
 const PANGANDARAN_RADIUS_KM = Number(process.env.PANGANDARAN_RADIUS_KM ?? 150);
-
 const WEST_JAVA_RADIUS_KM = Number(process.env.WEST_JAVA_RADIUS_KM ?? 350);
+
+// Batas umur gempa yang masih dianggap "relevan" untuk ditampilkan di card
+// Jawa Barat & Pangandaran. gempaterkini.json cuma nyimpen 15 gempa M5+
+// terakhir se-Indonesia — kalau lagi sepi gempa besar secara nasional, satu
+// gempa lama bisa nyangkut di list itu berminggu-minggu dan tampil seolah baru.
+const PANGANDARAN_MAX_AGE_DAYS = Number(
+  process.env.PANGANDARAN_MAX_AGE_DAYS ?? 14,
+);
+const WEST_JAVA_MAX_AGE_DAYS = Number(
+  process.env.WEST_JAVA_MAX_AGE_DAYS ?? 14,
+);
 
 type CacheEntry<T> = {
   data: T;
@@ -69,19 +76,20 @@ export class EarthquakeService {
   }
 
   /**
- * Mengembalikan gempa terdekat terhadap
- * Desa Cibenda berdasarkan radius tertentu.
- *
- * Return null jika tidak ada gempa
- * yang memenuhi radius.
- */
+   * Mengembalikan gempa terdekat terhadap Desa Cibenda berdasarkan radius
+   * dan umur maksimum tertentu. Return null jika tidak ada gempa yang
+   * memenuhi kriteria (dianggap kondisi aman, bukan error).
+   */
   private static findNearestEarthquake(
     earthquakes: BmkgEarthquakeItem[],
     radiusKm: number,
+    maxAgeDays: number,
   ): EarthquakeInfo | null {
     if (earthquakes.length === 0) {
       return null;
     }
+
+    const cutoffMs = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
 
     return (
       earthquakes
@@ -89,7 +97,8 @@ export class EarthquakeService {
         .filter(
           (earthquake) =>
             Number.isFinite(earthquake.distanceToVillage) &&
-            earthquake.distanceToVillage <= radiusKm,
+            earthquake.distanceToVillage <= radiusKm &&
+            new Date(earthquake.updatedAt).getTime() >= cutoffMs,
         )
         .sort((left, right) => {
           const distanceDelta =
@@ -116,19 +125,24 @@ export class EarthquakeService {
     return this.findNearestEarthquake(
       raw.Infogempa.gempa ?? [],
       WEST_JAVA_RADIUS_KM,
+      WEST_JAVA_MAX_AGE_DAYS,
     );
   }
 
   static async getPangandaran(): Promise<EarthquakeInfo | null> {
     const raw = await this.fetchCached<BmkgEarthquakeListResponse>(
-      BMKG_GEMPA_DIRASAKAN_URL,
+      BMKG_GEMPA_TERKINI_URL,
     );
-    console.log("PANGANDARAN_RADIUS_KM =", PANGANDARAN_RADIUS_KM);
 
-    return this.findNearestEarthquake(
+    const nearest = this.findNearestEarthquake(
       raw.Infogempa.gempa ?? [],
       PANGANDARAN_RADIUS_KM,
+      PANGANDARAN_MAX_AGE_DAYS,
     );
+
+    if (!nearest) return null;
+
+    return this.attachShakemapIfSameEvent(nearest);
   }
 
   private static async fetchCached<T>(url: string): Promise<T> {
@@ -152,6 +166,32 @@ export class EarthquakeService {
     return data;
   }
 
+  /**
+   * BMKG cuma menyediakan field Shakemap di autogempa.json (gempa nasional
+   * terbaru), tidak ada di gempaterkini.json. Kalau gempa yang dipilih untuk
+   * Pangandaran kebetulan sama dengan gempa nasional terbaru itu (dicocokkan
+   * lewat waktu kejadian, karena BMKG tidak menyediakan ID unik per gempa di
+   * API publik ini), pinjam shakemap-nya. Kalau tidak sama, tetap kosong —
+   * itu representasi jujur bahwa BMKG tidak sediakan shakemap untuk event
+   * lama lewat API list.
+   */
+  private static async attachShakemapIfSameEvent(
+    earthquake: EarthquakeInfo,
+  ): Promise<EarthquakeInfo> {
+    if (earthquake.shakemap) return earthquake;
+
+    const rawLatest = await this.fetchCached<BmkgAutogempaResponse>(
+      BMKG_AUTOGEMPA_URL,
+    );
+    const latest = this.parse(rawLatest.Infogempa.gempa);
+
+    const isSameEvent = latest.updatedAt === earthquake.updatedAt;
+
+    return isSameEvent
+      ? { ...earthquake, shakemap: latest.shakemap }
+      : earthquake;
+  }
+
   private static parse(raw: BmkgEarthquakeItem): EarthquakeInfo {
     const [latStr, lonStr] = raw.Coordinates.split(",");
     const latitude = Number.parseFloat(latStr?.trim() ?? "");
@@ -170,7 +210,7 @@ export class EarthquakeService {
         DESA_CIBENDA_COORDINATES.longitude,
       ),
       felt: raw.Dirasakan ?? "",
-      potential: raw.Potensi,
+      potential: raw.Potensi ?? "",
       shakemap: raw.Shakemap ? `${SHAKEMAP_BASE_URL}${raw.Shakemap}` : "",
       updatedAt,
     };
