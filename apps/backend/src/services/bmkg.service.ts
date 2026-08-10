@@ -13,7 +13,8 @@
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
 import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
-import type { TsunamiStatus } from "../types/alert.types.js";
+import type { TsunamiStatus, TsunamiStatusInfo } from "../types/alert.types.js";
+import { EarthquakeService } from "./earthquake.service.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
@@ -50,11 +51,22 @@ export class BmkgService {
 }
 
   /**
-   * Status tsunami placeholder.
-   * Jika sumber resmi belum tersedia di backend, gunakan NORMAL sebagai default
-   * atau override via env `BMKG_TSUNAMI_STATUS`.
+   * Status tsunami. InaTEWS resmi belum bisa diakses lewat API publik —
+   * kampus/ketua tim sedang mengurus akses resmi secara terpisah. Sampai itu
+   * didapat:
+   *
+   * - Override manual tetap tersedia lewat env `BMKG_TSUNAMI_STATUS` (mis.
+   *   operator yang punya info resmi dari kanal lain, atau untuk demo),
+   *   boleh berupa 4 level penuh (NORMAL/WASPADA/SIAGA/AWAS).
+   * - Kalau tidak di-override, status DIESTIMASI dari field `Potensi` pada
+   *   gempa BMKG yang relevan untuk Desa Cibenda (lihat `estimateTsunamiStatus`).
+   *   Estimasi ini SENGAJA dibatasi maksimal WASPADA — `Potensi` adalah flag
+   *   biner otomatis dari satu gempa saja (bukan status resmi InaTEWS yang
+   *   bisa naik/turun seiring data gelombang nyata), jadi tidak pernah
+   *   dipakai sebagai dasar SIAGA/AWAS secara otomatis. Overclaim di level
+   *   tertinggi jauh lebih berbahaya daripada under-claim di level menengah.
    */
-  static async getTsunamiStatus(): Promise<TsunamiStatus> {
+  static async getTsunamiStatus(): Promise<TsunamiStatusInfo> {
     const configured = process.env.BMKG_TSUNAMI_STATUS?.toUpperCase();
 
     if (
@@ -63,10 +75,56 @@ export class BmkgService {
       configured === "WASPADA" ||
       configured === "NORMAL"
     ) {
-      return configured;
+      return {
+        status: configured,
+        source: "BMKG InaTEWS",
+        description: this.buildOfficialTsunamiDescription(configured),
+      };
     }
 
-    return "NORMAL";
+    return this.estimateTsunamiStatus();
+  }
+
+  private static buildOfficialTsunamiDescription(status: TsunamiStatus): string {
+    switch (status) {
+      case "AWAS":
+        return "BMKG mengeluarkan status AWAS tsunami. Ikuti arahan evakuasi resmi.";
+      case "SIAGA":
+        return "BMKG mengeluarkan status SIAGA tsunami. Siapkan diri untuk evakuasi.";
+      case "WASPADA":
+        return "BMKG mengeluarkan status WASPADA tsunami. Tetap pantau informasi resmi.";
+      case "NORMAL":
+      default:
+        return "Tidak ada peringatan tsunami aktif dari BMKG.";
+    }
+  }
+
+  /**
+   * Estimasi status tsunami dari field `Potensi` gempa BMKG yang relevan
+   * untuk Desa Cibenda (radius + umur maksimum sama seperti yang dipakai
+   * card gempa Pangandaran & Decision Engine — lihat EarthquakeService.getPangandaran).
+   * Dibatasi maksimal WASPADA, tidak pernah otomatis jadi SIAGA/AWAS.
+   */
+  private static async estimateTsunamiStatus(): Promise<TsunamiStatusInfo> {
+    const nearest = await EarthquakeService.getPangandaran();
+
+    const isPotentiallyTsunamigenic =
+      nearest?.potential?.trim().toLowerCase() === "berpotensi tsunami";
+
+    if (isPotentiallyTsunamigenic && nearest) {
+      return {
+        status: "WASPADA",
+        source: "BMKG (estimasi dari data gempa)",
+        description: `Estimasi awal dari gempa M${nearest.magnitude} di ${nearest.location}: berpotensi tsunami menurut data BMKG. Ini BUKAN peringatan resmi InaTEWS — SIGAP belum terhubung ke InaTEWS, tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+      };
+    }
+
+    return {
+      status: "NORMAL",
+      source: "BMKG",
+      description:
+        "Tidak ada indikasi potensi tsunami dari data gempa terkini BMKG. SIGAP belum terhubung ke status resmi InaTEWS.",
+    };
   }
 
   private static flatten(raw: BmkgApiResponse): BmkgCuacaItem[] {

@@ -18,12 +18,12 @@ export function startAlertScheduler(interval = 60_000) {
             // umur maksimum oleh EarthquakeService), BUKAN gempa nasional
             // terbaru — lihat catatan di decisionEngine.service.ts.
             const earthquake = await EarthquakeService.getPangandaran();
-            const tsunamiStatus = await BmkgService.getTsunamiStatus();
+            const tsunami = await BmkgService.getTsunamiStatus();
 
             // Jalankan Decision Engine
             const result = DecisionEngineService.evaluate({
                 earthquake,
-                tsunamiStatus,
+                tsunami,
             });
 
             const latestAlert = await AlertService.getCurrentAlert();

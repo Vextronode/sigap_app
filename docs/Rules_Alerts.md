@@ -1,8 +1,10 @@
 ﻿# Alert & Broadcast Rules
 
 > Project : SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda)
-> Version : 1.1
+> Version : 1.2
 > Status : Draft
+
+**Changelog v1.1 → v1.2 (implemented in `bmkg.service.ts`, branch `feat/tsunami-live-status`):** status tsunami tidak lagi hardcoded `NORMAL` selamanya. Selama InaTEWS resmi belum bisa diakses lewat API publik (kampus/tim sedang mengurus akses ini secara terpisah), status sekarang **diestimasi otomatis** dari field `Potensi` gempa BMKG terdekat, **dibatasi maksimal WASPADA** — tidak pernah otomatis jadi SIAGA/AWAS, karena `Potensi` cuma flag biner per-gempa, bukan status resmi InaTEWS yang bisa dikonfirmasi/dicabut seiring data gelombang nyata. SIAGA/AWAS tetap hanya bisa masuk lewat override manual. Lihat point 4, point 6 (WASPADA & AWAS), dan `docs/API_Spec.md` point 11 untuk penjelasan lengkap.
 
 **Changelog v1.0 → v1.1 (implemented in `decisionEngine.service.ts`):** severity untuk WASPADA vs SIAGA dulu direncanakan pakai ambang batas magnitudo/radius buatan tim sendiri. Setelah ditinjau ulang, ini diganti dengan **field `Dirasakan` (skala MMI — Modified Mercalli Intensity) resmi dari BMKG** — BMKG sudah menyediakan ukuran "apakah gempa ini dirasakan warga di suatu lokasi" secara resmi, jadi tim tidak perlu menebak skala severity sendiri. Lihat point 4, point 5, point 6, point 7 untuk detail yang sudah disesuaikan.
 
@@ -62,12 +64,13 @@ SIGAP menggunakan kombinasi beberapa parameter berikut.
 - Waktu kejadian — dipakai untuk filter umur maksimum di point 5 (BMKG hanya menyimpan 15 gempa M5+ nasional terakhir, jadi tanpa filter umur, gempa lama bisa nyangkut berminggu-minggu di daftar seolah baru terjadi).
 - **Status Dirasakan (skala MMI resmi BMKG)** — parameter penentu severity (WASPADA vs SIAGA). Lihat point 6.
 - Magnitudo — ditampilkan di setiap alert untuk konteks, tapi **tidak lagi dipakai sebagai ambang batas severity sendiri** (lihat catatan v1.1 di atas).
-- Potensi tsunami per-gempa (field `Potensi` BMKG) — **belum dipakai** untuk eskalasi status. Ini pekerjaan terpisah yang belum dikerjakan, jangan asumsikan RED sudah bisa terpicu dari sini.
+- Potensi tsunami per-gempa (field `Potensi` BMKG) — **sudah dipakai**, tapi hanya untuk estimasi status tsunami itu sendiri (lihat bagian Tsunami di bawah dan point 11 di `docs/API_Spec.md`), **bukan** untuk memicu AWAS. Estimasi ini sengaja dibatasi maksimal WASPADA — RED/AWAS tidak bisa otomatis terpicu dari sini.
 
 ## Tsunami
 
-- Status resmi BMKG InaTEWS (NORMAL/WASPADA/SIAGA/AWAS) — **prioritas tertinggi**, dicek sebelum parameter gempa apa pun.
-- Estimasi tinggi gelombang, status pencabutan peringatan — belum tersedia sumber data publiknya, lihat catatan status tsunami di `docs/API_Spec.md` bagian 8.4 dan point 11.
+- Status resmi BMKG InaTEWS (NORMAL/WASPADA/SIAGA/AWAS) — **prioritas tertinggi**, dicek sebelum parameter gempa apa pun. Karena InaTEWS belum ada API publik (lihat `docs/API_Spec.md` point 11), status "resmi" ini praktiknya hanya bisa masuk lewat override manual (env `BMKG_TSUNAMI_STATUS`) oleh operator yang punya info resmi dari kanal lain — bukan otomatis dari BMKG.
+- Kalau tidak ada override manual, status **diestimasi otomatis** dari field `Potensi` gempa BMKG yang relevan untuk Desa Cibenda (`Potensi === "Berpotensi tsunami"` → WASPADA, selain itu → NORMAL). Estimasi ini **dibatasi maksimal WASPADA** — lihat penjelasan lengkap kenapa di `docs/API_Spec.md` point 11.
+- Estimasi tinggi gelombang, status pencabutan peringatan — masih belum tersedia sumber data publiknya, tidak dipakai dalam bentuk apa pun saat ini.
 
 ---
 
@@ -114,7 +117,7 @@ Perhitungan radius digunakan sebagai filter relevansi informasi bagi masyarakat 
 
 Salah satu kondisi berikut terpenuhi:
 
-- BMKG mengeluarkan Status WASPADA Tsunami.
+- BMKG mengeluarkan Status WASPADA Tsunami (resmi lewat override manual, **atau otomatis** dari estimasi `Potensi` gempa terdekat — lihat point 4 & point 11 `docs/API_Spec.md`).
 - Terdapat gempa yang relevan untuk Desa Cibenda (lolos filter radius + umur di point 5), **namun BMKG belum melaporkan gempa tersebut dirasakan** di sekitar Desa Cibenda/Kecamatan Parigi/Kabupaten Pangandaran (field `Dirasakan` BMKG kosong atau tidak menyebut wilayah tersebut).
 
 ### Tindakan Sistem
@@ -160,7 +163,7 @@ Salah satu kondisi berikut terpenuhi:
 
 > Status AWAS hanya dapat berasal dari peringatan resmi BMKG atau keputusan resmi pemerintah yang berwenang.
 
-**Catatan implementasi:** kondisi AWAS di atas hari ini hanya bisa terpicu dari status resmi BMKG InaTEWS (point 8.4 di `docs/API_Spec.md`), yang saat ini **masih placeholder (selalu NORMAL)** sampai sumber data real-nya tersedia — lihat catatan di point 11 dokumen tersebut. Field `Potensi` per-gempa ("berpotensi tsunami") **belum** dipakai untuk memicu AWAS secara otomatis; ini pekerjaan terpisah yang belum dikerjakan, bukan diasumsikan sudah jalan.
+**Catatan implementasi:** kondisi AWAS di atas hari ini hanya bisa terpicu lewat override manual `BMKG_TSUNAMI_STATUS=AWAS` (point 8.4 di `docs/API_Spec.md`) — misalnya operator yang menerima info resmi InaTEWS dari kanal lain (media, BPBD) dan menginput manual, atau untuk keperluan demo. Field `Potensi` per-gempa ("berpotensi tsunami") **sengaja tidak pernah** dipakai untuk memicu AWAS secara otomatis, walau sekarang sudah dipakai untuk WASPADA (lihat bagian Tsunami di point 4 dan alasan lengkapnya di point 11 `docs/API_Spec.md`) — `Potensi` cuma flag biner otomatis per-gempa, bukan status resmi yang layak dipakai untuk level "evakuasi sekarang".
 
 ### Tindakan Sistem
 

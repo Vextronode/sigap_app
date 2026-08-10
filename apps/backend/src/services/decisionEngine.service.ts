@@ -16,15 +16,17 @@
  * menyediakan ukuran "apakah gempa ini dirasakan warga" secara resmi, jadi
  * tim tidak perlu (dan sebaiknya tidak) menebak skala severity sendiri.
  *
- * ⚠️ Yang masih di luar cakupan file ini (lihat docs/API_Spec.md §11):
- * status tsunami real (bukan placeholder NORMAL) dan pemakaian field
- * `Potensi` per-gempa untuk eskalasi tambahan — itu pekerjaan terpisah.
+ * Status tsunami (PRIORITAS 1) sekarang bisa berasal dari override manual
+ * InaTEWS ATAU estimasi otomatis SIGAP dari field `Potensi` gempa — lihat
+ * `BmkgService.getTsunamiStatus()`. Engine ini tidak peduli mana dari
+ * keduanya, dia cuma pakai `source`/`description` apa adanya dari sana
+ * (estimasi otomatis dibatasi maksimal WASPADA di level itu, bukan di sini).
  */
 
 import { AlertLevel } from "../../generated/prisma/enums.js";
 import { ALERT_RULES } from "../config/alertRules.js";
 
-import type { DecisionInput, DecisionResult } from "../types/alert.types.js";
+import type { DecisionInput, DecisionResult, TsunamiStatus } from "../types/alert.types.js";
 
 const isFeltNearVillage = (felt: string | undefined): boolean => {
   if (!felt) return false;
@@ -38,42 +40,29 @@ const isFeltNearVillage = (felt: string | undefined): boolean => {
 export class DecisionEngineService {
   static evaluate(input: DecisionInput): DecisionResult {
 
-    const {
-      earthquake,
-      tsunamiStatus = "NORMAL",
-    } = input;
+    const { earthquake, tsunami } = input;
 
     /**
      * ============================
      * PRIORITAS 1
-     * Status resmi BMKG Tsunami
+     * Status tsunami (resmi InaTEWS via override manual, ATAU estimasi
+     * SIGAP dari data gempa — lihat BmkgService.getTsunamiStatus()).
+     * Deskripsi & source dipakai apa adanya dari sana, supaya alert di
+     * dashboard tidak pernah mengklaim lebih dari yang sebenarnya diketahui.
      * ============================
      */
 
-    if (tsunamiStatus === "AWAS") {
-      return {
-        level: AlertLevel.RED,
-        source: "BMKG InaTEWS",
-        description:
-          "BMKG mengeluarkan status AWAS. Evakuasi segera.",
+    if (tsunami && tsunami.status !== "NORMAL") {
+      const tsunamiLevelMap: Record<Exclude<TsunamiStatus, "NORMAL">, AlertLevel> = {
+        AWAS: AlertLevel.RED,
+        SIAGA: AlertLevel.ORANGE,
+        WASPADA: AlertLevel.YELLOW,
       };
-    }
 
-    if (tsunamiStatus === "SIAGA") {
       return {
-        level: AlertLevel.ORANGE,
-        source: "BMKG InaTEWS",
-        description:
-          "BMKG mengeluarkan status SIAGA.",
-      };
-    }
-
-    if (tsunamiStatus === "WASPADA") {
-      return {
-        level: AlertLevel.YELLOW,
-        source: "BMKG InaTEWS",
-        description:
-          "BMKG mengeluarkan status WASPADA.",
+        level: tsunamiLevelMap[tsunami.status as Exclude<TsunamiStatus, "NORMAL">],
+        source: tsunami.source,
+        description: tsunami.description,
       };
     }
 
