@@ -67,7 +67,7 @@ export const TsunamiCard = ({
 
   return (
     <Card className="!p-0 overflow-hidden border border-[color:var(--border)] bg-card shadow-sm">
-      <div className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+      <div className="flex items-start justify-between gap-3 px-5 py-4 lg:items-center lg:gap-6">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400">
             <GiBigWave size={24} aria-hidden="true" />
