@@ -13,27 +13,20 @@ type TsunamiStatusResponse = {
     updatedAt: string;
 };
 
-const getTsunamiDescription = (status: TsunamiStatusLevel) => {
-    switch (status) {
-        case "AWAS":
-            return "BMKG mengeluarkan status AWAS tsunami. Ikuti arahan evakuasi resmi.";
-        case "SIAGA":
-            return "BMKG mengeluarkan status SIAGA tsunami. Siapkan diri untuk evakuasi.";
-        case "WASPADA":
-            return "BMKG mengeluarkan status WASPADA tsunami. Tetap pantau informasi resmi.";
-        case "NORMAL":
-        default:
-            return "Tidak ada peringatan tsunami aktif dari BMKG.";
-    }
-};
-
+/**
+ * `source`/`description` datang langsung dari BmkgService.getTsunamiStatus() —
+ * bisa "BMKG InaTEWS" (override manual resmi) atau "BMKG (estimasi dari data
+ * gempa)" (otomatis, dibatasi maksimal WASPADA). Route ini sengaja TIDAK
+ * membangun ulang description-nya sendiri, supaya tidak ada dua sumber teks
+ * yang bisa saling tidak sinkron.
+ */
 const buildTsunamiStatus = async (): Promise<TsunamiStatusResponse> => {
-    const status = await BmkgService.getTsunamiStatus();
+    const { status, source, description } = await BmkgService.getTsunamiStatus();
 
     return {
         status,
-        description: getTsunamiDescription(status),
-        source: "BMKG InaTEWS",
+        description,
+        source,
         updatedAt: new Date().toISOString(),
     };
 };
