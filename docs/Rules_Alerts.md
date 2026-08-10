@@ -1,8 +1,12 @@
-# Alert & Broadcast Rules
+﻿# Alert & Broadcast Rules
 
 > Project : SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda)
-> Version : 1.0
+> Version : 1.1
 > Status : Draft
+
+**Changelog v1.0 → v1.1 (implemented in `decisionEngine.service.ts`):** severity untuk WASPADA vs SIAGA dulu direncanakan pakai ambang batas magnitudo/radius buatan tim sendiri. Setelah ditinjau ulang, ini diganti dengan **field `Dirasakan` (skala MMI — Modified Mercalli Intensity) resmi dari BMKG** — BMKG sudah menyediakan ukuran "apakah gempa ini dirasakan warga di suatu lokasi" secara resmi, jadi tim tidak perlu menebak skala severity sendiri. Lihat point 4, point 5, point 6, point 7 untuk detail yang sudah disesuaikan.
+
+**Status implementasi saat ini (penting untuk tim device/sirine):** yang sudah berjalan otomatis adalah penentuan level (GREEN/YELLOW/ORANGE/RED) dan penyimpanannya ke database setiap 60 detik. **Broadcast ke Kepala Desa/RT/RW/warga (point 8, point 9) belum diimplementasikan sama sekali** — belum ada kanal WhatsApp/SMS/push notification yang terhubung. Saat ini level hanya tersedia lewat dashboard dan (untuk perangkat) lewat REST polling ke backend. Jangan asumsikan broadcast di point 8/9 sudah aktif.
 
 ---
 
@@ -54,18 +58,16 @@ SIGAP menggunakan kombinasi beberapa parameter berikut.
 
 ## Gempa Bumi
 
-- Magnitudo
-- Kedalaman
-- Lokasi Episentrum
-- Jarak episentrum terhadap Desa Cibenda
-- Potensi tsunami (jika tersedia pada data BMKG)
-- Waktu kejadian
+- Jarak episentrum terhadap Desa Cibenda — **filter relevansi** (lihat point 5), gempa di luar radius/umur maksimum tidak pernah sampai ke tahap evaluasi status.
+- Waktu kejadian — dipakai untuk filter umur maksimum di point 5 (BMKG hanya menyimpan 15 gempa M5+ nasional terakhir, jadi tanpa filter umur, gempa lama bisa nyangkut berminggu-minggu di daftar seolah baru terjadi).
+- **Status Dirasakan (skala MMI resmi BMKG)** — parameter penentu severity (WASPADA vs SIAGA). Lihat point 6.
+- Magnitudo — ditampilkan di setiap alert untuk konteks, tapi **tidak lagi dipakai sebagai ambang batas severity sendiri** (lihat catatan v1.1 di atas).
+- Potensi tsunami per-gempa (field `Potensi` BMKG) — **belum dipakai** untuk eskalasi status. Ini pekerjaan terpisah yang belum dikerjakan, jangan asumsikan RED sudah bisa terpicu dari sini.
 
 ## Tsunami
 
-- Status resmi BMKG
-- Estimasi tinggi gelombang
-- Status pencabutan peringatan
+- Status resmi BMKG InaTEWS (NORMAL/WASPADA/SIAGA/AWAS) — **prioritas tertinggi**, dicek sebelum parameter gempa apa pun.
+- Estimasi tinggi gelombang, status pencabutan peringatan — belum tersedia sumber data publiknya, lihat catatan status tsunami di `docs/API_Spec.md` bagian 8.4 dan point 11.
 
 ---
 
@@ -81,11 +83,9 @@ Longitude : 108.55444
 
 Apabila koordinat desa tidak tersedia, sistem dapat menggunakan titik referensi Kabupaten Pangandaran sebagai fallback.
 
-Kategori radius:
+**Radius relevansi (implementasi saat ini):** gempa dianggap relevan untuk Desa Cibenda apabila berjarak ≤150 km dari desa **dan** terjadi dalam 14 hari terakhir (`PANGANDARAN_RADIUS_KM` / `PANGANDARAN_MAX_AGE_DAYS`, keduanya dapat dikonfigurasi lewat environment variable, lihat `earthquake.service.ts`). Filter umur diperlukan karena sumber data BMKG yang dipakai (`gempaterkini.json`) hanya berisi 15 gempa M5+ terakhir se-Indonesia — tanpa filter ini, satu gempa lama bisa tetap muncul seolah baru terjadi saat sedang sepi gempa besar secara nasional.
 
-- Tinggi : ≤100 km
-- Sedang : >100–250 km
-- Rendah : >250 km
+**Catatan penting — koreksi dari draft v1.0:** sebelumnya dokumen ini mencantumkan 3 kategori radius (Tinggi/Sedang/Rendah) yang secara implisit dipakai sebagai bagian dari penentuan severity. Ini **bertentangan** dengan prinsip yang sudah dinyatakan di paragraf terakhir bagian ini sejak awal — bahwa radius adalah filter relevansi, bukan penentu tingkat bahaya. Implementasi sekarang konsisten dengan prinsip tersebut: radius hanya dipakai sebagai **filter satu tahap** (relevan / tidak relevan) sebelum data gempa sampai ke Decision Engine. Begitu gempa dinyatakan relevan, severity (WASPADA vs SIAGA) ditentukan oleh status Dirasakan (MMI), bukan oleh seberapa dekat jaraknya.
 
 Perhitungan radius digunakan sebagai filter relevansi informasi bagi masyarakat Desa Cibenda, bukan sebagai penentu tingkat bahaya bencana.
 ---
@@ -115,8 +115,7 @@ Perhitungan radius digunakan sebagai filter relevansi informasi bagi masyarakat 
 Salah satu kondisi berikut terpenuhi:
 
 - BMKG mengeluarkan Status WASPADA Tsunami.
-- Terdapat gempa dalam radius prioritas SIGAP yang memerlukan perhatian pemerintah desa.
-- Pemerintah desa ingin melakukan monitoring lanjutan.
+- Terdapat gempa yang relevan untuk Desa Cibenda (lolos filter radius + umur di point 5), **namun BMKG belum melaporkan gempa tersebut dirasakan** di sekitar Desa Cibenda/Kecamatan Parigi/Kabupaten Pangandaran (field `Dirasakan` BMKG kosong atau tidak menyebut wilayah tersebut).
 
 ### Tindakan Sistem
 
@@ -137,7 +136,7 @@ Salah satu kondisi berikut terpenuhi:
 Salah satu kondisi berikut terpenuhi:
 
 - BMKG mengeluarkan Status SIAGA Tsunami.
-- Gempa berkekuatan besar yang berpotensi memberikan dampak signifikan bagi wilayah Pangandaran berdasarkan informasi resmi BMKG.
+- Terdapat gempa yang relevan untuk Desa Cibenda (lolos filter radius + umur di point 5) **dan dilaporkan dirasakan** oleh BMKG di sekitar Desa Cibenda/Kecamatan Parigi/Kabupaten Pangandaran — dicek dari field `Dirasakan` (laporan skala MMI resmi BMKG per lokasi), bukan dari ambang batas magnitudo buatan sendiri.
 
 ### Tindakan Sistem
 
@@ -160,6 +159,8 @@ Salah satu kondisi berikut terpenuhi:
 - BMKG mengeluarkan peringatan resmi yang mengharuskan evakuasi masyarakat.
 
 > Status AWAS hanya dapat berasal dari peringatan resmi BMKG atau keputusan resmi pemerintah yang berwenang.
+
+**Catatan implementasi:** kondisi AWAS di atas hari ini hanya bisa terpicu dari status resmi BMKG InaTEWS (point 8.4 di `docs/API_Spec.md`), yang saat ini **masih placeholder (selalu NORMAL)** sampai sumber data real-nya tersedia — lihat catatan di point 11 dokumen tersebut. Field `Potensi` per-gempa ("berpotensi tsunami") **belum** dipakai untuk memicu AWAS secara otomatis; ini pekerjaan terpisah yang belum dikerjakan, bukan diasumsikan sudah jalan.
 
 ### Tindakan Sistem
 
@@ -192,16 +193,15 @@ Validasi lokasi kejadian
 
 ↓
 
-Hitung radius terhadap Pangandaran
+Filter relevansi: radius ≤150 km dari Desa Cibenda DAN umur ≤14 hari
 
-↓
+↓ (jika tidak relevan, berhenti di sini → AMAN)
 
-Evaluasi parameter:
+Cek Status Tsunami BMKG (prioritas tertinggi — AWAS/SIAGA/WASPADA/NORMAL)
 
-- Magnitudo
-- Kedalaman
-- Radius
-- Status Tsunami BMKG
+↓ (jika NORMAL, lanjut ke evaluasi gempa)
+
+Cek field Dirasakan (MMI) — apakah menyebut Cibenda/Parigi/Pangandaran?
 
 ↓
 
