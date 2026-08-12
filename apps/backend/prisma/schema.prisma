@@ -112,3 +112,23 @@ model Alert {
 
   @@map("alerts")
 }
+
+//
+// ==========================
+// Push Notification (Web Push)
+// ==========================
+// Warga tidak login ke SIGAP, jadi subscription ini TIDAK terikat ke User —
+// murni per browser/device (identik dengan cara kerja Web Push standar).
+//
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@map("push_subscriptions")
+}

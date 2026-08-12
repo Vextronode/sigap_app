@@ -1,6 +1,7 @@
 import { AISummaryCard } from "../features/dashboard/components/AISummaryCard";
 import { Announcements } from "../features/dashboard/components/Announcements";
 import { CurrentAlertCard } from "../features/dashboard/components/CurrentAlertCard";
+import { NotificationPrompt } from "../features/dashboard/components/NotificationPrompt";
 import { EarthquakeCard } from "../features/dashboard/components/EarthquakeCard";
 import { SectionHeader } from "../components/common/SectionHeader"; 
 import { EmergencyContacts } from "../features/dashboard/components/EmergencyContacts";
@@ -62,6 +63,7 @@ export default function DashboardPage() {
         isLoading={alertQuery.isLoading}
         isError={alertQuery.isError}
       />
+      <NotificationPrompt />
       <AISummaryCard
         summary={summaryQuery.data ?? null}
         isLoading={summaryQuery.isLoading}
