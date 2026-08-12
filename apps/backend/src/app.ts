@@ -15,6 +15,27 @@ app.use(morgan("dev"));
 
 app.use(express.json());
 
+// ==== TEMPORARY DEBUG — HAPUS SETELAH SELESAI CEK ====
+app.get("/api/debug-env", (req: Request, res: Response) => {
+  const url = process.env.DATABASE_URL || "";
+  const directUrl = process.env.DIRECT_URL || "";
+  res.json({
+    database_url: {
+      exists: !!url,
+      length: url.length,
+      hasNeonHost: url.includes("neon.tech"),
+      hasPooler: url.includes("-pooler"),
+    },
+    direct_url: {
+      exists: !!directUrl,
+      length: directUrl.length,
+    },
+    node_env: process.env.NODE_ENV,
+    vercel_env: process.env.VERCEL_ENV,
+  });
+});
+// ==== END TEMPORARY DEBUG ====
+
 app.use("/api/v1/public", publicRouter);
 app.use("/api/v1/protected", protectedRouter);
 
