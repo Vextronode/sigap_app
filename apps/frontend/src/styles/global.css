@@ -519,10 +519,6 @@ svg {
   font-size: 0.875rem;
 }
 
-.forecast-item svg {
-  color: var(--warning);
-}
-
 .forecast-item strong {
   font-size: 1rem;
 }
