@@ -1,5 +1,5 @@
 import { ShieldAlert } from "lucide-react";
-// import { Skeleton } from "../../../components/ui/Skeleton";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
@@ -30,11 +30,17 @@ const formatKeIndonesia = (dateString?: string) => {
 
 export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: CurrentAlertCardProps) => {
   if (isLoading) {
+    // Sengaja TIDAK pakai status-banner--safe (hijau) di sini — sebelumnya
+    // begitu, dan itu keliru: pas loading kita belum tahu status aslinya
+    // apa, jadi jangan tampilkan warna "aman" seolah sudah tahu jawabannya.
     return (
-      <section className="status-banner status-banner--safe" aria-label="Memuat status kesiapsiagaan">
-        {/* <Skeleton className="status-banner__icon" />
-        <Skeleton className="skeleton--title" />
-        <Skeleton className="skeleton--line skeleton--short" /> */}
+      <section
+        className="card flex flex-col items-center gap-4 px-6 py-10 text-center"
+        aria-label="Memuat status kesiapsiagaan"
+      >
+        <Skeleton className="h-[76px] w-[76px] !rounded-full" />
+        <Skeleton className="h-9 w-40 !rounded-lg" />
+        <Skeleton className="h-4 w-72 !rounded-lg" />
       </section>
     );
   }
