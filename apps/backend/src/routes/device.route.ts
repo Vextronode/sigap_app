@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { DeviceService } from "../services/device.service.js";
+import { AlertService } from "../services/alert.service.js";
 import type {
     ApiErrorResponse,
     ApiSuccessResponse,
@@ -13,12 +14,15 @@ export const publicDeviceRouter = Router();
  */
 publicDeviceRouter.get("/status", async (_req, res) => {
     try {
-        const deviceStatus = await DeviceService.getAll();
+        const currentAlert = await AlertService.getCurrentAlert();
+        const level = currentAlert?.level || "GREEN";
 
-        const response: ApiSuccessResponse<typeof deviceStatus> = {
+        const response: ApiSuccessResponse<{ level: string }> = {
             success: true,
-            message: "Device status retrieved successfully.",
-            data: deviceStatus,
+            message: "Status alert retrieved successfully.",
+            data: {
+                level,
+            },
         };
 
         res.json(response);
@@ -28,6 +32,47 @@ publicDeviceRouter.get("/status", async (_req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal mengambil status perangkat.",
+            errors: [error instanceof Error ? error.message : String(error)],
+        };
+
+        res.status(500).json(response);
+    }
+});
+
+/**
+ * POST /api/device/register
+ * Mendaftarkan perangkat baru atau mengambil perangkat jika sudah terdaftar
+ */
+publicDeviceRouter.post("/register", async (req, res) => {
+    try {
+        const { deviceCode, name } = req.body;
+
+        if (!deviceCode || !name) {
+            const response: ApiErrorResponse = {
+                success: false,
+                message: "deviceCode dan name wajib diisi.",
+                errors: ["deviceCode and name are required"],
+            };
+
+            res.status(400).json(response);
+            return;
+        }
+
+        const device = await DeviceService.register(deviceCode, name);
+
+        const response: ApiSuccessResponse<typeof device> = {
+            success: true,
+            message: "Device registered successfully.",
+            data: device,
+        };
+
+        res.status(200).json(response);
+    } catch (error) {
+        console.error("[POST /device/register] error:", error);
+
+        const response: ApiErrorResponse = {
+            success: false,
+            message: "Gagal meregistrasi perangkat.",
             errors: [error instanceof Error ? error.message : String(error)],
         };
 
