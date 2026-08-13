@@ -17,6 +17,7 @@
   --text: #20242a;
   --text-muted: #606875;
   --border: #dde3ea;
+  --icon-chip-bg: #f3f3f4;
   --shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
   --radius: 8px;
   --sidebar-width: 280px;
@@ -43,5 +44,6 @@
   --text: #f5f7fb;
   --text-muted: #aeb7c4;
   --border: #2c3642;
+  --icon-chip-bg: #2c3642;
   --shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
 }

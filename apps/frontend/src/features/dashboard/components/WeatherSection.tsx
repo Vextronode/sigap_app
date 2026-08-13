@@ -1,6 +1,6 @@
 import { CloudSun, LucideDroplet, Thermometer, Wind} from "lucide-react";
 import { Card } from "../../../components/ui/Card";
-import { CardSkeleton } from "../../../components/ui/Skeleton";
+import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import type { CurrentWeather, WeatherForecastItem } from "../../../types/dashboard";
@@ -32,6 +32,9 @@ const weatherIcon = (condition: string) => {
   return "Cerah";
 };
 
+const weatherIconColor = (condition: string) =>
+  weatherIcon(condition) === "Hujan" ? "var(--primary)" : "var(--warning)";
+
 export const WeatherSection = ({
   weather,
   forecast,
@@ -44,11 +47,14 @@ export const WeatherSection = ({
   <section aria-labelledby="weather">
     <SectionHeader id="weather" title="Monitoring Cuaca" icon={<CloudSun size={22} />} />
     {isWeatherLoading ? (
-      <div className="weather-grid">
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
+      <>
+        <Skeleton className="mb-6 h-[100px] w-full !rounded-2xl" />
+        <div className="weather-grid">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </>
     ) : isWeatherError ? (
       <StateMessage
         type="error"
@@ -56,7 +62,25 @@ export const WeatherSection = ({
         message="Data cuaca terkini belum dapat diambil dari API."
       />
     ) : weather ? (
-      <div className="weather-grid">
+      <>
+        <Card className="mb-6 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <span className="block text-[0.8rem] font-extrabold uppercase text-[color:var(--text-muted)]">
+              Cuaca Saat Ini
+            </span>
+            <strong className="mt-1 block text-[2.5rem] font-extrabold leading-tight text-[color:var(--primary)]">
+              {weather.weather}
+            </strong>
+            <small className="font-bold text-[color:var(--text-muted)]">
+              Cibenda, Kecamatan Parigi, Kabupaten Pangandaran, Jawa Barat
+            </small>
+          </div>
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-[color:var(--icon-chip-bg)]">
+            <CloudSun size={42} style={{ color: weatherIconColor(weather.weather) }} aria-hidden="true" />
+          </div>
+        </Card>
+
+        <div className="weather-grid">
         <Card className="metric-card">
           <span>Suhu terkini</span>
           <strong>
@@ -86,7 +110,8 @@ export const WeatherSection = ({
             {windDirectionMap[weather.windDirection] ?? (weather.windDirection ? `Dari ${weather.windDirection}` : "Data BMKG")}
           </small>
         </Card>
-      </div>
+        </div>
+      </>
     ) : (
       <StateMessage title="Cuaca belum tersedia" message="Data cuaca resmi belum berhasil dimuat." />
     )}
@@ -114,7 +139,7 @@ export const WeatherSection = ({
             >
               <span>{item.label}</span>
 
-              <CloudSun size={22} />
+              <CloudSun size={22} style={{ color: weatherIconColor(item.condition) }} />
 
               <strong>{item.temperature}°C</strong>
 
