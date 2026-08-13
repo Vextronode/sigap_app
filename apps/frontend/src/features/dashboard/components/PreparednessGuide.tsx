@@ -10,7 +10,7 @@ export const PreparednessGuide = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
       {preparednessGuideData.map((guide) => (
         <article
-          className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between"
+          className="bg-card rounded-2xl border border-[color:var(--border)] overflow-hidden shadow-sm flex flex-col justify-between"
           key={guide.title}
         >
           {/* Bagian Atas: Gambar Header & Poin Ringkasan */}
@@ -33,10 +33,10 @@ export const PreparednessGuide = () => (
             <div className="p-5 space-y-4">
               {guide.points.map((point, index) => (
                 <div key={index} className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm flex items-center justify-center">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20 font-semibold text-sm flex items-center justify-center">
                     {index + 1}
                   </span>
-                  <p className="text-sm text-slate-700 leading-relaxed font-normal">
+                  <p className="text-sm text-foreground/80 leading-relaxed font-normal">
                     {point}
                   </p>
                 </div>

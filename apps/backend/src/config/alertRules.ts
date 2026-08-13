@@ -6,13 +6,16 @@ export const ALERT_RULES = {
     NORMAL: "GREEN",
   },
 
+  /**
+   * Kata kunci wilayah yang dicek pada field `Dirasakan` (laporan MMI —
+   * Modified Mercalli Intensity) dari BMKG, untuk menentukan apakah sebuah
+   * gempa benar-benar dirasakan warga di sekitar Desa Cibenda.
+   *
+   * Ini menggantikan pendekatan lama (ambang batas magnitudo/radius buatan
+   * sendiri) dengan sumber resmi BMKG sendiri — MMI adalah skala guncangan
+   * standar yang sudah dilaporkan BMKG per lokasi, bukan angka tebakan tim.
+   */
   earthquake: {
-    monitoringMagnitude: 5,
-    significantMagnitude: 6,
-  },
-
-  radius: {
-    HIGH: 100,
-    MEDIUM: 250,
+    feltAreaKeywords: ["Cibenda", "Parigi", "Pangandaran"],
   },
 } as const;

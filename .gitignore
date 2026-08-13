@@ -23,3 +23,8 @@ Thumbs.db
 # Prisma
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
+
+#Claude
+.claude/
+.vercel
+.env*

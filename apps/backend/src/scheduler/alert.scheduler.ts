@@ -14,14 +14,16 @@ export function startAlertScheduler(interval = 60_000) {
 
     const execute = async () => {
         try {
-            // Ambil data gempa dan status tsunami terbaru dari BMKG
-            const earthquake = await EarthquakeService.getLatest();
-            const tsunamiStatus = await BmkgService.getTsunamiStatus();
+            // Gempa yang relevan untuk Desa Cibenda (sudah difilter radius +
+            // umur maksimum oleh EarthquakeService), BUKAN gempa nasional
+            // terbaru — lihat catatan di decisionEngine.service.ts.
+            const earthquake = await EarthquakeService.getPangandaran();
+            const tsunami = await BmkgService.getTsunamiStatus();
 
             // Jalankan Decision Engine
             const result = DecisionEngineService.evaluate({
                 earthquake,
-                tsunamiStatus,
+                tsunami,
             });
 
             const latestAlert = await AlertService.getCurrentAlert();

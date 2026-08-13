@@ -6,6 +6,7 @@ import { publicAlertsRouter } from "./alert.route.js";
 import { publicEarthquakesRouter } from "./earthquakes.route.js";
 import { publicTsunamiRouter } from "./tsunami.route.js";
 import { publicDeviceRouter } from "./device.route.js";
+import { publicNotificationRouter, protectedNotificationRouter } from "./notification.route.js";
 
 export const publicRouter = Router();
 
@@ -24,5 +25,9 @@ publicRouter.use("/tsunamis", publicTsunamiRouter);
 // IoT Device
 publicRouter.use("/device", publicDeviceRouter);
 
+// Push Notification
+publicRouter.use("/notifications", publicNotificationRouter);
+
 export const protectedRouter = Router();
 protectedRouter.use("/auth", protectedAuthRouter);
+protectedRouter.use("/notifications", protectedNotificationRouter);
