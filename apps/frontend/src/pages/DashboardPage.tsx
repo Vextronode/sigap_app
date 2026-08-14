@@ -57,7 +57,16 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-stack">
-      {isFetching && <span className="refresh-indicator">Memperbarui data...</span>}
+      {isFetching && (
+        <span
+          className={`refresh-indicator ${
+            isFetching ? "refresh-indicator--visible" : ""
+          }`}
+          aria-live="polite"
+        >
+          Memperbarui data...
+        </span>
+      )}
       <CurrentAlertCard
         alert={alertQuery.data ?? null}
         isLoading={alertQuery.isLoading}
