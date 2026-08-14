@@ -289,13 +289,40 @@ svg {
 }
 
 .refresh-indicator {
-  justify-self: end;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
   color: var(--text-muted);
+
   font-size: 0.875rem;
   padding: 6px 12px;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease,
+    visibility 0s linear 200ms;
+
+  pointer-events: none;
+}
+
+.refresh-indicator--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease,
+    visibility 0s linear 0s;
 }
 
 .card {
