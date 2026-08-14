@@ -12,11 +12,7 @@ export const MainLayout = () => {
 
   return (
     <div className="app-shell">
-      <Sidebar
-        alert={alertQuery.data ?? null}
-        isLoading={alertQuery.isLoading}
-        isError={alertQuery.isError}
-      />
+      <Sidebar />
       <div className="app-shell__content">
         <TopNavbar
           alert={alertQuery.data ?? null}

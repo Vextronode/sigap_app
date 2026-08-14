@@ -11,14 +11,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
-import { getAlertMeta } from "../utils/status";
-import type { CurrentAlert } from "../types/dashboard";
-
-type SidebarProps = {
-  alert?: CurrentAlert | null;
-  isLoading?: boolean;
-  isError?: boolean;
-};
+import { useDeviceStatus } from "../features/dashboard/hooks/useDeviceStatus";
 
 const sectionLinks = [
   { label: "Cuaca", href: "#weather", icon: Cloud },
@@ -29,10 +22,10 @@ const sectionLinks = [
   { label: "Pengumuman", href: "#announcements", icon: Megaphone },
 ];
 
-export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarProps) => {
+export const Sidebar = () => {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const closeSidebar = useUiStore((state) => state.closeSidebar);
-  const meta = getAlertMeta(alert);
+  const { data: deviceStatus, isLoading: isDeviceLoading, isError: isDeviceError } = useDeviceStatus();
 
   const [activeHash, setActiveHash] = useState(window.location.hash);
 
@@ -86,6 +79,40 @@ export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarPr
     closeSidebar();
     setActiveHash("");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const getDotClass = () => {
+    if (isDeviceLoading) return "status-dot--neutral";
+    if (
+      isDeviceError ||
+      !deviceStatus ||
+      deviceStatus.status === "UNAVAILABLE" ||
+      deviceStatus.tone === "neutral"
+    ) {
+      return "status-dot--neutral";
+    }
+    if (deviceStatus.status === "ONLINE" || deviceStatus.tone === "safe") {
+      return "status-dot--safe status-dot--pulse";
+    }
+    return "status-dot--danger status-dot--pulse";
+  };
+
+  const getStatusLabel = () => {
+    if (isDeviceLoading) return "Memeriksa Alat...";
+    if (isDeviceError || !deviceStatus) return "Koneksi Alat Tidak Tersedia";
+    return deviceStatus.label || "Koneksi Alat Tidak Tersedia";
+  };
+
+  const getLabelClass = () => {
+    if (
+      isDeviceLoading ||
+      isDeviceError ||
+      deviceStatus?.tone === "neutral" ||
+      deviceStatus?.status === "UNAVAILABLE"
+    ) {
+      return "sidebar__device-label sidebar__device-label--neutral";
+    }
+    return "sidebar__device-label";
   };
 
   return (
@@ -144,26 +171,11 @@ export const Sidebar = ({ alert, isLoading = false, isError = false }: SidebarPr
           })}
         </nav>
 
-        <div className="sidebar__status">
-          <span className={`status-dot status-dot--${isError ? "neutral" : meta.tone}`} />
-          <div className="flex flex-col text-left leading-tight">
-            <strong>
-              {isLoading
-                ? "Status: Memuat"
-                : isError
-                  ? "Status: Tidak tersedia"
-                  : !alert
-                    ? "Status: Belum ada"
-                    : `Status: ${meta.label}`}
-            </strong>
-            <span className="text-xs text-gray-500 mt-0.5">
-              {isError 
-                ? "Koneksi alert belum tersedia" 
-                : !alert 
-                  ? "Menunggu alert tersimpan" 
-                  : "Sistem terhubung"}
-            </span>
-          </div>
+        <div className="sidebar__device-card">
+          <span className={`status-dot ${getDotClass()}`} />
+          <span className={getLabelClass()}>
+            {getStatusLabel()}
+          </span>
         </div>
       </aside>
       {sidebarOpen && <button className="sidebar-overlay" aria-label="Tutup menu" onClick={closeSidebar} type="button" />}
