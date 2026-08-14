@@ -63,6 +63,21 @@ async function main() {
     create: { userId: adminUser.id, roleId: adminRole.id },
   });
 
+  // Alert (baseline demo)
+  const existingAlertCount = await prisma.alert.count();
+  if (existingAlertCount === 0) {
+    await prisma.alert.create({
+      data: {
+        level: "GREEN",
+        source: "system",
+        description: "Kondisi lingkungan normal, tidak ada potensi bahaya terdeteksi.",
+      },
+    });
+    console.log("Baseline alert (GREEN) ditambahkan.");
+  } else {
+    console.log(`Alert sudah ada (${existingAlertCount} entri), skip seeding baseline.`);
+  }
+
   console.log("Seed selesai.");
   console.log(`Placeholder admin -> email: ${placeholderEmail} | password: ${placeholderPassword}`);
   console.log("WAJIB diganti sebelum deployment.");
