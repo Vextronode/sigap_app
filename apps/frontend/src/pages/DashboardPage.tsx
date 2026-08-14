@@ -27,6 +27,7 @@ import { Siren, TriangleAlert,  } from "lucide-react";
 
 export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
+  
   const weatherQuery = useWeather();
   const forecastQuery = useForecast();
   const indonesiaEarthquakeQuery = useIndonesiaEarthquake();
@@ -40,7 +41,14 @@ export default function DashboardPage() {
   const evacuationQuery = useEvacuation();
   const evacuationRoutesQuery = useEvacuationRoutes();
 
-  const isFetching = [
+  /**
+   * Global loading indicator hanya aktif ketika data pertama kali dimuat.
+   * 
+   * Jangan gunakan isFetching di sini karena isFetching juga bernilai true
+   * ketika background polling / refetch sedang berjalan.
+   */
+
+  const isInitialLoading = [
     weatherQuery,
     forecastQuery,
     indonesiaEarthquakeQuery,
@@ -53,99 +61,98 @@ export default function DashboardPage() {
     contactsQuery,
     evacuationQuery,
     evacuationRoutesQuery,
-  ].some((query) => query.isFetching && !query.isLoading);
+  ].some((query) => query.isLoading);
 
   return (
-    <div className="dashboard-stack">
-      {isFetching && (
-        <span
-          className={`refresh-indicator ${
-            isFetching ? "refresh-indicator--visible" : ""
-          }`}
-          aria-live="polite"
-        >
-          Memperbarui data...
-        </span>
-      )}
-      <CurrentAlertCard
-        alert={alertQuery.data ?? null}
-        isLoading={alertQuery.isLoading}
-        isError={alertQuery.isError}
-      />
-      <NotificationPrompt />
-      <AISummaryCard
-        summary={summaryQuery.data ?? null}
-        isLoading={summaryQuery.isLoading}
-        isError={summaryQuery.isError}
-      />
-      <WeatherSection
-        weather={weatherQuery.data ?? null}
-        forecast={forecastQuery.data ?? []}
-        isWeatherLoading={weatherQuery.isLoading}
-        isWeatherError={weatherQuery.isError}
-        isForecastLoading={forecastQuery.isLoading}
-        isForecastError={forecastQuery.isError}
-      />
-      <section aria-labelledby="earthquake">
-        <SectionHeader
-          id="earthquake"
-          title="Monitoring Gempa Bumi"
-          icon={<TriangleAlert size={22} />}
+    <div className="dashboard-page">
+      <span
+        className={`refresh-indicator ${
+          isInitialLoading ? "refresh-indicator--visible" : ""
+        }`}
+      >
+        Memperbarui data...
+      </span>
+      <div className="dashboard-stack">
+        <CurrentAlertCard
+          alert={alertQuery.data ?? null}
+          isLoading={alertQuery.isLoading}
+          isError={alertQuery.isError}
         />
-        <div className="dashboard-stack">
-          <EarthquakeCard
-            title="Info Gempa Pangandaran"
-            earthquake={pangandaranEarthquakeQuery.data ?? null}
-            isLoading={pangandaranEarthquakeQuery.isLoading}
-            isError={pangandaranEarthquakeQuery.isError}
+        <NotificationPrompt />
+        <AISummaryCard
+          summary={summaryQuery.data ?? null}
+          isLoading={summaryQuery.isLoading}
+          isError={summaryQuery.isError}
+        />
+        <WeatherSection
+          weather={weatherQuery.data ?? null}
+          forecast={forecastQuery.data ?? []}
+          isWeatherLoading={weatherQuery.isLoading}
+          isWeatherError={weatherQuery.isError}
+          isForecastLoading={forecastQuery.isLoading}
+          isForecastError={forecastQuery.isError}
+        />
+        <section aria-labelledby="earthquake">
+          <SectionHeader
+            id="earthquake"
+            title="Monitoring Gempa Bumi"
+            icon={<TriangleAlert size={22} />}
           />
-          <div className="dashboard-grid dashboard-grid--two">
+          <div className="dashboard-stack">
             <EarthquakeCard
-              title="Info Gempa Indonesia"
-              earthquake={indonesiaEarthquakeQuery.data ?? null}
-              isLoading={indonesiaEarthquakeQuery.isLoading}
-              isError={indonesiaEarthquakeQuery.isError}
+              title="Info Gempa Pangandaran"
+              earthquake={pangandaranEarthquakeQuery.data ?? null}
+              isLoading={pangandaranEarthquakeQuery.isLoading}
+              isError={pangandaranEarthquakeQuery.isError}
             />
-            <EarthquakeCard
-              title="Info Gempa Jawa Barat"
-              earthquake={westJavaEarthquakeQuery.data ?? null}
-              isLoading={westJavaEarthquakeQuery.isLoading}
-              isError={westJavaEarthquakeQuery.isError}
-            />
+            <div className="dashboard-grid dashboard-grid--two">
+              <EarthquakeCard
+                title="Info Gempa Indonesia"
+                earthquake={indonesiaEarthquakeQuery.data ?? null}
+                isLoading={indonesiaEarthquakeQuery.isLoading}
+                isError={indonesiaEarthquakeQuery.isError}
+              />
+              <EarthquakeCard
+                title="Info Gempa Jawa Barat"
+                earthquake={westJavaEarthquakeQuery.data ?? null}
+                isLoading={westJavaEarthquakeQuery.isLoading}
+                isError={westJavaEarthquakeQuery.isError}
+              />
+            </div>
           </div>
-        </div>
-      </section>
-      <section aria-labelledby="tsunami">
-        <SectionHeader
-          id="tsunami"
-          title="Monitoring Tsunami"
-          icon={<Siren size={22} />}
+        </section>
+        <section aria-labelledby="tsunami">
+          <SectionHeader
+            id="tsunami"
+            title="Monitoring Tsunami"
+            icon={<Siren size={22} />}
+          />
+          <TsunamiCard
+            tsunami={tsunamiQuery.data ?? null}
+            isLoading={tsunamiQuery.isLoading}
+            isError={tsunamiQuery.isError}
+          />
+        </section>
+        <EvacuationRoutes
+          points={evacuationQuery.data ?? []}
+          routes={evacuationRoutesQuery.data ?? []}
+          isPointsLoading={evacuationQuery.isLoading}
+          isPointsError={evacuationQuery.isError}
+          isRoutesLoading={evacuationRoutesQuery.isLoading}
+          isRoutesError={evacuationRoutesQuery.isError}
         />
-        <TsunamiCard
-          tsunami={tsunamiQuery.data ?? null}
-          isLoading={tsunamiQuery.isLoading}
-          isError={tsunamiQuery.isError}
+        <EmergencyContacts
+          contacts={contactsQuery.data ?? []}
+          isLoading={contactsQuery.isLoading}
+          isError={contactsQuery.isError}
         />
-      </section>
-      <EvacuationRoutes
-        points={evacuationQuery.data ?? []}
-        routes={evacuationRoutesQuery.data ?? []}
-        isPointsLoading={evacuationQuery.isLoading}
-        isPointsError={evacuationQuery.isError}
-        isRoutesLoading={evacuationRoutesQuery.isLoading}
-        isRoutesError={evacuationRoutesQuery.isError}
-      />
-      <EmergencyContacts
-        contacts={contactsQuery.data ?? []}
-        isLoading={contactsQuery.isLoading}
-        isError={contactsQuery.isError}
-      />
-      <PreparednessGuide />
-      <Announcements
-        announcements={announcementsQuery.data ?? []}
-        isLoading={announcementsQuery.isLoading}
-        isError={announcementsQuery.isError}
-      />
+        <PreparednessGuide />
+        <Announcements
+          announcements={announcementsQuery.data ?? []}
+          isLoading={announcementsQuery.isLoading}
+          isError={announcementsQuery.isError}
+        />
+      </div>
     </div>
   );
 }
