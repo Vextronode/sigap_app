@@ -78,13 +78,17 @@ export class NotificationService {
 
     const earthquake = await EarthquakeService.getPangandaran();
 
-    const title = earthquake
-      ? `Gempa Terdeteksi (${earthquake.magnitude} M)`
-      : `Status Kesiapsiagaan: ${LEVEL_LABEL[alert.level] ?? alert.level}`;
+    const levelText = LEVEL_LABEL[alert.level] ?? alert.level;
 
-    const body = earthquake
-      ? `Magnitude ${earthquake.magnitude} M, kedalaman ${earthquake.depth}, ${earthquake.location}`
-      : alert.description ?? "Pantau kondisi terkini di dashboard SIGAP.";
+    const title = earthquake
+      ? `[STATUS ${levelText.toUpperCase()}] Gempa Terdeteksi (${earthquake.magnitude} M)`
+      : `[STATUS ${levelText.toUpperCase()}] Kesiapsiagaan Bencana`;
+
+    const body = alert.description
+      ? alert.description
+      : earthquake
+        ? `Magnitude ${earthquake.magnitude} M, kedalaman ${earthquake.depth}, ${earthquake.location}`
+        : "Pantau kondisi terkini di dashboard SIGAP.";
 
     return {
       alertId: alert.id,

@@ -14,14 +14,16 @@ export const publicDeviceRouter = Router();
  */
 publicDeviceRouter.get("/status", async (_req, res) => {
     try {
+        const systemStatus = await DeviceService.getSystemStatus();
         const currentAlert = await AlertService.getCurrentAlert();
         const level = currentAlert?.level || "GREEN";
 
-        const response: ApiSuccessResponse<{ level: string }> = {
+        const response: ApiSuccessResponse<typeof systemStatus & { level: string }> = {
             success: true,
-            message: "Status alert retrieved successfully.",
+            message: "Status perangkat retrieved successfully.",
             data: {
                 level,
+                ...systemStatus,
             },
         };
 
