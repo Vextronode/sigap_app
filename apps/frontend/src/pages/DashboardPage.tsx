@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const pangandaranEarthquakeQuery = usePangandaranEarthquake();
   const tsunamiQuery = useTsunamiStatus();
   const alertQuery = useCurrentAlert();
-  const summaryQuery = useSummary();
+  // const summaryQuery = useSummary(); // Fitur Ringkasan AI dinonaktifkan sementara
   const announcementsQuery = useAnnouncements();
   const contactsQuery = useEmergencyContacts();
   const evacuationQuery = useEvacuation();
@@ -56,7 +56,7 @@ export default function DashboardPage() {
     pangandaranEarthquakeQuery,
     tsunamiQuery,
     alertQuery,
-    summaryQuery,
+    // summaryQuery, // Fitur Ringkasan AI dinonaktifkan sementara
     announcementsQuery,
     contactsQuery,
     evacuationQuery,
@@ -79,11 +79,13 @@ export default function DashboardPage() {
           isError={alertQuery.isError}
         />
         <NotificationPrompt />
+        {/* Fitur Ringkasan AI dinonaktifkan sementara:
         <AISummaryCard
           summary={summaryQuery.data ?? null}
           isLoading={summaryQuery.isLoading}
           isError={summaryQuery.isError}
         />
+        */}
         <WeatherSection
           weather={weatherQuery.data ?? null}
           forecast={forecastQuery.data ?? []}

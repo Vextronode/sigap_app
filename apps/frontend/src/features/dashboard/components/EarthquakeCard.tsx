@@ -112,7 +112,7 @@ const ShakemapImage = ({ url, alt }: ShakemapImageProps) => {
         src={url}
         alt={alt}
         className={cn(
-          "h-full w-full object-cover transition-opacity duration-300",
+          "h-full w-full object-contain transition-opacity duration-300",
           status === "loaded" ? "opacity-100" : "opacity-0"
         )}
         onLoad={() => setStatus("loaded")}

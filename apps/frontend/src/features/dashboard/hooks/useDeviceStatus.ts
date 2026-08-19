@@ -6,8 +6,8 @@ export const useDeviceStatus = () =>
     queryKey: ["device", "status"] as const,
     queryFn: deviceService.getStatus,
     options: {
-      staleTime: 15_000,
-      refetchInterval: 30_000,
+      staleTime: 10_000,
+      refetchInterval: 15_000,
       refetchIntervalInBackground: true,
     },
   });

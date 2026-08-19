@@ -81,13 +81,16 @@ export class DeviceService {
             };
         }
 
-        const THREE_MINUTES_MS = 3 * 60 * 1000;
+        // Threshold: jika lastSeen > 20 detik, device dianggap offline.
+        // ESP32 mengirim heartbeat setiap 10 detik, jadi 20 detik = 2 heartbeat
+        // berturut-turut gagal masuk → langsung ditandai tidak terhubung.
+        const OFFLINE_THRESHOLD_MS = 20 * 1000;
         const now = Date.now();
 
         const activeDevices = devices.filter((device) => {
             if (device.status !== "ONLINE" || !device.lastSeen) return false;
             const diff = now - new Date(device.lastSeen).getTime();
-            return diff <= THREE_MINUTES_MS;
+            return diff <= OFFLINE_THRESHOLD_MS;
         });
 
         const isOnline = activeDevices.length > 0;
