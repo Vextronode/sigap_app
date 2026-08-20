@@ -39,20 +39,6 @@ const WEST_JAVA_MAX_AGE_DAYS = Number(
   process.env.WEST_JAVA_MAX_AGE_DAYS ?? 30,
 );
 
-// Fallback data gempa Pangandaran terbaru (5 Agu 2026 M5.3) jika sudah terdorong
-// dari list 15 gempa terbaru BMKG live API, selama usianya masih <= PANGANDARAN_MAX_AGE_DAYS
-const FALLBACK_PANGANDARAN_EARTHQUAKE: EarthquakeInfo = {
-  magnitude: 5.3,
-  depth: "18 km",
-  location: "79 km BaratDaya KAB-PANGANDARAN-JABAR",
-  coordinates: { latitude: -8.12, longitude: 107.91 },
-  distanceToVillage: 86,
-  felt: "III Pangandaran, II-III Cisompet, II Garut",
-  potential: "Tidak berpotensi tsunami",
-  shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260805215802.mmi.jpg",
-  updatedAt: "2026-08-05T14:55:41.000Z",
-};
-
 type CacheEntry<T> = {
   data: T;
   expiresAt: number;
@@ -152,16 +138,6 @@ export class EarthquakeService {
       WEST_JAVA_RADIUS_KM,
       WEST_JAVA_MAX_AGE_DAYS,
     );
-
-    if (nearest) return nearest;
-
-    // Fallback jika gempa Pangandaran 5 Aug 2026 masih dalam batas WEST_JAVA_MAX_AGE_DAYS
-    const fallbackCutoff = Date.now() - WEST_JAVA_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
-    if (new Date(FALLBACK_PANGANDARAN_EARTHQUAKE.updatedAt).getTime() >= fallbackCutoff) {
-      return FALLBACK_PANGANDARAN_EARTHQUAKE;
-    }
-
-    return null;
   }
 
   static async getPangandaran(): Promise<EarthquakeInfo | null> {
@@ -173,27 +149,8 @@ export class EarthquakeService {
       PANGANDARAN_MAX_AGE_DAYS,
     );
 
-    const fallbackCutoff = Date.now() - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
-    if (new Date(FALLBACK_PANGANDARAN_EARTHQUAKE.updatedAt).getTime() >= fallbackCutoff) {
-      parsedList.push(FALLBACK_PANGANDARAN_EARTHQUAKE);
-    }
-
-    const cutoffMs = Date.now() - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
-    const filtered = parsedList
-      .filter(
-        (earthquake) =>
-          Number.isFinite(earthquake.distanceToVillage) &&
-          earthquake.distanceToVillage <= PANGANDARAN_RADIUS_KM &&
-          new Date(earthquake.updatedAt).getTime() >= cutoffMs,
-      )
-      .sort((left, right) => {
-        const distanceDelta = left.distanceToVillage - right.distanceToVillage;
-        if (distanceDelta !== 0) return distanceDelta;
-        return right.updatedAt.localeCompare(left.updatedAt);
-      });
-
-    const nearest = filtered[0] ?? null;
     if (!nearest) return null;
+
     return this.attachShakemapIfSameEvent(nearest);
   }
 
