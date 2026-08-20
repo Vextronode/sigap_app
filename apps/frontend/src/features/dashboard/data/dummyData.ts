@@ -121,8 +121,8 @@ export const dummyEvacuation = {
     "Peta evakuasi ini merupakan ilustrasi jalur evakuasi sementara. Jalur resmi akan diperbarui berdasarkan data pemerintah desa dan BPBD.",
   details: [
     {
-      label: "Titik Kumpul Utama",
-      value: "Balai Desa Cibenda",
+      label: "Titik Kumpul Evakuasi",
+      value: "Lapang Kantor Desa Cibenda",
     },
     {
       label: "Jalur Evakuasi",
@@ -130,7 +130,7 @@ export const dummyEvacuation = {
     },
     {
       label: "Status",
-      value: "Data simulasi (Dummy)",
+      value: "Data masih bersifat simulasi, dapat disesuaikan dengan titik evakuasi",
     },
   ],
   buttonLabel: "Lihat Peta Evakuasi",
