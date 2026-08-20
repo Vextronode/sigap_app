@@ -4,8 +4,7 @@
  * Sumber data:
  * - autogempa.json          : Gempa terbaru Indonesia
  * - gempaterkini.json       : Daftar 15 gempa M5+ Indonesia
- * - gempadirasakan.json     : Daftar gempa yang dirasakan (tidak dipakai saat ini —
- *                             endpoint ini tidak mengirim field Potensi maupun Shakemap)
+ * - gempadirasakan.json     : Daftar gempa yang dirasakan
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
@@ -20,8 +19,8 @@ const BMKG_AUTOGEMPA_URL =
   "https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json";
 const BMKG_GEMPA_TERKINI_URL =
   "https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.json";
-// const BMKG_GEMPA_DIRASAKAN_URL =
-//   "https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json";
+const BMKG_GEMPA_DIRASAKAN_URL =
+  "https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json";
 const SHAKEMAP_BASE_URL = "https://data.bmkg.go.id/DataMKG/TEWS/";
 
 const EARTHQUAKE_CACHE_TTL_MS = Number(
@@ -32,14 +31,12 @@ const PANGANDARAN_RADIUS_KM = Number(process.env.PANGANDARAN_RADIUS_KM ?? 150);
 const WEST_JAVA_RADIUS_KM = Number(process.env.WEST_JAVA_RADIUS_KM ?? 350);
 
 // Batas umur gempa yang masih dianggap "relevan" untuk ditampilkan di card
-// Jawa Barat & Pangandaran. gempaterkini.json cuma nyimpen 15 gempa M5+
-// terakhir se-Indonesia — kalau lagi sepi gempa besar secara nasional, satu
-// gempa lama bisa nyangkut di list itu berminggu-minggu dan tampil seolah baru.
+// Jawa Barat & Pangandaran.
 const PANGANDARAN_MAX_AGE_DAYS = Number(
-  process.env.PANGANDARAN_MAX_AGE_DAYS ?? 14,
+  process.env.PANGANDARAN_MAX_AGE_DAYS ?? 30,
 );
 const WEST_JAVA_MAX_AGE_DAYS = Number(
-  process.env.WEST_JAVA_MAX_AGE_DAYS ?? 14,
+  process.env.WEST_JAVA_MAX_AGE_DAYS ?? 30,
 );
 
 type CacheEntry<T> = {
@@ -113,29 +110,41 @@ export class EarthquakeService {
     );
   }
 
+  private static async fetchCombinedList(): Promise<BmkgEarthquakeItem[]> {
+    try {
+      const [terkini, dirasakan] = await Promise.all([
+        this.fetchCached<BmkgEarthquakeListResponse>(BMKG_GEMPA_TERKINI_URL).catch(() => null),
+        this.fetchCached<BmkgEarthquakeListResponse>(BMKG_GEMPA_DIRASAKAN_URL).catch(() => null),
+      ]);
+
+      const itemsTerkini = terkini?.Infogempa?.gempa ?? [];
+      const itemsDirasakan = dirasakan?.Infogempa?.gempa ?? [];
+
+      return [...itemsTerkini, ...itemsDirasakan];
+    } catch {
+      return [];
+    }
+  }
+
   static async getLatest(): Promise<EarthquakeInfo> {
     return this.getIndonesia();
   }
 
   static async getWestJava(): Promise<EarthquakeInfo | null> {
-    const raw = await this.fetchCached<BmkgEarthquakeListResponse>(
-      BMKG_GEMPA_TERKINI_URL,
-    );
+    const rawItems = await this.fetchCombinedList();
 
     return this.findNearestEarthquake(
-      raw.Infogempa.gempa ?? [],
+      rawItems,
       WEST_JAVA_RADIUS_KM,
       WEST_JAVA_MAX_AGE_DAYS,
     );
   }
 
   static async getPangandaran(): Promise<EarthquakeInfo | null> {
-    const raw = await this.fetchCached<BmkgEarthquakeListResponse>(
-      BMKG_GEMPA_TERKINI_URL,
-    );
+    const rawItems = await this.fetchCombinedList();
 
     const nearest = this.findNearestEarthquake(
-      raw.Infogempa.gempa ?? [],
+      rawItems,
       PANGANDARAN_RADIUS_KM,
       PANGANDARAN_MAX_AGE_DAYS,
     );
