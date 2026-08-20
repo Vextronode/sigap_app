@@ -4,8 +4,7 @@
  * Sumber data:
  * - autogempa.json          : Gempa terbaru Indonesia
  * - gempaterkini.json       : Daftar 15 gempa M5+ Indonesia
- * - gempadirasakan.json     : Daftar gempa yang dirasakan (tidak dipakai saat ini —
- *                             endpoint ini tidak mengirim field Potensi maupun Shakemap)
+ * - gempadirasakan.json     : Daftar gempa yang dirasakan
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
@@ -32,9 +31,7 @@ const PANGANDARAN_RADIUS_KM = Number(process.env.PANGANDARAN_RADIUS_KM ?? 150);
 const WEST_JAVA_RADIUS_KM = Number(process.env.WEST_JAVA_RADIUS_KM ?? 350);
 
 // Batas umur gempa yang masih dianggap "relevan" untuk ditampilkan di card
-// Jawa Barat & Pangandaran. gempaterkini.json cuma nyimpen 15 gempa M5+
-// terakhir se-Indonesia — kalau lagi sepi gempa besar secara nasional, satu
-// gempa lama bisa nyangkut di list itu berminggu-minggu dan tampil seolah baru.
+// Jawa Barat & Pangandaran.
 const PANGANDARAN_MAX_AGE_DAYS = Number(
   process.env.PANGANDARAN_MAX_AGE_DAYS ?? 30,
 );
@@ -150,7 +147,7 @@ export class EarthquakeService {
   static async getWestJava(): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
-    const nearest = this.findNearestEarthquake(
+    return this.findNearestEarthquake(
       rawItems,
       WEST_JAVA_RADIUS_KM,
       WEST_JAVA_MAX_AGE_DAYS,
@@ -170,7 +167,11 @@ export class EarthquakeService {
   static async getPangandaran(): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
-    const parsedList = rawItems.map((item) => this.parse(item));
+    const nearest = this.findNearestEarthquake(
+      rawItems,
+      PANGANDARAN_RADIUS_KM,
+      PANGANDARAN_MAX_AGE_DAYS,
+    );
 
     const fallbackCutoff = Date.now() - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
     if (new Date(FALLBACK_PANGANDARAN_EARTHQUAKE.updatedAt).getTime() >= fallbackCutoff) {
