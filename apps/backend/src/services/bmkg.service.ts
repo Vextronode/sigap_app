@@ -8,6 +8,15 @@
  * BMKG Mapping (dari API_SPEC.md §8.1):
  *   GET https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=<kode>
  *   Field dipakai: t, hu, weather_desc, ws, wd, vs_text, local_datetime
+ *
+ * ⚠️  Keterbatasan data BMKG Public API:
+ *   Data prakiraan cuaca (termasuk cuaca saat ini) hanya diperbarui 2x sehari
+ *   oleh BMKG, berdasarkan model NWP run pukul 00:00 UTC (07:00 WIB) dan
+ *   12:00 UTC (19:00 WIB). Field `analysis_date` di setiap item menunjukkan
+ *   kapan data terakhir digenerate. Akibatnya, kondisi cuaca yang ditampilkan
+ *   adalah PRAKIRAAN, bukan observasi real-time — bisa berbeda dengan kondisi
+ *   aktual saat terjadi perubahan cuaca mendadak (mis. hujan lokal singkat).
+ *   Ini adalah keterbatasan resmi API publik BMKG, bukan bug aplikasi.
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
@@ -28,7 +37,13 @@ export class BmkgService {
     );
   }
 
-  /** Untuk GET /weather/current — ambil slot waktu yang paling dekat dengan sekarang */
+  /** Untuk GET /weather/current — ambil slot waktu yang paling dekat dengan sekarang.
+   *
+   * Data yang dikembalikan adalah PRAKIRAAN BMKG, bukan observasi real-time.
+   * BMKG memperbarui data 2x sehari (pukul 07:00 dan 19:00 WIB), sehingga
+   * kondisi cuaca yang ditampilkan mungkin berbeda dengan cuaca aktual
+   * jika terjadi perubahan mendadak di antara jadwal update BMKG.
+   */
   static async getCurrentWeather(adm4Code: string): Promise<CurrentWeather> {
     const raw = await this.fetchRaw(adm4Code);
     const items = this.flatten(raw);
@@ -43,12 +58,12 @@ export class BmkgService {
 
   /** Untuk GET /weather/forecast — 3 hari ke depan, interval 3 jam (sesuai catatan API_SPEC.md §8.2) */
   static async getForecast(adm4Code: string): Promise<ForecastItem[]> {
-  const raw = await this.fetchRaw(adm4Code);
+    const raw = await this.fetchRaw(adm4Code);
 
-  const items = this.flatten(raw);
+    const items = this.flatten(raw);
 
-  return this.buildDashboardForecast(items);
-}
+    return this.buildDashboardForecast(items);
+  }
 
   /**
    * Status tsunami. InaTEWS resmi belum bisa diakses lewat API publik —
@@ -133,87 +148,95 @@ export class BmkgService {
   }
 
   private static buildDashboardForecast(
-  items: BmkgCuacaItem[]
-): ForecastItem[] {
+    items: BmkgCuacaItem[]
+  ): ForecastItem[] {
 
-  const now = new Date();
+    // Gunakan tanggal WIB untuk filter — ambil dari local_datetime langsung
+    // (misal "2026-08-20 07:00:00" → "2026-08-20"), bukan dari UTC yang bisa
+    // beda tanggal saat jam < 07:00 WIB (masih hari sebelumnya di UTC)
+    const nowWib = new Date(Date.now() + 7 * 3600 * 1000);
+    const todayWib = nowWib.toISOString().slice(0, 10);
 
-  const today = now.toISOString().slice(0, 10);
+    const tomorrowWib = new Date(nowWib);
+    tomorrowWib.setUTCDate(nowWib.getUTCDate() + 1);
 
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
+    const dayAfterWib = new Date(nowWib);
+    dayAfterWib.setUTCDate(nowWib.getUTCDate() + 2);
 
-  const dayAfter = new Date(now);
-  dayAfter.setDate(now.getDate() + 2);
+    const tomorrowKey = tomorrowWib.toISOString().slice(0, 10);
+    const dayAfterKey = dayAfterWib.toISOString().slice(0, 10);
 
-  const tomorrowKey = tomorrow.toISOString().slice(0,10);
-  const dayAfterKey = dayAfter.toISOString().slice(0,10);
+    /** Ambil tanggal WIB dari item (10 karakter pertama local_datetime) */
+    const localDate = (item: BmkgCuacaItem): string =>
+      item.local_datetime?.slice(0, 10) ??
+      new Date(this.toUtcIso(item) + "+00:00")
+        .toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" })
+        .slice(0, 10);
 
-  const current = this.pickClosestToNow(items);
+    /** Ambil jam WIB dari item (karakter ke-11–12 dari local_datetime) */
+    const localHour = (item: BmkgCuacaItem): number =>
+      item.local_datetime
+        ? parseInt(item.local_datetime.slice(11, 13), 10)
+        : new Date(this.toUtcIso(item)).getUTCHours() + 7;
 
-  const afternoon =
-    items.find((item) => {
-      const iso = this.toIso(item.local_datetime ?? item.datetime);
+    const current = this.pickClosestToNow(items);
 
-      return (
-        iso.startsWith(today) &&
-        new Date(iso).getUTCHours() >= 15
-      );
-    }) ?? current;
+    const afternoon =
+      items.find((item) => {
+        return localDate(item) === todayWib && localHour(item) >= 15;
+      }) ?? current;
 
-  const tomorrowForecast =
-    items.find((item) =>
-      this.toIso(item.local_datetime ?? item.datetime).startsWith(tomorrowKey)
-    );
+    const tomorrowForecast =
+      items.find((item) => localDate(item) === tomorrowKey);
 
-  const dayAfterForecast =
-    items.find((item) =>
-      this.toIso(item.local_datetime ?? item.datetime).startsWith(dayAfterKey)
-    );
+    const dayAfterForecast =
+      items.find((item) => localDate(item) === dayAfterKey);
 
-  const result: ForecastItem[] = [];
+    const result: ForecastItem[] = [];
 
-  if (current) {
-    result.push({
-      ...this.toForecastItem(current),
-      label: "Hari Ini",
-    });
+    if (current) {
+      result.push({
+        ...this.toForecastItem(current),
+        label: "Hari Ini",
+      });
+    }
+
+    if (afternoon) {
+      result.push({
+        ...this.toForecastItem(afternoon),
+        label: "Sore Ini",
+      });
+    }
+
+    if (tomorrowForecast) {
+      result.push({
+        ...this.toForecastItem(tomorrowForecast),
+        label: new Intl.DateTimeFormat("id-ID", {
+          weekday: "short",
+        }).format(tomorrowWib),
+      });
+    }
+
+    if (dayAfterForecast) {
+      result.push({
+        ...this.toForecastItem(dayAfterForecast),
+        label: new Intl.DateTimeFormat("id-ID", {
+          weekday: "short",
+        }).format(dayAfterWib),
+      });
+    }
+
+    return result;
   }
-
-  if (afternoon) {
-    result.push({
-      ...this.toForecastItem(afternoon),
-      label: "Sore Ini",
-    });
-  }
-
-  if (tomorrowForecast) {
-    result.push({
-      ...this.toForecastItem(tomorrowForecast),
-      label: new Intl.DateTimeFormat("id-ID", {
-        weekday: "short",
-      }).format(tomorrow),
-    });
-  }
-
-  if (dayAfterForecast) {
-    result.push({
-      ...this.toForecastItem(dayAfterForecast),
-      label: new Intl.DateTimeFormat("id-ID", {
-        weekday: "short",
-      }).format(dayAfter),
-    });
-  }
-
-  return result;
-}
 
   private static pickClosestToNow(items: BmkgCuacaItem[]): BmkgCuacaItem | null {
     if (items.length === 0) return null;
     const now = Date.now();
     return items.reduce((closest, item) => {
-      const itemTime = new Date(this.toIso(item.local_datetime ?? item.datetime)).getTime();
-      const closestTime = new Date(this.toIso(closest.local_datetime ?? closest.datetime)).getTime();
+      // Gunakan utc_datetime atau datetime (sudah UTC) — BUKAN local_datetime
+      // local_datetime adalah waktu WIB (UTC+7), jika ditambah "Z" jadi salah 7 jam
+      const itemTime = new Date(this.toUtcIso(item)).getTime();
+      const closestTime = new Date(this.toUtcIso(closest)).getTime();
       return Math.abs(itemTime - now) < Math.abs(closestTime - now) ? item : closest;
     });
   }
@@ -231,10 +254,13 @@ export class BmkgService {
   }
 
   private static toForecastItem(item: BmkgCuacaItem): ForecastItem {
-    const iso = this.toIso(item.local_datetime ?? item.datetime);
+    // Gunakan local_datetime untuk date display (tanggal WIB)
+    const localIso = item.local_datetime
+      ? item.local_datetime.replace(" ", "T")
+      : new Date(this.toUtcIso(item)).toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" });
     return {
       label: "",
-      date: iso.slice(0, 10),
+      date: localIso.slice(0, 10),
       condition: item.weather_desc,
       temperature: item.t,
       rainProbability: this.estimateRainProbability(item),
@@ -259,7 +285,26 @@ export class BmkgService {
     return desc.includes("berawan") ? 20 : 0;
   }
 
-  /** BMKG kadang kasih format "2026-07-14 07:00:00", normalisasi ke ISO 8601 */
+  /**
+   * Ambil waktu UTC dari item BMKG secara aman.
+   * Priority: utc_datetime → datetime (sudah UTC) → fallback ke now.
+   *
+   * CATATAN PENTING: jangan gunakan local_datetime untuk perbandingan waktu!
+   * local_datetime adalah waktu WIB (UTC+7) tanpa timezone offset — jika
+   * ditambah "Z" secara naif, hasilnya salah 7 jam (terlambat 7 jam).
+   */
+  private static toUtcIso(item: BmkgCuacaItem): string {
+    // utc_datetime format: "2026-08-20 00:00:00" → perlu normalisasi + Z
+    const raw = item.utc_datetime ?? item.datetime;
+    if (!raw) return new Date().toISOString();
+    const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
+    const withZ = normalized.endsWith("Z") ? normalized : `${normalized}Z`;
+    const date = new Date(withZ);
+    return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  }
+
+  /** @deprecated Gunakan toUtcIso() untuk perbandingan waktu. Fungsi ini hanya
+   * aman untuk display string yang sudah UTC (mis. field `datetime`). */
   private static toIso(rawDatetime: string | undefined): string {
     if (!rawDatetime) return new Date().toISOString();
     const normalized = rawDatetime.includes("T") ? rawDatetime : rawDatetime.replace(" ", "T");
