@@ -1,4 +1,4 @@
-import { AISummaryCard } from "../features/dashboard/components/AISummaryCard";
+// import { AISummaryCard } from "../features/dashboard/components/AISummaryCard";
 import { Announcements } from "../features/dashboard/components/Announcements";
 import { CurrentAlertCard } from "../features/dashboard/components/CurrentAlertCard";
 import { NotificationPrompt } from "../features/dashboard/components/NotificationPrompt";
@@ -16,7 +16,7 @@ import { useEmergencyContacts } from "../features/dashboard/hooks/useEmergencyCo
 import { useEvacuation } from "../features/dashboard/hooks/useEvacuation";
 import { useEvacuationRoutes } from "../features/dashboard/hooks/useEvacuationRoutes";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
-import { useSummary } from "../features/dashboard/hooks/useSummary";
+// import { useSummary } from "../features/dashboard/hooks/useSummary";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
 import { useWestJavaEarthquake } from "../features/dashboard/hooks/useWestJavaEarthquake";
 import { useTsunamiStatus } from "../features/dashboard/hooks/useTsunamiStatus";
