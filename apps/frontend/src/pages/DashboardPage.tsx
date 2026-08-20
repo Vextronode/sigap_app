@@ -1,9 +1,8 @@
-// import { AISummaryCard } from "../features/dashboard/components/AISummaryCard";
 import { Announcements } from "../features/dashboard/components/Announcements";
 import { CurrentAlertCard } from "../features/dashboard/components/CurrentAlertCard";
 import { NotificationPrompt } from "../features/dashboard/components/NotificationPrompt";
 import { EarthquakeCard } from "../features/dashboard/components/EarthquakeCard";
-import { SectionHeader } from "../components/common/SectionHeader"; 
+import { SectionHeader } from "../components/common/SectionHeader";
 import { EmergencyContacts } from "../features/dashboard/components/EmergencyContacts";
 import { EvacuationRoutes } from "../features/dashboard/components/EvacuationRoutes";
 import { PreparednessGuide } from "../features/dashboard/components/PreparednessGuide";
@@ -16,18 +15,17 @@ import { useEmergencyContacts } from "../features/dashboard/hooks/useEmergencyCo
 import { useEvacuation } from "../features/dashboard/hooks/useEvacuation";
 import { useEvacuationRoutes } from "../features/dashboard/hooks/useEvacuationRoutes";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
-// import { useSummary } from "../features/dashboard/hooks/useSummary";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
 import { useWestJavaEarthquake } from "../features/dashboard/hooks/useWestJavaEarthquake";
 import { useTsunamiStatus } from "../features/dashboard/hooks/useTsunamiStatus";
 import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
-import { Siren, TriangleAlert,  } from "lucide-react"; 
+import { Siren, TriangleAlert, } from "lucide-react";
 
 export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
-  
+
   const weatherQuery = useWeather();
   const forecastQuery = useForecast();
   const indonesiaEarthquakeQuery = useIndonesiaEarthquake();
@@ -35,7 +33,6 @@ export default function DashboardPage() {
   const pangandaranEarthquakeQuery = usePangandaranEarthquake();
   const tsunamiQuery = useTsunamiStatus();
   const alertQuery = useCurrentAlert();
-  // const summaryQuery = useSummary(); // Fitur Ringkasan AI dinonaktifkan sementara
   const announcementsQuery = useAnnouncements();
   const contactsQuery = useEmergencyContacts();
   const evacuationQuery = useEvacuation();
@@ -56,7 +53,6 @@ export default function DashboardPage() {
     pangandaranEarthquakeQuery,
     tsunamiQuery,
     alertQuery,
-    // summaryQuery, // Fitur Ringkasan AI dinonaktifkan sementara
     announcementsQuery,
     contactsQuery,
     evacuationQuery,
@@ -66,9 +62,8 @@ export default function DashboardPage() {
   return (
     <div className="dashboard-page">
       <span
-        className={`refresh-indicator ${
-          isInitialLoading ? "refresh-indicator--visible" : ""
-        }`}
+        className={`refresh-indicator ${isInitialLoading ? "refresh-indicator--visible" : ""
+          }`}
       >
         Memperbarui data...
       </span>
