@@ -683,8 +683,9 @@ svg {
 .evacuation-preview__image {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background: var(--surface-muted, #f8f9fa);
 }
 
 .evacuation-preview__body {
