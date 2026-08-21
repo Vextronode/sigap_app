@@ -132,3 +132,30 @@ model PushSubscription {
 
   @@map("push_subscriptions")
 }
+
+//
+// ==========================
+// Earthquake Record Persistence
+// ==========================
+// Menyimpan riwayat & Shakemap gempa Pangandaran agar gambar Shakemap tidak hilang
+// saat BMKG memperbarui autogempa.json ke lokasi nasional lain.
+//
+
+model EarthquakeRecord {
+  id                String   @id @default(uuid())
+  eventTime         String   @unique
+  magnitude         Float
+  depth             String
+  location          String
+  latitude          Float
+  longitude         Float
+  distanceToVillage Float
+  felt              String?
+  potential         String?
+  shakemap          String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("earthquake_records")
+}

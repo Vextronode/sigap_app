@@ -125,7 +125,7 @@ const ShakemapImage = ({ url, alt }: ShakemapImageProps) => {
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
           <Map className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
           <p className="text-xs font-medium text-muted-foreground">
-            Gambar Peta Lokasi Guncangan
+            Gambar Titik Lokasi Guncangan
             <br />
             Belum Tersedia Oleh BMKG
           </p>
@@ -149,7 +149,7 @@ export const EarthquakeCard = ({
   const variant = getVariant(title);
   const config = variantConfig[variant];
   const tsunamiBadge =
-  variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.potential);
+    variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.potential);
   const isDanger = tsunamiBadge?.tone === "danger";
 
   const cardBorderClass = isDanger ? "border-red-500/30" : config.accentBorder;
