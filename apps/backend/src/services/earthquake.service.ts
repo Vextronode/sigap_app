@@ -8,6 +8,7 @@
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
+import { prisma } from "../config/prisma.js";
 import type {
   BmkgAutogempaResponse,
   BmkgEarthquakeItem,
@@ -143,15 +144,98 @@ export class EarthquakeService {
   static async getPangandaran(): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
-    const nearest = this.findNearestEarthquake(
+    let nearest = this.findNearestEarthquake(
       rawItems,
       PANGANDARAN_RADIUS_KM,
       PANGANDARAN_MAX_AGE_DAYS,
     );
 
-    if (!nearest) return null;
+    if (nearest) {
+      nearest = await this.attachShakemapIfSameEvent(nearest);
+    }
 
-    return this.attachShakemapIfSameEvent(nearest);
+    return this.persistAndRetrievePangandaranShakemap(nearest);
+  }
+
+  /**
+   * Menangkap & menyimpan data gempa Pangandaran beserta URL Shakemap-nya ke Database
+   * agar Shakemap tetap ada walau BMKG memperbarui autogempa.json ke gempa nasional lain.
+   */
+  private static async persistAndRetrievePangandaranShakemap(
+    earthquake: EarthquakeInfo | null,
+  ): Promise<EarthquakeInfo | null> {
+    try {
+      if (earthquake) {
+        // Cari record yang sudah tersimpan di database
+        const existingRecord = await prisma.earthquakeRecord.findUnique({
+          where: { eventTime: earthquake.updatedAt },
+        });
+
+        // Tentukan Shakemap akhir: prioritas URL baru, jika kosong gunakan URL tersimpan di DB
+        const finalShakemap = earthquake.shakemap || existingRecord?.shakemap || null;
+
+        // Upsert ke database agar tersimpan permanen
+        const saved = await prisma.earthquakeRecord.upsert({
+          where: { eventTime: earthquake.updatedAt },
+          update: {
+            magnitude: earthquake.magnitude,
+            depth: earthquake.depth,
+            location: earthquake.location,
+            latitude: earthquake.coordinates.latitude,
+            longitude: earthquake.coordinates.longitude,
+            distanceToVillage: earthquake.distanceToVillage,
+            felt: earthquake.felt,
+            potential: earthquake.potential,
+            shakemap: finalShakemap,
+          },
+          create: {
+            eventTime: earthquake.updatedAt,
+            magnitude: earthquake.magnitude,
+            depth: earthquake.depth,
+            location: earthquake.location,
+            latitude: earthquake.coordinates.latitude,
+            longitude: earthquake.coordinates.longitude,
+            distanceToVillage: earthquake.distanceToVillage,
+            felt: earthquake.felt,
+            potential: earthquake.potential,
+            shakemap: finalShakemap,
+          },
+        });
+
+        return {
+          ...earthquake,
+          shakemap: saved.shakemap ?? "",
+        };
+      }
+
+      // Jika gempa Pangandaran tidak ada di live API BMKG, ambil dari Database tersimpan
+      const cutoffMs = Date.now() - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+      const latestDbRecord = await prisma.earthquakeRecord.findFirst({
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (latestDbRecord && new Date(latestDbRecord.eventTime).getTime() >= cutoffMs) {
+        return {
+          magnitude: latestDbRecord.magnitude,
+          depth: latestDbRecord.depth,
+          location: latestDbRecord.location,
+          coordinates: {
+            latitude: latestDbRecord.latitude,
+            longitude: latestDbRecord.longitude,
+          },
+          distanceToVillage: latestDbRecord.distanceToVillage,
+          felt: latestDbRecord.felt ?? "",
+          potential: latestDbRecord.potential ?? "",
+          shakemap: latestDbRecord.shakemap ?? "",
+          updatedAt: latestDbRecord.eventTime,
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error("[EarthquakeService] Error persisting record:", error);
+      return earthquake;
+    }
   }
 
   private static async fetchCached<T>(url: string): Promise<T> {
