@@ -292,9 +292,6 @@ export const EarthquakeCard = ({
                 <strong className={cn("text-[2.5rem] font-extrabold leading-none", dataToneClass)}>
                   {displayEarthquake.magnitude}
                 </strong>
-                <span className={cn("text-xl font-semibold", dataToneClass)}>
-                  M
-                </span>
               </div>
             </div>
             <div className="text-right">
