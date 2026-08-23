@@ -30,9 +30,18 @@ self.addEventListener("push", (event) => {
       image: payload.image,
       badge: "/assets/icons/icon-192.png",
       data: { url: payload.url || "/" },
-      // tag sama supaya notifikasi gempa/tsunami baru MENGGANTIKAN yang lama
-      // di tray notifikasi, bukan menumpuk terus-menerus.
+      // tag konsisten per topik notifikasi → notif baru menggantikan yang lama
+      // di tray (tidak menumpuk). renotify: true wajib ada bersama tag supaya
+      // saat level naik (YELLOW→ORANGE→RED), getar+bunyi tetap ulang meskipun
+      // tag-nya sama — tanpa renotify, update senyap saja.
       tag: "sigap-alert",
+      renotify: true,
+      // Notifikasi tidak hilang otomatis sampai warga tap/dismiss manual.
+      // Nilai true/false dikontrol backend per level (lihat notification.service.ts).
+      requireInteraction: payload.requireInteraction ?? false,
+      // Pola getar per level: YELLOW [200ms], ORANGE [200,100,200], RED [300,100,300,100,300].
+      // Array kosong = tidak getar (fallback aman jika field tidak ada di payload lama).
+      vibrate: payload.vibrate ?? [],
     })
   );
 });
