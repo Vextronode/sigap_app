@@ -19,6 +19,18 @@ export interface NotificationPayload {
   image?: string;
   url: string;
   updatedAt: string;
+  /**
+   * Pola getar per level alert (satuan ms, format [getar, jeda, getar, ...]).
+   * Dikontrol backend supaya perubahan level di masa depan tidak butuh redeploy frontend.
+   * GREEN: [] (tidak pernah di-notif), YELLOW: [200], ORANGE: [200,100,200], RED: [300,100,300,100,300]
+   */
+  vibrate: number[];
+  /**
+   * true = notifikasi tetap di tray sampai user tap/dismiss manual.
+   * false = OS sembunyikan otomatis setelah beberapa detik.
+   * Selalu true untuk level YELLOW/ORANGE/RED agar warga tidak melewatkan peringatan.
+   */
+  requireInteraction: boolean;
 }
 
 export interface DispatchResult {

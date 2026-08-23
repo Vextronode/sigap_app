@@ -31,6 +31,18 @@ const LEVEL_LABEL: Record<string, string> = {
   RED: "Awas",
 };
 
+/**
+ * Pola getar (vibrate) per level alert, satuan ms.
+ * Format: [durasi_getar, durasi_jeda, durasi_getar, ...]
+ * GREEN tidak perlu pola karena tidak pernah di-notif (dijaga shouldNotify()).
+ */
+const VIBRATION_PATTERNS: Record<string, number[]> = {
+  GREEN:  [],
+  YELLOW: [200],
+  ORANGE: [200, 100, 200],
+  RED:    [300, 100, 300, 100, 300],
+};
+
 export class NotificationService {
   static async subscribe(input: PushSubscriptionInput, userAgent?: string) {
     return prisma.pushSubscription.upsert({
@@ -92,6 +104,10 @@ export class NotificationService {
       image: earthquake?.shakemap || undefined,
       url: "/",
       updatedAt: alert.updatedAt.toISOString(),
+      vibrate: VIBRATION_PATTERNS[alert.level] ?? [],
+      // YELLOW/ORANGE/RED: notifikasi wajib tetap di tray sampai warga dismiss manual.
+      // GREEN tidak pernah sampai sini (dijaga shouldNotify()), tapi fallback ke false.
+      requireInteraction: alert.level !== AlertLevel.GREEN,
     };
   }
 
