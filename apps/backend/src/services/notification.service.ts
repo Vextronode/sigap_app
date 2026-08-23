@@ -5,20 +5,13 @@
  * kepastian tim SID mau/bisa menangani notifikasi kesiapsiagaan bencana.
  * Daripada bergantung ke tim lain yang belum pasti, SIGAP bangun sendiri.
  *
- * ⚠️ RUANG KOSONG SENGAJA DIBIARKAN — BACA SEBELUM MENGUBAH:
- * `dispatch()` di bawah ini TIDAK dipanggil otomatis dari mana pun (bukan
- * dari alert.scheduler.ts, bukan dari mana pun). Ini sengaja. Alat sirine
- * fisik nanti juga berperan (tombol fisik di kantor desa), dan validasi
- * akhir sebelum notifikasi benar-benar terkirim ke warga akan berupa aksi
- * manusia — admin klik tombol di dashboard, ATAU operator menekan tombol di
- * alat sirine. Kedua jalur itu BELUM ada (fitur admin & protokol device→alert
- * masih di sprint berikutnya, lihat CHECKLIST_SIGAP_ALERTS.md).
+ * ✅ `dispatch()` sekarang dipanggil OTOMATIS dari `runAlertCheck()` di
+ * `alert.scheduler.ts` — setiap kali ada alert baru non-duplikat dengan
+ * level YELLOW/ORANGE/RED, notifikasi langsung dikirim ke semua subscriber
+ * tanpa menunggu aksi manual admin.
  *
- * Untuk sekarang, `dispatch()` hanya bisa dipicu manual lewat
- * `POST /api/v1/protected/notifications/dispatch` (butuh login — lihat
- * notification.route.ts) sebagai gerbang sementara. TODO saat admin/device
- * validation dikerjakan: panggil `NotificationService.dispatch()` dari
- * handler validasi itu (bukan bikin ulang logic pengiriman push).
+ * Endpoint manual `POST /api/v1/protected/notifications/dispatch` tetap
+ * ada sebagai fallback (misal: admin ingin re-send atau test manual).
  */
 import { prisma } from "../config/prisma.js";
 import { webpush } from "../config/webPush.js";
