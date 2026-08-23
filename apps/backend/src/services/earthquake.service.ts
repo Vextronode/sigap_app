@@ -28,7 +28,7 @@ const EARTHQUAKE_CACHE_TTL_MS = Number(
   process.env.EARTHQUAKE_CACHE_TTL_MS ?? 30000,
 );
 
-const PANGANDARAN_RADIUS_KM = Number(process.env.PANGANDARAN_RADIUS_KM ?? 150);
+const PANGANDARAN_RADIUS_KM = Number(process.env.PANGANDARAN_RADIUS_KM ?? 100);
 const WEST_JAVA_RADIUS_KM = Number(process.env.WEST_JAVA_RADIUS_KM ?? 350);
 
 // Batas umur gempa yang masih dianggap "relevan" untuk ditampilkan di card
@@ -144,8 +144,23 @@ export class EarthquakeService {
   static async getPangandaran(): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
+    // Saring gempa khusus Pangandaran: menyebut nama Pangandaran ATAU berjarak <= 100 km dari Desa Cibenda
+    const pangandaranItems = rawItems.filter((item) => {
+      const locationLower = item.Wilayah?.toLowerCase() ?? "";
+      const feltLower = item.Dirasakan?.toLowerCase() ?? "";
+      const isPangandaranName =
+        locationLower.includes("pangandaran") || feltLower.includes("pangandaran");
+
+      const parsed = this.parse(item);
+      const isClose =
+        Number.isFinite(parsed.distanceToVillage) &&
+        parsed.distanceToVillage <= 100;
+
+      return isPangandaranName || isClose;
+    });
+
     let nearest = this.findNearestEarthquake(
-      rawItems,
+      pangandaranItems,
       PANGANDARAN_RADIUS_KM,
       PANGANDARAN_MAX_AGE_DAYS,
     );
@@ -208,9 +223,16 @@ export class EarthquakeService {
         };
       }
 
-      // Jika gempa Pangandaran tidak ada di live API BMKG, ambil dari Database tersimpan
+      // Jika gempa Pangandaran tidak ada di live API BMKG, ambil dari Database tersimpan khusus Pangandaran
       const cutoffMs = Date.now() - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
       const latestDbRecord = await prisma.earthquakeRecord.findFirst({
+        where: {
+          OR: [
+            { location: { contains: "Pangandaran", mode: "insensitive" } },
+            { felt: { contains: "Pangandaran", mode: "insensitive" } },
+            { distanceToVillage: { lte: 100 } },
+          ],
+        },
         orderBy: { createdAt: "desc" },
       });
 
