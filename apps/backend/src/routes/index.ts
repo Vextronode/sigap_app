@@ -7,6 +7,7 @@ import { publicEarthquakesRouter } from "./earthquakes.route.js";
 import { publicTsunamiRouter } from "./tsunami.route.js";
 import { publicDeviceRouter } from "./device.route.js";
 import { publicNotificationRouter, protectedNotificationRouter } from "./notification.route.js";
+import { internalRouter } from "./internal.route.js";
 
 export const publicRouter = Router();
 
@@ -27,6 +28,9 @@ publicRouter.use("/device", publicDeviceRouter);
 
 // Push Notification
 publicRouter.use("/notifications", publicNotificationRouter);
+
+// Internal — trigger untuk cron-job.org (Vercel production)
+publicRouter.use("/internal", internalRouter);
 
 export const protectedRouter = Router();
 protectedRouter.use("/auth", protectedAuthRouter);
