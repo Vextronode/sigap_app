@@ -45,8 +45,8 @@ const getStatusLabel = (status?: TsunamiStatus["status"]) => {
 
 const toneConfig: Record<TsunamiTone, { dot: string; text: string }> = {
   safe: { dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
-  warning: { dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
-  orange: { dot: "bg-orange-500", text: "text-orange-600 dark:text-orange-400" },
+  warning: { dot: "bg-[#ffc642]", text: "text-amber-700 dark:text-amber-300" },
+  orange: { dot: "bg-[#FFAA33]", text: "text-orange-700 dark:text-orange-300" },
   danger: { dot: "bg-red-500", text: "text-red-600 dark:text-red-400" },
 };
 
