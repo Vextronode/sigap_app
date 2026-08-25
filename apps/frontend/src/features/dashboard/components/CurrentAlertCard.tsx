@@ -1,4 +1,4 @@
-import { ShieldAlert } from "lucide-react";
+import { AlertOctagon, AlertTriangle, ShieldAlert } from "lucide-react";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import type { CurrentAlert } from "../../../types/dashboard";
@@ -30,9 +30,6 @@ const formatKeIndonesia = (dateString?: string) => {
 
 export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: CurrentAlertCardProps) => {
   if (isLoading) {
-    // Sengaja TIDAK pakai status-banner--safe (hijau) di sini — sebelumnya
-    // begitu, dan itu keliru: pas loading kita belum tahu status aslinya
-    // apa, jadi jangan tampilkan warna "aman" seolah sudah tahu jawabannya.
     return (
       <section
         className="card flex flex-col items-center gap-4 px-6 py-10 text-center"
@@ -65,37 +62,48 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
   }
 
   const meta = getAlertMeta(alert);
-  const isSafe = meta.tone === "safe";
+
+  const renderStatusIcon = () => {
+    switch (meta.tone) {
+      case "safe":
+        return (
+          <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+            <div className="w-3 h-5 border-r-[3.5px] border-b-[3.5px] border-emerald-500 rotate-45 translate-y-[-2px]" />
+          </div>
+        );
+      case "warning":
+        return <AlertOctagon size={46} strokeWidth={2.2} className="text-white" aria-hidden="true" />;
+      case "orange":
+        return <ShieldAlert size={46} strokeWidth={2.2} className="text-white" aria-hidden="true" />;
+      case "danger":
+      default:
+        return <AlertTriangle size={46} strokeWidth={2.2} className="text-white" aria-hidden="true" />;
+    }
+  };
 
   return (
     <section className={`status-banner status-banner--${meta.tone}`} aria-labelledby="status-title">
       <div className="status-banner__icon">
         <div className="status-banner__icon-bg relative">
           <div className="absolute inset-0 rounded-full bg-current opacity-70 animate-[ping_2s_infinite]" aria-hidden="true" />
-            {isSafe ? (
-              <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                <div className="w-3 h-5 border-r-[3.5px] border-b-[3.5px] border-emerald-500 rotate-45 translate-y-[-2px]" />
-              </div>
-            ) : (
-              <ShieldAlert size={46} className="text-white" aria-hidden="true"/>
-            )}        
-          </div>
+          {renderStatusIcon()}
+        </div>
       </div>
 
-      <h1 id="status-title" className="text-4xl font-extrabold -mt-1 mb-1 tracking-wide uppercase">
+      <h1 id="status-title" className="text-4xl font-extrabold -mt-1 mb-1 tracking-wide uppercase text-white">
         {meta.label}
       </h1>
 
-      <p className="text-[15px] font-normal max-w-xl opacity-90 mb-5 leading-relaxed">
+      <p className="text-[15px] font-medium max-w-xl text-white mb-5 leading-relaxed">
         {alert?.description ?? meta.description}
       </p>
 
       <div className="status-banner__meta flex flex-col items-center w-full">
         <div className="bg-black/15 px-5 py-1.5 rounded-full text-[13px] font-medium tracking-wide opacity-95">
           Terakhir diperbarui: {formatKeIndonesia(alert?.updatedAt)}
-      </div>
+        </div>
 
-      <span className="text-xs opacity-75 mt-1">
+        <span className="text-xs opacity-75 mt-1">
           Sumber data resmi: {alert?.source ?? "BMKG"}
         </span>
       </div>
