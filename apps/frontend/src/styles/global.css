@@ -452,7 +452,7 @@ svg {
 }
 
 .status-banner--warning {
-  background: #ca8a04;
+  background: var(--warning);
 }
 
 .status-banner--orange {
