@@ -52,8 +52,8 @@ const EARTHQUAKE_SCENARIOS: Record<string, DecisionInput> = {
 
 const TSUNAMI_SCENARIOS: Record<string, DecisionInput> = {
   waspada: { tsunami: { status: "WASPADA", source: "SIGAP (estimasi otomatis, simulasi demo)", description: "Estimasi potensi tsunami level WASPADA berdasarkan data gempa terkini." } satisfies TsunamiStatusInfo },
-  siaga: { tsunami: { status: "SIAGA", source: "BMKG (simulasi demo)", description: "Status tsunami SIAGA untuk wilayah pesisir Pangandaran. Bersiap menuju jalur evakuasi." } satisfies TsunamiStatusInfo },
-  awas: { tsunami: { status: "AWAS", source: "BMKG (simulasi demo)", description: "Peringatan dini tsunami AWAS untuk wilayah pesisir Pangandaran. Segera menuju titik evakuasi." } satisfies TsunamiStatusInfo },
+  siaga: { tsunami: { status: "SIAGA", source: "BMKG (simulasi demo)", description: "BMKG mengeluarkan status SIAGA potensi tsunami di sekitar wilayah Pangandaran. Tetap waspada dan pantau perkembangan resmi melalui bmkg.go.id." } satisfies TsunamiStatusInfo },
+  awas: { tsunami: { status: "AWAS", source: "BMKG (simulasi demo)", description: "BMKG mengeluarkan peringatan AWAS potensi tsunami di sekitar wilayah Pangandaran. Pantau informasi terkini di bmkg.go.id dan ikuti arahan resmi petugas setempat." } satisfies TsunamiStatusInfo },
 };
 
 async function main() {

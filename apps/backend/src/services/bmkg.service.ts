@@ -103,9 +103,11 @@ export class BmkgService {
   private static buildOfficialTsunamiDescription(status: TsunamiStatus): string {
     switch (status) {
       case "AWAS":
-        return "BMKG mengeluarkan status AWAS tsunami. Ikuti arahan evakuasi resmi.";
+        // Tidak mendikte evakuasi — itu wewenang BPBD/InaTEWS resmi, bukan SIGAP.
+        // SIGAP hanya meneruskan status BMKG dan mengarahkan ke kanal resmi.
+        return "BMKG mengeluarkan peringatan AWAS potensi tsunami di sekitar wilayah Pangandaran. Pantau informasi terkini di bmkg.go.id dan ikuti arahan resmi petugas setempat.";
       case "SIAGA":
-        return "BMKG mengeluarkan status SIAGA tsunami. Siapkan diri untuk evakuasi.";
+        return "BMKG mengeluarkan status SIAGA potensi tsunami di sekitar wilayah Pangandaran. Tetap waspada dan pantau perkembangan resmi melalui bmkg.go.id.";
       case "WASPADA":
         return "BMKG mengeluarkan status WASPADA tsunami. Tetap pantau informasi resmi.";
       case "NORMAL":
