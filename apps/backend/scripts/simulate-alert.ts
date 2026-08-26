@@ -87,7 +87,7 @@ async function main() {
     } else {
       const payload = await NotificationService.getLatestPayload();
       if (payload) {
-        const dispatchResult = await NotificationService.dispatch(payload);
+        const dispatchResult = await NotificationService.dispatch(payload, "MANUAL_SIMULATION");
         console.log(`Push notification terkirim ke ${dispatchResult.sent}/${dispatchResult.total} subscriber.`);
       }
     }

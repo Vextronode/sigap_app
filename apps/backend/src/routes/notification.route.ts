@@ -81,10 +81,7 @@ publicNotificationRouter.post("/unsubscribe", async (req: Request, res: Response
 
 /**
  * GET /api/v1/public/notifications/latest — konten notifikasi terkini,
- * dibangun dari alert yang sama dengan dashboard (lihat notification.service.ts).
- * Endpoint ini juga yang tadinya direncanakan buat dikonsumsi tim SID —
- * tetap dipertahankan meski SIGAP sekarang kirim sendiri, siapa tahu SID
- * akhirnya jadi ikut relay juga nanti.
+ * dibangun dari alert yang sama dengan dashboard.
  */
 publicNotificationRouter.get("/latest", async (_req: Request, res: Response) => {
   try {
@@ -108,13 +105,36 @@ publicNotificationRouter.get("/latest", async (_req: Request, res: Response) => 
 });
 
 /**
+ * GET /api/v1/public/notifications/logs
+ * Menampilkan riwayat audit pengiriman push notification beserta statistik & status error jika ada.
+ */
+publicNotificationRouter.get("/logs", async (req: Request, res: Response) => {
+  try {
+    const limitParam = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
+    const limit = isNaN(limitParam) ? 20 : Math.min(limitParam, 100);
+
+    const logs = await NotificationService.getLogs(limit);
+
+    const response: ApiSuccessResponse<typeof logs> = {
+      success: true,
+      message: `Berhasil mengambil ${logs.length} riwayat pengiriman notifikasi.`,
+      data: logs,
+    };
+    res.json(response);
+  } catch (error) {
+    console.error("[GET /notifications/logs] error:", error);
+    const response: ApiErrorResponse = {
+      success: false,
+      message: "Gagal mengambil riwayat log notifikasi.",
+      errors: [error instanceof Error ? error.message : String(error)],
+    };
+    res.status(500).json(response);
+  }
+});
+
+/**
  * POST /api/v1/protected/notifications/dispatch
- *
- * ⚠️ GERBANG SEMENTARA — lihat catatan lengkap di notification.service.ts.
- * Saat ini cuma butuh login (belum ada pengecekan role/permission spesifik,
- * karena RBAC belum ditegakkan di mana pun — lihat CHECKLIST_SIGAP_ALERTS.md
- * bagian 7). Begitu fitur admin & validasi alat/admin dikerjakan, endpoint
- * inilah yang dipanggil dari handler validasi itu, BUKAN dibuat ulang.
+ * Re-send atau dispatch manual oleh admin.
  */
 protectedNotificationRouter.post("/dispatch", authMiddleware, async (_req: Request, res: Response) => {
   try {
@@ -140,7 +160,7 @@ protectedNotificationRouter.post("/dispatch", authMiddleware, async (_req: Reque
       return;
     }
 
-    const result = await NotificationService.dispatch(payload);
+    const result = await NotificationService.dispatch(payload, "ADMIN_DISPATCH");
 
     const response: ApiSuccessResponse<typeof result> = {
       success: true,

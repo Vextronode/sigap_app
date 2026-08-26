@@ -5,13 +5,10 @@
  * kepastian tim SID mau/bisa menangani notifikasi kesiapsiagaan bencana.
  * Daripada bergantung ke tim lain yang belum pasti, SIGAP bangun sendiri.
  *
- * ✅ `dispatch()` sekarang dipanggil OTOMATIS dari `runAlertCheck()` di
+ * ✅ `dispatch()` dipanggil OTOMATIS dari `runAlertCheck()` di
  * `alert.scheduler.ts` — setiap kali ada alert baru non-duplikat dengan
  * level YELLOW/ORANGE/RED, notifikasi langsung dikirim ke semua subscriber
- * tanpa menunggu aksi manual admin.
- *
- * Endpoint manual `POST /api/v1/protected/notifications/dispatch` tetap
- * ada sebagai fallback (misal: admin ingin re-send atau test manual).
+ * tanpa menunggu aksi manual admin, serta DICATAT RIWAYATNYA ke database `notification_logs`.
  */
 import { prisma } from "../config/prisma.js";
 import { webpush } from "../config/webPush.js";
@@ -62,6 +59,27 @@ export class NotificationService {
   }
 
   /**
+   * Ambil riwayat audit pengiriman notifikasi dari database.
+   */
+  static async getLogs(limit = 20) {
+    return prisma.notificationLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        alert: {
+          select: {
+            id: true,
+            level: true,
+            source: true,
+            description: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
    * GREEN (Aman) sengaja tidak dianggap notification-worthy — warga tidak
    * perlu di-notif untuk kondisi normal, cuma YELLOW/ORANGE/RED (Waspada/
    * Siaga/Awas). Ditaruh di sini (bukan langsung di route) supaya aturannya
@@ -105,18 +123,17 @@ export class NotificationService {
       url: "/",
       updatedAt: alert.updatedAt.toISOString(),
       vibrate: VIBRATION_PATTERNS[alert.level] ?? [],
-      // YELLOW/ORANGE/RED: notifikasi wajib tetap di tray sampai warga dismiss manual.
-      // GREEN tidak pernah sampai sini (dijaga shouldNotify()), tapi fallback ke false.
       requireInteraction: alert.level !== AlertLevel.GREEN,
     };
   }
 
   /**
-   * Kirim `payload` ke SEMUA subscription tersimpan. Lihat catatan gerbang
-   * validasi di atas file ini — fungsi ini sendiri tidak tahu dan tidak
-   * peduli siapa/apa yang memanggilnya, itu tanggung jawab caller.
+   * Kirim `payload` ke SEMUA subscription tersimpan & simpan audit trail ke `notification_logs`.
    */
-  static async dispatch(payload: NotificationPayload): Promise<DispatchResult> {
+  static async dispatch(
+    payload: NotificationPayload,
+    triggeredBy = "CRON_SCHEDULER"
+  ): Promise<DispatchResult> {
     const subscriptions = await prisma.pushSubscription.findMany();
 
     const results = await Promise.allSettled(
@@ -128,22 +145,23 @@ export class NotificationService {
       )
     );
 
-    // Sebelumnya alasan gagal kirim tidak pernah dicatat di mana pun — route
-    // cuma balikin angka "failed: 1" tanpa penjelasan, tidak bisa didebug.
-    // Sekarang dicatat ke console tiap ada yang gagal (kecuali 404/410, itu
-    // memang wajar — subscription kadaluarsa, bukan error yang perlu dilihat).
+    const errors: string[] = [];
+
     results.forEach((result, index) => {
       if (result.status !== "rejected") return;
       const statusCode = (result.reason as { statusCode?: number })?.statusCode;
+      const endpointTrunc = subscriptions[index]?.endpoint.slice(0, 50) ?? "unknown";
+      
+      const errMsg = `Endpoint [${endpointTrunc}...]: Code ${statusCode ?? "N/A"} — ${
+        result.reason instanceof Error ? result.reason.message : String(result.reason)
+      }`;
+      errors.push(errMsg);
+
       if (statusCode === 404 || statusCode === 410) return;
-      console.error(
-        `[NotificationService.dispatch] Gagal kirim ke ${subscriptions[index].endpoint.slice(0, 60)}...`,
-        result.reason
-      );
+      console.error(`[NotificationService.dispatch] Gagal kirim: ${errMsg}`);
     });
 
-    // Subscription yang browser/OS sudah anggap kadaluarsa (uninstall, clear
-    // data, dll) balikin 404/410 — bersihkan dari DB supaya tidak terus dicoba.
+    // Cleanup expired subscriptions (404/410)
     const expiredEndpoints = subscriptions
       .filter((_, index) => {
         const result = results[index];
@@ -159,10 +177,32 @@ export class NotificationService {
       });
     }
 
+    const sentCount = results.filter((r) => r.status === "fulfilled").length;
+    const failedCount = results.filter((r) => r.status === "rejected").length;
+
+    // Catat log pengiriman ke database PostgreSQL
+    try {
+      await prisma.notificationLog.create({
+        data: {
+          alertId: payload.alertId,
+          level: payload.level as AlertLevel,
+          title: payload.title,
+          body: payload.body,
+          triggeredBy,
+          totalSubscribers: subscriptions.length,
+          sentCount,
+          failedCount,
+          errorDetails: errors.length > 0 ? errors.join("\n") : null,
+        },
+      });
+    } catch (logErr) {
+      console.error("[NotificationService] Gagal menyimpan notification log:", logErr);
+    }
+
     return {
       total: subscriptions.length,
-      sent: results.filter((r) => r.status === "fulfilled").length,
-      failed: results.filter((r) => r.status === "rejected").length,
+      sent: sentCount,
+      failed: failedCount,
     };
   }
 }
