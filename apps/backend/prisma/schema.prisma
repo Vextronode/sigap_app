@@ -110,6 +110,8 @@ model Alert {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  notificationLogs NotificationLog[]
+
   @@map("alerts")
 }
 
@@ -131,6 +133,26 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@map("push_subscriptions")
+}
+
+model NotificationLog {
+  id               String     @id @default(uuid())
+  alertId          String?    @map("alert_id")
+  level            AlertLevel
+  title            String
+  body             String
+  triggeredBy      String     @default("CRON_SCHEDULER") @map("triggered_by")
+  totalSubscribers Int        @default(0) @map("total_subscribers")
+  sentCount        Int        @default(0) @map("sent_count")
+  failedCount      Int        @default(0) @map("failed_count")
+  errorDetails     String?    @map("error_details") @db.Text
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  alert Alert? @relation(fields: [alertId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([alertId])
+  @@map("notification_logs")
 }
 
 //
