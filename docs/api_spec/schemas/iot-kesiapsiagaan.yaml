@@ -1,5 +1,7 @@
 # =====================================================================
-# iot-kesiapsiagaan.yaml — schema domain Perangkat IoT (indikator + sirine)
+# schemas/iot-kesiapsiagaan.yaml — schema domain Perangkat IoT
+# (Unit Utama + Sirine — terminologi final di-handle Tech Lead terpisah,
+# field di bawah tetap generik "device")
 # =====================================================================
 
 DevicePublic:
@@ -8,54 +10,73 @@ DevicePublic:
     id:
       type: string
       format: uuid
-    device_name:
+    deviceName:
       type: string
     latitude:
       type: number
     longitude:
       type: number
-    current_level:
+    currentLevel:
       $ref: './shared.yaml#/StatusLevel'
     status:
       type: string
-      enum: [online, offline, degraded]
+      enum: [online, offline]
+      description: >
+        Hanya 2 nilai sesuai FS-06 (biner, dari ambang waktu lastSeenAt).
+        Nilai "degraded" pada draft sebelumnya DIBUANG — tidak pernah
+        diputuskan di FS manapun. Kalau ada rencana status granular
+        (kualitas sinyal, status daya, dst. — sempat dibahas untuk
+        Sirine), itu perlu field terpisah, bukan overload di sini.
 
 DeviceFull:
   allOf:
     - $ref: './iot-kesiapsiagaan.yaml#/DevicePublic'
     - type: object
       properties:
-        last_seen_at:
+        isActive:
+          type: boolean
+          description: Nonaktifkan (bukan hapus permanen), FS-06 FR4
+        lastSeenAt:
           type: string
           format: date-time
           nullable: true
-        created_at:
+        createdAt:
           type: string
           format: date-time
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
 
 DeviceCreateRequest:
   type: object
-  required: [device_name]
+  required: [deviceName, latitude, longitude]
   properties:
-    device_name:
+    deviceName:
       type: string
     latitude:
       type: number
+      minimum: -90
+      maximum: 90
     longitude:
       type: number
+      minimum: -180
+      maximum: 180
 
 DeviceUpdateRequest:
   type: object
   properties:
-    device_name:
+    deviceName:
       type: string
     latitude:
       type: number
+      minimum: -90
+      maximum: 90
     longitude:
       type: number
+      minimum: -180
+      maximum: 180
+    isActive:
+      type: boolean
 
 DeviceStatusLog:
   type: object
@@ -63,16 +84,17 @@ DeviceStatusLog:
     id:
       type: string
       format: uuid
-    device_id:
+    deviceId:
       type: string
       format: uuid
-    level_sent:
+    levelSent:
       $ref: './shared.yaml#/StatusLevel'
-    sent_at:
+    sentAt:
       type: string
       format: date-time
-    sync_status:
+    ackStatus:
       type: string
+      enum: [Diterima, "Tidak Ada Respons", Menunggu]
       nullable: true
 
 SirenActionLog:
@@ -81,19 +103,48 @@ SirenActionLog:
     id:
       type: string
       format: uuid
-    device_id:
+    deviceId:
       type: string
       format: uuid
-    trigger_source:
+      description: Referensi Sirine yang menerima broadcast
+    levelAtTrigger:
+      $ref: './shared.yaml#/StatusLevel'
+      description: >
+        Business rule (server-enforced, bukan constraint schema):
+        hanya ORANGE/RED yang seharusnya pernah muncul di sini.
+    triggerSource:
       type: string
-      enum: [lokal_fisik, remote_aplikasi]
-    operator_id:
+      enum: [digital, fisik, dibatalkan_otomatis]
+    triggeredBy:
       type: string
       format: uuid
       nullable: true
-    level_at_trigger:
+      description: null untuk trigger fisik (FS-08 FR3)
+    triggeredFromIp:
       type: string
-      enum: [oranye, merah]
-    triggered_at:
+      nullable: true
+      description: Hanya terisi untuk triggerSource=digital
+    triggeredAt:
       type: string
       format: date-time
+    executedAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Diisi saat Unit Utama melaporkan hasil eksekusi (bisa lebih lambat dari triggeredAt, latensi siklus poll)
+    ackStatus:
+      type: string
+      enum: ["Diterima & Dieksekusi", "Tidak Ada Respons", Menunggu]
+    cooldownOverridden:
+      type: boolean
+      description: true jika trigger ini memotong cooldown karena eskalasi ke RED (FS-09 FR5)
+
+DeviceTriggerSirenRequest:
+  type: object
+  properties:
+    confirmed:
+      type: boolean
+      default: false
+      description: >
+        Wajib true untuk level RED (konfirmasi 2 langkah, FS-09 FR2).
+        Backend menolak dengan 409 jika levelnya RED dan confirmed=false.

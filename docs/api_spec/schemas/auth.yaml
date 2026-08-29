@@ -1,5 +1,5 @@
 # =====================================================================
-# auth.yaml — schema domain Auth & Users (profil)
+# schemas/auth.yaml — schema domain Auth & profil pengguna
 # =====================================================================
 
 LoginRequest:
@@ -18,7 +18,7 @@ LoginResponse:
   properties:
     token:
       type: string
-    expires_in:
+    expiresIn:
       type: integer
       description: Detik hingga token kedaluwarsa
     user:
@@ -35,8 +35,9 @@ UserProfile:
     email:
       type: string
       format: email
-    roles:
-      type: array
-      items:
-        type: string
-      example: ["admin"]
+    role:
+      type: string
+      enum: [admin, operator]
+      example: admin
+    isActive:
+      type: boolean

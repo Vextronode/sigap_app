@@ -1,5 +1,5 @@
 # =====================================================================
-# auth.yaml — path domain Auth
+# paths/auth.yaml — path domain Auth
 # =====================================================================
 
 login:
@@ -12,7 +12,7 @@ login:
       content:
         application/json:
           schema:
-            $ref: '../components/auth.yaml#/LoginRequest'
+            $ref: '../schemas/auth.yaml#/LoginRequest'
     responses:
       '200':
         description: Login berhasil
@@ -20,15 +20,29 @@ login:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/auth.yaml#/LoginResponse'
+                      $ref: '../schemas/auth.yaml#/LoginResponse'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
+
+logout:
+  post:
+    tags: [Auth]
+    summary: Logout - invalidasi sesi di server (bukan hanya hapus token di klien)
+    responses:
+      '200':
+        description: Logout berhasil
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
 
 me:
   get:
@@ -41,10 +55,10 @@ me:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/auth.yaml#/UserProfile'
+                      $ref: '../schemas/auth.yaml#/UserProfile'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'

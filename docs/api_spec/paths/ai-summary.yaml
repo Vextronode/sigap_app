@@ -1,12 +1,24 @@
 # =====================================================================
-# ai-summary.yaml — path domain Ringkasan AI
+# paths/ai-summary.yaml — path domain Ringkasan AI
 # =====================================================================
 
 ai-summary:
   get:
     tags: [AI Summary]
-    summary: Ringkasan bahasa sederhana kondisi cuaca/gempa terkini
+    summary: >
+      Ringkasan bahasa sederhana. Satu endpoint untuk 3 kebutuhan
+      (Smart Weather Summary, Ringkasan Gempa, Daily Safety
+      Recommendation - lihat PRD §3.1 Decision Support) dibedakan lewat
+      param type, bukan 3 endpoint terpisah untuk fitur yang masih
+      🚧/bonus.
     security: []
+    parameters:
+      - name: type
+        in: query
+        required: true
+        schema:
+          type: string
+          enum: [weather, earthquake, recommendation]
     responses:
       '200':
         description: OK
@@ -14,10 +26,10 @@ ai-summary:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/ai-summary.yaml#/AiSummaryResponse'
+                      $ref: '../schemas/ai-summary.yaml#/AiSummaryResponse'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'

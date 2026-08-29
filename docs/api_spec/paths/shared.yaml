@@ -1,129 +1,71 @@
 # =====================================================================
-# shared.yaml — komponen lintas domain: envelope response, pagination,
-# status level, parameter umum (id/page/limit), dan response umum
+# paths/shared.yaml — response reusable lintas domain (401/403/404/
+# 409/429), seluruhnya mereferensikan ErrorEnvelope tunggal di
+# schemas/shared.yaml.
 # =====================================================================
-
-SuccessEnvelope:
-  type: object
-  required: [status, code, message]
-  properties:
-    status:
-      type: string
-      enum: [success]
-      example: success
-    code:
-      type: integer
-      example: 200
-    message:
-      type: string
-      example: "Request successful"
-
-ErrorEnvelope:
-  type: object
-  required: [status, code, message]
-  properties:
-    status:
-      type: string
-      enum: [error]
-      example: error
-    code:
-      type: integer
-      example: 404
-    message:
-      type: string
-      example: "Resource not found"
-    errors:
-      type: array
-      items:
-        type: object
-        properties:
-          field:
-            type: string
-          message:
-            type: string
-
-Pagination:
-  type: object
-  properties:
-    page:
-      type: integer
-    limit:
-      type: integer
-    total:
-      type: integer
-
-StatusLevel:
-  type: string
-  enum: [hijau, kuning, oranye, merah]
-  description: "hijau=Aman, kuning=Waspada, oranye=Siaga, merah=Awas"
-
-IdParam:
-  name: id
-  in: path
-  required: true
-  schema:
-    type: string
-    format: uuid
-
-PageParam:
-  name: page
-  in: query
-  schema:
-    type: integer
-    default: 1
-
-LimitParam:
-  name: limit
-  in: query
-  schema:
-    type: integer
-    default: 20
-    maximum: 100
 
 Unauthorized:
   description: Token tidak ada atau tidak valid
   content:
     application/json:
       schema:
-        allOf:
-          - $ref: './shared.yaml#/ErrorEnvelope'
-        example:
-          status: error
-          code: 401
-          message: "Token tidak valid atau sudah kedaluwarsa"
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        status: error
+        code: 401
+        message: "Token tidak valid atau sudah kedaluwarsa"
 
 Forbidden:
   description: Token valid, tetapi tidak memiliki permission yang dibutuhkan
   content:
     application/json:
       schema:
-        allOf:
-          - $ref: './shared.yaml#/ErrorEnvelope'
-        example:
-          status: error
-          code: 403
-          message: "Anda tidak memiliki izin untuk mengakses resource ini"
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        status: error
+        code: 403
+        message: "Anda tidak memiliki izin untuk mengakses resource ini"
 
 NotFound:
   description: Resource tidak ditemukan
   content:
     application/json:
       schema:
-        allOf:
-          - $ref: './shared.yaml#/ErrorEnvelope'
-        example:
-          status: error
-          code: 404
-          message: "Resource tidak ditemukan"
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        status: error
+        code: 404
+        message: "Resource tidak ditemukan"
 
-RateLimited:
-  description: Melebihi batas rate limit
+Conflict:
+  description: Permintaan bertentangan dengan aturan bisnis saat ini
   content:
     application/json:
       schema:
-        allOf:
-          - $ref: './shared.yaml#/ErrorEnvelope'
-        example:
-          status: error
-          code: 429
-          message: "Terlalu banyak permintaan, coba lagi nanti"
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        status: error
+        code: 409
+        message: "Tidak dapat menonaktifkan admin terakhir yang aktif"
+
+RateLimited:
+  description: Melebihi batas percobaan (rate limit umum, atau lockout login FS-01)
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        status: error
+        code: 429
+        message: "Terlalu banyak percobaan gagal. Coba lagi dalam 15 menit."
+
+BmkgUpstreamError:
+  description: Gagal mengambil data dari upstream BMKG (bukan 500 - lihat API_SPEC.md v3.1 §6)
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        status: error
+        code: 502
+        message: "Gagal mengambil data dari BMKG, coba lagi nanti"

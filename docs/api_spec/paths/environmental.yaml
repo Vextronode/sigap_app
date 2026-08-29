@@ -1,15 +1,15 @@
 # =====================================================================
-# environmental.yaml — path domain Data Lingkungan & Alert (historis)
+# paths/environmental.yaml — path domain Data Lingkungan & Alert
 # =====================================================================
 
 environmental-data:
   get:
     tags: [Environmental Data]
-    summary: Daftar data lingkungan terkini (cuaca, seismik) - historis
+    summary: Daftar data lingkungan historis (cuaca, seismik)
     security: []
     parameters:
-      - $ref: '../components/shared.yaml#/PageParam'
-      - $ref: '../components/shared.yaml#/LimitParam'
+      - $ref: '../schemas/shared.yaml#/PageParam'
+      - $ref: '../schemas/shared.yaml#/LimitParam'
       - name: type
         in: query
         schema:
@@ -22,30 +22,35 @@ environmental-data:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/environmental.yaml#/EnvironmentalData'
+                        $ref: '../schemas/environmental.yaml#/EnvironmentalData'
                     pagination:
-                      $ref: '../components/shared.yaml#/Pagination'
+                      $ref: '../schemas/shared.yaml#/Pagination'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
 
 alerts:
   get:
     tags: [Alerts]
-    summary: Riwayat/daftar alert kesiapsiagaan
+    summary: Riwayat/daftar alert kesiapsiagaan (log historis, FS-02)
     security: []
     parameters:
-      - $ref: '../components/shared.yaml#/PageParam'
-      - $ref: '../components/shared.yaml#/LimitParam'
+      - $ref: '../schemas/shared.yaml#/PageParam'
+      - $ref: '../schemas/shared.yaml#/LimitParam'
       - name: severity
         in: query
         schema:
-          $ref: '../components/shared.yaml#/StatusLevel'
+          $ref: '../schemas/shared.yaml#/StatusLevel'
+      - name: reviewStatus
+        in: query
+        schema:
+          type: string
+          enum: ["Belum Ditinjau", Dikonfirmasi, Ditolak, Ditindaklanjuti]
     responses:
       '200':
         description: OK
@@ -53,39 +58,89 @@ alerts:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/environmental.yaml#/Alert'
+                        $ref: '../schemas/environmental.yaml#/Alert'
                     pagination:
-                      $ref: '../components/shared.yaml#/Pagination'
+                      $ref: '../schemas/shared.yaml#/Pagination'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
 
-alert-validate:
-  patch:
+alert-by-id:
+  get:
     tags: [Alerts]
-    summary: Validasi alert oleh admin/operator
+    summary: Detail satu alert (FS-02 AC2)
+    security: []
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     responses:
       '200':
-        description: Alert berhasil divalidasi
+        description: OK
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/environmental.yaml#/Alert'
-      '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
-      '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+                      $ref: '../schemas/environmental.yaml#/Alert'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
+
+alert-review:
+  patch:
+    tags: [Alerts]
+    summary: Klasifikasi alert oleh admin/operator (FS-02 FR3) — bukan validasi biner
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/environmental.yaml#/AlertReviewRequest'
+    responses:
+      '200':
+        description: Status klasifikasi berhasil diubah
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/environmental.yaml#/Alert'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+
+alert-current:
+  get:
+    tags: [Alerts]
+    summary: Entri Alert paling akhir dari log (untuk kebutuhan dashboard ringkas)
+    security: []
+    responses:
+      '200':
+        description: OK (data null hanya di window singkat sebelum entri pertama tercatat scheduler)
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      allOf:
+                        - $ref: '../schemas/environmental.yaml#/Alert'
+                      nullable: true
+      '429':
+        $ref: './shared.yaml#/RateLimited'
