@@ -1,6 +1,6 @@
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
-  day: "2-digit",
-  month: "short",
+  day: "numeric",
+  month: "long",
   year: "numeric",
 });
 
@@ -45,7 +45,7 @@ export const formatDateTime = (value?: string) => {
   }
 
   return {
-    time: `${timeFormatter.format(date)} WIB`,
+    time: `${timeFormatter.format(date).replace(":", ".")} WIB`,
     date: dateFormatter.format(date),
   };
 };
