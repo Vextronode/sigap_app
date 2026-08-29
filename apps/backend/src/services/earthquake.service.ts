@@ -32,12 +32,12 @@ const PANGANDARAN_RADIUS_KM = Number(process.env.PANGANDARAN_RADIUS_KM ?? 100);
 const WEST_JAVA_RADIUS_KM = Number(process.env.WEST_JAVA_RADIUS_KM ?? 350);
 
 // Batas umur gempa yang masih dianggap "relevan" untuk ditampilkan di card
-// Jawa Barat & Pangandaran.
+// Jawa Barat & Pangandaran (maksimal 7 hari / 1 minggu).
 const PANGANDARAN_MAX_AGE_DAYS = Number(
-  process.env.PANGANDARAN_MAX_AGE_DAYS ?? 30,
+  process.env.PANGANDARAN_MAX_AGE_DAYS ?? 7,
 );
 const WEST_JAVA_MAX_AGE_DAYS = Number(
-  process.env.WEST_JAVA_MAX_AGE_DAYS ?? 30,
+  process.env.WEST_JAVA_MAX_AGE_DAYS ?? 7,
 );
 
 type CacheEntry<T> = {

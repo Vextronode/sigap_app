@@ -1,5 +1,5 @@
-import { Globe, Map, MapPin, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { Map } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
 import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
@@ -22,62 +22,74 @@ const getVariant = (title: string): EarthquakeVariant => {
   return "indonesia";
 };
 
+const IndonesiaFlagIcon = () => (
+  <img
+    src="/assets/image/logo-indonesia.svg"
+    alt="Bendera Indonesia"
+    className="h-7 w-10 shrink-0 rounded-[3px] border border-slate-300/40 object-contain shadow-sm dark:border-slate-700/60"
+  />
+);
+
+const JawaBaratIcon = () => (
+  <img
+    src="/assets/image/logo-jawabarat.svg"
+    alt="Logo Jawa Barat"
+    className="h-10 w-10 shrink-0 object-contain drop-shadow-sm"
+  />
+);
+
+const PangandaranIcon = () => (
+  <img
+    src="/assets/image/logo-pangandaran.svg"
+    alt="Logo Pangandaran"
+    className="h-10 w-10 shrink-0 object-contain drop-shadow-sm"
+  />
+);
+
 const variantConfig: Record<
   EarthquakeVariant,
   {
-    icon: LucideIcon;
-    iconClassName: string;
+    renderCustomIcon: () => ReactNode;
     accentBorder: string;
     badgeTone: "safe" | "danger";
     badgeClassName: string;
     titleClassName: string;
     valueClassName: string;
     noteClassName: string;
-    emptyClassName: string;
-    emptyIconClassName: string;
     emptyTitle: string;
     emptyMessage: string;
   }
 > = {
   indonesia: {
-    icon: Globe,
-    iconClassName: "bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20",
+    renderCustomIcon: () => <IndonesiaFlagIcon />,
     accentBorder: "border-slate-200/60 dark:border-slate-800",
     badgeTone: "safe",
     badgeClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     titleClassName: "text-foreground",
     valueClassName: "text-blue-600 dark:text-blue-400",
     noteClassName: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
-    emptyClassName: "border-[color:var(--border)] bg-card",
-    emptyIconClassName: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     emptyTitle: "Data Belum Tersedia",
     emptyMessage: "Informasi gempa Indonesia belum dapat ditampilkan saat ini.",
   },
   "west-java": {
-    icon: Map,
-    iconClassName: "bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20",
+    renderCustomIcon: () => <JawaBaratIcon />,
     accentBorder: "border-slate-200/60 dark:border-slate-800",
     badgeTone: "safe",
     badgeClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     titleClassName: "text-foreground",
     valueClassName: "text-blue-600 dark:text-blue-400",
     noteClassName: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
-    emptyClassName: "border-[color:var(--border)] bg-card",
-    emptyIconClassName: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     emptyTitle: "Data Belum Tersedia",
     emptyMessage: "Informasi gempa Jawa Barat belum tersedia saat ini.",
   },
   pangandaran: {
-    icon: MapPin,
-    iconClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20",
+    renderCustomIcon: () => <PangandaranIcon />,
     accentBorder: "border-slate-200/60 dark:border-slate-800",
     badgeTone: "safe",
     badgeClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     titleClassName: "text-foreground",
     valueClassName: "text-emerald-600 dark:text-emerald-400",
     noteClassName: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-    emptyClassName: "border-[color:var(--border)] bg-card",
-    emptyIconClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     emptyTitle: "Data Belum Tersedia",
     emptyMessage:
       "Tidak ada gempa yang berdampak ke wilayah sekitar Desa Cibenda pada data saat ini dari BMKG.",
@@ -158,7 +170,6 @@ export const EarthquakeCard = ({
     ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
     : config.noteClassName;
 
-  const RegionIcon = config.icon;
   const regionLabel = title.replace(/^Info Gempa\s*/i, "");
 
   if (!displayEarthquake) {
@@ -170,14 +181,9 @@ export const EarthquakeCard = ({
         )}
       >
         <div className="flex h-full min-h-[420px] flex-col justify-between">
-          <div className="flex items-start gap-3 border-b border-[color:var(--border)] px-5 py-4">
-            <div
-              className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
-                config.emptyIconClassName
-              )}
-            >
-              <RegionIcon className="h-5 w-5" aria-hidden="true" />
+          <div className="flex items-center gap-3 border-b border-[color:var(--border)] px-5 py-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+              {config.renderCustomIcon()}
             </div>
             <div className="min-w-0">
               <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
@@ -192,7 +198,7 @@ export const EarthquakeCard = ({
           <div className="flex flex-1 items-center justify-center px-6 py-8 text-center">
             <div className="max-w-[240px]">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-dashed border-[color:var(--border)] bg-muted/50 text-muted-foreground">
-                <RegionIcon className="h-6 w-6" aria-hidden="true" />
+                {config.renderCustomIcon()}
               </div>
               <h3 className="text-base font-semibold text-foreground">
                 {config.emptyTitle}
@@ -212,9 +218,6 @@ export const EarthquakeCard = ({
   }
 
   const formattedDate = formatDateTime(displayEarthquake.updatedAt);
-  const iconClassName = isDanger
-    ? "bg-red-500/10 text-red-600 dark:text-red-400 ring-1 ring-red-500/20"
-    : config.iconClassName;
 
   return (
     <Card
@@ -246,18 +249,13 @@ export const EarthquakeCard = ({
         )}
 
         <div className="border-b border-[color:var(--border)] px-5 py-4">
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
-                iconClassName
-              )}
-            >
-              <RegionIcon className="h-5 w-5" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+              {config.renderCustomIcon()}
             </div>
 
             <div className="min-w-0">
-              <p className={cn("text-base font-bold", config.titleClassName)}>
+              <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
                 Info Gempa
               </p>
               <p className="text-xs font-medium text-muted-foreground">
