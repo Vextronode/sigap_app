@@ -1,15 +1,16 @@
 # =====================================================================
-# content-admin.yaml — path domain Pengumuman, Evakuasi, Kontak Darurat
+# paths/content-admin.yaml — path domain Pengumuman (proxy), Evakuasi,
+# Kontak Darurat
 # =====================================================================
 
 announcements-public:
   get:
     tags: [Announcements]
-    summary: Daftar pengumuman
+    summary: Daftar pengumuman (proxy read-only dari SID)
     security: []
     parameters:
-      - $ref: '../components/shared.yaml#/PageParam'
-      - $ref: '../components/shared.yaml#/LimitParam'
+      - $ref: '../schemas/shared.yaml#/PageParam'
+      - $ref: '../schemas/shared.yaml#/LimitParam'
     responses:
       '200':
         description: OK
@@ -17,85 +18,50 @@ announcements-public:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/content-admin.yaml#/Announcement'
+                        $ref: '../schemas/content-admin.yaml#/AnnouncementProxy'
 
 announcements-protected:
   post:
     tags: [Announcements]
-    summary: Buat pengumuman baru
+    deprecated: true
+    summary: >
+      DEPRECATED — sumber data pindah ke proxy SID (Roadmap Tahap 2
+      §2.1 #3-4). Dipertahankan di dokumen, tidak dihapus, tidak aktif.
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '../components/content-admin.yaml#/AnnouncementWriteRequest'
+            type: object
     responses:
-      '201':
-        description: Berhasil dibuat
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '../components/content-admin.yaml#/Announcement'
-      '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
-      '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+      '410':
+        description: Endpoint tidak lagi aktif — kelola pengumuman lewat SID
 
 announcement-by-id:
   put:
     tags: [Announcements]
-    summary: Perbarui pengumuman
+    deprecated: true
+    summary: DEPRECATED — lihat announcements-protected
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '../components/content-admin.yaml#/AnnouncementWriteRequest'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     responses:
-      '200':
-        description: OK
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '../components/content-admin.yaml#/Announcement'
-      '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
-      '403':
-        $ref: '../components/shared.yaml#/Forbidden'
-      '404':
-        $ref: '../components/shared.yaml#/NotFound'
+      '410':
+        description: Endpoint tidak lagi aktif
   delete:
     tags: [Announcements]
-    summary: Hapus pengumuman
+    deprecated: true
+    summary: DEPRECATED — lihat announcements-protected
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     responses:
-      '204':
-        description: Berhasil dihapus (No Content)
-      '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
-      '403':
-        $ref: '../components/shared.yaml#/Forbidden'
-      '404':
-        $ref: '../components/shared.yaml#/NotFound'
+      '410':
+        description: Endpoint tidak lagi aktif
 
 evacuation-points-public:
   get:
@@ -109,13 +75,13 @@ evacuation-points-public:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/content-admin.yaml#/EvacuationPoint'
+                        $ref: '../schemas/content-admin.yaml#/EvacuationPoint'
 
 evacuation-points-protected:
   post:
@@ -126,7 +92,7 @@ evacuation-points-protected:
       content:
         application/json:
           schema:
-            $ref: '../components/content-admin.yaml#/EvacuationPointWriteRequest'
+            $ref: '../schemas/content-admin.yaml#/EvacuationPointWriteRequest'
     responses:
       '201':
         description: Berhasil dibuat
@@ -134,28 +100,28 @@ evacuation-points-protected:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/content-admin.yaml#/EvacuationPoint'
+                      $ref: '../schemas/content-admin.yaml#/EvacuationPoint'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
 
 evacuation-point-by-id:
   put:
     tags: [Evacuation]
     summary: Perbarui titik evakuasi
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '../components/content-admin.yaml#/EvacuationPointWriteRequest'
+            $ref: '../schemas/content-admin.yaml#/EvacuationPointWriteRequest'
     responses:
       '200':
         description: OK
@@ -163,31 +129,34 @@ evacuation-point-by-id:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/content-admin.yaml#/EvacuationPoint'
+                      $ref: '../schemas/content-admin.yaml#/EvacuationPoint'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
   delete:
     tags: [Evacuation]
     summary: Hapus titik evakuasi
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     responses:
       '204':
         description: Berhasil dihapus (No Content)
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
+      '409':
+        description: Titik masih direferensikan oleh jalur evakuasi (FS-04 AC3) — hapus/ubah jalur terkait dahulu, atau konfirmasi eksplisit
+        $ref: './shared.yaml#/Conflict'
 
 evacuation-routes-public:
   get:
@@ -201,13 +170,13 @@ evacuation-routes-public:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/content-admin.yaml#/EvacuationRoute'
+                        $ref: '../schemas/content-admin.yaml#/EvacuationRoute'
 
 evacuation-routes-protected:
   post:
@@ -218,7 +187,7 @@ evacuation-routes-protected:
       content:
         application/json:
           schema:
-            $ref: '../components/content-admin.yaml#/EvacuationRouteWriteRequest'
+            $ref: '../schemas/content-admin.yaml#/EvacuationRouteWriteRequest'
     responses:
       '201':
         description: Berhasil dibuat
@@ -226,28 +195,28 @@ evacuation-routes-protected:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/content-admin.yaml#/EvacuationRoute'
+                      $ref: '../schemas/content-admin.yaml#/EvacuationRoute'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
 
 evacuation-route-by-id:
   put:
     tags: [Evacuation]
     summary: Perbarui jalur evakuasi
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '../components/content-admin.yaml#/EvacuationRouteWriteRequest'
+            $ref: '../schemas/content-admin.yaml#/EvacuationRouteWriteRequest'
     responses:
       '200':
         description: OK
@@ -255,31 +224,31 @@ evacuation-route-by-id:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/content-admin.yaml#/EvacuationRoute'
+                      $ref: '../schemas/content-admin.yaml#/EvacuationRoute'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
   delete:
     tags: [Evacuation]
     summary: Hapus jalur evakuasi
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     responses:
       '204':
         description: Berhasil dihapus (No Content)
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
 
 emergency-contacts-public:
   get:
@@ -293,24 +262,24 @@ emergency-contacts-public:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/content-admin.yaml#/EmergencyContact'
+                        $ref: '../schemas/content-admin.yaml#/EmergencyContact'
 
 emergency-contacts-protected:
   post:
     tags: [Emergency Contacts]
-    summary: Tambah kontak darurat
+    summary: Tambah kontak darurat (selalu isCore=false)
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '../components/content-admin.yaml#/EmergencyContactWriteRequest'
+            $ref: '../schemas/content-admin.yaml#/EmergencyContactWriteRequest'
     responses:
       '201':
         description: Berhasil dibuat
@@ -318,28 +287,28 @@ emergency-contacts-protected:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/content-admin.yaml#/EmergencyContact'
+                      $ref: '../schemas/content-admin.yaml#/EmergencyContact'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
 
 emergency-contact-by-id:
   put:
     tags: [Emergency Contacts]
-    summary: Perbarui kontak darurat
+    summary: Perbarui kontak darurat (institution/phoneNumber saja, isCore tidak dapat diubah)
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '../components/content-admin.yaml#/EmergencyContactWriteRequest'
+            $ref: '../schemas/content-admin.yaml#/EmergencyContactWriteRequest'
     responses:
       '200':
         description: OK
@@ -347,28 +316,31 @@ emergency-contact-by-id:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/content-admin.yaml#/EmergencyContact'
+                      $ref: '../schemas/content-admin.yaml#/EmergencyContact'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
   delete:
     tags: [Emergency Contacts]
-    summary: Hapus kontak darurat
+    summary: Hapus kontak darurat (ditolak jika isCore=true, FS-03 AC3)
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     responses:
       '204':
         description: Berhasil dihapus (No Content)
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
+      '409':
+        description: Kontak ini isCore=true, tidak dapat dihapus (FS-03 AC3)
+        $ref: './shared.yaml#/Conflict'

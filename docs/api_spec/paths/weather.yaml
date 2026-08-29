@@ -1,5 +1,5 @@
 # =====================================================================
-# weather.yaml — path domain Cuaca/Gempa/Tsunami & Dashboard Aggregation
+# paths/weather.yaml — path domain Cuaca/Gempa/Tsunami & Dashboard
 # =====================================================================
 
 weather-current:
@@ -7,13 +7,6 @@ weather-current:
     tags: [Weather]
     summary: Cuaca terkini Desa Cibenda
     security: []
-    parameters:
-      - name: village
-        in: query
-        required: false
-        schema:
-          type: string
-          default: cibenda
     responses:
       '200':
         description: OK
@@ -21,18 +14,24 @@ weather-current:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/weather.yaml#/CurrentWeather'
+                      $ref: '../schemas/weather.yaml#/CurrentWeather'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        description: Gagal mengambil data dari BMKG upstream
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/ErrorEnvelope'
 
 weather-forecast:
   get:
     tags: [Weather]
-    summary: Prakiraan cuaca 3 hari ke depan (interval 3 jam dari BMKG)
+    summary: Prakiraan cuaca (Hari Ini/Sore Ini + 2 hari berikutnya) dari BMKG
     security: []
     responses:
       '200':
@@ -41,40 +40,95 @@ weather-forecast:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/weather.yaml#/WeatherForecastItem'
+                        $ref: '../schemas/weather.yaml#/WeatherForecastItem'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
 
-earthquake-latest:
+earthquake-indonesia:
   get:
     tags: [Weather]
-    summary: Informasi gempa terbaru dari BMKG
+    summary: >
+      Gempa terbaru nasional (autogempa.json). Alias legacy yang
+      mengembalikan hasil sama: /public/earthquakes/latest,
+      /public/earthquakes/.
     security: []
     responses:
       '200':
-        description: OK
+        description: OK (data tidak pernah null - BMKG selalu punya gempa nasional terakhir)
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/weather.yaml#/LatestEarthquake'
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
+
+earthquake-west-java:
+  get:
+    tags: [Weather]
+    summary: Gempa terdekat di Jawa Barat (radius & umur difilter - lihat schema)
+    security: []
+    responses:
+      '200':
+        description: OK (data BISA null - artinya tidak ada gempa relevan saat ini, bukan error)
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
+
+earthquake-pangandaran:
+  get:
+    tags: [Weather]
+    summary: Gempa terdekat di Pangandaran (radius & umur difilter - lihat schema)
+    security: []
+    responses:
+      '200':
+        description: OK (data BISA null - artinya tidak ada gempa relevan saat ini, bukan error)
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
 
 tsunami-status:
   get:
     tags: [Weather]
-    summary: Status tsunami terbaru (BMKG InaTEWS)
+    summary: >
+      Status tsunami - ESTIMASI dari data gempa (Potensi), di-cap di
+      WASPADA, BUKAN status resmi InaTEWS. Cek field `source` di
+      response untuk provenance yang jujur. Alias legacy:
+      /public/tsunamis/status.
     security: []
     responses:
       '200':
@@ -83,60 +137,41 @@ tsunami-status:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/weather.yaml#/TsunamiStatus'
+                      $ref: '../schemas/weather.yaml#/TsunamiStatus'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
-
-alert-current:
-  get:
-    tags: [Alerts]
-    summary: Alert kesiapsiagaan aktif terkini (record terakhir dari alert_log)
-    security: []
-    responses:
-      '200':
-        description: OK
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
-                - type: object
-                  properties:
-                    data:
-                      allOf:
-                        - $ref: '../components/environmental.yaml#/Alert'
-                      nullable: true
-      '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
 
 dashboard:
   get:
     tags: [Dashboard]
-    summary: Agregasi seluruh data dashboard warga dalam satu request
+    summary: >
+      🚧 BELUM DIIMPLEMENTASIKAN - jangan develop terhadap ini. Lihat
+      schema DashboardAggregation untuk alasan penundaan. FE saat ini
+      pakai request paralel per-kartu dan itu sudah cukup.
     security: []
     responses:
       '200':
-        description: OK
+        description: OK (rencana, belum aktif)
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/weather.yaml#/DashboardAggregation'
+                      $ref: '../schemas/weather.yaml#/DashboardAggregation'
       '429':
-        $ref: '../components/shared.yaml#/RateLimited'
+        $ref: './shared.yaml#/RateLimited'
 
 admin-dashboard:
   get:
     tags: [Dashboard]
-    summary: Ringkasan statistik Dashboard Admin
+    summary: Ringkasan statistik Dashboard Admin (FS-11)
     responses:
       '200':
         description: OK
@@ -144,12 +179,12 @@ admin-dashboard:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/weather.yaml#/AdminDashboardSummary'
+                      $ref: '../schemas/weather.yaml#/AdminDashboardSummary'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'

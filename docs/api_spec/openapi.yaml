@@ -12,7 +12,14 @@ info:
     Content tidak memiliki body sama sekali, sesuai konvensi HTTP.
 
     Spesifikasi ini disegmentasi per domain (lihat folder paths/ dan
-    components/) agar mudah dibaca — bukan satu file besar.
+    schemas/) agar mudah dibaca — bukan satu file besar.
+
+    CATATAN MIGRASI (v1.1.0): envelope {status,code,message} dan
+    penghapusan prefix /v1 adalah PERUBAHAN SADAR dari implementasi
+    realita saat ini ({success,message,data}, prefix /api/v1/...).
+    Ini breaking change terjadwal terhadap backend yang sudah live -
+    lihat ADR terkait sebelum migrasi dieksekusi, bukan sekadar update
+    dokumentasi.
   version: "1.1.0"
   contact:
     name: Tech Lead SIGAP
@@ -29,6 +36,7 @@ tags:
   - name: Environmental Data
   - name: Alerts
   - name: Devices
+  - name: Device Gateway
   - name: Announcements
   - name: Evacuation
   - name: Emergency Contacts
@@ -44,39 +52,57 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    deviceApiKey:
+      type: apiKey
+      in: header
+      name: X-Device-Key
+      description: >
+        Autentikasi M2M untuk Device Gateway - key per-perangkat,
+        diprovisioning ke firmware saat setup, terpisah total dari
+        bearerAuth pengguna.
 
 paths:
-  # -- Auth ------------------------------------------------------------
+  # -- Auth --------------------------------------------------------------
   /public/auth/login:
     $ref: './paths/auth.yaml#/login'
   /protected/auth/me:
     $ref: './paths/auth.yaml#/me'
+  /protected/auth/logout:
+    $ref: './paths/auth.yaml#/logout'
 
-  # -- Weather / Dashboard Aggregation (baru, dari review API_Spec.md) -
+  # -- Weather / Dashboard -------------------------------------------------
   /public/weather/current:
     $ref: './paths/weather.yaml#/weather-current'
   /public/weather/forecast:
     $ref: './paths/weather.yaml#/weather-forecast'
+  /public/earthquakes/indonesia:
+    $ref: './paths/weather.yaml#/earthquake-indonesia'
   /public/earthquakes/latest:
-    $ref: './paths/weather.yaml#/earthquake-latest'
-  /public/tsunamis/status:
+    $ref: './paths/weather.yaml#/earthquake-indonesia'
+  /public/earthquakes/west-java:
+    $ref: './paths/weather.yaml#/earthquake-west-java'
+  /public/earthquakes/pangandaran:
+    $ref: './paths/weather.yaml#/earthquake-pangandaran'
+  /public/tsunami/status:
     $ref: './paths/weather.yaml#/tsunami-status'
-  /public/alerts/current:
-    $ref: './paths/weather.yaml#/alert-current'
   /public/dashboard:
     $ref: './paths/weather.yaml#/dashboard'
   /protected/admin/dashboard:
     $ref: './paths/weather.yaml#/admin-dashboard'
 
-  # -- Environmental Data & Alerts (historis) ---------------------------
+  # -- Environmental Data & Alerts (historis) -----------------------------
   /public/environmental-data:
     $ref: './paths/environmental.yaml#/environmental-data'
   /public/alerts:
     $ref: './paths/environmental.yaml#/alerts'
-  /protected/alerts/{id}/validate:
-    $ref: './paths/environmental.yaml#/alert-validate'
+  /public/alerts/current:
+    $ref: './paths/environmental.yaml#/alert-current'
+  /public/alerts/{id}:
+    $ref: './paths/environmental.yaml#/alert-by-id'
+  /protected/alerts/{id}/review:
+    $ref: './paths/environmental.yaml#/alert-review'
 
-  # -- Devices (IoT Kesiapsiagaan) --------------------------------------
+  # -- Devices (IoT Kesiapsiagaan - sisi admin/konsumsi) ------------------
   /public/devices:
     $ref: './paths/iot-kesiapsiagaan.yaml#/devices-public'
   /protected/devices:
@@ -89,8 +115,8 @@ paths:
     $ref: './paths/iot-kesiapsiagaan.yaml#/device-siren-log'
   /protected/devices/{id}/trigger-siren:
     $ref: './paths/iot-kesiapsiagaan.yaml#/device-trigger-siren'
- 
-  # -- Device Gateway (M2M — perangkat IoT langsung ke backend) --------
+
+  # -- Device Gateway (M2M — perangkat IoT langsung ke backend) -----------
   /device/{id}/level:
     $ref: './paths/device-gateway.yaml#/device-poll-level'
   /device/{id}/heartbeat:
@@ -98,7 +124,7 @@ paths:
   /device/{id}/siren-events:
     $ref: './paths/device-gateway.yaml#/device-siren-events'
 
-  # -- Content Admin: Announcements, Evacuation, Emergency Contacts -----
+  # -- Content Admin: Pengumuman (proxy SID), Evakuasi, Kontak Darurat ----
   /public/announcements:
     $ref: './paths/content-admin.yaml#/announcements-public'
   /protected/announcements:
@@ -124,12 +150,14 @@ paths:
   /protected/emergency-contacts/{id}:
     $ref: './paths/content-admin.yaml#/emergency-contact-by-id'
 
-  # -- AI Summary --------------------------------------------------------
+  # -- AI Summary ----------------------------------------------------------
   /public/ai-summary:
     $ref: './paths/ai-summary.yaml#/ai-summary'
 
-  # -- Users ---------------------------------------------------------------
+  # -- Users -----------------------------------------------------------------
   /protected/users:
     $ref: './paths/users.yaml#/users'
   /protected/users/{id}:
     $ref: './paths/users.yaml#/user-by-id'
+  /protected/users/{id}/reset-password:
+    $ref: './paths/users.yaml#/user-reset-password'

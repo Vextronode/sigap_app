@@ -1,15 +1,22 @@
 # =====================================================================
-# ai-summary.yaml — schema domain Ringkasan AI
+# schemas/ai-summary.yaml — schema domain Ringkasan AI (🚧 Planned/bonus)
 # =====================================================================
 
 AiSummaryResponse:
   type: object
   properties:
+    type:
+      type: string
+      enum: [weather, earthquake, recommendation]
     summary:
       type: string
-    generated_at:
+    generatedAt:
       type: string
       format: date-time
     fallback:
       type: boolean
-      description: "true jika AI API gagal dan ini adalah data mentah, bukan ringkasan"
+      description: >
+        true jika AI API gagal/melampaui kuota - summary berisi pesan
+        "ringkasan otomatis sedang tidak tersedia", FE tetap menampilkan
+        data mentah cuaca/gempa dari endpoint terkait secara terpisah
+        (PRD §5.1, Draft - perlu konfirmasi PM sebelum final).

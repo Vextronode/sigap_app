@@ -1,5 +1,5 @@
 # =====================================================================
-# iot-kesiapsiagaan.yaml — path domain Perangkat IoT (indikator + sirine)
+# paths/iot-kesiapsiagaan.yaml — path domain Perangkat IoT
 # =====================================================================
 
 devices-public:
@@ -14,18 +14,18 @@ devices-public:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/iot-kesiapsiagaan.yaml#/DevicePublic'
+                        $ref: '../schemas/iot-kesiapsiagaan.yaml#/DevicePublic'
 
 devices-protected:
   get:
     tags: [Devices]
-    summary: Daftar perangkat IoT (versi lengkap)
+    summary: Daftar perangkat IoT (versi lengkap, FS-06/FS-11)
     responses:
       '200':
         description: OK
@@ -33,17 +33,17 @@ devices-protected:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceFull'
+                        $ref: '../schemas/iot-kesiapsiagaan.yaml#/DeviceFull'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
   post:
     tags: [Devices]
     summary: Tambah perangkat IoT baru
@@ -52,7 +52,7 @@ devices-protected:
       content:
         application/json:
           schema:
-            $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceCreateRequest'
+            $ref: '../schemas/iot-kesiapsiagaan.yaml#/DeviceCreateRequest'
     responses:
       '201':
         description: Perangkat berhasil ditambahkan
@@ -60,28 +60,28 @@ devices-protected:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceFull'
+                      $ref: '../schemas/iot-kesiapsiagaan.yaml#/DeviceFull'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
 
 device-by-id:
   put:
     tags: [Devices]
-    summary: Perbarui data perangkat IoT
+    summary: Perbarui data perangkat IoT (termasuk toggle isActive — FS-06 FR4, TIDAK ADA hard delete)
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceUpdateRequest'
+            $ref: '../schemas/iot-kesiapsiagaan.yaml#/DeviceUpdateRequest'
     responses:
       '200':
         description: OK
@@ -89,40 +89,26 @@ device-by-id:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceFull'
+                      $ref: '../schemas/iot-kesiapsiagaan.yaml#/DeviceFull'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '404':
-        $ref: '../components/shared.yaml#/NotFound'
-  delete:
-    tags: [Devices]
-    summary: Hapus perangkat IoT
-    parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
-    responses:
-      '204':
-        description: Berhasil dihapus (No Content, tanpa body sesuai konvensi HTTP)
-      '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
-      '403':
-        $ref: '../components/shared.yaml#/Forbidden'
-      '404':
-        $ref: '../components/shared.yaml#/NotFound'
+        $ref: './shared.yaml#/NotFound'
 
 device-status-log:
   get:
     tags: [Devices]
-    summary: Riwayat status level yang dikirim ke perangkat
+    summary: Riwayat status level yang dikirim ke perangkat (FS-07)
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
-      - $ref: '../components/shared.yaml#/PageParam'
-      - $ref: '../components/shared.yaml#/LimitParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/PageParam'
+      - $ref: '../schemas/shared.yaml#/LimitParam'
     responses:
       '200':
         description: OK
@@ -130,26 +116,31 @@ device-status-log:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/iot-kesiapsiagaan.yaml#/DeviceStatusLog'
+                        $ref: '../schemas/iot-kesiapsiagaan.yaml#/DeviceStatusLog'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
 
 device-siren-log:
   get:
     tags: [Devices]
-    summary: Riwayat aktivasi sirine perangkat
+    summary: Riwayat aktivasi sirine (FS-08, insert-only)
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
-      - $ref: '../components/shared.yaml#/PageParam'
-      - $ref: '../components/shared.yaml#/LimitParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/PageParam'
+      - $ref: '../schemas/shared.yaml#/LimitParam'
+      - name: triggerSource
+        in: query
+        schema:
+          type: string
+          enum: [digital, fisik, dibatalkan_otomatis]
     responses:
       '200':
         description: OK
@@ -157,49 +148,58 @@ device-siren-log:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       type: array
                       items:
-                        $ref: '../components/iot-kesiapsiagaan.yaml#/SirenActionLog'
+                        $ref: '../schemas/iot-kesiapsiagaan.yaml#/SirenActionLog'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
 
 device-trigger-siren:
   post:
     tags: [Devices]
     summary: >
-      Picu sirine dari jarak jauh (jalur remote_aplikasi).
-      Server menolak permintaan jika level device saat ini
-      bukan oranye/merah. operator_id diambil dari token,
-      tidak boleh dikirim di body.
+      Trigger sirine jarak jauh (FS-09). Bersifat ASYNC — command
+      dititip ke siklus poll Unit Utama (<=15 detik, ADR-013), respons
+      202 berarti command DITERIMA, bukan sudah tereksekusi. Cek
+      ackStatus di device-siren-log untuk hasil eksekusi sebenarnya.
+      Tidak ada pemilihan perangkat (broadcast ke seluruh Sirine).
     parameters:
-      - $ref: '../components/shared.yaml#/IdParam'
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/iot-kesiapsiagaan.yaml#/DeviceTriggerSirenRequest'
     responses:
-      '201':
-        description: Sirine berhasil dipicu
+      '202':
+        description: Command diterima, menunggu eksekusi (ackStatus=Menunggu)
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/shared.yaml#/SuccessEnvelope'
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
-                      $ref: '../components/iot-kesiapsiagaan.yaml#/SirenActionLog'
+                      $ref: '../schemas/iot-kesiapsiagaan.yaml#/SirenActionLog'
       '401':
-        $ref: '../components/shared.yaml#/Unauthorized'
+        $ref: './shared.yaml#/Unauthorized'
       '403':
-        $ref: '../components/shared.yaml#/Forbidden'
+        $ref: './shared.yaml#/Forbidden'
       '409':
         description: >
-          Level device saat ini tidak mengizinkan aktivasi sirine
-          (bukan oranye/merah) — safeguard by design
+          Ditolak karena salah satu dari: (a) currentLevel bukan
+          ORANGE/RED (safeguard by design), (b) cooldown 60 detik masih
+          aktif dan bukan kondisi eskalasi RED, (c) level RED tapi
+          confirmed=false di request body (FS-09 FR2/FR3/FR5)
         content:
           application/json:
             schema:
-              $ref: '../components/shared.yaml#/ErrorEnvelope'
+              $ref: '../schemas/shared.yaml#/ErrorEnvelope'
