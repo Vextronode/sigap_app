@@ -1,4 +1,4 @@
-import { apiClient, protectedPath, publicPath } from "./apiClient";
+import { apiClient, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 import type { LoginPayload, LoginResponse } from "../types/dashboard";
 
