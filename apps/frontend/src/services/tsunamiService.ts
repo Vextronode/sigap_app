@@ -1,10 +1,10 @@
-import { apiClient } from "./apiClient";
+import { apiClient, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 import type { TsunamiStatus } from "../types/dashboard";
 
 export const tsunamiService = {
   getStatus: async () => {
-    const response = await apiClient.get<ApiResponse<TsunamiStatus>>("/public/tsunami/status");
+    const response = await apiClient.get<ApiResponse<TsunamiStatus>>(publicPath("/tsunami/status"));
     return response.data.data;
   },
 };

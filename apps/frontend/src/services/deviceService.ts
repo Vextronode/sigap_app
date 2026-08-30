@@ -1,4 +1,4 @@
-import { apiClient } from "./apiClient";
+import { apiClient, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 
 export type DeviceSystemStatus = {
@@ -14,7 +14,7 @@ export type DeviceSystemStatus = {
 
 export const deviceService = {
   getStatus: async (): Promise<DeviceSystemStatus> => {
-    const response = await apiClient.get<ApiResponse<DeviceSystemStatus>>("/public/device/status");
+    const response = await apiClient.get<ApiResponse<DeviceSystemStatus>>(publicPath("/device/status"));
     return response.data.data;
   },
 };

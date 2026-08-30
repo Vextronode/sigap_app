@@ -1,4 +1,4 @@
-import { apiClient } from "./apiClient";
+import { apiClient, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 
 export type NotificationPayload = {
@@ -22,16 +22,16 @@ export const notificationService = {
 
   getLatest: async () => {
     const response = await apiClient.get<ApiResponse<NotificationPayload | null>>(
-      "/public/notifications/latest"
+      publicPath("/notifications/latest")
     );
     return response.data.data;
   },
 
   subscribe: async (subscription: PushSubscriptionJSON) => {
-    await apiClient.post("/public/notifications/subscribe", subscription);
+    await apiClient.post(publicPath("/notifications/subscribe"), subscription);
   },
 
   unsubscribe: async (endpoint: string) => {
-    await apiClient.post("/public/notifications/unsubscribe", { endpoint });
+    await apiClient.post(publicPath("/notifications/unsubscribe"), { endpoint });
   },
 };

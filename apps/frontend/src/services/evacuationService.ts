@@ -1,4 +1,4 @@
-import { apiClient } from "./apiClient";
+import { apiClient, protectedPath, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 import type { EvacuationPoint, EvacuationRoute } from "../types/dashboard";
 
@@ -20,33 +20,33 @@ type EvacuationRoutePayload = {
 
 export const evacuationService = {
   getPoints: async () => {
-    const response = await apiClient.get<ApiResponse<EvacuationPoint[]>>("/evacuation-points");
+    const response = await apiClient.get<ApiResponse<EvacuationPoint[]>>(publicPath("/evacuation-points"));
     return response.data.data;
   },
   getRoutes: async () => {
-    const response = await apiClient.get<ApiResponse<EvacuationRoute[]>>("/evacuation-routes");
+    const response = await apiClient.get<ApiResponse<EvacuationRoute[]>>(publicPath("/evacuation-routes"));
     return response.data.data;
   },
   createPoint: async (payload: EvacuationPointPayload) => {
-    const response = await apiClient.post<ApiResponse<EvacuationPoint>>("/evacuation-points", payload);
+    const response = await apiClient.post<ApiResponse<EvacuationPoint>>(protectedPath("/evacuation-points"), payload);
     return response.data.data;
   },
   updatePoint: async (id: string | number, payload: Partial<EvacuationPointPayload>) => {
-    const response = await apiClient.put<ApiResponse<EvacuationPoint>>(`/evacuation-points/${id}`, payload);
+    const response = await apiClient.put<ApiResponse<EvacuationPoint>>(protectedPath(`/evacuation-points/${id}`), payload);
     return response.data.data;
   },
   removePoint: async (id: string | number) => {
-    await apiClient.delete(`/evacuation-points/${id}`);
+    await apiClient.delete(protectedPath(`/evacuation-points/${id}`));
   },
   createRoute: async (payload: EvacuationRoutePayload) => {
-    const response = await apiClient.post<ApiResponse<EvacuationRoute>>("/evacuation-routes", payload);
+    const response = await apiClient.post<ApiResponse<EvacuationRoute>>(protectedPath("/evacuation-routes"), payload);
     return response.data.data;
   },
   updateRoute: async (id: string | number, payload: Partial<EvacuationRoutePayload>) => {
-    const response = await apiClient.put<ApiResponse<EvacuationRoute>>(`/evacuation-routes/${id}`, payload);
+    const response = await apiClient.put<ApiResponse<EvacuationRoute>>(protectedPath(`/evacuation-routes/${id}`), payload);
     return response.data.data;
   },
   removeRoute: async (id: string | number) => {
-    await apiClient.delete(`/evacuation-routes/${id}`);
+    await apiClient.delete(protectedPath(`/evacuation-routes/${id}`));
   },
 };

@@ -1,24 +1,22 @@
-import { apiClient } from "./apiClient";
+import { apiClient, protectedPath, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 import type { CurrentAlert } from "../types/dashboard";
 
-type ValidateAlertPayload = {
-  alertId: string;
-  level: string;
-  notes?: string;
+type ReviewAlertPayload = {
+  reviewStatus: "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti";
 };
 
 export const alertService = {
   getCurrent: async () => {
-    const response = await apiClient.get<ApiResponse<CurrentAlert | null>>("/public/alerts");
+    const response = await apiClient.get<ApiResponse<CurrentAlert | null>>(publicPath("/alerts/current"));
     return response.data.data;
   },
   getHistory: async () => {
-    const response = await apiClient.get<ApiResponse<CurrentAlert[]>>("/public/alerts/history");
+    const response = await apiClient.get<ApiResponse<CurrentAlert[]>>(publicPath("/alerts/history"));
     return response.data.data;
   },
-  validate: async (payload: ValidateAlertPayload) => {
-    const response = await apiClient.post<ApiResponse<CurrentAlert>>("/alerts/validate", payload);
+  review: async (id: string, payload: ReviewAlertPayload) => {
+    const response = await apiClient.patch<ApiResponse<CurrentAlert>>(protectedPath(`/alerts/${id}/review`), payload);
     return response.data.data;
   },
 };
