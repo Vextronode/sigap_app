@@ -1,6 +1,6 @@
 # =====================================================================
 # paths/shared.yaml — response reusable lintas domain (401/403/404/
-# 409/429), seluruhnya mereferensikan ErrorEnvelope tunggal di
+# 409/429/502), seluruhnya mereferensikan ErrorEnvelope tunggal di
 # schemas/shared.yaml.
 # =====================================================================
 
@@ -11,9 +11,9 @@ Unauthorized:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
-        status: error
-        code: 401
+        success: false
         message: "Token tidak valid atau sudah kedaluwarsa"
+        errors: ["Unauthorized"]
 
 Forbidden:
   description: Token valid, tetapi tidak memiliki permission yang dibutuhkan
@@ -22,9 +22,9 @@ Forbidden:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
-        status: error
-        code: 403
+        success: false
         message: "Anda tidak memiliki izin untuk mengakses resource ini"
+        errors: ["Forbidden"]
 
 NotFound:
   description: Resource tidak ditemukan
@@ -33,9 +33,9 @@ NotFound:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
-        status: error
-        code: 404
+        success: false
         message: "Resource tidak ditemukan"
+        errors: ["Not Found"]
 
 Conflict:
   description: Permintaan bertentangan dengan aturan bisnis saat ini
@@ -44,9 +44,9 @@ Conflict:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
-        status: error
-        code: 409
+        success: false
         message: "Tidak dapat menonaktifkan admin terakhir yang aktif"
+        errors: ["Conflict"]
 
 RateLimited:
   description: Melebihi batas percobaan (rate limit umum, atau lockout login FS-01)
@@ -55,17 +55,17 @@ RateLimited:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
-        status: error
-        code: 429
+        success: false
         message: "Terlalu banyak percobaan gagal. Coba lagi dalam 15 menit."
+        errors: ["Rate limit exceeded"]
 
 BmkgUpstreamError:
-  description: Gagal mengambil data dari upstream BMKG (bukan 500 - lihat API_SPEC.md v3.1 §6)
+  description: Gagal mengambil data dari upstream BMKG (502, bukan 500 - API_SPEC.md v3.1 §6)
   content:
     application/json:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
-        status: error
-        code: 502
+        success: false
         message: "Gagal mengambil data dari BMKG, coba lagi nanti"
+        errors: ["Bad Gateway"]

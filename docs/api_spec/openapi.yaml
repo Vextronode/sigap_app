@@ -7,20 +7,20 @@ info:
     Route/Access Category Design dan Data Dictionary SIGAP.
 
     Envelope response: setiap response sukses mengikuti struktur
-    {status, code, message, data}; setiap response error mengikuti
-    struktur {status, code, message, errors}. Pengecualian: 204 No
-    Content tidak memiliki body sama sekali, sesuai konvensi HTTP.
+    {success: true, message, data}; setiap response error mengikuti
+    struktur {success: false, message, errors} dengan errors berupa
+    array of string. Pengecualian: 204 No Content tidak memiliki body
+    sama sekali, sesuai konvensi HTTP.
 
     Spesifikasi ini disegmentasi per domain (lihat folder paths/ dan
     schemas/) agar mudah dibaca — bukan satu file besar.
 
-    CATATAN MIGRASI (v1.1.0): envelope {status,code,message} dan
-    penghapusan prefix /v1 adalah PERUBAHAN SADAR dari implementasi
-    realita saat ini ({success,message,data}, prefix /api/v1/...).
-    Ini breaking change terjadwal terhadap backend yang sudah live -
-    lihat ADR terkait sebelum migrasi dieksekusi, bukan sekadar update
-    dokumentasi.
-  version: "1.1.0"
+    CATATAN MIGRASI (v1.2.0): envelope ini SELARAS dengan implementasi
+    realita saat ini (API_SPEC.md v3.1 §4-5) — bukan breaking change.
+    Satu penyesuaian yang tetap perlu masuk backlog: standardisasi
+    field `errors` agar SELALU array (bukan kadang objek kosong {} di
+    sebagian handler global, per catatan API_SPEC.md v3.1 §5).
+  version: "1.2.0"
   contact:
     name: Tech Lead SIGAP
 servers:

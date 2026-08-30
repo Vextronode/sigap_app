@@ -6,42 +6,38 @@
 
 SuccessEnvelope:
   type: object
-  required: [status, code, message]
+  required: [success, message]
   properties:
-    status:
-      type: string
-      enum: [success]
-      example: success
-    code:
-      type: integer
-      example: 200
+    success:
+      type: boolean
+      enum: [true]
+      example: true
     message:
       type: string
       example: "Request successful"
 
 ErrorEnvelope:
   type: object
-  required: [status, code, message]
+  required: [success, message, errors]
   properties:
-    status:
-      type: string
-      enum: [error]
-      example: error
-    code:
-      type: integer
-      example: 404
+    success:
+      type: boolean
+      enum: [false]
+      example: false
     message:
       type: string
-      example: "Resource not found"
+      example: "Gagal mengambil status perangkat."
     errors:
       type: array
       items:
-        type: object
-        properties:
-          field:
-            type: string
-          message:
-            type: string
+        type: string
+      example: ["pesan error hasil exception"]
+      description: >
+        Array of string, KONSISTEN di seluruh endpoint. API_SPEC.md v3.1
+        §5 mencatat realita saat ini kadang mengembalikan errors:{}
+        (objek kosong) di sebagian handler global (404/500) — ini
+        inkonsistensi yang perlu DIPERBAIKI ke bentuk array ini saat
+        migrasi, bukan dipertahankan sebagai dua bentuk yang sah.
 
 Pagination:
   type: object
