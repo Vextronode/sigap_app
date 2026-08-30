@@ -11,7 +11,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "simulate:alert": "tsx scripts/simulate-alert.ts"
+    "simulate:alert": "tsx scripts/simulate-alert.ts",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
