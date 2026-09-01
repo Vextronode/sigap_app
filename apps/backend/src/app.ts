@@ -15,8 +15,8 @@ app.use(morgan("dev"));
 
 app.use(express.json());
 
-app.use("/api/v1/public", publicRouter);
-app.use("/api/v1/protected", protectedRouter);
+app.use("/api/public", publicRouter);
+app.use("/api/protected", protectedRouter);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
