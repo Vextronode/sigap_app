@@ -1,0 +1,55 @@
+# =====================================================================
+# schemas/device-gateway.yaml — schema domain Device Gateway (M2M)
+# Perangkat IoT memanggil endpoint ini langsung, autentikasi device
+# (X-Device-Key), bukan token pengguna. Sesuai ADR-013 (REST Polling).
+# =====================================================================
+
+DeviceLevelResponse:
+  type: object
+  properties:
+    level:
+      $ref: './shared.yaml#/StatusLevel'
+    updatedAt:
+      type: string
+      format: date-time
+      description: Waktu terakhir level ini ditetapkan backend
+
+HeartbeatRequest:
+  type: object
+  properties:
+    firmwareVersion:
+      type: string
+      example: "1.0.3"
+      nullable: true
+
+SirenEventReportRequest:
+  type: object
+  required: [levelAtTrigger, triggeredAt]
+  description: >
+    Dikirim Unit Utama untuk 2 skenario berbeda, dibedakan oleh
+    relatedActionId: (1) melaporkan trigger BARU via jalur fisik
+    lokal - relatedActionId kosong, backend INSERT baris baru ke
+    siren_action_log dengan triggerSource=fisik; (2) melaporkan hasil
+    EKSEKUSI dari command digital yang sebelumnya diterima via
+    /protected/devices/{id}/trigger-siren - relatedActionId diisi ID
+    baris pending tsb, backend UPDATE executedAt & ackStatus baris itu.
+    Ini bukan pelanggaran prinsip insert-only FS-08 (yang mengikat sisi
+    admin/API konsumen) - ini kanal internal device yang melengkapi
+    siklus hidup baris yang memang dirancang punya field pending.
+  properties:
+    relatedActionId:
+      type: string
+      format: uuid
+      nullable: true
+      description: Diisi HANYA untuk skenario (2) di atas.
+    levelAtTrigger:
+      $ref: './shared.yaml#/StatusLevel'
+      description: Business rule (server-enforced) - hanya ORANGE/RED yang valid.
+    ackStatus:
+      type: string
+      enum: ["Diterima & Dieksekusi", "Tidak Ada Respons"]
+      default: "Diterima & Dieksekusi"
+      description: Relevan terutama untuk skenario (2).
+    triggeredAt:
+      type: string
+      format: date-time

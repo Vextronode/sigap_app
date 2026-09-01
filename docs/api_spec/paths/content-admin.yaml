@@ -1,0 +1,346 @@
+# =====================================================================
+# paths/content-admin.yaml — path domain Pengumuman (proxy), Evakuasi,
+# Kontak Darurat
+# =====================================================================
+
+announcements-public:
+  get:
+    tags: [Announcements]
+    summary: Daftar pengumuman (proxy read-only dari SID)
+    security: []
+    parameters:
+      - $ref: '../schemas/shared.yaml#/PageParam'
+      - $ref: '../schemas/shared.yaml#/LimitParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/content-admin.yaml#/AnnouncementProxy'
+
+announcements-protected:
+  post:
+    tags: [Announcements]
+    deprecated: true
+    summary: >
+      DEPRECATED — sumber data pindah ke proxy SID (Roadmap Tahap 2
+      §2.1 #3-4). Dipertahankan di dokumen, tidak dihapus, tidak aktif.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      '410':
+        description: Endpoint tidak lagi aktif — kelola pengumuman lewat SID
+
+announcement-by-id:
+  put:
+    tags: [Announcements]
+    deprecated: true
+    summary: DEPRECATED — lihat announcements-protected
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '410':
+        description: Endpoint tidak lagi aktif
+  delete:
+    tags: [Announcements]
+    deprecated: true
+    summary: DEPRECATED — lihat announcements-protected
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '410':
+        description: Endpoint tidak lagi aktif
+
+evacuation-points-public:
+  get:
+    tags: [Evacuation]
+    summary: Daftar titik evakuasi
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/content-admin.yaml#/EvacuationPoint'
+
+evacuation-points-protected:
+  post:
+    tags: [Evacuation]
+    summary: Tambah titik evakuasi
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/content-admin.yaml#/EvacuationPointWriteRequest'
+    responses:
+      '201':
+        description: Berhasil dibuat
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/content-admin.yaml#/EvacuationPoint'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+
+evacuation-point-by-id:
+  put:
+    tags: [Evacuation]
+    summary: Perbarui titik evakuasi
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/content-admin.yaml#/EvacuationPointWriteRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/content-admin.yaml#/EvacuationPoint'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+  delete:
+    tags: [Evacuation]
+    summary: Hapus titik evakuasi
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '204':
+        description: Berhasil dihapus (No Content)
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+      '409':
+        description: Titik masih direferensikan oleh jalur evakuasi (FS-04 AC3) — hapus/ubah jalur terkait dahulu, atau konfirmasi eksplisit
+        $ref: './shared.yaml#/Conflict'
+
+evacuation-routes-public:
+  get:
+    tags: [Evacuation]
+    summary: Daftar jalur evakuasi
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/content-admin.yaml#/EvacuationRoute'
+
+evacuation-routes-protected:
+  post:
+    tags: [Evacuation]
+    summary: Tambah jalur evakuasi
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/content-admin.yaml#/EvacuationRouteWriteRequest'
+    responses:
+      '201':
+        description: Berhasil dibuat
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/content-admin.yaml#/EvacuationRoute'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+
+evacuation-route-by-id:
+  put:
+    tags: [Evacuation]
+    summary: Perbarui jalur evakuasi
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/content-admin.yaml#/EvacuationRouteWriteRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/content-admin.yaml#/EvacuationRoute'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+  delete:
+    tags: [Evacuation]
+    summary: Hapus jalur evakuasi
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '204':
+        description: Berhasil dihapus (No Content)
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+
+emergency-contacts-public:
+  get:
+    tags: [Emergency Contacts]
+    summary: Daftar kontak darurat
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/content-admin.yaml#/EmergencyContact'
+
+emergency-contacts-protected:
+  post:
+    tags: [Emergency Contacts]
+    summary: Tambah kontak darurat (selalu isCore=false)
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/content-admin.yaml#/EmergencyContactWriteRequest'
+    responses:
+      '201':
+        description: Berhasil dibuat
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/content-admin.yaml#/EmergencyContact'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+
+emergency-contact-by-id:
+  put:
+    tags: [Emergency Contacts]
+    summary: Perbarui kontak darurat (institution/phoneNumber saja, isCore tidak dapat diubah)
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/content-admin.yaml#/EmergencyContactWriteRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/content-admin.yaml#/EmergencyContact'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+  delete:
+    tags: [Emergency Contacts]
+    summary: Hapus kontak darurat (ditolak jika isCore=true, FS-03 AC3)
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '204':
+        description: Berhasil dihapus (No Content)
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+      '409':
+        description: Kontak ini isCore=true, tidak dapat dihapus (FS-03 AC3)
+        $ref: './shared.yaml#/Conflict'

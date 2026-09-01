@@ -1,0 +1,39 @@
+# =====================================================================
+# schemas/users.yaml — schema domain manajemen akun (FS-10)
+# =====================================================================
+
+UserCreateRequest:
+  type: object
+  required: [name, email, password, role]
+  properties:
+    name:
+      type: string
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+      format: password
+    role:
+      type: string
+      enum: [admin, operator]
+
+UserUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+    role:
+      type: string
+      enum: [admin, operator]
+    isActive:
+      type: boolean
+      description: Toggle aktif/nonaktif (FS-10 FR4) - TIDAK ada hard delete akun.
+
+ResetPasswordRequest:
+  type: object
+  required: [newPassword]
+  properties:
+    newPassword:
+      type: string
+      format: password

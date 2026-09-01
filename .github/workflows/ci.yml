@@ -1,0 +1,180 @@
+name: CI
+
+# PR ke branch mana pun dicek (feature -> dev, dst, sesuai konvensi PR di repo ini).
+# Push ke dev/main dicek ulang sebagai safety net setelah merge.
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+# Batalkan run lama kalau ada push baru ke PR yang sama — hemat waktu CI.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  # Dummy connection string — CUKUP untuk `prisma generate`/`prisma validate`,
+  # yang tidak butuh koneksi database sungguhan. JANGAN dipakai untuk
+  # `prisma migrate deploy` (job itu sengaja tidak ada di pipeline ini,
+  # lihat catatan di akhir file).
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_placeholder"
+  DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci_placeholder"
+
+jobs:
+  # ==========================================================
+  # FRONTEND — lint, typecheck, build
+  # ==========================================================
+  frontend:
+    name: Frontend (lint, typecheck, build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (workspace root)
+        run: npm ci
+
+      # ----------------------------------------------------------------
+      # WORKAROUND WAJIB — npm bug cli#4828 (optional dependencies lintas
+      # platform tidak selalu ter-resolve dengan benar di lockfile kalau
+      # digenerate di OS berbeda dari runner CI). Ini persis masalah yang
+      # bikin build Vercel gagal berkali-kali. Runner GitHub Actions =
+      # Linux x64 glibc, sama seperti Vercel — fix yang sama berlaku di sini.
+      #
+      # Kalau di masa depan lockfile sudah terbukti selalu lengkap tanpa
+      # workaround ini (misal setelah pindah ke pnpm), baris ini boleh
+      # dihapus — tapi JANGAN dihapus tanpa verifikasi build tetap hijau.
+      # ----------------------------------------------------------------
+      - name: Fix cross-platform native binaries (npm/cli#4828 workaround)
+        run: |
+          npm install \
+            @rolldown/binding-linux-x64-gnu \
+            @rollup/rollup-linux-x64-gnu \
+            @tailwindcss/oxide-linux-x64-gnu \
+            lightningcss-linux-x64-gnu \
+            @img/sharp-linux-x64 \
+            --no-save
+
+      # ----------------------------------------------------------------
+      # GUARD — cegah regresi upgrade tidak sengaja ke TypeScript 7.
+      # @vercel/node (dan kemungkinan tooling lain) belum kompatibel
+      # dengan compiler API baru TS7 per Agustus 2026. Kalau versi ini
+      # naik ke 7.x tanpa sadar (mis. lewat `npm update`), CI gagal di
+      # sini dengan pesan jelas — bukan error samar di tahap deploy.
+      # ----------------------------------------------------------------
+      - name: Guard - TypeScript must stay on 6.x
+        run: |
+          cd apps/frontend
+          VERSION=$(npx tsc --version | grep -oE '[0-9]+' | head -1)
+          if [ "$VERSION" -ge 7 ]; then
+            echo "::error::TypeScript versi $VERSION terdeteksi di frontend. Project ini WAJIB tetap di v6.x — @vercel/node belum kompatibel dengan TS7 native compiler. Lihat riwayat debugging di PR terkait migrasi Vercel."
+            exit 1
+          fi
+          echo "OK — TypeScript versi $VERSION"
+
+      - name: Lint
+        run: npm run lint --workspace=apps/frontend
+
+      - name: Typecheck & build
+        run: npm run build --workspace=apps/frontend
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/frontend/dist
+          retention-days: 7
+
+  # ==========================================================
+  # BACKEND — schema guard, typecheck, build
+  # ==========================================================
+  backend:
+    name: Backend (prisma, typecheck, build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (workspace root)
+        # `postinstall` di apps/backend/package.json (prisma generate)
+        # otomatis ikut jalan di sini lewat npm workspaces lifecycle.
+        run: npm ci
+
+      - name: Guard - TypeScript must stay on 6.x
+        run: |
+          cd apps/backend
+          VERSION=$(npx tsc --version | grep -oE '[0-9]+' | head -1)
+          if [ "$VERSION" -ge 7 ]; then
+            echo "::error::TypeScript versi $VERSION terdeteksi di backend. Project ini WAJIB tetap di v6.x untuk kompatibilitas Vercel function build."
+            exit 1
+          fi
+          echo "OK — TypeScript versi $VERSION"
+
+      # ----------------------------------------------------------------
+      # GUARD — cegah regresi field `url`/`directUrl` masuk lagi ke
+      # datasource block di schema.prisma. Prisma 7 sudah menghapus
+      # dukungan untuk field ini di schema (harus lewat prisma.config.ts).
+      # Kalau ada yang nambah balik (mis. copy-paste dari tutorial lama
+      # Prisma 6), CI gagal di sini dengan penjelasan, bukan error Prisma
+      # yang membingungkan di tahap deploy.
+      # ----------------------------------------------------------------
+      - name: Guard - schema.prisma must not redeclare url/directUrl
+        run: |
+          if grep -E '^\s*(url|directUrl)\s*=' apps/backend/prisma/schema.prisma; then
+            echo "::error::Field 'url'/'directUrl' terdeteksi di datasource block schema.prisma. Prisma 7 sudah tidak mendukung ini di schema — koneksi database wajib didefinisikan di prisma.config.ts. Lihat catatan migrasi Prisma 7 di PR terkait."
+            exit 1
+          fi
+          echo "OK — datasource block bersih dari url/directUrl"
+
+      - name: Prisma validate
+        run: |
+          cd apps/backend
+          npx prisma validate
+
+      - name: Lint
+        # Backend belum punya script "lint" terdaftar di package.json saat
+        # ini (eslint ada di devDependencies, tapi belum di-wire). Step ini
+        # sengaja continue-on-error supaya CI tidak merah karena gap
+        # konfigurasi — TAPI ini harus difollow-up, bukan dibiarkan diam-diam.
+        # Tambahkan script "lint": "eslint ." ke apps/backend/package.json,
+        # lalu hapus continue-on-error di baris ini.
+        working-directory: apps/backend
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Typecheck & build
+        run: npm run build --workspace=apps/backend
+
+  # ==========================================================
+  # SUMMARY — satu job status gabungan untuk branch protection rule
+  # (supaya required check di GitHub cukup satu nama, tidak perlu
+  # update tiap kali ada job baru ditambah/dihapus)
+  # ==========================================================
+  ci-success:
+    name: CI Success
+    if: always()
+    needs: [frontend, backend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ]; then
+            echo "::error::Salah satu job CI gagal."
+            exit 1
+          fi
+          echo "Semua job CI lolos."

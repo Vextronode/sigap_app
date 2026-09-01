@@ -1,0 +1,85 @@
+# =====================================================================
+# schemas/shared.yaml — skema murni lintas domain: envelope, pagination,
+# status level, parameter umum. (Duplikasi dgn paths/shared.yaml lama
+# sudah dihapus — lihat catatan audit.)
+# =====================================================================
+
+SuccessEnvelope:
+  type: object
+  required: [success, message]
+  properties:
+    success:
+      type: boolean
+      enum: [true]
+      example: true
+    message:
+      type: string
+      example: "Request successful"
+
+ErrorEnvelope:
+  type: object
+  required: [success, message, errors]
+  properties:
+    success:
+      type: boolean
+      enum: [false]
+      example: false
+    message:
+      type: string
+      example: "Gagal mengambil status perangkat."
+    errors:
+      type: array
+      items:
+        type: string
+      example: ["pesan error hasil exception"]
+      description: >
+        Array of string, KONSISTEN di seluruh endpoint. API_SPEC.md v3.1
+        §5 mencatat realita saat ini kadang mengembalikan errors:{}
+        (objek kosong) di sebagian handler global (404/500) — ini
+        inkonsistensi yang perlu DIPERBAIKI ke bentuk array ini saat
+        migrasi, bukan dipertahankan sebagai dua bentuk yang sah.
+
+Pagination:
+  type: object
+  properties:
+    page:
+      type: integer
+    limit:
+      type: integer
+    total:
+      type: integer
+
+StatusLevel:
+  type: string
+  enum: [GREEN, YELLOW, ORANGE, RED]
+  description: >
+    Sama persis dengan AlertLevel enum di backend (schema.prisma) dan
+    current_level pada iot_devices. Label tampilan Indonesia (Hijau/
+    Kuning/Merah, 3 warna - GREEN+YELLOW digabung) adalah pemetaan di
+    sisi frontend, TIDAK dibakukan di sini - lihat FS-06 §8 & PRD §7.
+    Sengaja TIDAK memakai istilah Waspada/Siaga/Awas di level ini agar
+    tidak tertukar dengan status tsunami resmi InaTEWS (lihat API_SPEC
+    v3.1 §11) yang punya skala eskalasi terpisah dan lebih ketat.
+
+IdParam:
+  name: id
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+PageParam:
+  name: page
+  in: query
+  schema:
+    type: integer
+    default: 1
+
+LimitParam:
+  name: limit
+  in: query
+  schema:
+    type: integer
+    default: 20
+    maximum: 100

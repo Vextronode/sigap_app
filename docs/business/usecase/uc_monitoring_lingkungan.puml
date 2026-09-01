@@ -1,0 +1,33 @@
+@startuml uc_monitoring_lingkungan
+left to right direction
+title SIGAP — Use Case: Monitoring Lingkungan
+
+actor "Warga Desa" as Warga
+actor "BMKG / USGS / OpenWeatherMap" as ExtData
+actor "AI API" as ExtAI
+
+rectangle "Sistem SIGAP" {
+  usecase "Lihat Dashboard Lingkungan" as UC1
+  usecase "Lihat Ringkasan AI" as UC2
+  usecase "Tarik Data Eksternal" as UC10
+  usecase "Minta Ringkasan ke AI API" as UC10b
+}
+
+Warga --> UC1
+Warga --> UC2
+
+UC1 .> UC10 : <<include>>
+UC2 .> UC10b : <<include>>
+
+UC10 --> ExtData
+UC10b --> ExtAI
+
+note right of UC10b
+  Jika AI API gagal/kuota habis,
+  sistem menampilkan data mentah
+  dengan indikator "ringkasan
+  otomatis tidak tersedia"
+  (lihat PRD 5, Fallback AI - Draft).
+end note
+
+@enduml

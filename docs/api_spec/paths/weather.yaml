@@ -1,0 +1,190 @@
+# =====================================================================
+# paths/weather.yaml — path domain Cuaca/Gempa/Tsunami & Dashboard
+# =====================================================================
+
+weather-current:
+  get:
+    tags: [Weather]
+    summary: Cuaca terkini Desa Cibenda
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/CurrentWeather'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        description: Gagal mengambil data dari BMKG upstream
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+
+weather-forecast:
+  get:
+    tags: [Weather]
+    summary: Prakiraan cuaca (Hari Ini/Sore Ini + 2 hari berikutnya) dari BMKG
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/weather.yaml#/WeatherForecastItem'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
+
+earthquake-indonesia:
+  get:
+    tags: [Weather]
+    summary: >
+      Gempa terbaru nasional (autogempa.json). Alias legacy yang
+      mengembalikan hasil sama: /public/earthquakes/latest,
+      /public/earthquakes/.
+    security: []
+    responses:
+      '200':
+        description: OK (data tidak pernah null - BMKG selalu punya gempa nasional terakhir)
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
+
+earthquake-west-java:
+  get:
+    tags: [Weather]
+    summary: Gempa terdekat di Jawa Barat (radius & umur difilter - lihat schema)
+    security: []
+    responses:
+      '200':
+        description: OK (data BISA null - artinya tidak ada gempa relevan saat ini, bukan error)
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
+
+earthquake-pangandaran:
+  get:
+    tags: [Weather]
+    summary: Gempa terdekat di Pangandaran (radius & umur difilter - lihat schema)
+    security: []
+    responses:
+      '200':
+        description: OK (data BISA null - artinya tidak ada gempa relevan saat ini, bukan error)
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/BmkgUpstreamError'
+
+tsunami-status:
+  get:
+    tags: [Weather]
+    summary: >
+      Status tsunami - ESTIMASI dari data gempa (Potensi), di-cap di
+      WASPADA, BUKAN status resmi InaTEWS. Cek field `source` di
+      response untuk provenance yang jujur. Alias legacy:
+      /public/tsunamis/status.
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/TsunamiStatus'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+
+dashboard:
+  get:
+    tags: [Dashboard]
+    summary: >
+      🚧 BELUM DIIMPLEMENTASIKAN - jangan develop terhadap ini. Lihat
+      schema DashboardAggregation untuk alasan penundaan. FE saat ini
+      pakai request paralel per-kartu dan itu sudah cukup.
+    security: []
+    responses:
+      '200':
+        description: OK (rencana, belum aktif)
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/DashboardAggregation'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+
+admin-dashboard:
+  get:
+    tags: [Dashboard]
+    summary: Ringkasan statistik Dashboard Admin (FS-11)
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/AdminDashboardSummary'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'

@@ -1,0 +1,150 @@
+# =====================================================================
+# schemas/iot-kesiapsiagaan.yaml — schema domain Perangkat IoT
+# (Unit Utama + Sirine — terminologi final di-handle Tech Lead terpisah,
+# field di bawah tetap generik "device")
+# =====================================================================
+
+DevicePublic:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    deviceName:
+      type: string
+    latitude:
+      type: number
+    longitude:
+      type: number
+    currentLevel:
+      $ref: './shared.yaml#/StatusLevel'
+    status:
+      type: string
+      enum: [online, offline]
+      description: >
+        Hanya 2 nilai sesuai FS-06 (biner, dari ambang waktu lastSeenAt).
+        Nilai "degraded" pada draft sebelumnya DIBUANG — tidak pernah
+        diputuskan di FS manapun. Kalau ada rencana status granular
+        (kualitas sinyal, status daya, dst. — sempat dibahas untuk
+        Sirine), itu perlu field terpisah, bukan overload di sini.
+
+DeviceFull:
+  allOf:
+    - $ref: './iot-kesiapsiagaan.yaml#/DevicePublic'
+    - type: object
+      properties:
+        isActive:
+          type: boolean
+          description: Nonaktifkan (bukan hapus permanen), FS-06 FR4
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+DeviceCreateRequest:
+  type: object
+  required: [deviceName, latitude, longitude]
+  properties:
+    deviceName:
+      type: string
+    latitude:
+      type: number
+      minimum: -90
+      maximum: 90
+    longitude:
+      type: number
+      minimum: -180
+      maximum: 180
+
+DeviceUpdateRequest:
+  type: object
+  properties:
+    deviceName:
+      type: string
+    latitude:
+      type: number
+      minimum: -90
+      maximum: 90
+    longitude:
+      type: number
+      minimum: -180
+      maximum: 180
+    isActive:
+      type: boolean
+
+DeviceStatusLog:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    deviceId:
+      type: string
+      format: uuid
+    levelSent:
+      $ref: './shared.yaml#/StatusLevel'
+    sentAt:
+      type: string
+      format: date-time
+    ackStatus:
+      type: string
+      enum: [Diterima, "Tidak Ada Respons", Menunggu]
+      nullable: true
+
+SirenActionLog:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    deviceId:
+      type: string
+      format: uuid
+      description: Referensi Sirine yang menerima broadcast
+    levelAtTrigger:
+      $ref: './shared.yaml#/StatusLevel'
+      description: >
+        Business rule (server-enforced, bukan constraint schema):
+        hanya ORANGE/RED yang seharusnya pernah muncul di sini.
+    triggerSource:
+      type: string
+      enum: [digital, fisik, dibatalkan_otomatis]
+    triggeredBy:
+      type: string
+      format: uuid
+      nullable: true
+      description: null untuk trigger fisik (FS-08 FR3)
+    triggeredFromIp:
+      type: string
+      nullable: true
+      description: Hanya terisi untuk triggerSource=digital
+    triggeredAt:
+      type: string
+      format: date-time
+    executedAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Diisi saat Unit Utama melaporkan hasil eksekusi (bisa lebih lambat dari triggeredAt, latensi siklus poll)
+    ackStatus:
+      type: string
+      enum: ["Diterima & Dieksekusi", "Tidak Ada Respons", Menunggu]
+    cooldownOverridden:
+      type: boolean
+      description: true jika trigger ini memotong cooldown karena eskalasi ke RED (FS-09 FR5)
+
+DeviceTriggerSirenRequest:
+  type: object
+  properties:
+    confirmed:
+      type: boolean
+      default: false
+      description: >
+        Wajib true untuk level RED (konfirmasi 2 langkah, FS-09 FR2).
+        Backend menolak dengan 409 jika levelnya RED dan confirmed=false.

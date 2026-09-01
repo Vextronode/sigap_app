@@ -1,0 +1,64 @@
+# =====================================================================
+# paths/auth.yaml — path domain Auth
+# =====================================================================
+
+login:
+  post:
+    tags: [Auth]
+    summary: Login admin/operator
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/LoginRequest'
+    responses:
+      '200':
+        description: Login berhasil
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/auth.yaml#/LoginResponse'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+
+logout:
+  post:
+    tags: [Auth]
+    summary: Logout - invalidasi sesi di server (bukan hanya hapus token di klien)
+    responses:
+      '200':
+        description: Logout berhasil
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+
+me:
+  get:
+    tags: [Auth]
+    summary: Profil pengguna yang sedang login
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/auth.yaml#/UserProfile'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'

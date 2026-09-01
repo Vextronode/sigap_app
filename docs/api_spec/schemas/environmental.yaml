@@ -1,0 +1,85 @@
+# =====================================================================
+# schemas/environmental.yaml — schema domain Data Lingkungan & Alert
+# =====================================================================
+
+EnvironmentalData:
+  type: object
+  description: >
+    Cakupan sumber TETAP BMKG+USGS+OpenWeatherMap (PRD §6, tidak
+    berubah) — pembatasan "hanya BMKG" (FS-02) khusus berlaku untuk
+    Alert/Rule Engine, TIDAK berlaku di tabel data mentah ini.
+  properties:
+    id:
+      type: string
+      format: uuid
+    source:
+      type: string
+      enum: [BMKG, USGS, OpenWeatherMap]
+    type:
+      type: string
+      example: "curah_hujan"
+    value:
+      type: number
+    unit:
+      type: string
+      example: "mm"
+    recordedAt:
+      type: string
+      format: date-time
+
+Alert:
+  type: object
+  description: >
+    Model LOG historis (banyak record per kejadian) — bukan satu row
+    current-state yang di-update terus. Ini keputusan arsitektur yang
+    perlu dikonfirmasi eksplisit: backend realita hari ini (API_SPEC.md
+    v3.1 §8.5) masih model 1-row-mutable, migrasi ke log adalah
+    perubahan nyata, bukan sekadar dokumentasi ulang.
+  properties:
+    id:
+      type: string
+      format: uuid
+    alertType:
+      type: string
+      example: "banjir"
+    severity:
+      $ref: './shared.yaml#/StatusLevel'
+    source:
+      type: string
+      description: >
+        Provenance jujur (selaras API_SPEC.md §8.5) — mis. "BMKG" untuk
+        data resmi, "BMKG (estimasi dari data gempa)" untuk hasil
+        estimasi tsunami internal. JANGAN klaim InaTEWS untuk data yang
+        bukan dari InaTEWS.
+      example: "BMKG"
+    sourceRule:
+      type: string
+      nullable: true
+      description: Identifier rule internal yang men-trigger alert ini (opsional, untuk debugging)
+    message:
+      type: string
+    triggeredAt:
+      type: string
+      format: date-time
+    reviewStatus:
+      type: string
+      enum: ["Belum Ditinjau", Dikonfirmasi, Ditolak, Ditindaklanjuti]
+      default: "Belum Ditinjau"
+      description: Klasifikasi administratif FS-02 — TIDAK memengaruhi visibilitas publik maupun trigger sirine (independen dari FS-09)
+    reviewedBy:
+      type: string
+      format: uuid
+      nullable: true
+    reviewedAt:
+      type: string
+      format: date-time
+      nullable: true
+
+AlertReviewRequest:
+  type: object
+  required: [reviewStatus]
+  properties:
+    reviewStatus:
+      type: string
+      enum: [Dikonfirmasi, Ditolak, Ditindaklanjuti]
+      description: "Belum Ditinjau" sengaja tidak bisa di-set manual — itu hanya default awal

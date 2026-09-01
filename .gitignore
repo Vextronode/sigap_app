@@ -1,0 +1,30 @@
+# Node
+node_modules/
+
+# Build
+dist/
+build/
+
+# Env
+.env
+.env.*
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/settings.json
+
+# Prisma
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+#Claude
+.claude/
+.vercel
+.env*

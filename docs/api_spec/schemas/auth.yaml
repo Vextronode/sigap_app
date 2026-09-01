@@ -1,0 +1,43 @@
+# =====================================================================
+# schemas/auth.yaml — schema domain Auth & profil pengguna
+# =====================================================================
+
+LoginRequest:
+  type: object
+  required: [email, password]
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+      format: password
+
+LoginResponse:
+  type: object
+  properties:
+    token:
+      type: string
+    expiresIn:
+      type: integer
+      description: Detik hingga token kedaluwarsa
+    user:
+      $ref: './auth.yaml#/UserProfile'
+
+UserProfile:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    email:
+      type: string
+      format: email
+    role:
+      type: string
+      enum: [admin, operator]
+      example: admin
+    isActive:
+      type: boolean

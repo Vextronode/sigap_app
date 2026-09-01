@@ -1,0 +1,35 @@
+# =====================================================================
+# paths/ai-summary.yaml — path domain Ringkasan AI
+# =====================================================================
+
+ai-summary:
+  get:
+    tags: [AI Summary]
+    summary: >
+      Ringkasan bahasa sederhana. Satu endpoint untuk 3 kebutuhan
+      (Smart Weather Summary, Ringkasan Gempa, Daily Safety
+      Recommendation - lihat PRD §3.1 Decision Support) dibedakan lewat
+      param type, bukan 3 endpoint terpisah untuk fitur yang masih
+      🚧/bonus.
+    security: []
+    parameters:
+      - name: type
+        in: query
+        required: true
+        schema:
+          type: string
+          enum: [weather, earthquake, recommendation]
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ai-summary.yaml#/AiSummaryResponse'
+      '429':
+        $ref: './shared.yaml#/RateLimited'

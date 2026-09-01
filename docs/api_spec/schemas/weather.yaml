@@ -1,0 +1,203 @@
+# =====================================================================
+# schemas/weather.yaml — schema domain Cuaca/Gempa/Tsunami & Dashboard
+# =====================================================================
+
+CurrentWeather:
+  type: object
+  properties:
+    temperature:
+      type: number
+    humidity:
+      type: number
+    weather:
+      type: string
+      example: "Hujan Ringan"
+    windSpeed:
+      type: number
+    windDirection:
+      type: string
+      enum: [N, NE, E, SE, S, SW, W, NW]
+      description: >
+        Kode kompas MENTAH dari BMKG, BUKAN teks Indonesia. Pemetaan ke
+        teks ("Barat Laut" dst.) dilakukan di frontend (windDirectionMap).
+        Kalau backend suatu saat pre-translate ini, map di FE jadi mubazir
+        - jaga tetap sinkron (API_SPEC.md v3.1 §8.1).
+    visibility:
+      type: string
+      example: "10 km"
+    updatedAt:
+      type: string
+      format: date-time
+
+WeatherForecastItem:
+  type: object
+  properties:
+    label:
+      type: string
+      example: "Hari Ini"
+      description: >
+        "Hari Ini", "Sore Ini", lalu nama hari singkat Indonesia untuk
+        2 hari berikutnya - bukan grid interval 3-jam mentah.
+    date:
+      type: string
+      format: date
+    condition:
+      type: string
+      example: "Cerah Berawan"
+      description: Teks Indonesia mentah dari BMKG, bukan bahasa Inggris.
+    temperature:
+      type: number
+    rainProbability:
+      type: number
+      minimum: 0
+      maximum: 100
+      description: >
+        BUKAN field resmi BMKG. Estimasi internal dari volume curah
+        hujan (tp) + teks deskripsi cuaca - heuristik sementara, jangan
+        disajikan ke mitra/stakeholder sebagai data resmi BMKG
+        (API_SPEC.md v3.1 §8.2).
+
+EarthquakeInfo:
+  type: object
+  nullable: true
+  description: >
+    NULL (dengan HTTP 200) adalah state valid untuk endpoint west-java
+    dan pangandaran ketika tidak ada gempa yang lolos filter radius/umur
+    - ini "tidak ada gempa penting saat ini", bukan error. Endpoint
+    indonesia tidak pernah null (BMKG selalu punya gempa nasional
+    terakhir).
+  properties:
+    magnitude:
+      type: number
+    depth:
+      type: string
+      example: "18 km"
+    location:
+      type: string
+    coordinates:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+    distanceToVillage:
+      type: number
+      description: Kilometer, dihitung backend (haversine) dari VILLAGE_LAT/LON.
+    felt:
+      type: string
+      description: >
+        Field MMI resmi BMKG ("Dirasakan"). Sering string kosong, BUKAN
+        field yang hilang - selalu render untuk kasus string kosong,
+        jangan asumsikan truthy.
+    potential:
+      type: string
+      example: "Tidak berpotensi tsunami"
+    shakemap:
+      type: string
+      description: >
+        Full URL (sudah diprefix backend), atau string kosong jika tidak
+        tersedia. Untuk Pangandaran, bisa "dipinjam" dari gempa Indonesia
+        terkini via pencocokan updatedAt - heuristik yang wajar tapi
+        tidak sempurna (tidak ada unique event ID resmi dari BMKG).
+    updatedAt:
+      type: string
+      format: date-time
+
+TsunamiStatus:
+  type: object
+  properties:
+    status:
+      type: string
+      enum: [NORMAL, WASPADA, SIAGA, AWAS]
+      description: >
+        SIAGA/AWAS SAAT INI hanya tercapai lewat override manual
+        BMKG_TSUNAMI_STATUS - estimasi otomatis SIGAP sengaja di-cap di
+        WASPADA (lihat description & source, dan API_SPEC.md v3.1 §11
+        untuk alasan lengkap: false-AWAS jauh lebih berbahaya daripada
+        missed-WASPADA).
+    description:
+      type: string
+    source:
+      type: string
+      enum: ["BMKG InaTEWS", "BMKG (estimasi dari data gempa)"]
+      description: >
+        WAJIB ditampilkan apa adanya ke pengguna - "BMKG InaTEWS" HANYA
+        untuk override manual operator dengan info resmi genuine,
+        "BMKG (estimasi dari data gempa)" untuk hasil estimasi otomatis
+        SIGAP dari field Potensi. Jangan pernah klaim provenance InaTEWS
+        untuk data yang bukan dari InaTEWS.
+    updatedAt:
+      type: string
+      format: date-time
+
+DashboardAggregation:
+  type: object
+  description: >
+    🚧 BELUM DIIMPLEMENTASIKAN. Keputusan sadar tim: dashboard FE saat
+    ini pakai beberapa request paralel independen (React Query, satu
+    hook per kartu) dan itu bekerja baik secara fungsional. Endpoint
+    agregasi ini hanya layak dibangun kalau jumlah request jadi masalah
+    performa yang TERUKUR - bukan sebelum itu (API_SPEC.md v3.1,
+    "Dashboard Aggregation API"). JANGAN develop terhadap skema ini.
+  properties:
+    weather:
+      $ref: './weather.yaml#/CurrentWeather'
+    forecast:
+      type: array
+      items:
+        $ref: './weather.yaml#/WeatherForecastItem'
+    earthquakes:
+      type: object
+      properties:
+        indonesia:
+          $ref: './weather.yaml#/EarthquakeInfo'
+        westJava:
+          $ref: './weather.yaml#/EarthquakeInfo'
+        pangandaran:
+          $ref: './weather.yaml#/EarthquakeInfo'
+    tsunami:
+      $ref: './weather.yaml#/TsunamiStatus'
+    alert:
+      $ref: '../schemas/environmental.yaml#/Alert'
+
+AdminDashboardSummary:
+  type: object
+  description: Skema untuk FS-11 (Dashboard Admin) - lihat spec FS-11 untuk detail per section.
+  properties:
+    deviceSummary:
+      type: object
+      description: FS-11 Section 3
+      properties:
+        total:
+          type: integer
+        online:
+          type: integer
+        offline:
+          type: integer
+    alertSummary:
+      type: object
+      description: FS-11 Section 1-2 (reuse) + FR2
+      properties:
+        unreviewedCount:
+          type: integer
+        latestAlert:
+          allOf:
+            - $ref: '../schemas/environmental.yaml#/Alert'
+          nullable: true
+    externalSourceStatus:
+      type: array
+      description: FS-11 Section 4
+      items:
+        type: object
+        properties:
+          source:
+            type: string
+            enum: [BMKG, USGS, OpenWeatherMap, "AI API"]
+          status:
+            type: string
+            enum: [Terhubung, Terputus, "Data Basi"]
+          lastUpdatedAt:
+            type: string
+            format: date-time
+            nullable: true

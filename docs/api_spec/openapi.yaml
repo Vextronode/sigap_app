@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: SIGAP API
+  description: >
+    Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda.
+    Kontrak resmi antara Backend dan Frontend, disusun berdasarkan
+    Route/Access Category Design dan Data Dictionary SIGAP.
+
+    Envelope response: setiap response sukses mengikuti struktur
+    {success: true, message, data}; setiap response error mengikuti
+    struktur {success: false, message, errors} dengan errors berupa
+    array of string. Pengecualian: 204 No Content tidak memiliki body
+    sama sekali, sesuai konvensi HTTP.
+
+    Spesifikasi ini disegmentasi per domain (lihat folder paths/ dan
+    schemas/) agar mudah dibaca — bukan satu file besar.
+
+    CATATAN MIGRASI (v1.2.0): envelope ini SELARAS dengan implementasi
+    realita saat ini (API_SPEC.md v3.1 §4-5) — bukan breaking change.
+    Satu penyesuaian yang tetap perlu masuk backlog: standardisasi
+    field `errors` agar SELALU array (bukan kadang objek kosong {} di
+    sebagian handler global, per catatan API_SPEC.md v3.1 §5).
+  version: "1.2.0"
+  contact:
+    name: Tech Lead SIGAP
+servers:
+  - url: https://api.sigap.cibenda.id/api
+    description: Production (placeholder — menunggu konfirmasi hosting, lihat PRD §4)
+  - url: https://staging-api.sigap.cibenda.id/api
+    description: Staging
+
+tags:
+  - name: Auth
+  - name: Weather
+  - name: Dashboard
+  - name: Environmental Data
+  - name: Alerts
+  - name: Devices
+  - name: Device Gateway
+  - name: Announcements
+  - name: Evacuation
+  - name: Emergency Contacts
+  - name: AI Summary
+  - name: Users
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    deviceApiKey:
+      type: apiKey
+      in: header
+      name: X-Device-Key
+      description: >
+        Autentikasi M2M untuk Device Gateway - key per-perangkat,
+        diprovisioning ke firmware saat setup, terpisah total dari
+        bearerAuth pengguna.
+
+paths:
+  # -- Auth --------------------------------------------------------------
+  /public/auth/login:
+    $ref: './paths/auth.yaml#/login'
+  /protected/auth/me:
+    $ref: './paths/auth.yaml#/me'
+  /protected/auth/logout:
+    $ref: './paths/auth.yaml#/logout'
+
+  # -- Weather / Dashboard -------------------------------------------------
+  /public/weather/current:
+    $ref: './paths/weather.yaml#/weather-current'
+  /public/weather/forecast:
+    $ref: './paths/weather.yaml#/weather-forecast'
+  /public/earthquakes/indonesia:
+    $ref: './paths/weather.yaml#/earthquake-indonesia'
+  /public/earthquakes/latest:
+    $ref: './paths/weather.yaml#/earthquake-indonesia'
+  /public/earthquakes/west-java:
+    $ref: './paths/weather.yaml#/earthquake-west-java'
+  /public/earthquakes/pangandaran:
+    $ref: './paths/weather.yaml#/earthquake-pangandaran'
+  /public/tsunami/status:
+    $ref: './paths/weather.yaml#/tsunami-status'
+  /public/dashboard:
+    $ref: './paths/weather.yaml#/dashboard'
+  /protected/admin/dashboard:
+    $ref: './paths/weather.yaml#/admin-dashboard'
+
+  # -- Environmental Data & Alerts (historis) -----------------------------
+  /public/environmental-data:
+    $ref: './paths/environmental.yaml#/environmental-data'
+  /public/alerts:
+    $ref: './paths/environmental.yaml#/alerts'
+  /public/alerts/current:
+    $ref: './paths/environmental.yaml#/alert-current'
+  /public/alerts/{id}:
+    $ref: './paths/environmental.yaml#/alert-by-id'
+  /protected/alerts/{id}/review:
+    $ref: './paths/environmental.yaml#/alert-review'
+
+  # -- Devices (IoT Kesiapsiagaan - sisi admin/konsumsi) ------------------
+  /public/devices:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/devices-public'
+  /protected/devices:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/devices-protected'
+  /protected/devices/{id}:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-by-id'
+  /protected/devices/{id}/status-log:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-status-log'
+  /protected/devices/{id}/siren-log:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-siren-log'
+  /protected/devices/{id}/trigger-siren:
+    $ref: './paths/iot-kesiapsiagaan.yaml#/device-trigger-siren'
+
+  # -- Device Gateway (M2M — perangkat IoT langsung ke backend) -----------
+  /device/{id}/level:
+    $ref: './paths/device-gateway.yaml#/device-poll-level'
+  /device/{id}/heartbeat:
+    $ref: './paths/device-gateway.yaml#/device-heartbeat'
+  /device/{id}/siren-events:
+    $ref: './paths/device-gateway.yaml#/device-siren-events'
+
+  # -- Content Admin: Pengumuman (proxy SID), Evakuasi, Kontak Darurat ----
+  /public/announcements:
+    $ref: './paths/content-admin.yaml#/announcements-public'
+  /protected/announcements:
+    $ref: './paths/content-admin.yaml#/announcements-protected'
+  /protected/announcements/{id}:
+    $ref: './paths/content-admin.yaml#/announcement-by-id'
+  /public/evacuation-points:
+    $ref: './paths/content-admin.yaml#/evacuation-points-public'
+  /protected/evacuation-points:
+    $ref: './paths/content-admin.yaml#/evacuation-points-protected'
+  /protected/evacuation-points/{id}:
+    $ref: './paths/content-admin.yaml#/evacuation-point-by-id'
+  /public/evacuation-routes:
+    $ref: './paths/content-admin.yaml#/evacuation-routes-public'
+  /protected/evacuation-routes:
+    $ref: './paths/content-admin.yaml#/evacuation-routes-protected'
+  /protected/evacuation-routes/{id}:
+    $ref: './paths/content-admin.yaml#/evacuation-route-by-id'
+  /public/emergency-contacts:
+    $ref: './paths/content-admin.yaml#/emergency-contacts-public'
+  /protected/emergency-contacts:
+    $ref: './paths/content-admin.yaml#/emergency-contacts-protected'
+  /protected/emergency-contacts/{id}:
+    $ref: './paths/content-admin.yaml#/emergency-contact-by-id'
+
+  # -- AI Summary ----------------------------------------------------------
+  /public/ai-summary:
+    $ref: './paths/ai-summary.yaml#/ai-summary'
+
+  # -- Users -----------------------------------------------------------------
+  /protected/users:
+    $ref: './paths/users.yaml#/users'
+  /protected/users/{id}:
+    $ref: './paths/users.yaml#/user-by-id'
+  /protected/users/{id}/reset-password:
+    $ref: './paths/users.yaml#/user-reset-password'

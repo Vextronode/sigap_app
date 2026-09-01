@@ -1,0 +1,142 @@
+# =====================================================================
+# schemas/content-admin.yaml — schema domain Pengumuman (proxy SID),
+# Evakuasi (FS-04), Kontak Darurat (FS-03)
+# =====================================================================
+
+# --- Announcements: proxy read-only dari SID, lihat Roadmap Tahap 2 §2.1 #3-4.
+# CRUD lokal DEPRECATED — dipertahankan di paths sebagai deprecated:true,
+# tidak dihapus, mengikuti keputusan yang sama dengan tabel `announcements`
+# di database (dipertahankan, tidak dipakai aktif).
+AnnouncementProxy:
+  type: object
+  description: >
+    Hasil proxy dari SID, difilter hanya yang berstatus public di SID
+    (Roadmap Tahap 2 §2.1 #3). id merujuk ID di sistem SID, bukan SIGAP.
+  properties:
+    id:
+      type: string
+      description: ID dari sistem SID (bukan UUID lokal SIGAP)
+    title:
+      type: string
+    description:
+      type: string
+    publishedAt:
+      type: string
+      format: date-time
+
+EvacuationPoint:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    latitude:
+      type: number
+    longitude:
+      type: number
+    description:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+EvacuationPointWriteRequest:
+  type: object
+  required: [name, latitude, longitude]
+  properties:
+    name:
+      type: string
+    latitude:
+      type: number
+      minimum: -90
+      maximum: 90
+      description: Validasi rentang koordinat (FS-04 FR4)
+    longitude:
+      type: number
+      minimum: -180
+      maximum: 180
+    description:
+      type: string
+
+EvacuationRoute:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    routeName:
+      type: string
+    geometry:
+      type: array
+      minItems: 2
+      items:
+        type: object
+        properties:
+          lat:
+            type: number
+          lng:
+            type: number
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+EvacuationRouteWriteRequest:
+  type: object
+  required: [routeName, geometry]
+  properties:
+    routeName:
+      type: string
+    geometry:
+      type: array
+      minItems: 2
+      items:
+        type: object
+        properties:
+          lat:
+            type: number
+          lng:
+            type: number
+
+EmergencyContact:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    institution:
+      type: string
+    phoneNumber:
+      type: string
+    isCore:
+      type: boolean
+      description: >
+        true untuk 6 kontak inti (Ambulans, Damkar, Polisi, Puskesmas,
+        BPBD, Kantor Desa Cibenda) — di-seed saat setup, tidak dapat
+        dihapus lewat API manapun (FS-03).
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+EmergencyContactWriteRequest:
+  type: object
+  required: [institution, phoneNumber]
+  properties:
+    institution:
+      type: string
+    phoneNumber:
+      type: string
+  description: >
+    isCore SENGAJA tidak ada di sini — field itu hanya di-set lewat
+    seed awal, tidak dapat diubah lewat create/update manapun.

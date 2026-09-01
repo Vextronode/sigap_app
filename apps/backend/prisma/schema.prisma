@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userRoles UserRole[]
+
+  @@index([email])
+
+  @@map("users")
+}
+
+model Role {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+  @@index([name])
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+  @@index([code])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+//
+// ==========================
+// SIGAP IoT Prototype Models
+// ==========================
+//
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+}
+
+enum AlertLevel {
+  GREEN
+  YELLOW
+  ORANGE
+  RED
+}
+
+model Device {
+  id         String       @id @default(uuid())
+  deviceCode String       @unique
+  name       String
+  status     DeviceStatus @default(OFFLINE)
+  lastSeen   DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("devices")
+}
+
+model Alert {
+  id          String     @id @default(uuid())
+  level       AlertLevel
+  source      String
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  notificationLogs NotificationLog[]
+
+  @@map("alerts")
+}
+
+//
+// ==========================
+// Push Notification (Web Push)
+// ==========================
+// Warga tidak login ke SIGAP, jadi subscription ini TIDAK terikat ke User —
+// murni per browser/device (identik dengan cara kerja Web Push standar).
+//
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@map("push_subscriptions")
+}
+
+model NotificationLog {
+  id               String     @id @default(uuid())
+  alertId          String?    @map("alert_id")
+  level            AlertLevel
+  title            String
+  body             String
+  triggeredBy      String     @default("CRON_SCHEDULER") @map("triggered_by")
+  totalSubscribers Int        @default(0) @map("total_subscribers")
+  sentCount        Int        @default(0) @map("sent_count")
+  failedCount      Int        @default(0) @map("failed_count")
+  errorDetails     String?    @map("error_details") @db.Text
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  alert Alert? @relation(fields: [alertId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([alertId])
+  @@map("notification_logs")
+}
+
+//
+// ==========================
+// Earthquake Record Persistence
+// ==========================
+// Menyimpan riwayat & Shakemap gempa Pangandaran agar gambar Shakemap tidak hilang
+// saat BMKG memperbarui autogempa.json ke lokasi nasional lain.
+//
+
+model EarthquakeRecord {
+  id                String   @id @default(uuid())
+  eventTime         String   @unique
+  magnitude         Float
+  depth             String
+  location          String
+  latitude          Float
+  longitude         Float
+  distanceToVillage Float
+  felt              String?
+  potential         String?
+  shakemap          String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("earthquake_records")
+}

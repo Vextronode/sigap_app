@@ -1,0 +1,139 @@
+# =====================================================================
+# paths/users.yaml — path domain manajemen akun (FS-10)
+# =====================================================================
+
+users:
+  get:
+    tags: [Users]
+    summary: List akun admin/operator
+    parameters:
+      - $ref: './shared.yaml#/PageParam'
+      - $ref: './shared.yaml#/LimitParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/auth.yaml#/UserProfile'
+                    pagination:
+                      $ref: '../schemas/shared.yaml#/Pagination'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+  post:
+    tags: [Users]
+    summary: Buat akun admin/operator baru
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users.yaml#/UserCreateRequest'
+    responses:
+      '201':
+        description: Berhasil dibuat
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/auth.yaml#/UserProfile'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+
+user-by-id:
+  get:
+    tags: [Users]
+    summary: Detail satu akun
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/auth.yaml#/UserProfile'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+  put:
+    tags: [Users]
+    summary: Perbarui akun/role/status aktif pengguna
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users.yaml#/UserUpdateRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/auth.yaml#/UserProfile'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+      '409':
+        description: Percobaan menonaktifkan admin terakhir yang aktif (FS-10 AC4)
+        $ref: './shared.yaml#/Conflict'
+
+user-reset-password:
+  post:
+    tags: [Users]
+    summary: Reset password akun lain (admin-assisted, FS-10 FR5)
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users.yaml#/ResetPasswordRequest'
+    responses:
+      '200':
+        description: Password berhasil direset, sesi aktif akun tsb otomatis tergugurkan (selaras FS-01 AC5)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
