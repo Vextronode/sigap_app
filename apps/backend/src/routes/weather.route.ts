@@ -86,4 +86,3 @@ publicWeatherRouter.get("/forecast", async (_req, res) => {
     res.status(502).json(response);
   }
 });
-
