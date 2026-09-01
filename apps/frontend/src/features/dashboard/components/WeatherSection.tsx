@@ -96,15 +96,22 @@ const WeatherIcon = ({
   }
 };
 
-/** Label ringkas untuk teks prakiraan (mis. di forecast card) */
+/**
+ * Label ringkas untuk teks prakiraan (mis. di forecast card).
+ * Gerimis dibedakan dari Hujan agar tidak membuat warga panik —
+ * drizzle (gerimis) ≠ hujan deras.
+ */
 const weatherLabel = (condition: string): string => {
+  const s = condition.toLowerCase();
+  // Gerimis: dibedakan dari hujan biasa
+  if (s.includes("gerimis")) return "Gerimis";
   const category = classifyWeather(condition);
   const labels: Record<WeatherCategory, string> = {
-    badai:       "Badai",
-    hujan:       "Hujan",
-    berawan:     "Berawan",
-    cerahberawan:"Cerah Berawan",
-    cerah:       "Cerah",
+    badai:        "Badai Petir",
+    hujan:        "Hujan",
+    berawan:      "Berawan",
+    cerahberawan: "Cerah Berawan",
+    cerah:        "Cerah",
   };
   return labels[category];
 };
@@ -148,12 +155,6 @@ export const WeatherSection = ({
               <small className="font-bold text-[color:var(--text-muted)]">
                 Cibenda, Kecamatan Parigi, Kabupaten Pangandaran, Jawa Barat
               </small>
-              <span
-                className="mt-1 block text-[0.7rem] text-[color:var(--text-muted)] opacity-60"
-                title="BMKG Public API memperbarui data prakiraan cuaca 2x sehari (pukul 07:00 dan 19:00 WIB). Data yang ditampilkan adalah prakiraan, bukan pengamatan langsung."
-              >
-                ⓘ Prakiraan BMKG · diperbarui 2× sehari
-              </span>
             </div>
             <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-[color:var(--icon-chip-bg)]">
               <WeatherIcon condition={weather.weather} size={42} />
@@ -175,7 +176,7 @@ export const WeatherSection = ({
                 <LucideDroplet size={26} aria-hidden="true" />
                 {weather.humidity}%
               </strong>
-              <small>{weather.visibility ? `Jarak pandang ${weather.visibility}` : "Data BMKG"}</small>
+              <small>{weather.visibility ? `Jarak pandang ${weather.visibility}` : "—"}</small>
             </Card>
             <Card className="metric-card">
               <span>Laju & Arah Angin</span>
@@ -215,13 +216,25 @@ export const WeatherSection = ({
                 className="forecast-item"
                 key={`${item.label}-${item.date}`}
               >
-                <span>{item.label}</span>
+                {/* Label hari — warna muted agar tidak bersaing dengan kondisi cuaca */}
+                <span className="text-[color:var(--text-muted)]">{item.label}</span>
 
                 <WeatherIcon condition={item.condition} label={item.label} size={22} />
 
-                <strong>{item.temperature}°C</strong>
+                {/* Kondisi cuaca — elemen paling penting, tampil bold & prominent */}
+                <strong>{weatherLabel(item.condition)}</strong>
 
-                <small>{weatherLabel(item.condition)}</small>
+                {/* Suhu — informasi sekunder, tampil lebih kecil & muted */}
+                <small className="text-[color:var(--text-muted)]">{item.temperature}°C</small>
+
+                {item.rainProbability > 0 && (
+                  <small
+                    className="text-[#3b82f6]"
+                    title={`Probabilitas hujan: ${item.rainProbability}%`}
+                  >
+                    🌧 {item.rainProbability}%
+                  </small>
+                )}
               </article>
             ))}
           </div>
