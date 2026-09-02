@@ -5,10 +5,9 @@ import { NetworkFirst } from "workbox-strategies";
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Cache API dashboard (cuaca/gempa/tsunami/alert) biar data terakhir tetap
-// bisa dibuka offline. Pola URL diperbaiki dari versi lama yang menunjuk ke
-// /api/dashboard (endpoint yang tidak pernah ada, lihat docs/API_Spec.md).
+// bisa dibuka offline.
 registerRoute(
-  ({ url }) => url.pathname.startsWith("/api/v1/public/"),
+  ({ url }) => url.pathname.startsWith("/api/public/"),
   new NetworkFirst({
     cacheName: "sigap-dashboard-cache",
     networkTimeoutSeconds: 5,
