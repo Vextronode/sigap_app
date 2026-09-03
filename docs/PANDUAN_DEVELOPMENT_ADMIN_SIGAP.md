@@ -34,21 +34,36 @@ Dengan meletakkan folder ini di dalam repositori dan di-push ke GitHub, seluruh 
 
 ---
 
-## ⚖️ 3. Prinsip Emas: "Reuse-First, Stitch as Wireframe"
+## ⚖️ 3. Prinsip Emas: "Reuse-First & Unified Experience"
 
 Berdasarkan arahan resmi Ketua Tim di [docs/sigap-phase-2/11_dashboard_admin.md (FS-11)](./sigap-phase-2/11_dashboard_admin.md):
 
 > *"Halaman pertama admin setelah login (Dashboard Admin) sebagian besar **identik dengan dashboard publik** (monitoring lingkungan & kesiapsiagaan), ditambah dua section khusus admin di bawahnya untuk kondisi operasional sistem. Menggunakan komponen/data yang sama persis dengan dashboard publik, tidak ada logika ganda."*
 
-### ❌ Kesalahan yang Harus Dihindari:
-* **JANGAN** membuat card cuaca baru (seperti *"Cuaca Lokal 24°C"* di mockup Stitch) menggantikan `<WeatherSection />` yang sudah ada.
-* **JANGAN** membuat card seismik baru menggantikan `<EarthquakeCard />` dan `<TsunamiCard />` yang sudah terhubung rapi ke API BMKG dan ShakeMap Postgres.
-* **JANGAN** mengganti [`Sidebar.tsx`](../apps/frontend/src/layout/Sidebar.tsx) dengan sidebar baru. Sidebar admin harus memakai basis yang sama (Logo Pangandaran di atas dan status pill koneksi alat di bawah).
+### 🧭 Arsitektur Sidebar Tunggal & Dinamis (Unified Sidebar):
+* **JANGAN membuat komponen Sidebar baru!**
+* Tetap gunakan satu-satunya komponen [`Sidebar.tsx`](../apps/frontend/src/layout/Sidebar.tsx) yang sudah ada (dengan Logo Pangandaran dan status pill koneksi alat di bawah).
+* **Logika Tampilan (`isAdmin`):**
+  * Di dalam `Sidebar.tsx`, tambahkan conditional rendering:
+    ```tsx
+    {isAdmin && (
+      <div className="sidebar__admin-nav">
+        {/* Menu tambahan khusus Admin/Operator */}
+      </div>
+    )}
+    ```
+  * Jika `isAdmin === true` (atau sedang berada di rute `/admin/*`), menu admin otomatis muncul di bawah menu publik.
+  * Jika `isAdmin === false` (pengunjung warga biasa), sidebar hanya merender menu warga seperti biasa.
 
-### ✅ Yang Benar (Strategi Harmonisasi):
-* **Dashboard Publik Warga:** Menampilkan monitoring lingkungan (Cuaca, Gempa, Tsunami, Alert Banner) + Informasi Kesiapsiagaan Warga (Peta Evakuasi, Kontak Darurat, Panduan).
-* **Dashboard Admin:** Menampilkan **Dashboard Warga + Panel Kontrol Admin** (Status Hardware IoT Sirine, Monitor Konektivitas BMKG/SID, dan Navigasi Menu Admin).
-* **Desain Stitch / Figma:** Diambil **ide tata letaknya (wireframe)** untuk halaman-halaman yang memang benar-benar baru (seperti form login, modal konfirmasi sirine, tabel verifikasi alert, dan log integrasi SID).
+### 🌐 Konvensi Endpoint API Backend (Tanpa `/v1`):
+* Berdasarkan implementasi aktif di `apps/backend/src/app.ts` dan Postman resmi:
+  * **Prefix Public:** `/api/public/...` (contoh: `POST /api/public/auth/login`)
+  * **Prefix Protected:** `/api/protected/...` (contoh: `GET /api/protected/auth/me`)
+* **PENTING:** Sistem **TIDAK MENGGUNAKAN** `/api/v1/`. Jangan tambahkan `/v1` pada request Axios atau rute Express.
+
+### ⚡ Akses Langsung untuk Pengembangan Cepat:
+* Proses pengembangan halaman `/admin/dashboard` **tidak boleh terblokir oleh form login**.
+* Developer / AI dapat langsung membuka URL `/admin/dashboard` di address bar browser untuk melihat dan menguji hasil antarmuka serta integrasinya secara instan.
 
 ---
 
@@ -58,13 +73,13 @@ Berikut panduan implementasi konkret per halaman untuk frontend dan backend:
 
 | Halaman & Route | Dokumen Acuan FS | File Desain Acuan (`SIGAP Desain Admin/`) | Komponen Eksisting (REUSE) | Komponen Baru yang Dibuat | Aturan Logika Kunci |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Login Admin**<br>`/admin/login` | [`01_login_sesi.md`](./sigap-phase-2/01_login_sesi.md)<br>(FS-01) | `Halaman Login Admin (SIGAP).png` | Logo Lambang Pangandaran (`assets/image/lambang-kabupaten-pangandaran.webp`) | Card form login, rate-limit state banner | Rate limit: maks 5x gagal dalam 15 menit $\rightarrow$ akun terkunci. Tombol kembali ke portal warga. |
-| **Dashboard Admin**<br>`/admin/dashboard` | [`11_dashboard_admin.md`](./sigap-phase-2/11_dashboard_admin.md)<br>(FS-11) | `Dashboard Ringkasan Admin (SIGAP).png` | `<CurrentAlertCard />`<br>`<WeatherSection />`<br>`<EarthQuakeSection />`<br>`<TsunamiCard />`<br>`<Sidebar />` | `<IoTDeviceControlSection />`<br>`<SystemConnectivityMonitor />`<br>`<UserProfileRoleBadge />` (Topbar) | Section monitoring bencana 100% identik dengan publik. Section bawah menampilkan status IoT dan latensi server. |
+| **Dashboard Admin**<br>`/admin/dashboard` | [`11_dashboard_admin.md`](./sigap-phase-2/11_dashboard_admin.md)<br>(FS-11) | `Dashboard Ringkasan Admin (SIGAP).png` | `<CurrentAlertCard />`<br>`<WeatherSection />`<br>`<EarthQuakeSection />`<br>`<TsunamiCard />`<br>`<Sidebar />` (Dinamis) | `<IoTDeviceControlSection />`<br>`<SystemConnectivityMonitor />`<br>`<UserProfileRoleBadge />` (Topbar) | Section monitoring bencana 100% identik dengan publik. Section bawah menampilkan status IoT dan latensi server. Langsung dibuka via URL `/admin/dashboard`. |
 | **Pusat Kontrol Sirine**<br>`/admin/devices` | [`06_manajemen_perangkat_iot.md`](./sigap-phase-2/06_manajemen_perangkat_iot.md) s/d [`09_trigger_sirine_remote.md`](./sigap-phase-2/09_trigger_sirine_remote.md)<br>(FS-06, 07, 08, 09) | `Pusat Kontrol Sirine & IoT (SIGAP).png` | Basis style card & status dot dari `global.css` | Card ESP32 3-LED visualizer, tombol trigger sirine, modal konfirmasi 2-langkah, tabel log heartbeat & aktivasi | Sirine terkunci saat level Hijau. Hanya aktif di Kuning/Merah. Level Merah wajib konfirmasi ganda sebelum trigger. Heartbeat: 10s, offline threshold: 20s. |
 | **Verifikasi Alert**<br>`/admin/alerts` | [`02_verifikasi_validasi_alert.md`](./sigap-phase-2/02_verifikasi_validasi_alert.md)<br>(FS-02) | `Verifikasi & Riwayat Alert (SIGAP).png` | Status badge colors (Hijau/Kuning/Oranye/Merah) | 4 Stat Metric Cards (Total, Dikonfirmasi, Ditolak, Ditindaklanjuti), Data Table, Modal Tinjau Alert | Verifikasi admin murni administratif (arsip/laporan pasca-kejadian), **TIDAK memblokir** pengiriman alert realtime & push notification warga. |
 | **Kesiapsiagaan Desa**<br>`/admin/kesiapsiagaan` | [`03_kelola_kontak_darurat.md`](./sigap-phase-2/03_kelola_kontak_darurat.md) s/d [`05_kelola_panduan_kesiapsiagaan.md`](./sigap-phase-2/05_kelola_panduan_kesiapsiagaan.md)<br>(FS-03, 04, 05) | `Kelola Kesiapsiagaan Desa (SIGAP).png` | `<EmergencyContacts />`<br>`<EvacuationMap />`<br>`<PreparednessGuide />` | Tab navigation, Form CRUD kontak darurat, Leaflet Map Pin-Drop picker, Form CRUD panduan | **6 Kontak Inti** (Ambulans, Damkar, Polsek, Puskesmas, BPBD, Kantor Desa) dilindungi (`is_core = true`) $\rightarrow$ tidak bisa dihapus, hanya bisa edit nomor. |
 | **Log Notifikasi & SID**<br>`/admin/logs` | [`12_monitoring_integrasi_sid.md`](./sigap-phase-2/12_monitoring_integrasi_sid.md)<br>(FS-12) & Proposal SID | `Log Notifikasi & Integrasi SID (SIGAP).png` | Style modular grid mirip `WeatherSection.tsx` | 3 Metric Summary Cards (Web Push, SID Gateway, Last Alert), Filter Tabs, Tabel Log Audit | Menampilkan log pengiriman Web Push SIGAP + gateway SID (`POST /api/integrations/sigap/notifications`). |
 | **Manajemen Pengguna**<br>`/admin/users` | [`10_manajemen_akun_role.md`](./sigap-phase-2/10_manajemen_akun_role.md)<br>(FS-10) | `Manajemen Akun & Role (SIGAP).png` | - | User table, Modal tambah petugas, Modal reset password cepat | **Khusus role ADMINISTRATOR**. Role OPERATOR tidak dapat melihat menu ini. Mencegah penonaktifan akun Admin terakhir. |
+| **Login Admin**<br>`/admin/login` | [`01_login_sesi.md`](./sigap-phase-2/01_login_sesi.md)<br>(FS-01) | `Halaman Login Admin (SIGAP).png` | Logo Lambang Pangandaran (`assets/image/lambang-kabupaten-pangandaran.webp`) | Card form login, rate-limit state banner | Endpoint `POST /api/public/auth/login`. Rate limit: maks 5x gagal dalam 15 menit $\rightarrow$ akun terkunci. Tombol kembali ke portal warga. |
 
 ---
 
@@ -97,22 +112,33 @@ ATURAN PENGEMBANGAN ADMIN PANEL SIGAP DESA CIBENDA (TAHAP 2)
    - <TsunamiCard />
    JANGAN membuat komponen duplikat baru untuk hal-hal di atas!
 
-2. DESAIN SEBAGAI WIREFRAME: Gunakan desain Google Stitch / Figma di 
-   folder 'SIGAP Desain Admin/' dan docs/DESIGN_ADMIN.md HANYA sebagai acuan tata letak 
-   (wireframe) dan data presentation, bukan untuk membuat design system baru. Styling harus 
-   tetap mengikuti Tailwind & CSS token di apps/frontend/src/styles/global.css.
+2. UNIFIED SIDEBAR: Gunakan SATU-SATUNYA Sidebar.tsx yang sudah ada di 
+   apps/frontend/src/layout/Sidebar.tsx. Tambahkan conditional rendering 
+   {isAdmin && (...)} untuk menampilkan menu admin. JANGAN buat file sidebar baru!
 
-3. REFERENSI LOGIKA BISNIS:
+3. API ENDPOINT PREFIX (NO /v1):
+   - Endpoint Public: /api/public/... (misal: POST /api/public/auth/login)
+   - Endpoint Protected: /api/protected/... (misal: GET /api/protected/auth/me)
+   JANGAN menambahkan '/v1' pada rute API backend maupun request frontend!
+
+4. LANGSUNG AKSES DEV: Developer dapat langsung membuka /admin/dashboard via 
+   URL browser tanpa harus terhalang alur form login terlebih dahulu.
+
+5. DESAIN SEBAGAI WIREFRAME: Gunakan desain di folder 'SIGAP Desain Admin/' dan 
+   docs/DESIGN_ADMIN.md HANYA sebagai acuan tata letak (wireframe) dan data 
+   presentation. Styling harus tetap mengikuti Tailwind & CSS token di 
+   apps/frontend/src/styles/global.css.
+
+6. REFERENSI RESMI:
    - Acuan fungsional: docs/sigap-phase-2/ (FS-01 s.d. FS-12).
-   - Acuan API backend: docs/API_Spec.md v3.1.
+   - Acuan API backend: apps/backend/src/app.ts & Postman resmi.
    - Proposal integrasi SID: SIGAP_SID_INTEGRATION_PROPOSAL.md.
 
-4. SAFEGUARDS & RULES:
+7. SAFEGUARDS:
    - 6 Kontak Inti Desa (is_core = true) tidak boleh dapat dihapus.
    - Sirine hanya dapat di-trigger jika level KUNING / MERAH.
    - Level MERAH wajib memicu modal konfirmasi 2 langkah sebelum eksekusi.
-   - Menu "Kelola Akun" (/admin/users) hanya boleh tampil untuk role ADMIN, 
-     dan tersembunyi bagi role OPERATOR.
+   - Menu "Kelola Akun" (/admin/users) hanya boleh tampil untuk role ADMIN.
    - Heartbeat ESP32 interval 10 detik, threshold offline 20 detik.
 ================================================================================
 ```
