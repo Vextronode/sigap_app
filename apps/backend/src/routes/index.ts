@@ -8,6 +8,10 @@ import { publicTsunamiRouter } from "./tsunami.route.js";
 import { publicDeviceRouter } from "./device.route.js";
 import { publicNotificationRouter, protectedNotificationRouter } from "./notification.route.js";
 import { internalRouter } from "./internal.route.js";
+import {
+  publicEmergencyContactRouter,
+  protectedEmergencyContactRouter,
+} from "./emergencyContact.route.js";
 
 export const publicRouter = Router();
 
@@ -23,6 +27,9 @@ publicRouter.use("/earthquakes", publicEarthquakesRouter);
 publicRouter.use("/tsunami", publicTsunamiRouter);
 publicRouter.use("/tsunamis", publicTsunamiRouter);
 
+// kontak darurat
+publicRouter.use("/emergency-contacts", publicEmergencyContactRouter);
+
 // IoT Device
 publicRouter.use("/device", publicDeviceRouter);
 
@@ -35,3 +42,5 @@ publicRouter.use("/internal", internalRouter);
 export const protectedRouter = Router();
 protectedRouter.use("/auth", protectedAuthRouter);
 protectedRouter.use("/notifications", protectedNotificationRouter);
+protectedRouter.use("/emergency-contacts", protectedEmergencyContactRouter);
+

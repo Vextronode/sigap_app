@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { prisma } from "../src/config/prisma.js";
 import bcrypt from "bcrypt";
 
@@ -78,7 +79,34 @@ async function main() {
     console.log(`Alert sudah ada (${existingAlertCount} entri), skip seeding baseline.`);
   }
 
+  // kontak darurat inti desa cibenda
+  const coreContacts = [
+    { institution: "Ambulans / PSC 119 Pangandaran", phoneNumber: "119" },
+    { institution: "Pemadam Kebakaran (Damkar) Pangandaran", phoneNumber: "0265-639113" },
+    { institution: "Kepolisian (Polsek Parigi)", phoneNumber: "0265-639110" },
+    { institution: "Puskesmas Parigi", phoneNumber: "0265-639345" },
+    { institution: "BPBD Kabupaten Pangandaran", phoneNumber: "0265-639733" },
+    { institution: "Kantor Pemerintah Desa Cibenda", phoneNumber: "0812-2345-6789" },
+  ];
+
+  for (const contact of coreContacts) {
+    const existing = await prisma.emergencyContact.findFirst({
+      where: { institution: contact.institution },
+    });
+
+    if (!existing) {
+      await prisma.emergencyContact.create({
+        data: {
+          institution: contact.institution,
+          phoneNumber: contact.phoneNumber,
+          isCore: true,
+        },
+      });
+    }
+  }
+
   console.log("Seed selesai.");
+
   console.log(`Placeholder admin -> email: ${placeholderEmail} | password: ${placeholderPassword}`);
   console.log("WAJIB diganti sebelum deployment.");
 }
