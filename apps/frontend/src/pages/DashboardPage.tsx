@@ -16,6 +16,7 @@ import { useEvacuation } from "../features/dashboard/hooks/useEvacuation";
 import { useEvacuationRoutes } from "../features/dashboard/hooks/useEvacuationRoutes";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
+import { usePangandaranHistory } from "../features/dashboard/hooks/usePangandaranHistory";
 import { useWestJavaEarthquake } from "../features/dashboard/hooks/useWestJavaEarthquake";
 import { useTsunamiStatus } from "../features/dashboard/hooks/useTsunamiStatus";
 import { useWeather } from "../features/dashboard/hooks/useWeather";
@@ -31,6 +32,7 @@ export default function DashboardPage() {
   const indonesiaEarthquakeQuery = useIndonesiaEarthquake();
   const westJavaEarthquakeQuery = useWestJavaEarthquake();
   const pangandaranEarthquakeQuery = usePangandaranEarthquake();
+  const pangandaranHistoryQuery = usePangandaranHistory();
   const tsunamiQuery = useTsunamiStatus();
   const alertQuery = useCurrentAlert();
   const announcementsQuery = useAnnouncements();
@@ -101,6 +103,7 @@ export default function DashboardPage() {
               earthquake={pangandaranEarthquakeQuery.data ?? null}
               isLoading={pangandaranEarthquakeQuery.isLoading}
               isError={pangandaranEarthquakeQuery.isError}
+              historicalEarthquake={pangandaranHistoryQuery.data ?? null}
             />
             <div className="dashboard-grid dashboard-grid--two">
               <EarthquakeCard

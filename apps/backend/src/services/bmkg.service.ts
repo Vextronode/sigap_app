@@ -132,7 +132,7 @@ export class BmkgService {
       return {
         status: "WASPADA",
         source: "BMKG (estimasi dari data gempa)",
-        description: `Estimasi awal dari gempa M${nearest.magnitude} di ${nearest.location}: berpotensi tsunami menurut data BMKG. Ini BUKAN peringatan resmi InaTEWS — SIGAP belum terhubung ke InaTEWS, tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+        description: `Estimasi awal dari gempa M${nearest.magnitude} di ${nearest.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
       };
     }
 
@@ -140,7 +140,7 @@ export class BmkgService {
       status: "NORMAL",
       source: "BMKG",
       description:
-        "Tidak ada indikasi potensi tsunami dari data gempa terkini BMKG. SIGAP belum terhubung ke status resmi InaTEWS.",
+        "Tidak ada indikasi potensi tsunami dari data gempa terkini BMKG.",
     };
   }
 

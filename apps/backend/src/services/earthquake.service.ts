@@ -141,7 +141,7 @@ export class EarthquakeService {
     );
   }
 
-  static async getPangandaran(): Promise<EarthquakeInfo | null> {
+  static async getPangandaran(ignoreAgeLimit = false): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
     // Saring gempa khusus Pangandaran: menyebut nama Pangandaran ATAU berjarak <= 100 km dari Desa Cibenda
@@ -162,14 +162,14 @@ export class EarthquakeService {
     let nearest = this.findNearestEarthquake(
       pangandaranItems,
       PANGANDARAN_RADIUS_KM,
-      PANGANDARAN_MAX_AGE_DAYS,
+      ignoreAgeLimit ? 365 : PANGANDARAN_MAX_AGE_DAYS,
     );
 
     if (nearest) {
       nearest = await this.attachShakemapIfSameEvent(nearest);
     }
 
-    return this.persistAndRetrievePangandaranShakemap(nearest);
+    return this.persistAndRetrievePangandaranShakemap(nearest, ignoreAgeLimit);
   }
 
   /**
@@ -178,6 +178,7 @@ export class EarthquakeService {
    */
   private static async persistAndRetrievePangandaranShakemap(
     earthquake: EarthquakeInfo | null,
+    ignoreAgeLimit = false,
   ): Promise<EarthquakeInfo | null> {
     try {
       if (earthquake) {
@@ -236,7 +237,7 @@ export class EarthquakeService {
         orderBy: { createdAt: "desc" },
       });
 
-      if (latestDbRecord && new Date(latestDbRecord.eventTime).getTime() >= cutoffMs) {
+      if (latestDbRecord && (ignoreAgeLimit || new Date(latestDbRecord.eventTime).getTime() >= cutoffMs)) {
         return {
           magnitude: latestDbRecord.magnitude,
           depth: latestDbRecord.depth,

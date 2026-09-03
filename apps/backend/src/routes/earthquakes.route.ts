@@ -54,15 +54,24 @@ const handleWestJavaEarthquake = async (_req: Request, res: Response) =>
     res
   );
 
-const handlePangandaranEarthquake = async (_req: Request, res: Response) =>
-  buildResponse(
+const handlePangandaranEarthquake = async (
+  req: Request,
+  res: Response,
+  forceHistory = false
+) => {
+  const isHistory = forceHistory || req.query.history === "true";
+  return buildResponse(
     {
-      message: "Pangandaran earthquake retrieved successfully.",
-      emptyMessage: "Tidak ditemukan gempa Pangandaran atau wilayah sekitar pada daftar BMKG terbaru.",
-      fetcher: () => EarthquakeService.getPangandaran(),
+      message: isHistory
+        ? "Pangandaran historical earthquake retrieved successfully."
+        : "Pangandaran earthquake retrieved successfully.",
+      emptyMessage:
+        "Tidak ditemukan gempa Pangandaran atau wilayah sekitar pada daftar BMKG terbaru.",
+      fetcher: () => EarthquakeService.getPangandaran(isHistory),
     },
     res
   );
+};
 
 /** GET /api/public/earthquakes/indonesia */
 publicEarthquakesRouter.get("/indonesia", handleIndonesiaEarthquake);
@@ -70,8 +79,15 @@ publicEarthquakesRouter.get("/indonesia", handleIndonesiaEarthquake);
 /** GET /api/public/earthquakes/west-java */
 publicEarthquakesRouter.get("/west-java", handleWestJavaEarthquake);
 
+/** GET /api/public/earthquakes/pangandaran/history */
+publicEarthquakesRouter.get("/pangandaran/history", (req, res) =>
+  handlePangandaranEarthquake(req, res, true)
+);
+
 /** GET /api/public/earthquakes/pangandaran */
-publicEarthquakesRouter.get("/pangandaran", handlePangandaranEarthquake);
+publicEarthquakesRouter.get("/pangandaran", (req, res) =>
+  handlePangandaranEarthquake(req, res, false)
+);
 
 /** Alias lama untuk kompatibilitas */
 publicEarthquakesRouter.get("/latest", handleIndonesiaEarthquake);

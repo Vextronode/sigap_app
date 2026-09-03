@@ -1,4 +1,5 @@
-import { Map } from "lucide-react";
+import { History, Map } from "lucide-react";
+import { IoIosArrowRoundBack, IoIosArrowRoundForward } from "react-icons/io";
 import { useState, type ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
@@ -12,6 +13,19 @@ type EarthquakeCardProps = {
   earthquake: Earthquake | null;
   isLoading?: boolean;
   isError?: boolean;
+  historicalEarthquake?: Earthquake | null;
+};
+
+const PANGANDARAN_FALLBACK_HISTORY: Earthquake = {
+  magnitude: 4.2,
+  depth: "19 km",
+  location: "Pusat gempa berada di laut 75 km barat daya Kab.Pangandaran",
+  coordinates: { latitude: -8.04, longitude: 107.9 },
+  distanceToVillage: 83,
+  felt: "II Pangandaran",
+  potential: "Tidak berpotensi tsunami",
+  shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260826204343.mmi.jpg",
+  updatedAt: "2026-08-26T13:43:43.000Z",
 };
 
 type EarthquakeVariant = "indonesia" | "west-java" | "pangandaran";
@@ -152,14 +166,24 @@ export const EarthquakeCard = ({
   earthquake,
   isLoading = false,
   isError = false,
+  historicalEarthquake,
 }: EarthquakeCardProps) => {
-  const displayEarthquake = isError ? null : earthquake;
-  const shakemapUrl = displayEarthquake?.shakemap;
+  const [showHistory, setShowHistory] = useState(false);
 
   if (isLoading) return <CardSkeleton />;
 
   const variant = getVariant(title);
   const config = variantConfig[variant];
+
+  // Jika sedang mode riwayat pada gempa Pangandaran, tampilkan data riwayat terakhir
+  const resolvedHistory = historicalEarthquake ?? PANGANDARAN_FALLBACK_HISTORY;
+  const isHistoryActive = variant === "pangandaran" && showHistory;
+  const displayEarthquake = isHistoryActive
+    ? resolvedHistory
+    : isError
+    ? null
+    : earthquake;
+  const shakemapUrl = displayEarthquake?.shakemap;
   const tsunamiBadge =
     variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.potential);
   const isDanger = tsunamiBadge?.tone === "danger";
@@ -209,8 +233,25 @@ export const EarthquakeCard = ({
             </div>
           </div>
 
-          <div className="border-t border-[color:var(--border)] px-5 py-3 text-center text-[11px] italic text-muted-foreground">
-            Menunggu data gempa dari BMKG untuk sinkronisasi otomatis...
+          <div className="border-t border-[color:var(--border)] px-4 py-3 text-center sm:px-5">
+            {variant === "pangandaran" ? (
+              <button
+                type="button"
+                onClick={() => setShowHistory(true)}
+                className="group inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md py-1.5 px-2 touch-manipulation cursor-pointer dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <span>Lihat gempa Pangandaran terakhir</span>
+                <IoIosArrowRoundForward
+                  size={24}
+                  className="text-blue-600 transition-transform group-hover:translate-x-1 dark:text-blue-400"
+                  aria-hidden="true"
+                />
+              </button>
+            ) : (
+              <span className="text-[11px] italic text-muted-foreground">
+                Menunggu data gempa dari BMKG untuk sinkronisasi otomatis...
+              </span>
+            )}
           </div>
         </div>
       </Card>
@@ -227,6 +268,16 @@ export const EarthquakeCard = ({
       )}
     >
       <div className="flex h-full min-h-[420px] flex-col justify-between">
+        {/* Banner informasi jika sedang menampilkan mode riwayat */}
+        {isHistoryActive && (
+          <div className="flex items-center justify-between gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs font-semibold text-amber-800 dark:text-amber-300 sm:px-5 sm:text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <History size={16} className="shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+              <span className="truncate">Menampilkan riwayat gempa Pangandaran terakhir</span>
+            </div>
+            <span className="shrink-0 text-xs font-bold uppercase tracking-wider opacity-85">BMKG</span>
+          </div>
+        )}
         {variant === "pangandaran" && (
           <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden border-b border-[color:var(--border)] bg-muted sm:aspect-video">
             {shakemapUrl ? (
@@ -350,6 +401,24 @@ export const EarthquakeCard = ({
             </div>
           </div>
         </div>
+
+        {/* Footer hanya muncul saat mode riwayat aktif untuk tombol kembali ke data saat ini */}
+        {isHistoryActive && (
+          <div className="border-t border-[color:var(--border)] px-4 py-3 text-center sm:px-5">
+            <button
+              type="button"
+              onClick={() => setShowHistory(false)}
+              className="group inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md py-1.5 px-2 touch-manipulation cursor-pointer dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              <IoIosArrowRoundBack
+                size={24}
+                className="text-blue-600 transition-transform group-hover:-translate-x-1 dark:text-blue-400"
+                aria-hidden="true"
+              />
+              <span>Lihat data saat ini</span>
+            </button>
+          </div>
+        )}
       </div>
     </Card>
   );
