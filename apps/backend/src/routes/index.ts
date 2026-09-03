@@ -12,6 +12,10 @@ import {
   publicEmergencyContactRouter,
   protectedEmergencyContactRouter,
 } from "./emergencyContact.route.js";
+import {
+  publicPreparednessGuideRouter,
+  protectedPreparednessGuideRouter,
+} from "./preparednessGuide.route.js";
 
 export const publicRouter = Router();
 
@@ -30,6 +34,9 @@ publicRouter.use("/tsunamis", publicTsunamiRouter);
 // kontak darurat
 publicRouter.use("/emergency-contacts", publicEmergencyContactRouter);
 
+// panduan kesiapsiagaan
+publicRouter.use("/preparedness-guides", publicPreparednessGuideRouter);
+
 // IoT Device
 publicRouter.use("/device", publicDeviceRouter);
 
@@ -43,4 +50,6 @@ export const protectedRouter = Router();
 protectedRouter.use("/auth", protectedAuthRouter);
 protectedRouter.use("/notifications", protectedNotificationRouter);
 protectedRouter.use("/emergency-contacts", protectedEmergencyContactRouter);
+protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
+
 

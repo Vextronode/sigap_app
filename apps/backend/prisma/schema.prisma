@@ -193,3 +193,23 @@ model EmergencyContact {
 
   @@map("emergency_contacts")
 }
+
+// tipe sumber panduan kesiapsiagaan
+enum GuideSourceType {
+  RESMI
+  MITRA
+}
+
+// model data panduan kesiapsiagaan bencana
+model PreparednessGuide {
+  id          String          @id @default(uuid())
+  title       String
+  content     String?         @db.Text
+  externalUrl String?         @map("external_url")
+  sourceType  GuideSourceType @default(RESMI) @map("source_type")
+  publishedAt DateTime        @default(now()) @map("published_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@map("preparedness_guides")
+}
