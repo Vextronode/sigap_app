@@ -149,7 +149,8 @@ svg {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: auto;
+  margin-top: 24px;
+  margin-bottom: 4px;
   background: var(--surface, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 14px;
@@ -174,6 +175,52 @@ svg {
 .sidebar__device-label--neutral {
   color: var(--text-muted, #94a3b8) !important;
 }
+
+/* garis pembatas sidebar dengan token border tema */
+.sidebar__divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0 12px;
+  width: 100%;
+}
+
+/* wadah tombol aksi admin di bagian bawah sidebar */
+.sidebar__bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+/* tombol aksi profil dan logout dengan ukuran dan warna konsisten */
+.sidebar__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 0 14px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease;
+  cursor: pointer;
+}
+
+.sidebar__action-btn:hover {
+  background: var(--primary-50);
+  color: var(--primary);
+}
+
+.sidebar__action-btn--danger:hover {
+  background: var(--danger-50);
+  color: var(--danger);
+}
+
 
 .status-dot {
   width: 11px;
