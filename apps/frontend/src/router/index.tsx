@@ -4,6 +4,7 @@ import { MainLayout } from "../layout/MainLayout";
 import DashboardPage from "../pages/DashboardPage";
 import LoginPage from "../pages/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import { GuestRoute } from "./GuestRoute";
 
 export const router = createBrowserRouter([
   {
@@ -19,13 +20,19 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  // rute login khusus pengguna yang belum terautentikasi
   {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/admin/login",
-    element: <LoginPage />,
+    element: <GuestRoute />,
+    children: [
+      {
+        path: "/login",
+        element: <LoginPage />,
+      },
+      {
+        path: "/admin/login",
+        element: <LoginPage />,
+      },
+    ],
   },
   {
     path: "*",
