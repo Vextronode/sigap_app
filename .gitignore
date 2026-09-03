@@ -28,3 +28,4 @@ backend/prisma/dev.db-journal
 .claude/
 .vercel
 .env*
+.direnv/
