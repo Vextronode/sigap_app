@@ -105,7 +105,36 @@ async function main() {
     }
   }
 
+  // panduan kesiapsiagaan awal desa cibenda
+  const baselineGuides = [
+    {
+      title: "Panduan Mitigasi Gempa Bumi Megathrust",
+      content: "Tetap tenang saat guncangan terjadi. Lindungi kepala dengan berlindung di bawah meja yang kokoh. Jauhi jendela kaca dan tiang listrik. Segera evakuasi ke titik kumpul aman di Balai Desa Cibenda setelah gempa reda.",
+      externalUrl: null,
+      sourceType: "RESMI" as const,
+    },
+    {
+      title: "Buku Saku Tanggap Bencana BNPB",
+      content: null,
+      externalUrl: "https://bnpb.go.id/buku-saku-tanggap-bencana",
+      sourceType: "MITRA" as const,
+    },
+  ];
+
+  for (const guide of baselineGuides) {
+    const existing = await prisma.preparednessGuide.findFirst({
+      where: { title: guide.title },
+    });
+
+    if (!existing) {
+      await prisma.preparednessGuide.create({
+        data: guide,
+      });
+    }
+  }
+
   console.log("Seed selesai.");
+
 
   console.log(`Placeholder admin -> email: ${placeholderEmail} | password: ${placeholderPassword}`);
   console.log("WAJIB diganti sebelum deployment.");
