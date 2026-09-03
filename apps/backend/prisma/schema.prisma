@@ -181,3 +181,15 @@ model EarthquakeRecord {
 
   @@map("earthquake_records")
 }
+
+// model data kontak darurat desa cibenda
+model EmergencyContact {
+  id          String   @id @default(uuid())
+  institution String   @map("institution")
+  phoneNumber String   @map("phone_number")
+  isCore      Boolean  @default(false) @map("is_core")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("emergency_contacts")
+}
