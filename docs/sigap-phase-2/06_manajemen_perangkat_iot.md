@@ -3,48 +3,71 @@
 | | |
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
-| Bergantung Pada | Area 1 (Data Contract) |
-| Status | Draft |
-| Referensi | PRD.md S3.1 (Kesiapsiagaan Fisik), S7 (`iot_devices`), Dokumentasi_Sistem_IoT_SIGAP.md |
+| Bergantung Pada | Area 1 (Data Contract), SEC-7 (Autentikasi Device Gateway) |
+| Status | Final — direvisi pasca-audit kode (schema nyata jauh lebih sederhana dari asumsi) |
+| Referensi | PRD.md §3.1, §7, Dokumentasi_Sistem_IoT_SIGAP.md, Laporan Audit Endpoint (lihat Peta Referensi Backlog) |
+
+## 0. Catatan Revisi
+
+Audit kode menemukan model `Device` nyata **jauh lebih sederhana** dari asumsi versi FS-06 sebelumnya:
+
+```prisma
+model Device {
+  id         String       @id @default(uuid())
+  deviceCode String       @unique
+  name       String
+  status     DeviceStatus @default(OFFLINE)  // enum ONLINE/OFFLINE saja
+  lastSeen   DateTime?
+  ...
+}
+```
+
+Tidak ada `latitude`/`longitude`, tidak ada pembeda tipe perangkat (Unit Utama vs Sirine), tidak ada snapshot status Sirine. Identifikasi device di endpoint nyata pakai `deviceCode` di body (bukan `{id}` di path) — ini **sudah benar** dan konsisten dengan desain saya sebelumnya, tidak perlu diubah. Yang perlu ditambahkan adalah 3 hal yang sebelumnya diasumsikan sudah ada, ternyata belum:
 
 ## 1. Ringkasan
 
-Registry perangkat indikator fisik (ESP32-C3) yang terpasang di titik strategis desa. Admin mendaftarkan, memantau status, dan mengelola metadata tiap perangkat.
+Registry perangkat indikator fisik. Selain CRUD dasar (yang sebagian polanya sudah ada — `register`/`heartbeat`/`status`), story ini sekarang **eksplisit mencakup migrasi schema** untuk lokasi, tipe perangkat, dan status Sirine — bukan asumsi field sudah tersedia.
 
 ## 2. Actor & Akses
 
-`admin`, `operator` (Protected).
+`admin`, `operator` (Protected). Guard: `device.view` (baca), `device.manage` (tulis) — kode permission ini **sudah ada di seed**, tinggal dipakai.
 
 ## 3. Alur Fungsional
 
-1. Admin mendaftarkan perangkat baru: nama, lokasi (lat/lng).
-2. Perangkat mengirim heartbeat setiap 60 detik ke backend (lihat Dokumentasi_Sistem_IoT_SIGAP.md S3); backend memperbarui `last_seen_at`.
-3. Admin melihat daftar perangkat dengan status turunan (online/offline) dan `current_level` yang sedang ditampilkan perangkat.
-4. Admin dapat mengubah metadata perangkat (nama, lokasi) atau menonaktifkan perangkat.
+1. Unit Utama self-register via `POST /public/device/register` (body: `deviceCode`, `name`) — **endpoint ini sudah ada dan bekerja**, cuma belum ada middleware auth (lihat SEC-7).
+2. Admin melengkapi metadata perangkat (lokasi, tipe) via panel admin — **field ini belum ada di schema, perlu migrasi**.
+3. Unit Utama heartbeat setiap 60 detik (`POST /public/device/heartbeat`, body `deviceCode`) — **sudah ada**, akan diperluas membawa `sirensStatus[]` (lihat FR3).
+4. Admin melihat daftar perangkat dengan status online/offline (`status`, `lastSeen` — **sudah ada**) plus lokasi & tipe (**baru**).
 
 ## 4. Functional Requirements
 
-- FR1: CRUD metadata perangkat (nama, lokasi).
-- FR2: Status online/offline diturunkan dari `last_seen_at` dibanding ambang waktu (mis. > 2× interval heartbeat 60 detik dianggap offline — **Perlu Klarifikasi**, ambang pastinya belum ditentukan di dokumen sumber, sebaiknya disamakan dengan logika fail-safe yang sama dengan indikator fisik di PRD S3.1).
-- FR3: List perangkat menampilkan `current_level` terkini per perangkat.
-- FR4: Admin dapat menonaktifkan (bukan hapus permanen) perangkat yang sedang tidak digunakan.
+- FR1 *(baru)*: Migrasi schema — tambah kolom `latitude`, `longitude` (nullable, diisi admin manual karena device tidak mengirim GPS sendiri) ke `Device`.
+- FR2 *(baru)*: Migrasi schema — tambah enum `DeviceType { UNIT_UTAMA, SIRINE }` + kolom `deviceType` di `Device`. Unit Utama self-register (FR-lama tetap berlaku); Sirine **tidak bisa self-register** (air-gapped, ESP-NOW only) — dibuat manual oleh admin via endpoint Protected baru.
+- FR3 *(baru)*: Payload `POST /device/heartbeat` diperluas membawa field opsional `sirensStatus: [{deviceCode, connectivity, rssi?, powerStatus?}]` — Unit Utama melaporkan status Sirine yang terjangkau olehnya, backend meng-upsert snapshot per Sirine (kolom baru, lihat FR4).
+- FR4 *(baru)*: Migrasi schema — tambah kolom snapshot status (mis. JSON `sirenStatusSnapshot` atau tabel kecil terpisah — keputusan teknis ke Architecture, bukan dipatok di sini) untuk menyimpan hasil FR3.
+- FR5: Backend menolak (400/409) kalau `deviceCode` di `/register` atau `/heartbeat` terdaftar sebagai `deviceType=SIRINE` — safeguard karena Sirine secara fisik tidak mungkin memanggil endpoint ini sendiri.
+- FR6: CRUD metadata (lokasi, nama) untuk kedua tipe perangkat oleh admin/operator (`device.manage`).
+- FR7: Endpoint 3 device (register/heartbeat/status) wajib dilindungi `X-Device-Secret` per `deviceCode` — **lihat SEC-7**, bukan dikerjakan ulang di sini, cuma di-wire.
 
 ## 5. Acceptance Criteria
 
-- AC1: Perangkat baru terdaftar → muncul di daftar dengan status "belum pernah terhubung" sampai heartbeat pertama diterima.
-- AC2: Perangkat berhenti mengirim heartbeat melewati ambang waktu → status berubah otomatis ke offline di daftar admin.
-- AC3: `current_level` di daftar admin konsisten dengan level yang dikirim melalui alur REST Polling (lihat FS-07).
-- AC4: Menonaktifkan perangkat menghentikan pengiriman level baru ke perangkat tersebut, tanpa menghapus riwayat (`device_status_log`).
+- AC1: Migrasi berhasil, `Device` existing (data yang sudah live) tidak rusak — `latitude`/`longitude`/`deviceType` nullable/default aman untuk baris lama.
+- AC2: Unit Utama baru register → otomatis `deviceType=UNIT_UTAMA`.
+- AC3: Admin membuat entri Sirine manual → `deviceType=SIRINE`, tidak bisa dipilih self-register.
+- AC4: Heartbeat dengan `sirensStatus[]` terisi → snapshot status per Sirine ter-update, terlihat di panel admin.
+- AC5: Percobaan `/register` atau `/heartbeat` dengan `deviceCode` milik Sirine → ditolak 409.
+- AC6: Endpoint device tanpa `X-Device-Secret` valid → ditolak (setelah SEC-7 selesai; sebelum itu, endpoint tetap terbuka sebagai known gap, dicatat bukan disembunyikan).
 
 ## 6. Edge Case & Error Handling
 
-- Perangkat offline namun level fisiknya (LED) masih menyala di kondisi terakhir — bukan tanggung jawab admin panel untuk mengoreksi, hanya menampilkan status apa adanya (fail-safe di level perangkat sendiri, lihat PRD S3.1 & S5.5).
-- Dua perangkat terdaftar di koordinat identik — diizinkan, tidak divalidasi sebagai constraint.
+- Sirine dibuat admin tapi belum pernah dapat laporan status dari Unit Utama manapun — tampilkan "Belum ada laporan status", bukan error.
+- Field `latitude`/`longitude` kosong (device lama pra-migrasi belum diisi admin) — tampil "Lokasi belum diatur", bukan crash di peta manapun yang menampilkannya.
 
 ## 7. Data Terkait
 
-`iot_devices (id, device_name, latitude, longitude, status, current_level, last_seen_at)`
+`Device` (existing, ditambah kolom baru di FR1/FR2/FR4).
 
 ## 8. Dependency & Catatan Terbuka
 
-**Perlu Klarifikasi:** ambang waktu pasti untuk status offline (kelipatan interval heartbeat) belum ditentukan — perlu masuk ke Architecture Document (G3) atau NFR eksplisit sebelum FR2 difinalisasi.
+- FR7 blocking terhadap SEC-7 — urutan pengerjaan: migrasi schema (FR1-4) dan CRUD (FR6) bisa jalan duluan, wiring auth device menyusul begitu SEC-7 selesai (lihat Sprint Plan: Sprint 1 migrasi, Sprint 3 wiring SEC-7).
+- Struktur `sirenStatusSnapshot` (JSON vs tabel terpisah) **belum diputuskan** — keputusan teknis, perlu masuk Architecture Document sebelum FR4 diimplementasikan penuh.
