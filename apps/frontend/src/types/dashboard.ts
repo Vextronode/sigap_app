@@ -122,12 +122,16 @@ export type LoginPayload = {
   password: string;
 };
 
+// tipe data pengguna terautentikasi
 export type AuthUser = {
   id: string;
-  fullName: string;
+  name?: string;
+  fullName?: string;
   email: string;
-  role: string;
+  role?: string;
+  roles?: string[];
 };
+
 
 export type LoginResponse = {
   token: string;
