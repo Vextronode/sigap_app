@@ -8,7 +8,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     return res.status(401).json({
       success: false,
       message: "Token tidak ditemukan.",
-      errors: {},
+      errors: ["Header Authorization Bearer wajib disertakan."],
     });
   }
 
@@ -21,7 +21,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     return res.status(401).json({
       success: false,
       message: "Token tidak valid atau kedaluwarsa.",
-      errors: {},
+      errors: ["Token tidak valid atau kedaluwarsa."],
     });
   }
 }

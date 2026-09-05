@@ -34,9 +34,8 @@ publicDeviceRouter.get("/status", async (_req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal mengambil status perangkat.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Terjadi kesalahan pada server."],
         };
-
         res.status(500).json(response);
     }
 });
@@ -53,9 +52,11 @@ publicDeviceRouter.post("/register", async (req, res) => {
             const response: ApiErrorResponse = {
                 success: false,
                 message: "deviceCode dan name wajib diisi.",
-                errors: ["deviceCode and name are required"],
+                errors: [
+                    ...(!deviceCode ? ["deviceCode: wajib diisi."] : []),
+                    ...(!name ? ["name: wajib diisi."] : []),
+                ],
             };
-
             res.status(400).json(response);
             return;
         }
@@ -75,9 +76,8 @@ publicDeviceRouter.post("/register", async (req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal meregistrasi perangkat.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Terjadi kesalahan pada server."],
         };
-
         res.status(500).json(response);
     }
 });
@@ -94,7 +94,7 @@ publicDeviceRouter.post("/heartbeat", async (req, res) => {
             const response: ApiErrorResponse = {
                 success: false,
                 message: "deviceCode wajib diisi.",
-                errors: ["deviceCode is required"],
+                errors: ["deviceCode: wajib diisi."],
             };
 
             res.status(400).json(response);
@@ -116,7 +116,7 @@ publicDeviceRouter.post("/heartbeat", async (req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal memperbarui heartbeat perangkat.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Terjadi kesalahan pada server."],
         };
 
         res.status(500).json(response);
