@@ -32,11 +32,21 @@ export default function LoginPage() {
   useDocumentTitle("SIGAP Admin Portal - Desa Cibenda");
   const navigate = useNavigate();
 
+  // matikan efek dark mode di halaman login admin dan kembalikan saat keluar
+  useEffect(() => {
+    const previousTheme = document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = "light";
+    return () => {
+      const stored = localStorage.getItem("sigap_theme");
+      document.documentElement.dataset.theme = stored || previousTheme || "light";
+    };
+  }, []);
+
   // alihkan langsung jika pengguna sudah memiliki token aktif
   useEffect(() => {
     const token = localStorage.getItem("sigap_token");
     if (token) {
-      navigate("/", { replace: true });
+      navigate("/admin/dashboard", { replace: true });
     }
   }, [navigate]);
 
@@ -85,7 +95,7 @@ export default function LoginPage() {
       }
 
       // alihkan dengan replace agar pengguna tidak bisa kembali ke halaman login via tombol back
-      navigate("/", { replace: true });
+      navigate("/admin/dashboard", { replace: true });
     } catch {
       const nextAttempts = Math.max(0, remainingAttempts - 1);
       setRemainingAttempts(nextAttempts);
@@ -118,7 +128,11 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    <main
+      data-theme="light"
+      style={{ colorScheme: "light" }}
+      className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden text-slate-800"
+    >
       {/* elemen latar dekoratif halus */}
       <div
         className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-[#00247D]/5 blur-3xl pointer-events-none"
@@ -264,13 +278,14 @@ export default function LoginPage() {
         </form>
 
         {/* tautan kembali ke portal informasi warga */}
-        <div className="mt-8 pt-4 border-t border-slate-100 text-center">
+        <div className="mt-8 pt-4 border-t border-slate-200 text-center">
           <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#00247D] transition-colors"
+            to="/?view=warga"
+            style={{ color: "#334155" }}
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold !text-slate-700 hover:!text-[#00247D] transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Portal Informasi Warga</span>
+            <ArrowLeft className="w-4 h-4 !text-slate-700" style={{ color: "#334155" }} />
+            <span style={{ color: "#334155" }}>Kembali ke Portal Informasi Warga</span>
           </Link>
         </div>
       </div>

@@ -16,6 +16,7 @@ import {
   publicPreparednessGuideRouter,
   protectedPreparednessGuideRouter,
 } from "./preparednessGuide.route.js";
+import { systemHealthRouter } from "./systemHealth.route.js";
 
 export const publicRouter = Router();
 
@@ -43,6 +44,10 @@ publicRouter.use("/device", publicDeviceRouter);
 // Push Notification
 publicRouter.use("/notifications", publicNotificationRouter);
 
+// System Health
+publicRouter.use("/system-health", systemHealthRouter);
+publicRouter.use("/system/health", systemHealthRouter);
+
 // Internal — trigger untuk cron-job.org (Vercel production)
 publicRouter.use("/internal", internalRouter);
 
@@ -51,5 +56,6 @@ protectedRouter.use("/auth", protectedAuthRouter);
 protectedRouter.use("/notifications", protectedNotificationRouter);
 protectedRouter.use("/emergency-contacts", protectedEmergencyContactRouter);
 protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
+protectedRouter.use("/system-health", systemHealthRouter);
 
 

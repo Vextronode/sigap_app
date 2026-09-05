@@ -17,7 +17,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 import { useDeviceStatus } from "../features/dashboard/hooks/useDeviceStatus";
@@ -44,6 +44,7 @@ const adminLinks = [
 
 export const Sidebar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const closeSidebar = useUiStore((state) => state.closeSidebar);
   const { data: deviceStatus, isLoading: isDeviceLoading, isError: isDeviceError } = useDeviceStatus();
@@ -51,6 +52,9 @@ export const Sidebar = () => {
   // state autentikasi admin dan modal profil
   const { isAdmin, user, logout } = useAuthStore();
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // tampilkan menu admin jika role admin atau sedang di rute /admin/*
+  const showAdminNav = isAdmin || location.pathname.startsWith("/admin");
 
   const handleLogout = () => {
     logout();
@@ -165,8 +169,12 @@ export const Sidebar = () => {
             </Link>
 
             <div className="flex flex-col leading-tight">
-              <strong className="text-gray-900 font-bold">SIGAP</strong>
-              <span className="text-xs text-gray-500">Desa Cibenda</span>
+              <strong className="text-gray-900 dark:text-white font-bold text-lg">
+                SIGAP
+              </strong>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Desa Cibenda
+              </span>
             </div>
           </div>
           <button className="sidebar__close" type="button" onClick={closeSidebar} aria-label="Tutup menu">
@@ -175,47 +183,88 @@ export const Sidebar = () => {
         </div>
 
         <nav className="sidebar__nav">
-          <Link 
-            to="/" 
-            onClick={handleDashboardClick} 
-            className={activeHash === "" || activeHash === "#" ? "active" : undefined}
-          >
-            <Home size={20} />
-            Dashboard
-          </Link>
+          {/* Header Seksi WARGA (khusus tampilan admin) */}
+          {showAdminNav && (
+            <div className="pb-1 px-3.5 flex items-center gap-2.5 select-none -mb-1">
+              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                WARGA
+              </span>
+              <div className="h-px flex-1 bg-[color:var(--border)]" />
+            </div>
+          )}
 
-          {sectionLinks.map((item) => {
-            const Icon = item.icon;
-            const isMenuLinkActive = activeHash === item.href;
-            
+          {(() => {
+            const isCitizenPage = location.pathname === "/" || location.pathname === "/dashboard";
             return (
-              <a 
-                href={item.href} 
-                key={item.label} 
-                onClick={() => { closeSidebar(); setActiveHash(item.href); }}
-                className={isMenuLinkActive ? "active" : undefined}
-              >
-                <Icon size={20} />
-                {item.label}
-              </a>
-            );
-          })}
+              <>
+                <Link 
+                  to="/?view=warga" 
+                  onClick={handleDashboardClick} 
+                  className={isCitizenPage && (activeHash === "" || activeHash === "#") ? "active" : undefined}
+                >
+                  <Home size={20} />
+                  Dashboard Warga
+                </Link>
 
-          {/* section menu khusus admin jika sudah login */}
-          {isAdmin && (
+                {sectionLinks.map((item) => {
+                  const Icon = item.icon;
+                  const isMenuLinkActive = isCitizenPage && activeHash === item.href;
+                  const targetHref = isCitizenPage ? item.href : `/?view=warga${item.href}`;
+                  
+                  return (
+                    <a 
+                      href={targetHref} 
+                      key={item.label} 
+                      onClick={() => {
+                        closeSidebar();
+                        if (isCitizenPage) {
+                          setActiveHash(item.href);
+                        }
+                      }}
+                      className={isMenuLinkActive ? "active" : undefined}
+                    >
+                      <Icon size={20} />
+                      {item.label}
+                    </a>
+                  );
+                })}
+              </>
+            );
+          })()}
+
+          {/* section menu khusus admin */}
+          {showAdminNav && (
             <>
-              <div className="pt-2">
-                <hr className="sidebar__divider" />
-                <span className="block px-3.5 mb-2 text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wider">
+              <div className="mt-3 mb-0 px-3.5 flex items-center gap-2.5 select-none">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   ADMIN
                 </span>
+                <div className="h-px flex-1 bg-[color:var(--border)]" />
               </div>
 
               {adminLinks.map((item) => {
                 const Icon = item.icon;
-                const isMenuLinkActive =
-                  activeHash === item.href ||
-                  (item.href.startsWith("/") && window.location.pathname === item.href);
+                const isRouterLink = item.href.startsWith("/");
+                const isMenuLinkActive = isRouterLink
+                  ? location.pathname === item.href
+                  : activeHash === item.href;
+
+                if (isRouterLink) {
+                  return (
+                    <Link
+                      to={item.href}
+                      key={item.label}
+                      onClick={() => {
+                        closeSidebar();
+                        setActiveHash("");
+                      }}
+                      className={isMenuLinkActive ? "active" : undefined}
+                    >
+                      <Icon size={20} />
+                      {item.label}
+                    </Link>
+                  );
+                }
 
                 return (
                   <a
@@ -223,9 +272,7 @@ export const Sidebar = () => {
                     key={item.label}
                     onClick={() => {
                       closeSidebar();
-                      if (item.href.startsWith("#")) {
-                        setActiveHash(item.href);
-                      }
+                      setActiveHash(item.href);
                     }}
                     className={isMenuLinkActive ? "active" : undefined}
                   >
@@ -238,16 +285,18 @@ export const Sidebar = () => {
           )}
         </nav>
 
-        {/* kartu monitor status alat iot */}
-        <div className="sidebar__device-card">
-          <span className={`status-dot ${getDotClass()}`} />
-          <span className={getLabelClass()}>
-            {getStatusLabel()}
-          </span>
-        </div>
+        {/* kartu monitor status alat iot (khusus admin) */}
+        {showAdminNav && (
+          <div className="sidebar__device-card">
+            <span className={`status-dot ${getDotClass()}`} />
+            <span className={getLabelClass()}>
+              {getStatusLabel()}
+            </span>
+          </div>
+        )}
 
         {/* menu profil dan logout langsung di paling bawah khusus admin */}
-        {isAdmin && (
+        {showAdminNav && (
           <>
             <hr className="sidebar__divider" />
 

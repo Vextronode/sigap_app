@@ -4,9 +4,9 @@ import { Navigate, Outlet } from "react-router-dom";
 export const GuestRoute = () => {
   const token = localStorage.getItem("sigap_token");
 
-  // alihkan ke halaman utama jika token sudah tersimpan
+  // alihkan ke dashboard admin jika token sudah tersimpan
   if (token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   return <Outlet />;
