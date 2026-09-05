@@ -22,7 +22,7 @@ internalRouter.post("/run-scheduler", async (req, res) => {
             const response: ApiErrorResponse = {
                 success: false,
                 message: "Unauthorized.",
-                errors: ["Invalid or missing CRON_SECRET"],
+                errors: ["Kredensial tidak valid atau tidak tersedia."],
             };
             res.status(401).json(response);
             return;
@@ -47,7 +47,7 @@ internalRouter.post("/run-scheduler", async (req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal menjalankan alert check.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Terjadi kesalahan pada server."],
         };
 
         res.status(500).json(response);

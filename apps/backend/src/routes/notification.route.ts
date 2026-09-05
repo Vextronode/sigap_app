@@ -26,7 +26,11 @@ publicNotificationRouter.post("/subscribe", async (req: Request, res: Response) 
     const response: ApiErrorResponse = {
       success: false,
       message: "Payload subscription tidak valid.",
-      errors: ["endpoint, keys.p256dh, dan keys.auth wajib diisi"],
+      errors: [
+        ...(!subscription?.endpoint ? ["endpoint: wajib diisi."] : []),
+        ...(!subscription?.keys?.p256dh ? ["keys.p256dh: wajib diisi."] : []),
+        ...(!subscription?.keys?.auth ? ["keys.auth: wajib diisi."] : []),
+      ],
     };
     res.status(400).json(response);
     return;
@@ -49,7 +53,7 @@ publicNotificationRouter.post("/subscribe", async (req: Request, res: Response) 
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal menyimpan subscription.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Terjadi kesalahan pada server."],
     };
     res.status(500).json(response);
   }
@@ -63,7 +67,7 @@ publicNotificationRouter.post("/unsubscribe", async (req: Request, res: Response
     const response: ApiErrorResponse = {
       success: false,
       message: "endpoint wajib diisi.",
-      errors: ["endpoint is required"],
+      errors: ["endpoint: wajib diisi."],
     };
     res.status(400).json(response);
     return;
@@ -98,7 +102,7 @@ publicNotificationRouter.get("/latest", async (_req: Request, res: Response) => 
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil konten notifikasi.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Layanan upstream sementara tidak tersedia."],
     };
     res.status(502).json(response);
   }
@@ -126,7 +130,7 @@ publicNotificationRouter.get("/logs", async (req: Request, res: Response) => {
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil riwayat log notifikasi.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Terjadi kesalahan pada server."],
     };
     res.status(500).json(response);
   }
@@ -144,7 +148,7 @@ protectedNotificationRouter.post("/dispatch", authMiddleware, async (_req: Reque
       const response: ApiErrorResponse = {
         success: false,
         message: "Tidak ada alert untuk dikirim.",
-        errors: [],
+        errors: ["Tidak ada alert untuk dikirim."],
       };
       res.status(404).json(response);
       return;
@@ -173,7 +177,7 @@ protectedNotificationRouter.post("/dispatch", authMiddleware, async (_req: Reque
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengirim notifikasi.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Terjadi kesalahan pada server."],
     };
     res.status(500).json(response);
   }

@@ -16,7 +16,7 @@ export async function loginController(req: Request, res: Response) {
       return res.status(401).json({
         success: false,
         message: error.message,
-        errors: {},
+        errors: ["Kredensial login tidak valid."],
       });
     }
 
@@ -24,7 +24,7 @@ export async function loginController(req: Request, res: Response) {
     return res.status(500).json({
       success: false,
       message: "Terjadi kesalahan pada server.",
-      errors: {},
+      errors: ["Terjadi kesalahan pada server."],
     });
   }
 }

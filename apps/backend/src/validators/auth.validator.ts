@@ -20,7 +20,7 @@ export function validateLogin(req: Request, res: Response, next: NextFunction) {
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.entries(errors).map(([field, error]) => `${field}: ${error}`),
     });
   }
 

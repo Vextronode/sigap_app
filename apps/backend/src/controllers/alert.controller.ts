@@ -27,9 +27,8 @@ export class AlertController {
       const response: ApiErrorResponse = {
         success: false,
         message: "Gagal mengambil alert terbaru.",
-        errors: [error instanceof Error ? error.message : String(error)],
+        errors: ["Layanan alert sementara tidak tersedia."],
       };
-
       res.status(502).json(response);
     }
   }
@@ -51,9 +50,8 @@ export class AlertController {
       const response: ApiErrorResponse = {
         success: false,
         message: "Gagal mengambil riwayat alert.",
-        errors: [error instanceof Error ? error.message : String(error)],
+        errors: ["Layanan alert sementara tidak tersedia."],
       };
-
       res.status(502).json(response);
     }
   }
