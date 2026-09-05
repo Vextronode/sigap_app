@@ -22,10 +22,23 @@ import { useTsunamiStatus } from "../features/dashboard/hooks/useTsunamiStatus";
 import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
-import { Siren, TriangleAlert, } from "lucide-react";
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
+import { Siren, TriangleAlert } from "lucide-react";
 
 export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isAdmin = useAuthStore((state) => state.isAdmin);
+  const isExplicitCitizenView = searchParams.get("view") === "warga";
+
+  useEffect(() => {
+    if (isAdmin && !isExplicitCitizenView) {
+      navigate("/admin/dashboard", { replace: true });
+    }
+  }, [isAdmin, isExplicitCitizenView, navigate]);
 
   const weatherQuery = useWeather();
   const forecastQuery = useForecast();

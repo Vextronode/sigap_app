@@ -17,6 +17,8 @@ app.use(express.json());
 
 app.use("/api/public", publicRouter);
 app.use("/api/protected", protectedRouter);
+// Alias agar endpoint publik juga dapat diakses langsung via /api/... di Postman
+app.use("/api", publicRouter);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({

@@ -1,6 +1,7 @@
 import { AlertOctagon, AlertTriangle, ShieldAlert } from "lucide-react";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
+import { cn } from "../../../utils/cn";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
 
@@ -8,6 +9,7 @@ type CurrentAlertCardProps = {
   alert: CurrentAlert | null;
   isLoading?: boolean;
   isError?: boolean;
+  showSystemStatus?: boolean;
 };
 
 const formatKeIndonesia = (dateString?: string) => {
@@ -28,7 +30,12 @@ const formatKeIndonesia = (dateString?: string) => {
   return terformat.replace(' pukul ', ' - ').replace(':', '.') + ' WIB';
 };
 
-export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: CurrentAlertCardProps) => {
+export const CurrentAlertCard = ({ 
+  alert, 
+  isLoading = false, 
+  isError = false, 
+  showSystemStatus = false 
+}: CurrentAlertCardProps) => {
   if (isLoading) {
     return (
       <section
@@ -81,6 +88,29 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
     }
   };
 
+  const getSystemMonitoringMeta = () => {
+    if (isLoading) {
+      return {
+        label: "Memeriksa Sistem Pemantauan...",
+        dotColor: "bg-slate-200",
+      };
+    }
+
+    if (isError) {
+      return {
+        label: "Sistem Pemantauan Terganggu",
+        dotColor: "bg-amber-400",
+      };
+    }
+
+    return {
+      label: "Sistem Pemantauan Aktif",
+      dotColor: "bg-emerald-400",
+    };
+  };
+
+  const monitoringMeta = getSystemMonitoringMeta();
+
   return (
     <section className={`status-banner status-banner--${meta.tone}`} aria-labelledby="status-title">
       <div className="status-banner__icon">
@@ -106,6 +136,26 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
         <span className="text-xs opacity-75 mt-1">
           Sumber data resmi: {alert?.source ?? "BMKG"}
         </span>
+
+        {showSystemStatus && (
+          <div className="mt-3.5 inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/20 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white shadow-xs backdrop-blur-xs">
+            <span className="relative flex h-2 w-2">
+              <span
+                className={cn(
+                  "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                  monitoringMeta.dotColor
+                )}
+              />
+              <span
+                className={cn(
+                  "relative inline-flex h-2 w-2 rounded-full",
+                  monitoringMeta.dotColor
+                )}
+              />
+            </span>
+            <span>{monitoringMeta.label}</span>
+          </div>
+        )}
       </div>
     </section>
   );
