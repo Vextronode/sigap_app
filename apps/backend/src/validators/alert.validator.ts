@@ -67,10 +67,23 @@ export function validateAlertFilterQuery(
   }
 
   if (severity !== undefined) {
-    const severityUpper = String(severity).toUpperCase() as AlertLevel;
-    if (!VALID_SEVERITIES.includes(severityUpper)) {
+    const severityUpper = String(severity).toUpperCase();
+    const severityMap: Record<string, AlertLevel> = {
+      AMAN: AlertLevel.GREEN,
+      GREEN: AlertLevel.GREEN,
+      WASPADA: AlertLevel.YELLOW,
+      YELLOW: AlertLevel.YELLOW,
+      SIAGA: AlertLevel.ORANGE,
+      ORANGE: AlertLevel.ORANGE,
+      AWAS: AlertLevel.RED,
+      RED: AlertLevel.RED,
+    };
+
+    if (!severityMap[severityUpper]) {
       errors.severity =
-        "Nilai severity tidak valid. Nilai yang diperbolehkan: GREEN, YELLOW, ORANGE, RED.";
+        "Nilai severity tidak valid. Nilai yang diperbolehkan: Aman (GREEN), Waspada (YELLOW), Siaga (ORANGE), Awas (RED).";
+    } else {
+      req.query.severity = severityMap[severityUpper];
     }
   }
 

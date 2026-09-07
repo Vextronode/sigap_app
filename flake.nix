@@ -14,7 +14,15 @@
         pnpm
         yarn
         typescript
+        prisma-engines
+        openssl
       ];
+
+      shellHook = ''
+        export PRISMA_SCHEMA_ENGINE_BINARY="${pkgs.prisma-engines}/bin/schema-engine"
+        export PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+        export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [ pkgs.openssl ]}:$LD_LIBRARY_PATH"
+      '';
     };
   };
 }

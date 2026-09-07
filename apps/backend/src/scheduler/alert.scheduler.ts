@@ -1,4 +1,4 @@
-﻿import { EarthquakeService } from "../services/earthquake.service.js";
+import { EarthquakeService } from "../services/earthquake.service.js";
 import { DecisionEngineService } from "../services/decisionEngine.service.js";
 import { AlertService } from "../services/alert.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
@@ -28,6 +28,13 @@ export async function runAlertCheck(): Promise<{
 
     // Jalankan Decision Engine
     const result = DecisionEngineService.evaluate({ earthquake, tsunami });
+
+    // Jika hasil evaluasi adalah GREEN (Aman / tidak ada ancaman aktif),
+    // jangan simpan ke riwayat alert verifikasi. Alert verifikasi khusus mencatat
+    // kejadian darurat nyata (WASPADA, SIAGA, AWAS) untuk ditinjau admin.
+    if (result.level === "GREEN") {
+        return { ...result, saved: false };
+    }
 
     const latestAlert = await AlertService.getCurrentAlert();
     const isDuplicate =

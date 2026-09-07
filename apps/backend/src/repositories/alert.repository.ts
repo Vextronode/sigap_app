@@ -69,9 +69,15 @@ export function mapAlertToRecord(
 }
 
 export class AlertRepository {
-  // ambil daftar alert terfilter dengan pagination dan data reviewer
+  // ambil daftar alert terfilter dengan pagination dan data reviewer (hanya alert kejadian nyata yang butuh verifikasi)
   static async findFiltered(params: AlertFilterParams): Promise<AlertRecord[]> {
-    const where: Prisma.AlertWhereInput = {};
+    const where: Prisma.AlertWhereInput = {
+      NOT: {
+        description: {
+          contains: "Tidak terdapat peringatan resmi",
+        },
+      },
+    };
 
     if (params.severity) {
       where.level = params.severity;
@@ -116,7 +122,13 @@ export class AlertRepository {
   static async countFiltered(
     params: Omit<AlertFilterParams, "skip" | "take">
   ): Promise<number> {
-    const where: Prisma.AlertWhereInput = {};
+    const where: Prisma.AlertWhereInput = {
+      NOT: {
+        description: {
+          contains: "Tidak terdapat peringatan resmi",
+        },
+      },
+    };
 
     if (params.severity) {
       where.level = params.severity;
