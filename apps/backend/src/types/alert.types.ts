@@ -1,5 +1,7 @@
-import { AlertLevel } from "../../generated/prisma/enums.js";
+import { AlertLevel, AlertReviewStatus } from "../../generated/prisma/enums.js";
 import type { EarthquakeInfo } from "./earthquake.types.js";
+
+export { AlertReviewStatus };
 
 export type TsunamiStatus = "NORMAL" | "WASPADA" | "SIAGA" | "AWAS";
 
@@ -19,7 +21,6 @@ export interface TsunamiStatusInfo {
 
 export interface DecisionInput {
   earthquake?: EarthquakeInfo | null;
-
   tsunami?: TsunamiStatusInfo | null;
 }
 
@@ -29,11 +30,55 @@ export interface DecisionResult {
   description: string;
 }
 
+// label status review dalam bahasa indonesia sesuai spesifikasi fs-02
+export type AlertReviewStatusLabel =
+  | "Belum Ditinjau"
+  | "Dikonfirmasi"
+  | "Ditolak"
+  | "Ditindaklanjuti";
+
+// status yang diperbolehkan saat admin/operator melakukan aksi review
+export type AlertReviewableStatus =
+  | "Dikonfirmasi"
+  | "Ditolak"
+  | "Ditindaklanjuti";
+
+export interface AlertReviewerInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface AlertRecord {
   id: string;
   level: AlertLevel;
   source: string;
   description: string | null;
+  reviewStatus: AlertReviewStatusLabel;
+  reviewedBy: string | null;
+  reviewedAt: Date | null;
+  reviewer?: AlertReviewerInfo | null;
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface AlertFilterQuery {
+  page?: number;
+  limit?: number;
+  severity?: AlertLevel;
+  reviewStatus?: AlertReviewStatusLabel | AlertReviewStatus;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface ReviewAlertPayload {
+  reviewStatus: AlertReviewableStatus;
+}
+
+export interface AlertListPagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
