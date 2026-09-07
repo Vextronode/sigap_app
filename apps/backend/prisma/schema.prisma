@@ -18,7 +18,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userRoles UserRole[]
+  userRoles      UserRole[]
+  reviewedAlerts Alert[]    @relation("AlertReviewer")
 
   @@index([email])
 
@@ -101,17 +102,32 @@ model Device {
   @@map("devices")
 }
 
+enum AlertReviewStatus {
+  BELUM_DITINJAU  @map("Belum Ditinjau")
+  DIKONFIRMASI    @map("Dikonfirmasi")
+  DITOLAK         @map("Ditolak")
+  DITINDAKLANJUTI @map("Ditindaklanjuti")
+
+  @@map("alert_review_status")
+}
+
 model Alert {
-  id          String     @id @default(uuid())
-  level       AlertLevel
-  source      String
-  description String?
+  id           String            @id @default(uuid())
+  level        AlertLevel
+  source       String
+  description  String?
+  reviewStatus AlertReviewStatus @default(BELUM_DITINJAU) @map("review_status")
+  reviewedBy   String?           @map("reviewed_by")
+  reviewedAt   DateTime?         @map("reviewed_at")
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  reviewer         User?             @relation("AlertReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   notificationLogs NotificationLog[]
 
+  @@index([reviewStatus])
+  @@index([createdAt])
   @@map("alerts")
 }
 

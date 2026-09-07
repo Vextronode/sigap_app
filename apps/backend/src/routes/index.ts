@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import { publicAuthRouter, protectedAuthRouter } from "./auth.route.js";
 import { publicWeatherRouter } from "./weather.route.js";
-import { publicAlertsRouter } from "./alert.route.js";
+import { publicAlertsRouter, protectedAlertsRouter } from "./alert.route.js";
 import { publicEarthquakesRouter } from "./earthquakes.route.js";
 import { publicTsunamiRouter } from "./tsunami.route.js";
 import { publicDeviceRouter } from "./device.route.js";
@@ -53,9 +53,11 @@ publicRouter.use("/internal", internalRouter);
 
 export const protectedRouter = Router();
 protectedRouter.use("/auth", protectedAuthRouter);
+protectedRouter.use("/alerts", protectedAlertsRouter);
 protectedRouter.use("/notifications", protectedNotificationRouter);
 protectedRouter.use("/emergency-contacts", protectedEmergencyContactRouter);
 protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
 protectedRouter.use("/system-health", systemHealthRouter);
+
 
 
