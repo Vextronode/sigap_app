@@ -82,6 +82,7 @@ export class EarthquakeService {
     earthquakes: BmkgEarthquakeItem[],
     radiusKm: number,
     maxAgeDays: number,
+    sortBy: "nearest" | "latest" = "nearest",
   ): EarthquakeInfo | null {
     if (earthquakes.length === 0) {
       return null;
@@ -99,6 +100,18 @@ export class EarthquakeService {
             new Date(earthquake.updatedAt).getTime() >= cutoffMs,
         )
         .sort((left, right) => {
+          if (sortBy === "latest") {
+            const timeDelta =
+              new Date(right.updatedAt).getTime() -
+              new Date(left.updatedAt).getTime();
+
+            if (timeDelta !== 0) {
+              return timeDelta;
+            }
+
+            return left.distanceToVillage - right.distanceToVillage;
+          }
+
           const distanceDelta =
             left.distanceToVillage - right.distanceToVillage;
 
@@ -138,6 +151,7 @@ export class EarthquakeService {
       rawItems,
       WEST_JAVA_RADIUS_KM,
       WEST_JAVA_MAX_AGE_DAYS,
+      "latest",
     );
   }
 
