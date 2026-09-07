@@ -30,6 +30,28 @@ export const LABEL_TO_REVIEW_STATUS: Record<string, AlertReviewStatus> = {
   DITINDAKLANJUTI: AlertReviewStatus.DITINDAKLANJUTI,
 };
 
+export const SEVERITY_TO_LABEL: Record<AlertLevel, string> = {
+  [AlertLevel.GREEN]: "Aman",
+  [AlertLevel.YELLOW]: "Waspada",
+  [AlertLevel.ORANGE]: "Siaga",
+  [AlertLevel.RED]: "Awas",
+};
+
+export const LABEL_TO_SEVERITY: Record<string, AlertLevel> = {
+  Aman: AlertLevel.GREEN,
+  Waspada: AlertLevel.YELLOW,
+  Siaga: AlertLevel.ORANGE,
+  Awas: AlertLevel.RED,
+  AMAN: AlertLevel.GREEN,
+  GREEN: AlertLevel.GREEN,
+  WASPADA: AlertLevel.YELLOW,
+  YELLOW: AlertLevel.YELLOW,
+  SIAGA: AlertLevel.ORANGE,
+  ORANGE: AlertLevel.ORANGE,
+  AWAS: AlertLevel.RED,
+  RED: AlertLevel.RED,
+};
+
 export interface AlertFilterParams {
   severity?: AlertLevel;
   reviewStatus?: AlertReviewStatus;
