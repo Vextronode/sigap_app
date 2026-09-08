@@ -30,6 +30,28 @@ export const LABEL_TO_REVIEW_STATUS: Record<string, AlertReviewStatus> = {
   DITINDAKLANJUTI: AlertReviewStatus.DITINDAKLANJUTI,
 };
 
+export const SEVERITY_TO_LABEL: Record<AlertLevel, string> = {
+  [AlertLevel.GREEN]: "Aman",
+  [AlertLevel.YELLOW]: "Waspada",
+  [AlertLevel.ORANGE]: "Siaga",
+  [AlertLevel.RED]: "Awas",
+};
+
+export const LABEL_TO_SEVERITY: Record<string, AlertLevel> = {
+  Aman: AlertLevel.GREEN,
+  Waspada: AlertLevel.YELLOW,
+  Siaga: AlertLevel.ORANGE,
+  Awas: AlertLevel.RED,
+  AMAN: AlertLevel.GREEN,
+  GREEN: AlertLevel.GREEN,
+  WASPADA: AlertLevel.YELLOW,
+  YELLOW: AlertLevel.YELLOW,
+  SIAGA: AlertLevel.ORANGE,
+  ORANGE: AlertLevel.ORANGE,
+  AWAS: AlertLevel.RED,
+  RED: AlertLevel.RED,
+};
+
 export interface AlertFilterParams {
   severity?: AlertLevel;
   reviewStatus?: AlertReviewStatus;
@@ -69,9 +91,15 @@ export function mapAlertToRecord(
 }
 
 export class AlertRepository {
-  // ambil daftar alert terfilter dengan pagination dan data reviewer
+  // ambil daftar alert terfilter dengan pagination dan data reviewer (hanya alert kejadian nyata yang butuh verifikasi)
   static async findFiltered(params: AlertFilterParams): Promise<AlertRecord[]> {
-    const where: Prisma.AlertWhereInput = {};
+    const where: Prisma.AlertWhereInput = {
+      NOT: {
+        description: {
+          contains: "Tidak terdapat peringatan resmi",
+        },
+      },
+    };
 
     if (params.severity) {
       where.level = params.severity;
@@ -116,7 +144,13 @@ export class AlertRepository {
   static async countFiltered(
     params: Omit<AlertFilterParams, "skip" | "take">
   ): Promise<number> {
-    const where: Prisma.AlertWhereInput = {};
+    const where: Prisma.AlertWhereInput = {
+      NOT: {
+        description: {
+          contains: "Tidak terdapat peringatan resmi",
+        },
+      },
+    };
 
     if (params.severity) {
       where.level = params.severity;

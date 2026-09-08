@@ -3,6 +3,7 @@ import { AlertLevel } from "../../generated/prisma/enums.js";
 import {
   AlertRepository,
   LABEL_TO_REVIEW_STATUS,
+  LABEL_TO_SEVERITY,
   mapAlertToRecord,
 } from "../repositories/alert.repository.js";
 import type {
@@ -107,11 +108,16 @@ export class AlertService {
       ? LABEL_TO_REVIEW_STATUS[query.reviewStatus]
       : undefined;
 
+    const severityEnum = query.severity
+      ? LABEL_TO_SEVERITY[query.severity] ??
+        LABEL_TO_SEVERITY[String(query.severity).toUpperCase()]
+      : undefined;
+
     const startDate = query.startDate ? new Date(query.startDate) : undefined;
     const endDate = query.endDate ? new Date(query.endDate) : undefined;
 
     const filterParams = {
-      severity: query.severity,
+      severity: severityEnum,
       reviewStatus: reviewStatusEnum,
       startDate,
       endDate,

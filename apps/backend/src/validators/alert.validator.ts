@@ -1,6 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { AlertLevel } from "../../generated/prisma/enums.js";
-import { LABEL_TO_REVIEW_STATUS } from "../repositories/alert.repository.js";
+import {
+  LABEL_TO_REVIEW_STATUS,
+  LABEL_TO_SEVERITY,
+} from "../repositories/alert.repository.js";
 
 const VALID_REVIEW_ACTIONS = ["Dikonfirmasi", "Ditolak", "Ditindaklanjuti"];
 const VALID_SEVERITIES = [
@@ -67,10 +70,16 @@ export function validateAlertFilterQuery(
   }
 
   if (severity !== undefined) {
-    const severityUpper = String(severity).toUpperCase() as AlertLevel;
-    if (!VALID_SEVERITIES.includes(severityUpper)) {
+    const severityStr = String(severity).trim();
+    const mapped =
+      LABEL_TO_SEVERITY[severityStr] ??
+      LABEL_TO_SEVERITY[severityStr.toUpperCase()];
+
+    if (!mapped) {
       errors.severity =
-        "Nilai severity tidak valid. Nilai yang diperbolehkan: GREEN, YELLOW, ORANGE, RED.";
+        "Nilai severity tidak valid. Nilai yang diperbolehkan: Aman (GREEN), Waspada (YELLOW), Siaga (ORANGE), Awas (RED).";
+    } else {
+      req.query.severity = mapped;
     }
   }
 

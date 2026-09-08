@@ -1,5 +1,4 @@
-global.css
-
+/* global.css */
 * {
   box-sizing: border-box;
 }
@@ -60,6 +59,13 @@ svg {
   width: min(100%, var(--content-width));
   margin: 0 auto;
   padding: 28px 24px 0;
+}
+
+.main-content--admin {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 28px 32px 40px !important;
+  margin: 0 !important;
 }
 
 .brand-mark {
