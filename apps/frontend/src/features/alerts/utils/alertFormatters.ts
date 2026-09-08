@@ -63,7 +63,7 @@ export function formatAlertTimestamp(value?: string | null): FormattedAlertTime 
     date.getMonth() === yesterday.getMonth() &&
     date.getFullYear() === yesterday.getFullYear();
 
-  let primary = "";
+  let primary: string;
   if (isToday) {
     primary = `Hari Ini, ${timeStr} WIB`;
   } else if (isYesterday) {

@@ -11,9 +11,9 @@ export const AlertSeverityBadge: React.FC<AlertSeverityBadgeProps> = ({
 }) => {
   const normalized = (level || "").toUpperCase();
 
-  let label = "Aman";
-  let badgeStyle = "bg-emerald-100 text-emerald-800";
-  let dotStyle = "bg-emerald-500";
+  let label: string;
+  let badgeStyle: string;
+  let dotStyle: string;
 
   switch (normalized) {
     case "RED":

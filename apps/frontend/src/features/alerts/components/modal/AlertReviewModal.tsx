@@ -1,40 +1,72 @@
-import React, { useState, useEffect } from "react";
-import { X, ShieldCheck, ShieldAlert, AlertTriangle, Loader2, Info } from "lucide-react";
+import React, { useState } from "react";
+import {
+  X,
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
+  Loader2,
+  Info,
+} from "lucide-react";
 import type { AlertItem } from "../../../../types/alert";
 import { AlertReviewSummary } from "./AlertReviewSummary";
-import { AlertReviewOption, type AlertReviewOptionData } from "./AlertReviewOption";
+import {
+  AlertReviewOption,
+  type AlertReviewOptionData,
+} from "./AlertReviewOption";
 
 interface AlertReviewModalProps {
   isOpen: boolean;
   alert: AlertItem | null;
   onClose: () => void;
-  onSubmit: (id: string, status: "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti") => Promise<void>;
+  onSubmit: (
+    id: string,
+    status: "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti"
+  ) => Promise<void>;
   isSubmitting?: boolean;
 }
+
+type ReviewStatus = "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti";
 
 const REVIEW_OPTIONS: AlertReviewOptionData[] = [
   {
     id: "Dikonfirmasi",
     title: "Konfirmasi Alert",
-    description: "Validasi alert ini sebagai data resmi terkonfirmasi untuk arsip kebencanaan desa.",
+    description:
+      "Validasi alert ini sebagai data resmi terkonfirmasi untuk arsip kebencanaan desa.",
     icon: ShieldCheck,
     tone: "border-emerald-500 bg-emerald-50/50 text-emerald-900",
   },
   {
     id: "Ditolak",
     title: "Tolak / False Alarm",
-    description: "Tandai sebagai anomali data atau laporan palsu. Tidak memblokir tampilan realtime warga.",
+    description:
+      "Tandai sebagai anomali data atau laporan palsu. Tidak memblokir tampilan realtime warga.",
     icon: ShieldAlert,
     tone: "border-rose-500 bg-rose-50/50 text-rose-900",
   },
   {
     id: "Ditindaklanjuti",
     title: "Ditindaklanjuti (Eskalasi)",
-    description: "Teruskan ke tim lapangan atau instansi BPBD untuk verifikasi visual dan penanganan fisik.",
+    description:
+      "Teruskan ke tim lapangan atau instansi BPBD untuk verifikasi visual dan penanganan fisik.",
     icon: AlertTriangle,
     tone: "border-amber-500 bg-amber-50/50 text-amber-900",
   },
 ];
+
+const getInitialReviewStatus = (
+  reviewStatus?: string | null
+): ReviewStatus => {
+  if (
+    reviewStatus === "Dikonfirmasi" ||
+    reviewStatus === "Ditolak" ||
+    reviewStatus === "Ditindaklanjuti"
+  ) {
+    return reviewStatus;
+  }
+
+  return "Dikonfirmasi";
+};
 
 export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
   isOpen,
@@ -43,37 +75,27 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
   onSubmit,
   isSubmitting = false,
 }) => {
-  const [selectedStatus, setSelectedStatus] = useState<
-    "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti"
-  >("Dikonfirmasi");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] =
+    useState<ReviewStatus>(() =>
+      getInitialReviewStatus(alert?.reviewStatus)
+    );
 
-  useEffect(() => {
-    if (alert) {
-      if (
-        alert.reviewStatus === "Dikonfirmasi" ||
-        alert.reviewStatus === "Ditolak" ||
-        alert.reviewStatus === "Ditindaklanjuti"
-      ) {
-        setSelectedStatus(alert.reviewStatus);
-      } else {
-        setSelectedStatus("Dikonfirmasi");
-      }
-      setErrorMsg(null);
-    }
-  }, [alert]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen || !alert) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       setErrorMsg(null);
       await onSubmit(alert.id, selectedStatus);
       onClose();
     } catch (err: unknown) {
       setErrorMsg(
-        err instanceof Error ? err.message : "Gagal menyimpan klasifikasi alert."
+        err instanceof Error
+          ? err.message
+          : "Gagal menyimpan klasifikasi alert."
       );
     }
   };
@@ -86,16 +108,19 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
       aria-labelledby="review-modal-title"
     >
       <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header Modal */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div>
-            <h2 id="review-modal-title" className="text-base font-bold text-slate-900">
+            <h2
+              id="review-modal-title"
+              className="text-base font-bold text-slate-900"
+            >
               Detail Verifikasi Alert
             </h2>
             <p className="text-xs font-mono text-slate-500 mt-0.5">
               ID: #{alert.id}
             </p>
           </div>
+
           <button
             type="button"
             onClick={onClose}
@@ -106,16 +131,17 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body & Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-6 space-y-5 bg-white">
-          {/* Summary Box */}
+        <form
+          onSubmit={handleSubmit}
+          className="overflow-y-auto flex-1 p-6 space-y-5 bg-white"
+        >
           <AlertReviewSummary alert={alert} />
 
-          {/* Opsi Review */}
           <div className="space-y-2.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
               Tindakan Klasifikasi Admin / Operator
             </label>
+
             <div className="space-y-2">
               {REVIEW_OPTIONS.map((option) => (
                 <AlertReviewOption
@@ -128,11 +154,14 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
             </div>
           </div>
 
-          {/* Safeguard Note */}
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-xs text-slate-600">
-            <Info size={16} className="text-slate-500 shrink-0 mt-0.5" />
+            <Info
+              size={16}
+              className="text-slate-500 shrink-0 mt-0.5"
+            />
             <p>
-              <strong>Catatan Teknis:</strong> Klasifikasi ini murni administratif untuk pencatatan dan arsip desa.
+              <strong>Catatan Teknis:</strong> Klasifikasi ini murni
+              administratif untuk pencatatan dan arsip desa.
             </p>
           </div>
 
@@ -142,7 +171,6 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
             <button
               type="button"
@@ -152,6 +180,7 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
             >
               Batal
             </button>
+
             <button
               type="submit"
               disabled={isSubmitting}
