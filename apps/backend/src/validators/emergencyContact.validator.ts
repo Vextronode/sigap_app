@@ -34,15 +34,15 @@ export function validateUpdateEmergencyContact(
   res: Response,
   next: NextFunction
 ) {
-  const { institution, phoneNumber } = req.body ?? {};
+  const { institution, phoneNumber, icon } = req.body ?? {};
   const errors: Record<string, string> = {};
 
-  if (institution === undefined && phoneNumber === undefined) {
+  if (institution === undefined && phoneNumber === undefined && icon === undefined) {
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
       errors: {
-        body: "Minimal salah satu data institusi atau nomor telepon harus diisi.",
+        body: "Minimal salah satu data institusi, nomor telepon, atau icon harus diisi.",
       },
     });
   }

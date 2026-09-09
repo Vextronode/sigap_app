@@ -70,7 +70,12 @@ export type EmergencyContact = {
   phone?: string;
   phoneNumber?: string;
   address?: string;
+  isCore?: boolean;
+  icon?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
+
 
 export type GeoJsonLineString = {
   type: "LineString";

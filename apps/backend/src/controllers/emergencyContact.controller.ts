@@ -49,10 +49,11 @@ export class EmergencyContactController {
   // buat kontak darurat tambahan baru
   static async create(req: Request, res: Response) {
     try {
-      const { institution, phoneNumber } = req.body;
+      const { institution, phoneNumber, icon } = req.body;
       const data = await EmergencyContactService.create({
         institution,
         phoneNumber,
+        icon,
       });
       return res.status(201).json({
         success: true,
@@ -75,10 +76,11 @@ export class EmergencyContactController {
   static async update(req: Request, res: Response) {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const { institution, phoneNumber } = req.body;
+      const { institution, phoneNumber, icon } = req.body;
       const data = await EmergencyContactService.update(id, {
         institution,
         phoneNumber,
+        icon,
       });
       return res.status(200).json({
         success: true,

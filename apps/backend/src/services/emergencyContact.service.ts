@@ -26,11 +26,12 @@ export class EmergencyContactService {
     return emergencyContactRepo.create({
       institution: data.institution.trim(),
       phoneNumber: data.phoneNumber.trim(),
+      icon: data.icon ? data.icon.trim() : null,
       isCore: false,
     });
   }
 
-  // perbarui institusi atau nomor kontak darurat
+  // perbarui institusi, nomor, atau icon kontak darurat
   static async update(id: string, data: UpdateEmergencyContactDto) {
     await this.getById(id);
 
@@ -40,6 +41,9 @@ export class EmergencyContactService {
     }
     if (data.phoneNumber !== undefined) {
       updatePayload.phoneNumber = data.phoneNumber.trim();
+    }
+    if (data.icon !== undefined) {
+      updatePayload.icon = data.icon ? data.icon.trim() : null;
     }
 
     return emergencyContactRepo.update(id, updatePayload);
