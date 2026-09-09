@@ -32,6 +32,7 @@ export interface DecisionResult {
 
 // label status review dalam bahasa indonesia sesuai spesifikasi fs-02
 export type AlertReviewStatusLabel =
+  | "Belum Diverifikasi"
   | "Belum Ditinjau"
   | "Dikonfirmasi"
   | "Ditolak"
@@ -54,6 +55,8 @@ export interface AlertRecord {
   level: AlertLevel;
   source: string;
   description: string | null;
+  location?: string | null;
+  shakemap?: string | null;
   reviewStatus: AlertReviewStatusLabel;
   reviewedBy: string | null;
   reviewedAt: Date | null;

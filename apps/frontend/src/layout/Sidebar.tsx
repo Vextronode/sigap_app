@@ -7,7 +7,6 @@ import {
   Cloud,
   CloudRain,
   Contact,
-  FileText,
   Home,
   LayoutDashboard,
   LogOut,
@@ -17,6 +16,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
+import { BiBarChartAlt } from "react-icons/bi";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
@@ -35,7 +35,7 @@ const sectionLinks = [
 // daftar tautan utilitas khusus admin dalam bahasa indonesia
 const adminLinks = [
   { label: "Dashboard Admin", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Log & Verifikasi Alert", href: "/admin/alerts", icon: FileText },
+  { label: "Verifikasi Gempa", href: "/admin/alerts", icon: BiBarChartAlt },
   { label: "Monitoring Cuaca", href: "#weather", icon: CloudRain },
   { label: "Aktivitas Seismik", href: "#earthquake", icon: Activity },
   { label: "Kontrol Sirine & IoT", href: "/admin/sirine-iot", icon: Bell },

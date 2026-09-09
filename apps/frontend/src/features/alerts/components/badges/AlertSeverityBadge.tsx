@@ -1,4 +1,5 @@
 import React from "react";
+import { Check, AlertOctagon, ShieldAlert, AlertTriangle } from "lucide-react";
 
 interface AlertSeverityBadgeProps {
   level: string;
@@ -13,45 +14,45 @@ export const AlertSeverityBadge: React.FC<AlertSeverityBadgeProps> = ({
 
   let label: string;
   let badgeStyle: string;
-  let dotStyle: string;
+  let icon: React.ReactNode;
 
   switch (normalized) {
     case "RED":
     case "AWAS":
     case "CRITICAL":
-      label = "Awas";
-      badgeStyle = "bg-rose-100 text-rose-800";
-      dotStyle = "bg-rose-500";
+      label = "AWAS";
+      badgeStyle = "bg-rose-600 text-white shadow-xs";
+      icon = <AlertTriangle size={12} strokeWidth={2.5} className="shrink-0 text-white" />;
       break;
 
     case "ORANGE":
     case "SIAGA":
-      label = "Siaga";
-      badgeStyle = "bg-orange-100 text-orange-800";
-      dotStyle = "bg-orange-500";
+      label = "SIAGA";
+      badgeStyle = "bg-orange-500 text-white shadow-xs";
+      icon = <ShieldAlert size={12} strokeWidth={2.5} className="shrink-0 text-white" />;
       break;
 
     case "YELLOW":
     case "WASPADA":
-      label = "Waspada";
-      badgeStyle = "bg-amber-100 text-amber-800";
-      dotStyle = "bg-amber-500";
+      label = "WASPADA";
+      badgeStyle = "bg-amber-500 text-white shadow-xs";
+      icon = <AlertOctagon size={12} strokeWidth={2.5} className="shrink-0 text-white" />;
       break;
 
     case "GREEN":
     case "AMAN":
     default:
-      label = "Aman";
-      badgeStyle = "bg-emerald-100 text-emerald-800";
-      dotStyle = "bg-emerald-500";
+      label = "AMAN";
+      badgeStyle = "bg-emerald-600 text-white shadow-xs";
+      icon = <Check size={12} strokeWidth={3} className="shrink-0 text-white" />;
       break;
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold select-none ${badgeStyle} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide select-none ${badgeStyle} ${className}`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${dotStyle}`} />
+      {icon}
       <span>{label}</span>
     </span>
   );

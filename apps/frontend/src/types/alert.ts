@@ -1,6 +1,7 @@
 import type { AlertLevel } from "./dashboard";
 
 export type AlertReviewStatus =
+  | "Belum Diverifikasi"
   | "Belum Ditinjau"
   | "Dikonfirmasi"
   | "Ditolak"
@@ -17,6 +18,8 @@ export interface AlertItem {
   level: AlertLevel;
   source: string;
   description: string | null;
+  location?: string | null;
+  shakemap?: string | null;
   reviewStatus: AlertReviewStatus;
   reviewedBy: string | null;
   reviewedAt: string | null;

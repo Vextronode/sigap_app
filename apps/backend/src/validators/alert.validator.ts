@@ -26,9 +26,13 @@ export function validateReviewAlert(
     errors.reviewStatus = "Status tinjauan alert wajib diisi.";
   } else {
     const trimmed = reviewStatus.trim();
-    if (trimmed === "Belum Ditinjau" || trimmed === "BELUM_DITINJAU") {
+    if (
+      trimmed === "Belum Diverifikasi" ||
+      trimmed === "Belum Ditinjau" ||
+      trimmed === "BELUM_DITINJAU"
+    ) {
       errors.reviewStatus =
-        "Status 'Belum Ditinjau' tidak dapat dipilih secara manual. Pilih antara Dikonfirmasi, Ditolak, atau Ditindaklanjuti.";
+        "Status 'Belum Diverifikasi' tidak dapat dipilih secara manual. Pilih antara Dikonfirmasi, Ditolak, atau Ditindaklanjuti.";
     } else if (!VALID_REVIEW_ACTIONS.includes(trimmed) && !["DIKONFIRMASI", "DITOLAK", "DITINDAKLANJUTI"].includes(trimmed)) {
       errors.reviewStatus =
         "Status tinjauan tidak valid. Nilai yang diperbolehkan: Dikonfirmasi, Ditolak, atau Ditindaklanjuti.";
@@ -87,7 +91,7 @@ export function validateAlertFilterQuery(
     const statusStr = String(reviewStatus).trim();
     if (!LABEL_TO_REVIEW_STATUS[statusStr]) {
       errors.reviewStatus =
-        "Nilai reviewStatus tidak valid. Nilai yang diperbolehkan: 'Belum Ditinjau', 'Dikonfirmasi', 'Ditolak', atau 'Ditindaklanjuti'.";
+        "Nilai reviewStatus tidak valid. Nilai yang diperbolehkan: 'Belum Diverifikasi', 'Belum Ditinjau', 'Dikonfirmasi', 'Ditolak', atau 'Ditindaklanjuti'.";
     }
   }
 

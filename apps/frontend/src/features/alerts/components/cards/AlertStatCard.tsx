@@ -19,9 +19,9 @@ export const AlertStatCard: React.FC<AlertStatCardProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs transition-all duration-200 hover:shadow-md">
+    <div className="bg-[color:var(--surface)] border border-[color:var(--border)] rounded-2xl p-5 sm:p-6 shadow-xs transition-all duration-200 hover:shadow-md">
       <div className="flex items-start justify-between">
-        <span className="text-xs sm:text-sm font-medium text-slate-500">
+        <span className="text-xs sm:text-sm font-medium text-[color:var(--text-muted)]">
           {title}
         </span>
         <div
@@ -33,14 +33,14 @@ export const AlertStatCard: React.FC<AlertStatCardProps> = ({
 
       <div className="mt-3 sm:mt-4 flex items-baseline">
         {isLoading ? (
-          <div className="h-9 w-16 bg-slate-200 rounded-md animate-pulse" />
+          <div className="h-9 w-16 bg-[color:var(--surface-muted)] rounded-md animate-pulse" />
         ) : (
           <>
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[color:var(--text)]">
               {value}
             </span>
             {trendText && (
-              <span className="ml-2 text-xs font-semibold text-emerald-600">
+              <span className="ml-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 {trendText}
               </span>
             )}

@@ -48,15 +48,15 @@ export const AlertPagination: React.FC<AlertPaginationProps> = ({
   };
 
   return (
-    <div className="p-4 sm:p-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 bg-white">
+    <div className="p-4 sm:p-5 border-t border-[color:var(--border)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[color:var(--text-muted)] bg-[color:var(--surface)]">
       {/* Left text: Menampilkan X-Y dari Z data */}
       <div>
         Menampilkan{" "}
-        <span className="font-semibold text-slate-800">
+        <span className="font-semibold text-[color:var(--text)]">
           {totalItems > 0 ? `${fromIndex}-${toIndex}` : "0"}
         </span>{" "}
         dari{" "}
-        <span className="font-semibold text-slate-800">
+        <span className="font-semibold text-[color:var(--text)]">
           {totalItems}
         </span>{" "}
         data
@@ -68,7 +68,7 @@ export const AlertPagination: React.FC<AlertPaginationProps> = ({
           type="button"
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage <= 1 || isLoading}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-[color:var(--text-muted)] hover:text-[color:var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label="Halaman sebelumnya"
         >
           <ChevronLeft size={16} />
@@ -77,7 +77,7 @@ export const AlertPagination: React.FC<AlertPaginationProps> = ({
         {renderPageNumbers().map((item, idx) => {
           if (item === "...") {
             return (
-              <span key={`ellipsis-${idx}`} className="px-1 text-slate-400 select-none">
+              <span key={`ellipsis-${idx}`} className="px-1 text-[color:var(--text-muted)] select-none">
                 ...
               </span>
             );
@@ -95,7 +95,7 @@ export const AlertPagination: React.FC<AlertPaginationProps> = ({
               className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
                 isActive
                   ? "bg-[#00247D] text-white shadow-2xs"
-                  : "text-slate-600 hover:bg-slate-100"
+                  : "text-[color:var(--text)] hover:bg-[color:var(--surface-muted)]"
               }`}
             >
               {pageNum}
@@ -107,7 +107,7 @@ export const AlertPagination: React.FC<AlertPaginationProps> = ({
           type="button"
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage >= totalPages || isLoading}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-[color:var(--text-muted)] hover:text-[color:var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label="Halaman berikutnya"
         >
           <ChevronRight size={16} />

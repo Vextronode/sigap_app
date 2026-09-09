@@ -29,14 +29,14 @@ export const AlertReviewOption: React.FC<AlertReviewOptionProps> = ({
       className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
         isSelected
           ? `${option.tone} shadow-2xs`
-          : "border-slate-200 hover:border-slate-300 bg-white"
+          : "border-[color:var(--border)] hover:border-slate-400 bg-[color:var(--surface)]"
       }`}
     >
       <div
         className={`w-5 h-5 rounded-full border flex items-center justify-center mt-0.5 shrink-0 transition-colors ${
           isSelected
             ? "border-[#00247D] bg-[#00247D] text-white"
-            : "border-slate-300"
+            : "border-[color:var(--border)] text-transparent"
         }`}
       >
         {isSelected && <Check size={12} strokeWidth={3} />}
@@ -45,11 +45,11 @@ export const AlertReviewOption: React.FC<AlertReviewOptionProps> = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <Icon size={15} className="shrink-0" />
-          <span className="text-sm font-semibold text-slate-900">
+          <span className="text-sm font-semibold text-[color:var(--text)]">
             {option.title}
           </span>
         </div>
-        <p className="text-xs text-slate-500 mt-1 leading-normal">
+        <p className="text-xs text-[color:var(--text-muted)] mt-1 leading-normal">
           {option.description}
         </p>
       </div>

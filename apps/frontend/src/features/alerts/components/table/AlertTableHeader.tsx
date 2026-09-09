@@ -2,8 +2,11 @@ import React from "react";
 
 export const AlertTableHeader: React.FC = () => {
   return (
-    <thead className="bg-slate-50/90 text-slate-500 font-semibold text-xs border-b border-slate-200/80">
+    <thead className="bg-[color:var(--surface-muted)] text-[color:var(--text-muted)] font-semibold text-xs border-b border-[color:var(--border)]">
       <tr>
+        <th scope="col" className="py-3.5 px-3 sm:px-4 font-semibold text-center w-12">
+          No.
+        </th>
         <th scope="col" className="py-3.5 px-4 sm:px-6 font-semibold">
           Waktu & Tanggal
         </th>
@@ -15,6 +18,9 @@ export const AlertTableHeader: React.FC = () => {
         </th>
         <th scope="col" className="py-3.5 px-4 font-semibold">
           Deskripsi Alert
+        </th>
+        <th scope="col" className="py-3.5 px-4 font-semibold">
+          Lokasi Gempa
         </th>
         <th scope="col" className="py-3.5 px-4 font-semibold">
           Status Verifikasi
