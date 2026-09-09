@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, PhoneCall, ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
 import type { EmergencyContactRecord } from "../../../../types/emergencyContact";
 import { IconPicker } from "./IconPicker";
@@ -20,42 +20,41 @@ interface EmergencyContactFormModalProps {
   isSubmitting?: boolean;
 }
 
-export const EmergencyContactFormModal: React.FC<EmergencyContactFormModalProps> = ({
-  isOpen,
+export const EmergencyContactFormModal: React.FC<EmergencyContactFormModalProps> = (
+  props
+) => {
+  if (!props.isOpen) return null;
+
+  return (
+    <EmergencyContactFormModalContent
+      key={props.contact?.id ?? "create-new"}
+      {...props}
+    />
+  );
+};
+
+const EmergencyContactFormModalContent: React.FC<EmergencyContactFormModalProps> = ({
   contact,
   onClose,
   onSubmit,
   isSubmitting = false,
 }) => {
-  const [institution, setInstitution] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [selectedIcon, setSelectedIcon] = useState<EmergencyIconKey>("phone");
-  const [hasManualIconSelection, setHasManualIconSelection] = useState(false);
-  const [errors, setErrors] = useState<{ institution?: string; phoneNumber?: string }>({});
-
-  const isEdit = !!contact;
-
-  useEffect(() => {
+  const [institution, setInstitution] = useState(contact?.institution ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(contact?.phoneNumber ?? "");
+  const [selectedIcon, setSelectedIcon] = useState<EmergencyIconKey>(() => {
     if (contact) {
-      setInstitution(contact.institution);
-      setPhoneNumber(contact.phoneNumber);
-      const currentPreset = resolveContactIcon(
+      return resolveContactIcon(
         contact.id,
         contact.institution,
         contact.icon ?? undefined
-      );
-      setSelectedIcon(currentPreset.key);
-      setHasManualIconSelection(true);
-    } else {
-      setInstitution("");
-      setPhoneNumber("");
-      setSelectedIcon("phone");
-      setHasManualIconSelection(false);
+      ).key;
     }
-    setErrors({});
-  }, [contact, isOpen]);
+    return "phone";
+  });
+  const [hasManualIconSelection, setHasManualIconSelection] = useState(!!contact);
+  const [errors, setErrors] = useState<{ institution?: string; phoneNumber?: string }>({});
 
-  if (!isOpen) return null;
+  const isEdit = !!contact;
 
   const validate = () => {
     const newErrors: { institution?: string; phoneNumber?: string } = {};
