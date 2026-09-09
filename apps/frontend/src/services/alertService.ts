@@ -60,7 +60,7 @@ export const alertService = {
   },
   getStats: async (): Promise<AlertStatsSummary> => {
     const [pendingRes, confirmedRes, rejectedRes, escalatedRes] = await Promise.all([
-      alertService.getFiltered({ limit: 1, reviewStatus: "Belum Ditinjau" }),
+      alertService.getFiltered({ limit: 1, reviewStatus: "Belum Diverifikasi" }),
       alertService.getFiltered({ limit: 1, reviewStatus: "Dikonfirmasi" }),
       alertService.getFiltered({ limit: 1, reviewStatus: "Ditolak" }),
       alertService.getFiltered({ limit: 1, reviewStatus: "Ditindaklanjuti" }),

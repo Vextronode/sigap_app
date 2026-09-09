@@ -15,17 +15,17 @@ export const AlertStatCards: React.FC<AlertStatCardsProps> = ({
   const cards = [
     {
       id: "pending",
-      title: "Menunggu Validasi",
+      title: "Menunggu Verifikasi",
       value: stats?.pending ?? 0,
       icon: Monitor,
-      iconBgClass: "bg-[#EEF4FF] text-[#1E40AF]",
+      iconBgClass: "bg-[#EEF4FF] dark:bg-blue-950/40 text-[#1E40AF] dark:text-blue-400",
     },
     {
       id: "confirmed",
       title: "Dikonfirmasi (24 Jam)",
       value: stats?.confirmed ?? 0,
       icon: CheckCircle2,
-      iconBgClass: "bg-[#DCFCE7] text-[#16A34A]",
+      iconBgClass: "bg-[#DCFCE7] dark:bg-emerald-950/40 text-[#16A34A] dark:text-emerald-400",
       trendText: stats?.confirmed ? "↑12%" : undefined,
     },
     {
@@ -33,14 +33,14 @@ export const AlertStatCards: React.FC<AlertStatCardsProps> = ({
       title: "Ditolak (False Alarm)",
       value: stats?.rejected ?? 0,
       icon: XCircle,
-      iconBgClass: "bg-[#F1F5F9] text-[#64748B]",
+      iconBgClass: "bg-[#F1F5F9] dark:bg-slate-800 text-[#64748B] dark:text-slate-300",
     },
     {
       id: "escalated",
       title: "Ditindaklanjuti",
       value: stats?.escalated ?? 0,
       icon: AlertTriangle,
-      iconBgClass: "bg-[#FEF9C3] text-[#CA8A04]",
+      iconBgClass: "bg-[#FEF9C3] dark:bg-amber-950/40 text-[#CA8A04] dark:text-amber-400",
     },
   ];
 

@@ -90,7 +90,7 @@ export class AlertService {
       },
     });
 
-    return alerts.map(mapAlertToRecord);
+    return alerts.map((a) => mapAlertToRecord(a));
   }
 
   /**

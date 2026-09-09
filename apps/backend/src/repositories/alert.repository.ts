@@ -13,13 +13,14 @@ export const REVIEW_STATUS_TO_LABEL: Record<
   AlertReviewStatus,
   AlertReviewStatusLabel
 > = {
-  [AlertReviewStatus.BELUM_DITINJAU]: "Belum Ditinjau",
+  [AlertReviewStatus.BELUM_DITINJAU]: "Belum Diverifikasi",
   [AlertReviewStatus.DIKONFIRMASI]: "Dikonfirmasi",
   [AlertReviewStatus.DITOLAK]: "Ditolak",
   [AlertReviewStatus.DITINDAKLANJUTI]: "Ditindaklanjuti",
 };
 
 export const LABEL_TO_REVIEW_STATUS: Record<string, AlertReviewStatus> = {
+  "Belum Diverifikasi": AlertReviewStatus.BELUM_DITINJAU,
   "Belum Ditinjau": AlertReviewStatus.BELUM_DITINJAU,
   "Dikonfirmasi": AlertReviewStatus.DIKONFIRMASI,
   "Ditolak": AlertReviewStatus.DITOLAK,
@@ -61,6 +62,37 @@ export interface AlertFilterParams {
   take?: number;
 }
 
+export function matchAlertToEarthquake(
+  alert: { description: string | null; createdAt: Date },
+  eqRecords: Array<{ magnitude: number; location: string; shakemap: string | null; eventTime: string; createdAt: Date }>
+): { location: string; shakemap: string | null } {
+  const magMatch = alert.description?.match(/M(\d+(?:\.\d+)?)/);
+  const mag = magMatch ? parseFloat(magMatch[1]) : null;
+  const aTime = new Date(alert.createdAt).getTime();
+
+  let bestEq: (typeof eqRecords)[number] | null = null;
+  let minDiff = Infinity;
+
+  for (const eq of eqRecords) {
+    if (mag !== null && Math.abs(eq.magnitude - mag) < 0.05) {
+      const eqTime = new Date(eq.eventTime || eq.createdAt).getTime();
+      const diff = Math.abs(aTime - eqTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestEq = eq;
+      }
+    }
+  }
+
+  const descParen = alert.description?.match(/\(([^)]+)\)/);
+  const fallbackLoc = descParen ? descParen[1] : "Sekitar Pangandaran";
+
+  return {
+    location: bestEq?.location || fallbackLoc,
+    shakemap: bestEq?.shakemap || null,
+  };
+}
+
 // transform hasil entri prisma alert ke tipe AlertRecord dengan label bahasa indonesia
 export function mapAlertToRecord(
   alert: Prisma.AlertGetPayload<{
@@ -73,15 +105,18 @@ export function mapAlertToRecord(
         };
       };
     };
-  }>
+  }>,
+  eqMeta?: { location?: string | null; shakemap?: string | null } | null
 ): AlertRecord {
   return {
     id: alert.id,
     level: alert.level,
     source: alert.source,
     description: alert.description,
+    location: eqMeta?.location ?? null,
+    shakemap: eqMeta?.shakemap ?? null,
     reviewStatus:
-      REVIEW_STATUS_TO_LABEL[alert.reviewStatus] ?? "Belum Ditinjau",
+      REVIEW_STATUS_TO_LABEL[alert.reviewStatus] ?? "Belum Diverifikasi",
     reviewedBy: alert.reviewedBy,
     reviewedAt: alert.reviewedAt,
     reviewer: alert.reviewer ?? null,
@@ -94,11 +129,30 @@ export class AlertRepository {
   // ambil daftar alert terfilter dengan pagination dan data reviewer (hanya alert kejadian nyata yang butuh verifikasi)
   static async findFiltered(params: AlertFilterParams): Promise<AlertRecord[]> {
     const where: Prisma.AlertWhereInput = {
-      NOT: {
-        description: {
-          contains: "Tidak terdapat peringatan resmi",
+      NOT: [
+        {
+          description: {
+            contains: "Tidak terdapat peringatan resmi",
+          },
         },
-      },
+        {
+          description: {
+            contains: "Kondisi lingkungan normal",
+          },
+        },
+        {
+          source: {
+            contains: "simulasi",
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: "simulasi",
+            mode: "insensitive",
+          },
+        },
+      ],
     };
 
     if (params.severity) {
@@ -119,25 +173,30 @@ export class AlertRepository {
       }
     }
 
-    const alerts = await prisma.alert.findMany({
-      where,
-      include: {
-        reviewer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const [alerts, eqRecords] = await Promise.all([
+      prisma.alert.findMany({
+        where,
+        include: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      skip: params.skip,
-      take: params.take,
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip: params.skip,
+        take: params.take,
+      }),
+      prisma.earthquakeRecord.findMany(),
+    ]);
 
-    return alerts.map(mapAlertToRecord);
+    return alerts.map((a) =>
+      mapAlertToRecord(a, matchAlertToEarthquake(a, eqRecords))
+    );
   }
 
   // hitung total data alert yang cocok dengan filter untuk metadata pagination
@@ -145,11 +204,30 @@ export class AlertRepository {
     params: Omit<AlertFilterParams, "skip" | "take">
   ): Promise<number> {
     const where: Prisma.AlertWhereInput = {
-      NOT: {
-        description: {
-          contains: "Tidak terdapat peringatan resmi",
+      NOT: [
+        {
+          description: {
+            contains: "Tidak terdapat peringatan resmi",
+          },
         },
-      },
+        {
+          description: {
+            contains: "Kondisi lingkungan normal",
+          },
+        },
+        {
+          source: {
+            contains: "simulasi",
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: "simulasi",
+            mode: "insensitive",
+          },
+        },
+      ],
     };
 
     if (params.severity) {
@@ -175,21 +253,24 @@ export class AlertRepository {
 
   // cari alert berdasarkan id beserta data reviewer
   static async findById(id: string): Promise<AlertRecord | null> {
-    const alert = await prisma.alert.findUnique({
-      where: { id },
-      include: {
-        reviewer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const [alert, eqRecords] = await Promise.all([
+      prisma.alert.findUnique({
+        where: { id },
+        include: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.earthquakeRecord.findMany(),
+    ]);
 
     if (!alert) return null;
-    return mapAlertToRecord(alert);
+    return mapAlertToRecord(alert, matchAlertToEarthquake(alert, eqRecords));
   }
 
   // perbarui status tinjauan alert dan catatan audit (reviewedBy, reviewedAt)
@@ -199,24 +280,27 @@ export class AlertRepository {
     reviewedBy: string,
     reviewedAt: Date
   ): Promise<AlertRecord> {
-    const updated = await prisma.alert.update({
-      where: { id },
-      data: {
-        reviewStatus,
-        reviewedBy,
-        reviewedAt,
-      },
-      include: {
-        reviewer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const [updated, eqRecords] = await Promise.all([
+      prisma.alert.update({
+        where: { id },
+        data: {
+          reviewStatus,
+          reviewedBy,
+          reviewedAt,
+        },
+        include: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.earthquakeRecord.findMany(),
+    ]);
 
-    return mapAlertToRecord(updated);
+    return mapAlertToRecord(updated, matchAlertToEarthquake(updated, eqRecords));
   }
 }

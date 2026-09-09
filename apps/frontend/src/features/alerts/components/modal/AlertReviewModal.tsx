@@ -34,7 +34,7 @@ const REVIEW_OPTIONS: AlertReviewOptionData[] = [
     description:
       "Validasi alert ini sebagai data resmi terkonfirmasi untuk arsip kebencanaan desa.",
     icon: ShieldCheck,
-    tone: "border-emerald-500 bg-emerald-50/50 text-emerald-900",
+    tone: "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-100",
   },
   {
     id: "Ditolak",
@@ -42,7 +42,7 @@ const REVIEW_OPTIONS: AlertReviewOptionData[] = [
     description:
       "Tandai sebagai anomali data atau laporan palsu. Tidak memblokir tampilan realtime warga.",
     icon: ShieldAlert,
-    tone: "border-rose-500 bg-rose-50/50 text-rose-900",
+    tone: "border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-100",
   },
   {
     id: "Ditindaklanjuti",
@@ -50,7 +50,7 @@ const REVIEW_OPTIONS: AlertReviewOptionData[] = [
     description:
       "Teruskan ke tim lapangan atau instansi BPBD untuk verifikasi visual dan penanganan fisik.",
     icon: AlertTriangle,
-    tone: "border-amber-500 bg-amber-50/50 text-amber-900",
+    tone: "border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100",
   },
 ];
 
@@ -107,16 +107,16 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
       aria-modal="true"
       aria-labelledby="review-modal-title"
     >
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+      <div className="bg-[color:var(--surface)] border border-[color:var(--border)] rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-[color:var(--border)] flex items-center justify-between bg-[color:var(--surface-muted)]">
           <div>
             <h2
               id="review-modal-title"
-              className="text-base font-bold text-slate-900"
+              className="text-base font-bold text-[color:var(--text)]"
             >
               Detail Verifikasi Alert
             </h2>
-            <p className="text-xs font-mono text-slate-500 mt-0.5">
+            <p className="text-xs font-mono text-[color:var(--text-muted)] mt-0.5">
               ID: #{alert.id}
             </p>
           </div>
@@ -124,7 +124,7 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-[color:var(--text-muted)] hover:text-[color:var(--text)] rounded-lg hover:bg-[color:var(--surface)] transition-colors"
             aria-label="Tutup modal"
           >
             <X size={20} />
@@ -133,12 +133,12 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
 
         <form
           onSubmit={handleSubmit}
-          className="overflow-y-auto flex-1 p-6 space-y-5 bg-white"
+          className="overflow-y-auto flex-1 p-6 space-y-5 bg-[color:var(--surface)]"
         >
           <AlertReviewSummary alert={alert} />
 
           <div className="space-y-2.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[color:var(--text-muted)]">
               Tindakan Klasifikasi Admin / Operator
             </label>
 
@@ -154,29 +154,29 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-xs text-slate-600">
+          <div className="p-3 rounded-xl bg-[color:var(--surface-muted)] border border-[color:var(--border)] flex items-start gap-2.5 text-xs text-[color:var(--text-muted)]">
             <Info
               size={16}
-              className="text-slate-500 shrink-0 mt-0.5"
+              className="text-[color:var(--text-muted)] shrink-0 mt-0.5"
             />
             <p>
-              <strong>Catatan Teknis:</strong> Klasifikasi ini murni
+              <strong className="text-[color:var(--text)]">Catatan Teknis:</strong> Klasifikasi ini murni
               administratif untuk pencatatan dan arsip desa.
             </p>
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
               {errorMsg}
             </div>
           )}
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-[color:var(--border)] flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl border border-[color:var(--border)] text-xs font-semibold text-[color:var(--text)] hover:bg-[color:var(--surface-muted)] transition-colors disabled:opacity-50 cursor-pointer"
             >
               Batal
             </button>

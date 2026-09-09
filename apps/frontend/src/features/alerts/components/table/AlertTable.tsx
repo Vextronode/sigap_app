@@ -42,9 +42,16 @@ export const AlertTable: React.FC<AlertTableProps> = ({
     const q = searchQuery.toLowerCase();
     const descMatch = alert.description?.toLowerCase().includes(q) ?? false;
     const sourceMatch = alert.source.toLowerCase().includes(q);
+    const locMatch = alert.location?.toLowerCase().includes(q) ?? false;
     const idMatch = alert.id.toLowerCase().includes(q);
-    return descMatch || sourceMatch || idMatch;
+    return descMatch || sourceMatch || locMatch || idMatch;
   });
+
+  // Batas maksimal tiap halaman data adalah 10 baris (data ke-11 masuk ke halaman berikutnya)
+  const limit = pagination?.limit ?? 10;
+  const pageOffset =
+    (pagination?.page ? pagination.page - 1 : 0) * limit;
+  const displayedAlerts = filteredAlerts.slice(0, limit);
 
   const hasActiveFilters =
     selectedSeverity !== "ALL" ||
@@ -52,7 +59,7 @@ export const AlertTable: React.FC<AlertTableProps> = ({
     searchQuery.trim().length > 0;
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+    <div className="bg-[color:var(--surface)] border border-[color:var(--border)] rounded-2xl shadow-xs overflow-hidden">
       {/* Search & Filter Toolbar */}
       <AlertTableToolbar
         searchQuery={searchQuery}
@@ -73,13 +80,14 @@ export const AlertTable: React.FC<AlertTableProps> = ({
           <tbody>
             {isLoading ? (
               <AlertTableSkeleton rowCount={4} />
-            ) : filteredAlerts.length === 0 ? (
+            ) : displayedAlerts.length === 0 ? (
               <AlertTableEmpty />
             ) : (
-              filteredAlerts.map((alert) => (
+              displayedAlerts.map((alert, idx) => (
                 <AlertTableRow
                   key={alert.id}
                   alert={alert}
+                  index={pageOffset + idx + 1}
                   onSelectAlert={onSelectAlert}
                 />
               ))
