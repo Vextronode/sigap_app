@@ -12,11 +12,7 @@ import { CoreContactsSection } from "../features/emergency-contacts/components/s
 import { AdditionalContactsSection } from "../features/emergency-contacts/components/sections/AdditionalContactsSection";
 import { EmergencyContactFormModal } from "../features/emergency-contacts/components/modals/EmergencyContactFormModal";
 import { EmergencyContactDeleteModal } from "../features/emergency-contacts/components/modals/EmergencyContactDeleteModal";
-import {
-  saveContactIcon,
-  removeContactIcon,
-  type EmergencyIconKey,
-} from "../features/emergency-contacts/utils/emergencyIconPresets";
+import type { EmergencyIconKey } from "../features/emergency-contacts/utils/emergencyIconPresets";
 import type {
   EmergencyContactRecord,
   EmergencyContactFeedback,
@@ -29,9 +25,6 @@ export default function SystemSettingsPage() {
 
   // State Tab Aktif
   const [activeTab, setActiveTab] = useState<SettingsTab>("contacts");
-
-  // Revision state untuk memicu update icon instan saat simpan/edit
-  const [, setIconRevision] = useState(0);
 
   // React Queries & Mutations untuk Kontak Darurat
   const contactsQuery = useEmergencyContactsList();
@@ -93,17 +86,12 @@ export default function SystemSettingsPage() {
           id: selectedContactForEdit.id,
           payload: apiPayload,
         });
-        saveContactIcon(selectedContactForEdit.id, payload.iconKey, payload.institution);
-        setIconRevision((prev) => prev + 1);
         showFeedback(
           "success",
           `Kontak darurat "${payload.institution}" berhasil diperbarui.`
         );
       } else {
-        const created = await createMutation.mutateAsync(apiPayload);
-        const createdId = (created as { id?: string })?.id || `new_${Date.now()}`;
-        saveContactIcon(createdId, payload.iconKey, payload.institution);
-        setIconRevision((prev) => prev + 1);
+        await createMutation.mutateAsync(apiPayload);
         showFeedback(
           "success",
           `Kontak darurat "${payload.institution}" berhasil ditambahkan.`
@@ -124,8 +112,6 @@ export default function SystemSettingsPage() {
 
     try {
       await deleteMutation.mutateAsync(selectedContactForDelete.id);
-      removeContactIcon(selectedContactForDelete.id, selectedContactForDelete.institution);
-      setIconRevision((prev) => prev + 1);
       showFeedback(
         "success",
         `Kontak darurat "${selectedContactForDelete.institution}" berhasil dihapus.`
@@ -151,18 +137,20 @@ export default function SystemSettingsPage() {
             Kelola Kesiapsiagaan Desa
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage emergency contacts, evacuation routes, and preparedness protocols.
+            Kelola kontak darurat desa, rute evakuasi bencana, dan protokol kesiapsiagaan warga.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00247D] hover:bg-[#001d66] text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Plus size={16} />
-          <span>Tambah Data</span>
-        </button>
+        {activeTab === "contacts" && (
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00247D] hover:bg-[#001d66] text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+          >
+            <Plus size={16} />
+            <span>Tambah Kontak</span>
+          </button>
+        )}
       </div>
 
       {/* Navigasi */}

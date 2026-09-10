@@ -191,8 +191,6 @@ export const EMERGENCY_ICON_PRESETS: IconPreset[] = [
   },
 ];
 
-const STORAGE_KEY = "sigap_custom_emergency_contact_icons";
-
 // Deteksi otomatis icon dari nama institusi jika belum ditentukan secara kustom
 export function detectDefaultIconKey(name: string): EmergencyIconKey {
   const lower = name.toLowerCase();
@@ -262,67 +260,21 @@ export function getIconPreset(key: string): IconPreset {
   return found || EMERGENCY_ICON_PRESETS[8]; // default to "phone"
 }
 
-// Baca mapping icon dari localStorage
-export function getSavedIconMap(): Record<string, EmergencyIconKey> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-// Simpan icon pilihan untuk kontak tertentu (berdasarkan ID atau nama)
-export function saveContactIcon(id: string, iconKey: EmergencyIconKey, institutionName?: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    const map = getSavedIconMap();
-    map[id] = iconKey;
-    if (institutionName) {
-      map[`name_${institutionName.trim().toLowerCase()}`] = iconKey;
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // abaikan jika storage penuh / diblokir
-  }
-}
-
-// Hapus data icon saat kontak dihapus
-export function removeContactIcon(id: string, institutionName?: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    const map = getSavedIconMap();
-    delete map[id];
-    if (institutionName) {
-      delete map[`name_${institutionName.trim().toLowerCase()}`];
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // abaikan
-  }
-}
-
-// Ambil icon visual aktif untuk kontak: Cek localStorage (by id atau name), jika belum ada gunakan deteksi otomatis
-export function resolveContactIcon(id?: string, institutionName?: string, explicitKey?: string): IconPreset {
+// Ambil icon visual aktif untuk kontak: Database/API backend adalah Single Source of Truth (SSOT).
+// 1. Jika field icon sudah terisi dari API (explicitKey), gunakan preset tersebut.
+// 2. Jika belum terisi, lakukan deteksi otomatis berdasarkan kata kunci nama instansi.
+// 3. Fallback default ke icon telepon hotline ("phone").
+export function resolveContactIcon(
+  _id?: string,
+  institutionName?: string,
+  explicitKey?: string | null
+): IconPreset {
   if (explicitKey) {
     const preset = EMERGENCY_ICON_PRESETS.find((p) => p.key === explicitKey);
     if (preset) return preset;
   }
 
-  const map = getSavedIconMap();
-
-  if (id && map[id]) {
-    const preset = EMERGENCY_ICON_PRESETS.find((p) => p.key === map[id]);
-    if (preset) return preset;
-  }
-
   if (institutionName) {
-    const nameKey = `name_${institutionName.trim().toLowerCase()}`;
-    if (map[nameKey]) {
-      const preset = EMERGENCY_ICON_PRESETS.find((p) => p.key === map[nameKey]);
-      if (preset) return preset;
-    }
     const detectedKey = detectDefaultIconKey(institutionName);
     return getIconPreset(detectedKey);
   }

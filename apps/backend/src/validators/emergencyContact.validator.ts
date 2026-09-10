@@ -6,7 +6,7 @@ export function validateCreateEmergencyContact(
   res: Response,
   next: NextFunction
 ) {
-  const { institution, phoneNumber } = req.body ?? {};
+  const { institution, phoneNumber, icon } = req.body ?? {};
   const errors: Record<string, string> = {};
 
   if (!institution || typeof institution !== "string" || institution.trim() === "") {
@@ -15,6 +15,10 @@ export function validateCreateEmergencyContact(
 
   if (!phoneNumber || typeof phoneNumber !== "string" || phoneNumber.trim() === "") {
     errors.phoneNumber = "Nomor telepon wajib diisi.";
+  }
+
+  if (icon !== undefined && (typeof icon !== "string" || icon.length > 50)) {
+    errors.icon = "Icon harus berupa string nama preset yang valid (maks. 50 karakter).";
   }
 
   if (Object.keys(errors).length > 0) {
@@ -61,6 +65,10 @@ export function validateUpdateEmergencyContact(
     errors.phoneNumber = "Nomor telepon tidak boleh kosong.";
   }
 
+  if (icon !== undefined && (typeof icon !== "string" || icon.length > 50)) {
+    errors.icon = "Icon harus berupa string nama preset yang valid (maks. 50 karakter).";
+  }
+
   if (Object.keys(errors).length > 0) {
     return res.status(422).json({
       success: false,
@@ -71,3 +79,4 @@ export function validateUpdateEmergencyContact(
 
   next();
 }
+
