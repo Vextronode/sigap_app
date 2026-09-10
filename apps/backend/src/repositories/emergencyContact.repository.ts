@@ -27,6 +27,7 @@ export async function create(
       institution: data.institution,
       phoneNumber: data.phoneNumber,
       isCore: data.isCore ?? false,
+      icon: data.icon ?? null,
     },
   });
 }
@@ -45,3 +46,5 @@ export async function deleteById(id: string) {
     where: { id },
   });
 }
+
+

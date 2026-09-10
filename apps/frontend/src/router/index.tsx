@@ -4,6 +4,7 @@ import { MainLayout } from "../layout/MainLayout";
 import DashboardPage from "../pages/DashboardPage";
 import AdminDashboardPage from "../pages/AdminDashboardPage";
 import AlertVerificationPage from "../pages/AlertVerificationPage";
+import SystemSettingsPage from "../pages/SystemSettingsPage";
 import LoginPage from "../pages/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import { GuestRoute } from "./GuestRoute";
@@ -27,6 +28,18 @@ export const router = createBrowserRouter([
       {
         path: "/admin/alerts",
         element: <AlertVerificationPage />,
+      },
+      {
+        path: "/admin/manajemen-akun",
+        element: <SystemSettingsPage />,
+      },
+      {
+        path: "/admin/settings",
+        element: <SystemSettingsPage />,
+      },
+      {
+        path: "/admin/kesiapsiagaan",
+        element: <SystemSettingsPage />,
       },
     ],
   },
