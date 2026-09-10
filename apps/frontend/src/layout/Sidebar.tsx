@@ -152,8 +152,8 @@ export const Sidebar = () => {
 
   return (
     <>
-      <aside className={`sidebar ${sidebarOpen ? "sidebar--open" : ""} overflow-y-auto`} aria-label="Navigasi utama">
-        <div className="sidebar__brand flex items-center p-4 relative justify-between">
+      <aside className={`sidebar ${sidebarOpen ? "sidebar--open" : ""} ${showAdminNav ? "sidebar--admin" : "sidebar--citizen"} overflow-y-auto`} aria-label="Navigasi utama">
+        <div className="sidebar__brand flex items-center px-1.5 pt-2 pb-3 relative justify-between">
           <div className="flex items-center">
             <Link 
               to="/" 
@@ -185,8 +185,8 @@ export const Sidebar = () => {
         <nav className="sidebar__nav">
           {/* Header Seksi WARGA (khusus tampilan admin) */}
           {showAdminNav && (
-            <div className="pb-1 px-3.5 flex items-center gap-2.5 select-none -mb-1">
-              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div className="pt-1.5 pb-1.5 px-2.5 flex items-center gap-2 select-none">
+              <span className="text-[11.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 WARGA
               </span>
               <div className="h-px flex-1 bg-[color:var(--border)]" />
@@ -195,6 +195,7 @@ export const Sidebar = () => {
 
           {(() => {
             const isCitizenPage = location.pathname === "/" || location.pathname === "/dashboard";
+            const citizenIconSize = showAdminNav ? 20 : 22;
             return (
               <>
                 <Link 
@@ -202,7 +203,7 @@ export const Sidebar = () => {
                   onClick={handleDashboardClick} 
                   className={isCitizenPage && (activeHash === "" || activeHash === "#") ? "active" : undefined}
                 >
-                  <Home size={20} />
+                  <Home size={citizenIconSize} />
                   Dashboard Warga
                 </Link>
 
@@ -223,7 +224,7 @@ export const Sidebar = () => {
                       }}
                       className={isMenuLinkActive ? "active" : undefined}
                     >
-                      <Icon size={20} />
+                      <Icon size={citizenIconSize} />
                       {item.label}
                     </a>
                   );
@@ -235,8 +236,8 @@ export const Sidebar = () => {
           {/* section menu khusus admin */}
           {showAdminNav && (
             <>
-              <div className="mt-3 mb-0 px-3.5 flex items-center gap-2.5 select-none">
-                <span className="text-[12px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <div className="mt-2.5 mb-0 px-2.5 flex items-center gap-2 select-none">
+                <span className="text-[11.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   ADMIN
                 </span>
                 <div className="h-px flex-1 bg-[color:var(--border)]" />
