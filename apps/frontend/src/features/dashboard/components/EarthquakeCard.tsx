@@ -138,7 +138,7 @@ const ShakemapImage = ({ url, alt }: ShakemapImageProps) => {
         src={url}
         alt={alt}
         className={cn(
-          "h-full w-full object-contain transition-opacity duration-300",
+          "h-full w-full object-contain p-2 transition-opacity duration-300",
           status === "loaded" ? "opacity-100" : "opacity-0"
         )}
         onLoad={() => setStatus("loaded")}
@@ -279,7 +279,7 @@ export const EarthquakeCard = ({
           </div>
         )}
         {variant === "pangandaran" && (
-          <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden border-b border-[color:var(--border)] bg-muted sm:aspect-video">
+          <div className="relative h-[400px] sm:h-[460px] md:h-[500px] w-full shrink-0 overflow-hidden border-b border-[color:var(--border)] bg-muted/20 flex items-center justify-center">
             {shakemapUrl ? (
               <ShakemapImage
                 key={shakemapUrl}

@@ -56,9 +56,10 @@ svg {
 }
 
 .main-content {
-  width: min(100%, var(--content-width));
-  margin: 0 auto;
-  padding: 28px 24px 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 28px 32px 40px;
+  margin: 0;
 }
 
 .main-content--admin {
@@ -736,9 +737,10 @@ svg {
 .evacuation-preview__image {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  max-height: 440px;
   object-fit: contain;
   background: var(--surface-muted, #f8f9fa);
+  padding: 16px;
 }
 
 .evacuation-preview__body {
@@ -1281,6 +1283,11 @@ svg {
   .evacuation-map {
     height: 260px;
     min-height: 260px;
+  }
+
+  .evacuation-preview__image {
+    max-height: 220px;
+    padding: 8px;
   }
 
   .contact-grid {

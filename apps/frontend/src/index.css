@@ -78,12 +78,6 @@
     display: none !important;
   }
 
-  /* INFO TAMBAHAN: Pastikan area konten dashboard kamu (di luar file sidebar) 
-     diberikan margin-left sebesar 260px agar tidak tertutup oleh sidebar yang menetap. 
-     Contoh kelas pembungkus konten utama kamu: */
-  .main-content {
-    margin-left: 260px;
-  }
 }
 
 .metric-label {
