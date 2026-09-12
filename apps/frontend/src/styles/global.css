@@ -55,18 +55,12 @@ svg {
   padding-left: var(--sidebar-width);
 }
 
-.main-content {
+.main-content,
+.main-content--admin {
   width: 100%;
   max-width: 100%;
   padding: 28px 32px 40px;
   margin: 0;
-}
-
-.main-content--admin {
-  width: 100% !important;
-  max-width: 100% !important;
-  padding: 28px 32px 40px !important;
-  margin: 0 !important;
 }
 
 .brand-mark {
@@ -1202,7 +1196,8 @@ svg {
     padding-inline: 18px;
   }
 
-  .main-content {
+  .main-content,
+  .main-content--admin {
     padding-inline: 18px;
   }
 
@@ -1235,7 +1230,8 @@ svg {
     display: none;
   }
 
-  .main-content {
+  .main-content,
+  .main-content--admin {
     padding: 18px 10px 0;
   }
 
