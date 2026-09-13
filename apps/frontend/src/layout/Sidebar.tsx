@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { BiBarChartAlt } from "react-icons/bi";
+import { IoMdArrowDropdown } from "react-icons/io";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
@@ -52,6 +53,19 @@ export const Sidebar = () => {
   // state autentikasi admin dan modal profil
   const { isAdmin, user, logout } = useAuthStore();
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // state collapse menu warga khusus di tampilan admin (tersimpan di localStorage)
+  const [isCitizenNavCollapsed, setIsCitizenNavCollapsed] = useState(() => {
+    return localStorage.getItem("sigap_admin_warga_collapsed") === "true";
+  });
+
+  const toggleCitizenNav = () => {
+    setIsCitizenNavCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("sigap_admin_warga_collapsed", String(next));
+      return next;
+    });
+  };
 
   // tampilkan menu admin jika role admin atau sedang di rute /admin/*
   const showAdminNav = isAdmin || location.pathname.startsWith("/admin");
@@ -183,17 +197,38 @@ export const Sidebar = () => {
         </div>
 
         <nav className="sidebar__nav">
-          {/* Header Seksi WARGA (khusus tampilan admin) */}
+          {/* Header Seksi WARGA (khusus tampilan admin) dengan tombol dropdown collapse */}
           {showAdminNav && (
-            <div className="pt-1.5 pb-1.5 px-2.5 flex items-center gap-2 select-none">
-              <span className="text-[11.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                WARGA
-              </span>
+            <div className="pt-1.5 pb-1.5 px-2 flex items-center gap-2 select-none">
+              <button
+                type="button"
+                onClick={toggleCitizenNav}
+                className="group flex items-center gap-1.5 px-1.5 py-0.5 -ml-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-expanded={!isCitizenNavCollapsed}
+                aria-label={isCitizenNavCollapsed ? "Buka menu navigasi warga" : "Tutup menu navigasi warga"}
+                title={isCitizenNavCollapsed ? "Buka menu warga" : "Tutup menu warga"}
+              >
+                <span className="text-[11.5px] font-bold uppercase tracking-wider">
+                  WARGA
+                </span>
+                <IoMdArrowDropdown
+                  size={22}
+                  className={`text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-transform duration-200 ${
+                    isCitizenNavCollapsed ? "-rotate-90" : "rotate-0"
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
               <div className="h-px flex-1 bg-[color:var(--border)]" />
             </div>
           )}
 
           {(() => {
+            // Sembunyikan tautan menu warga jika sedang di-collapse oleh admin
+            if (showAdminNav && isCitizenNavCollapsed) {
+              return null;
+            }
+
             const isCitizenPage = location.pathname === "/" || location.pathname === "/dashboard";
             const citizenIconSize = showAdminNav ? 20 : 22;
             return (
