@@ -1,28 +1,73 @@
 @startuml uc_admin_dashboard
 left to right direction
-title SIGAP - Use Case: Administrasi Konten
+title SIGAP - Use Case: Administrasi Konten & Sistem (Tahap 2)
 
-actor "Admin / Operator" as Admin
+actor "Admin" as Admin
+actor "Operator" as Operator
 
 rectangle "Sistem SIGAP" {
-  usecase "Login Admin" as UC0
-  usecase "Kelola Pengumuman" as UC5
+  usecase "Login" as UC0
   usecase "Kelola Kontak Darurat" as UC6
   usecase "Kelola Titik & Jalur Evakuasi" as UC7
+  usecase "Kelola Panduan Kesiapsiagaan" as UC7b
+  usecase "Klasifikasi Alert" as UC8b
+  usecase "Manajemen Perangkat IoT" as UC12
+  usecase "Lihat Riwayat Status Device" as UC13
+  usecase "Lihat Riwayat Aktivasi Sirine" as UC14
+  usecase "Manajemen Akun & Role" as UC15
+  usecase "Lihat Dashboard Admin" as UC16
 }
 
-Admin --> UC5
-Admin --> UC6
-Admin --> UC7
+Admin --> UC0
+Operator --> UC0
 
-UC5 .> UC0 : <<include>>
+Admin --> UC6
+Operator --> UC6
+Admin --> UC7
+Operator --> UC7
+Admin --> UC7b
+Operator --> UC7b
+Admin --> UC8b
+Operator --> UC8b
+Admin --> UC12
+Operator --> UC12
+Admin --> UC13
+Operator --> UC13
+Admin --> UC14
+Operator --> UC14
+Admin --> UC16
+Operator --> UC16
+
+Admin --> UC15
+note right of UC15
+  Khusus role Admin - satu-satunya
+  pembeda fungsional antara Admin
+  dan Operator di seluruh sistem
+  (FS-10). Operator TIDAK punya
+  akses ke use case ini.
+end note
+
 UC6 .> UC0 : <<include>>
 UC7 .> UC0 : <<include>>
+UC7b .> UC0 : <<include>>
+UC8b .> UC0 : <<include>>
+UC12 .> UC0 : <<include>>
+UC13 .> UC0 : <<include>>
+UC14 .> UC0 : <<include>>
+UC15 .> UC0 : <<include>>
+UC16 .> UC0 : <<include>>
 
 note bottom of UC0
-  Hak akses granular per role
-  (permission matrix) masih TBD
-  — lihat PRD 7.1 Isu Governance.
+  RBAC sudah final & di-seed
+  (admin: content.manage,
+  alert.validate, device.view,
+  device.manage, siren.view,
+  user.manage; operator: sama
+  minus user.manage). Enforcement
+  middleware belum diimplementasikan
+  di kode (Story SEC-1).
 end note
+
+note "Kelola Pengumuman DIHAPUS dari\ncakupan diagram ini - sumber data\npindah jadi proxy read-only dari SID\n(Roadmap Tahap 2)." as N1
 
 @enduml

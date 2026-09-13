@@ -140,3 +140,48 @@ Opsi 2, dengan domain yang mengikuti pembagian yang sama dengan `db/schema/` dan
 ### Dampak Terhadap Sistem
 - Setiap penambahan domain baru (mis. ADR-020) mewajibkan penambahan pasangan file baru di `paths/` dan `components/`, mengikuti pola penamaan yang sudah ditetapkan.
 - Proses build/deployment yang membutuhkan spesifikasi dalam satu file (mis. untuk diimpor ke tools tertentu) memerlukan langkah bundling tambahan - sudah divalidasi dapat dilakukan tanpa kehilangan informasi.
+
+---
+
+## ADR-027: Reversal Envelope Response ke `{success, message, data}`
+
+### Latar Belakang Keputusan
+ADR-017 menetapkan envelope `{status, code, message, data}`/`{status, code, message, errors}`. Peninjauan terhadap backend yang sudah live menemukan implementasi nyata sejak awal memakai `{success, message, data}`/`{success, message, errors}` - berbeda dari ADR-017. Migrasi paksa ke bentuk ADR-017 berarti breaking change terhadap seluruh backend yang sudah berjalan dan seluruh consumer frontend yang sudah terhubung.
+
+### Alternatif yang Dipertimbangkan
+1. Tetap pada ADR-017 (`status`/`code`), migrasi backend & frontend mengikuti dokumen.
+2. Revisi keputusan mengikuti bentuk yang sudah live (`success`/`message`), dokumen yang menyesuaikan kode, bukan sebaliknya.
+
+### Keputusan yang Dipilih
+Opsi 2 - envelope final: `{success: boolean, message: string, data: T}` (sukses), `{success: false, message: string, errors: string[]}` (error).
+
+### Alasan Pemilihan
+- Kode yang sudah live dan berfungsi adalah kenyataan yang lebih murah untuk diikuti dokumen, dibanding memaksa kode mengikuti dokumen yang ternyata menyimpang sejak awal - selaras prinsip Delivery > Complexity.
+- Field `code` pada body (tujuan awal ADR-017: mempermudah debugging di balik proxy) tidak pernah diimplementasikan dan tidak terbukti dibutuhkan pada kondisi nyata sistem berjalan.
+
+### Dampak Terhadap Sistem
+- Seluruh skema `SuccessEnvelope`/`ErrorEnvelope` pada spesifikasi API direvisi mengikuti bentuk ini.
+- Ditemukan inkonsistensi pada implementasi nyata: field `errors` kadang berupa object kosong (`{}`), bukan selalu array - ini PR tersendiri (Story SEC-9), bukan bagian keputusan desain ini.
+- ADR-017 dipertahankan apa adanya sebagai catatan historis, tidak diedit.
+
+---
+
+## ADR-028: Kategori Akses Ketiga - Device Gateway (M2M) di Bawah Prefix Public
+
+### Latar Belakang Keputusan
+Perangkat IoT (Unit Utama) memanggil backend untuk register, heartbeat, dan baca status - tanpa token JWT pengguna. ADR-019 hanya mendefinisikan dua kategori (`public`/`protected`) berbasis kebutuhan token pengguna; kategori device belum terformalkan sebagai keputusan tersendiri, sempat didesain informal sebagai namespace terpisah (`/device/{id}/*` dengan header `X-Device-Key`) sebelum diperiksa terhadap kode nyata.
+
+### Alternatif yang Dipertimbangkan
+1. Namespace URL terpisah untuk device (`/device/*`, di luar `/public/*` dan `/protected/*`), dengan skema autentikasi device tersendiri.
+2. Device tetap di bawah prefix `/public/*` yang sama seperti route publik biasa, dibedakan lewat requirement header device secret di level middleware (bukan di level path).
+
+### Keputusan yang Dipilih
+Opsi 2 - device gateway tetap di prefix `/public/*`, identifikasi lewat `deviceCode` di body request (bukan path param), autentikasi terpisah lewat header `X-Device-Secret` (Story SEC-7, belum diimplementasikan).
+
+### Alasan Pemilihan
+- Kode nyata yang sudah dibangun tim device sejak awal memang menempatkan endpoint ini di `/public/device/*` - opsi 1 adalah asumsi desain yang keliru terhadap realita, ditemukan lewat audit endpoint langsung terhadap kode.
+- Mengubah prefix URL yang sudah live (memindah ke namespace `/device/*` terpisah) adalah breaking change tanpa manfaat fungsional yang jelas - kebutuhan sebenarnya (device harus terautentikasi) dapat dipenuhi tanpa mengubah struktur path.
+
+### Dampak Terhadap Sistem
+- `device-gateway.yaml` merujuk path `/public/device/register`, `/public/device/heartbeat`, `/public/device/status` (bukan `/device/{id}/*`).
+- Endpoint ini saat ini **tidak memiliki autentikasi apa pun** - gap keamanan aktif yang dikonfirmasi audit, bukan risiko teoretis. Ditutup lewat Story SEC-7.

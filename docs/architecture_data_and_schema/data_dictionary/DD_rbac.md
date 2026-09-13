@@ -35,6 +35,7 @@
 | Role | Permission |
 |---|---|
 | admin | content.manage, alert.validate, device.view, device.manage, siren.view, user.manage |
-| operator | alert.validate, device.view, siren.view, siren.trigger |
+| operator | content.manage, alert.validate, device.view, siren.view, siren.trigger |
 
-Permission `siren.trigger` sengaja dimasukkan sebagai *reserved* - belum ada route yang mengonsumsinya, karena jalur aktivasi sirine aktual masih menunggu keputusan Tim IoT (protokol platform↔device). Permission ini disiapkan supaya begitu keputusan closed, tinggal dipasang ke route, tanpa perlu migrasi skema tambahan.
+Permission `siren.trigger` saat penulisan dokumen ini masih *reserved* (route belum ada di kode). Protokol dan desain route-nya **sudah final** sejak sesi desain keamanan sirine (lihat FS-09, backlog Story `SIGAP-T2-E2-S9`) - cooldown 60 detik, eskalasi RED memotong cooldown, konfirmasi 2-langkah untuk level RED. Satu bagian yang masih terbuka murni di level firmware: mekanisme konfirmasi RED untuk tombol *fisik* (diusulkan tekan-tahan 2 detik, menunggu konfirmasi Tim IoT terhadap kelayakan firmware yang sudah tahap finishing).
+Permission ini disiapkan supaya begitu keputusan closed, tinggal dipasang ke route, tanpa perlu migrasi skema tambahan.

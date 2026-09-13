@@ -1,7 +1,14 @@
 -- =====================================================================
 -- 004_environmental.sql
 -- SIGAP - Domain: Data Lingkungan & Alert
--- Bergantung pada: 001_core_types.sql (status_level)
+-- Bergantung pada: 001_core_types.sql
+--
+-- CATATAN REVISI BESAR: tabel `alert_log` diganti nama & struktur
+-- mengikuti model `alerts` yang SUDAH LIVE di Prisma - bukan sekadar
+-- rename kolom, field alert_type/source_rule/triggered_at/validated_at
+-- DIHAPUS, digantikan level/reviewStatus/reviewedBy/reviewedAt sesuai
+-- desain FS-02 (klasifikasi 4-status, bukan validasi biner).
+-- environmental_data TETAP murni desain, belum ada di database nyata.
 -- =====================================================================
 
 CREATE TABLE environmental_data (
@@ -14,17 +21,23 @@ CREATE TABLE environmental_data (
   recorded_at  TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE alert_log (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  alert_type   VARCHAR(30) NOT NULL, -- banjir/kekeringan/cuaca_ekstrem/seismik
-  severity     status_level NOT NULL,
-  message      TEXT NOT NULL,
-  source_rule  VARCHAR(100) NOT NULL, -- traceability ke rule pemicu
-  triggered_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  validated_by UUID REFERENCES users(id), -- Admin yang memvalidasi
-  validated_at TIMESTAMPTZ -- waktu validasi
+-- alert_review_status: 4 nilai, PERSIS sesuai FS-02 - sudah live.
+CREATE TYPE alert_review_status AS ENUM (
+  'Belum Ditinjau', 'Dikonfirmasi', 'Ditolak', 'Ditindaklanjuti'
 );
 
--- Index untuk query dashboard (data terbaru per sumber/tipe)
+CREATE TABLE alerts (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  level          alert_level NOT NULL, -- GREEN/YELLOW/ORANGE/RED, lihat 001_core_types.sql
+  source         VARCHAR(100) NOT NULL, -- mis. "BMKG", "BMKG (estimasi dari data gempa)"
+  description    TEXT,
+  review_status  alert_review_status NOT NULL DEFAULT 'Belum Ditinjau',
+  reviewed_by    UUID REFERENCES users(id),
+  reviewed_at    TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX idx_environmental_data_recorded_at ON environmental_data (recorded_at DESC);
-CREATE INDEX idx_alert_log_triggered_at ON alert_log (triggered_at DESC);
+CREATE INDEX idx_alerts_created_at ON alerts (created_at DESC);
+CREATE INDEX idx_alerts_review_status ON alerts (review_status);

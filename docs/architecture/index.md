@@ -14,11 +14,11 @@ Kerangka yang dipakai mengadaptasi pola **arc42/C4 Model** - standar umum untuk 
 | File | Isi | ADR Terkait |
 |---|---|---|
 | `01_introduction_and_scope.md` | Tujuan sistem, stakeholder, System Context Diagram, batasan program | - |
-| `02_building_block_view.md` | Component diagram internal, deskripsi tiap building block | ADR-016, ADR-021 |
-| `03_data_architecture.md` | Ringkasan entity, ER diagram | ADR-001 - ADR-004 |
-| `04_security_architecture.md` | Kategorisasi akses, RBAC, rate limiting | ADR-005 - ADR-010 |
-| `05_iot_architecture.md` | Arsitektur hybrid sirine, sequence diagram, Device Gateway | ADR-011 - ADR-015 |
-| `06_api_architecture.md` | Prinsip desain API, envelope, segmentasi | ADR-016 - ADR-021 |
+| `02_building_block_view.md` | Component diagram internal, deskripsi tiap building block | ADR-005, ADR-021, ADR-028 *(referensi sebelumnya ke ADR-016/021 tidak relevan topik - dikoreksi)* |
+| `03_data_architecture.md` | Ringkasan entity, ER diagram | ADR-001 - ADR-004, ADR-030 |
+| `04_security_architecture.md` | Kategorisasi akses, RBAC, rate limiting | ADR-005 - ADR-010, ADR-026, ADR-028 |
+| `05_iot_architecture.md` | Arsitektur hybrid sirine, sequence diagram, Device Gateway | ADR-011 - ADR-015, ADR-029 |
+| `06_api_architecture.md` | Prinsip desain API, envelope, segmentasi | ADR-016 - ADR-021, ADR-027, ADR-028 |
 | `07_integration_architecture.md` | Integrasi SIGAP↔SID | ADR-022 - ADR-025 |
 | `08_deployment_view.md` | Topologi deployment (production/staging/perangkat lapangan) | - |
 | `09_cross_cutting_concerns.md` | NFR lintas domain: fail-safe, performa, aksesibilitas | ADR-004, ADR-025 |

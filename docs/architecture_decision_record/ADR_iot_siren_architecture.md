@@ -127,3 +127,25 @@ Opsi 2 - level Hijau dan Kuning ditampilkan dengan warna LED yang sama pada pera
 ### Dampak Terhadap Sistem
 - Dokumentasi hardware Tim IoT perlu diperbarui: label warna LED untuk level Oranye diganti dari "Kuning menyala" menjadi "Oranye menyala", untuk menghindari tabrakan penamaan dengan level Kuning.
 - Dashboard web dan API tidak terpengaruh oleh penyederhanaan ini - keduanya tetap menampilkan dan membedakan keempat level secara eksplisit sesuai data yang tersimpan; penyederhanaan hanya berlaku pada tampilan LED fisik di lapangan.
+
+---
+
+## ADR-029: Granularitas `siren_action_log` - Satu Baris per Sirine, Bukan per Kejadian Broadcast
+
+### Latar Belakang Keputusan
+Protokol keamanan sirine Tahap 2 mengubah mekanisme trigger dari "pilih satu perangkat" menjadi broadcast ke seluruh Sirine terdaftar sekaligus. ADR-014 (skema audit trail) dirancang sebelum perubahan ini, mengasumsikan satu baris log merepresentasikan satu perangkat. Perlu diputuskan apakah granularitas ini tetap dipertahankan pada model broadcast, atau disederhanakan jadi satu baris per kejadian.
+
+### Alternatif yang Dipertimbangkan
+1. Satu baris per kejadian trigger (device_id dihapus) - sederhana, tapi kehilangan kemampuan melihat Sirine mana yang gagal merespons pada broadcast tertentu.
+2. Satu baris per Sirine per kejadian (device_id dipertahankan) - satu klik tombol dengan N Sirine menghasilkan N baris, masing-masing dengan status ack sendiri.
+
+### Keputusan yang Dipilih
+Opsi 2 - device_id dipertahankan.
+
+### Alasan Pemilihan
+- Konsisten dengan desain `ackStatus` per-Sirine yang sudah ditetapkan pada FS-08 (Riwayat Aktivasi Sirine) - status "Diterima & Dieksekusi"/"Tidak Ada Respons" hanya bermakna jika terikat ke perangkat spesifik.
+- Topologi ke depan mendukung penambahan Sirine (1..N) - migrasi dari model "1 baris per kejadian" ke "1 baris per Sirine" setelah data operasional nyata ada akan jauh lebih mahal daripada memutuskan granularitas ini sejak awal, sesuai pola pertimbangan yang sama dengan ADR-006 (RBAC).
+
+### Dampak Terhadap Sistem
+- Skema `siren_action_log` (005_iot_kesiapsiagaan.sql) mempertahankan `device_id NOT NULL`, tidak berubah dari ADR-014.
+- Satu aksi trigger pengguna (satu klik/tekan tombol) dapat menghasilkan banyak baris log - frontend/laporan riwayat perlu mengelompokkan baris berdasarkan `triggeredAt` + `triggerSource` yang sama untuk merepresentasikan "satu kejadian", bukan menampilkan tiap baris sebagai kejadian terpisah.
