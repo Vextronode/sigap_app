@@ -25,10 +25,10 @@ Nomor ADR bersifat **sekuensial lintas file** (tidak reset per file) - ADR-001 d
 
 | File | Domain | Rentang ADR | Status |
 |---|---|---|---|
-| `ADR_data_architecture.md` | Arsitektur Data & Skema | ADR-001 – ADR-004 | light_green |
-| `ADR_security_access_control.md` | Keamanan & Kontrol Akses | ADR-005 – ADR-010 | light_green |
-| `ADR_iot_siren_architecture.md` | Arsitektur IoT & Sirine | ADR-011 – ADR-015 | light_green |
-| `ADR_api_design.md` | Desain API | ADR-016 – ADR-021 | light_green |
+| `ADR_data_architecture.md` | Arsitektur Data & Skema | ADR-001, 002, 003, 004, 030 | light_green |
+| `ADR_security_access_control.md` | Keamanan & Kontrol Akses | ADR-005, 006, 007, 008, 009, 010, 026 | light_green |
+| `ADR_iot_siren_architecture.md` | Arsitektur IoT & Sirine | ADR-011, 012, 013, 014, 015, 029 | light_green |
+| `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 | light_green |
 | `ADR_sigap_sid_integration.md` | Integrasi Lintas Sistem (SIGAP ↔ SID) | ADR-022 – ADR-025 | yellow |
 
 Status `yellow` pada domain integrasi SID menandai bahwa keputusan di dalamnya baru disetujui dari sisi SIGAP - masih menunggu sign-off Tim SID dan Architecture Working Group sebelum dianggap final lintas program.
@@ -62,6 +62,11 @@ Status `yellow` pada domain integrasi SID menandai bahwa keputusan di dalamnya b
 | ADR-023 | Deep-Link Notifikasi Selalu Mengarah ke Dashboard SIGAP | `ADR_sigap_sid_integration.md` |
 | ADR-024 | Autentikasi Lintas Sistem - API Key Statis (Interim) | `ADR_sigap_sid_integration.md` |
 | ADR-025 | Dashboard SIGAP dan Indikator Fisik Tetap Sumber Kebenaran Utama | `ADR_sigap_sid_integration.md` |
+| ADR-026 | Revisi Permission Operator - Menambahkan `content.manage` | `ADR_security_access_control.md` |
+| ADR-027 | Reversal Envelope Response ke `{success, message, data}` | `ADR_api_design.md` |
+| ADR-028 | Kategori Akses Ketiga - Device Gateway (M2M) di Bawah Prefix Public | `ADR_api_design.md` |
+| ADR-029 | Granularitas `siren_action_log` - Satu Baris per Sirine | `ADR_iot_siren_architecture.md` |
+| ADR-030 | Rekonsiliasi Nilai ENUM terhadap Implementasi Live | `ADR_data_architecture.md` |
 
 ### 5. Menambah ADR Baru
 

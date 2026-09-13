@@ -20,11 +20,11 @@
 | Elemen | Detail |
 |---|---|
 | Nama Proses | Penyampaian Alert & Level Kesiapsiagaan (termasuk indikator fisik dan sirine) |
-| Aktor | Sistem SIGAP, Admin/Operator terlatih, Perangkat IoT, Warga Desa |
+| Aktor | Sistem SIGAP, Admin/Operator terlatih, Unit Utama, Sirine/Toa, Warga Desa |
 | As-Is | Tidak ada mekanisme alert terstruktur; peringatan mengandalkan komunikasi manual antar warga/perangkat desa, tanpa standar level bahaya. |
-| To-Be | Data lingkungan dievaluasi terhadap rule threshold, sistem menetapkan level (Hijau/Waspada, Kuning/Siaga, Merah/Awas), level dikirim ke dashboard dan Perangkat IoT. Operator terlatih memverifikasi kondisi dan, untuk level Kuning/Merah, dapat menekan tombol sirine sesuai kategori. Level Hijau tidak dapat memicu sirine. |
-| Ringkasan Perubahan | Dari "tanpa standar, manual" menjadi "level terstandar, tervisualisasi fisik, dengan human-in-the-loop sebagai safeguard sebelum aksi sirine". Sistem tidak mengotomasi bunyi sirine — keputusan akhir tetap di tangan operator manusia. |
-| Catatan Terbuka | Jalur tombol sirine (network-connected vs switch lokal) dan kanal notifikasi ke operator masih TBD — lihat PRD SIGAP v4.0 §7.1. Lihat diagram aktivitas terpisah: `bw_alert_kesiapsiagaan.puml`. |
+| To-Be | Data lingkungan dievaluasi terhadap rule threshold, sistem menetapkan level (GREEN/YELLOW/ORANGE/RED - ditampilkan sebagai 3 warna di indikator fisik, GREEN+YELLOW digabung), level ditampilkan di dashboard dan diambil Unit Utama via polling REST (ADR-013). Operator terlatih memverifikasi kondisi dan, hanya untuk level ORANGE/RED, dapat menekan tombol sirine (fisik di Unit Utama, atau digital via dashboard - keduanya broadcast ke seluruh Sirine terdaftar). Level GREEN/YELLOW tidak dapat memicu sirine sama sekali. |
+| Ringkasan Perubahan | Dari "tanpa standar, manual" menjadi "level terstandar 4-tingkat, tervisualisasi fisik, dengan human-in-the-loop sebagai safeguard sebelum aksi sirine". Sistem tidak mengotomasi bunyi sirine - keputusan akhir tetap di tangan operator manusia. |
+| Catatan Terbuka | **Sebagian besar sudah final** (protokol komunikasi, jalur sirine hybrid, cooldown & eskalasi - lihat FS-08/FS-09, ADR-013/ADR-029). Yang masih terbuka: kanal notifikasi ke operator (Web Push langsung sudah live; integrasi SID sebagai kanal tambahan masih menunggu sign-off Tim SID) dan mekanisme konfirmasi 2-langkah untuk tombol fisik level RED (menunggu konfirmasi Tim IoT). Lihat diagram aktivitas terpisah: `bw_alert_kesiapsiagaan.puml`. |
 
 ---
 
@@ -46,9 +46,9 @@
 |---|---|
 | Nama Proses | Pengelolaan Konten oleh Admin |
 | Aktor | Admin/Operator |
-| As-Is | Pembaruan informasi (pengumuman, kontak, titik evakuasi) dilakukan manual dan tidak terdokumentasi. |
-| To-Be | Admin login ke dashboard admin dan mengelola pengumuman, kontak darurat, serta titik dan jalur evakuasi melalui form terstruktur. |
-| Ringkasan Perubahan | Dari "tidak terdokumentasi" menjadi "terpusat, tercatat, dapat diaudit". |
+| As-Is | Pembaruan informasi (kontak, titik evakuasi, panduan) dilakukan manual dan tidak terdokumentasi. |
+| To-Be | Admin/Operator login ke dashboard admin dan mengelola kontak darurat, titik & jalur evakuasi, serta panduan kesiapsiagaan melalui form terstruktur. Kelola Pengumuman **tidak lagi** bagian dari proses ini - sumber data pindah jadi proxy read-only dari SID sejak Tahap 2. |
+| Ringkasan Perubahan | Dari "tidak terdokumentasi" menjadi "terpusat, tercatat, dapat diaudit". Cakupan Tahap 2 juga menambahkan manajemen perangkat IoT, akun & role, dan dashboard ringkasan admin - lihat `uc_admin_dashboard.puml` revisi. |
 
 ---
 

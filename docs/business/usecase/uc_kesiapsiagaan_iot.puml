@@ -1,16 +1,17 @@
 @startuml uc_kesiapsiagaan_iot
 left to right direction
-title SIGAP — Use Case: Kesiapsiagaan & IoT (Indikator + Sirine)
+title SIGAP — Use Case: Kesiapsiagaan & IoT (Unit Utama + Sirine)
 
 actor "Warga Desa" as Warga
-actor "Admin / Operator" as Admin
-actor "Perangkat IoT\n(Indikator + Sirine)" as IoT
+actor "Admin / Operator" as AdminOp
+actor "Unit Utama" as UU
+actor "Sirine/Toa" as Si
 
 rectangle "Sistem SIGAP" {
   usecase "Lihat Info Kesiapsiagaan" as UC3
   usecase "Terima Notifikasi Level Alert" as UC4
   usecase "Evaluasi Rule Threshold" as UC_rule
-  usecase "Kirim Level ke Perangkat IoT" as UC11
+  usecase "Sediakan Level untuk Polling" as UC11
   usecase "Verifikasi Level & Putuskan Tindakan" as UC8
   usecase "Trigger Sirine" as UC9
   usecase "Notifikasi Operator" as UC_notif
@@ -20,35 +21,35 @@ Warga --> UC3
 Warga --> UC4
 
 UC_rule .> UC11 : <<include>>
-UC11 --> IoT
+UU --> UC11 : polling setiap 15 detik\n(REST Polling, ADR-013 - FINAL)
 
-IoT --> UC8 : device menampilkan level
+UU --> UC8 : Unit Utama menampilkan level
 UC8 .> UC_notif : <<include>>
-Admin --> UC8
+AdminOp --> UC8
 
 UC9 .> UC8 : <<extend>>
 note right of UC9
-  Extension point: hanya aktif
-  jika level = Kuning atau Merah.
-  Level Hijau tidak membuka opsi
-  ini (safeguard by design).
+  Extension point: hanya aktif jika
+  level = ORANGE atau RED (bukan
+  Kuning/Merah 3-tier - sudah final
+  4-tier, ADR-030). Level GREEN/YELLOW
+  tidak membuka opsi ini (safeguard
+  by design, ADR-011).
+  Cooldown 60 detik pasca-trigger,
+  dipotong otomatis saat eskalasi RED.
+  Broadcast ke SELURUH Sirine terdaftar,
+  tidak ada pemilihan perangkat (FS-09).
 end note
-Admin --> UC9
-UC9 --> IoT : bunyikan sirine
+AdminOp --> UC9
+UC9 --> Si : bunyikan sirine (broadcast)
+Si --> UU : laporkan ack via siklus\npoll berikutnya
 
 note right of UC_notif
-  TBD - kanal notifikasi ke operator
-  belum ditentukan, berpotensi
-  bersinggungan dengan larangan
-  notifikasi WhatsApp untuk warga
-  (PRD 3.2 vs 7.1).
-end note
-
-note bottom of UC11
-  TBD - protokol komunikasi
-  platform -> device belum final
-  (kandidat: MQTT / REST polling).
-  Lihat PRD 4 Tech Stack.
+  Web Push langsung ke warga SUDAH
+  LIVE (VAPID). Integrasi SID sebagai
+  kanal tambahan (dual-channel) masih
+  menunggu sign-off Tim SID - lihat
+  Roadmap Tahap 2 §2.1 #5.
 end note
 
 @enduml

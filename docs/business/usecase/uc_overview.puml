@@ -4,9 +4,11 @@ skinparam packageStyle rectangle
 title SIGAP - Use Case Overview
 
 actor "Warga Desa" as Warga
-actor "Admin / Operator" as Admin
+actor "Admin" as Admin
+actor "Operator" as Operator
 actor "Sumber Eksternal\n(BMKG/USGS/OWM/AI)" as Ext
-actor "Perangkat IoT\n(Indikator + Sirine)" as IoT
+actor "Unit Utama" as UU
+actor "Sirine/Toa" as Si
 
 rectangle "Sistem SIGAP" {
   package "Monitoring Lingkungan" {
@@ -21,10 +23,21 @@ rectangle "Sistem SIGAP" {
     usecase "Trigger Sirine" as UC9
   }
 
-  package "Administrasi Konten" {
-    usecase "Kelola Pengumuman" as UC5
+  package "Administrasi Konten (Tahap 1+2)" {
     usecase "Kelola Kontak Darurat" as UC6
     usecase "Kelola Titik & Jalur Evakuasi" as UC7
+    usecase "Kelola Panduan Kesiapsiagaan" as UC7b
+    usecase "Klasifikasi Alert" as UC8b
+  }
+
+  package "Manajemen Perangkat & Keselamatan (Tahap 2, baru)" {
+    usecase "Manajemen Perangkat IoT" as UC12
+    usecase "Riwayat Status & Aktivasi Sirine" as UC13
+  }
+
+  package "Manajemen Pengguna & Sistem (Tahap 2, baru)" {
+    usecase "Manajemen Akun & Role" as UC15
+    usecase "Lihat Dashboard Admin" as UC16
   }
 }
 
@@ -33,21 +46,42 @@ Warga --> UC2
 Warga --> UC3
 Warga --> UC4
 
-Admin --> UC5
 Admin --> UC6
 Admin --> UC7
+Admin --> UC7b
+Admin --> UC8b
 Admin --> UC8
 Admin --> UC9
+Admin --> UC12
+Admin --> UC13
+Admin --> UC15
+Admin --> UC16
+
+Operator --> UC6
+Operator --> UC7
+Operator --> UC7b
+Operator --> UC8b
+Operator --> UC8
+Operator --> UC9
+Operator --> UC12
+Operator --> UC13
+Operator --> UC16
 
 Ext --> UC1
 Ext --> UC2
-IoT --> UC4
-UC9 --> IoT
+UU --> UC4
+UC9 --> Si
 
 note bottom of UC9
   Detail relasi (include/extend) tidak
   digambarkan di file overview ini.
   Lihat uc_kesiapsiagaan_iot.puml.
+end note
+
+note bottom of UC15
+  Khusus Admin - satu-satunya
+  pembeda fungsional Admin vs
+  Operator di seluruh sistem.
 end note
 
 @enduml
