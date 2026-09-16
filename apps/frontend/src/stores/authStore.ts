@@ -1,13 +1,16 @@
 import { create } from "zustand";
+import { queryClient } from "../services/queryClient";
 
-interface DecodedToken {
+export interface DecodedToken {
   sub?: string;
   email?: string;
   roles?: string[];
   permissions?: string[];
+  exp?: number;
+  iat?: number;
 }
 
-interface AuthUser {
+export interface AuthUser {
   id?: string;
   email?: string;
   name?: string;
@@ -20,10 +23,11 @@ interface AuthState {
   isAdmin: boolean;
   login: (token: string, user?: AuthUser) => void;
   logout: () => void;
+  validateSession: () => boolean;
 }
 
 // parsing payload jwt secara aman di browser
-function parseToken(token: string | null): DecodedToken | null {
+export function parseToken(token: string | null): DecodedToken | null {
   if (!token) return null;
   try {
     const base64Url = token.split(".")[1];
@@ -41,8 +45,25 @@ function parseToken(token: string | null): DecodedToken | null {
   }
 }
 
-// inisialisasi state awal autentikasi dari local storage
-const initialToken = localStorage.getItem("sigap_token");
+// pengecekan apakah token sudah kedaluwarsa berdasarkan field exp jwt
+export function isTokenExpired(token: string | null): boolean {
+  if (!token) return true;
+  const decoded = parseToken(token);
+  if (!decoded) return true;
+  if (!decoded.exp) return false;
+  // buffer toleransi 10 detik untuk mencegah race-condition di jaringan
+  return Date.now() >= decoded.exp * 1000 - 10_000;
+}
+
+// inisialisasi state awal autentikasi dari local storage dengan validasi kedaluwarsa
+const rawStoredToken = localStorage.getItem("sigap_token");
+const isInitialExpired = isTokenExpired(rawStoredToken);
+
+if (rawStoredToken && isInitialExpired) {
+  localStorage.removeItem("sigap_token");
+}
+
+const initialToken = !isInitialExpired ? rawStoredToken : null;
 const decoded = parseToken(initialToken);
 const initialUser: AuthUser | null = decoded
   ? {
@@ -68,6 +89,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       name: "Administrator Desa",
       roles: parsed?.roles ?? ["admin"],
     };
+
+    // Bersihkan cache query lama agar data baru langsung ditarik segar detik itu juga
+    queryClient.clear();
+
     set({
       token,
       user: resolvedUser,
@@ -78,10 +103,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   // penanganan logout dan pembersihan sesi
   logout: () => {
     localStorage.removeItem("sigap_token");
+    queryClient.clear();
     set({
       token: null,
       user: null,
       isAdmin: false,
     });
+  },
+
+  // validasi sesi aktif saat ini
+  validateSession: () => {
+    const currentToken = localStorage.getItem("sigap_token");
+    if (isTokenExpired(currentToken)) {
+      localStorage.removeItem("sigap_token");
+      queryClient.clear();
+      set({
+        token: null,
+        user: null,
+        isAdmin: false,
+      });
+      return false;
+    }
+    return true;
   },
 }));
