@@ -8,6 +8,7 @@ import SystemSettingsPage from "../pages/SystemSettingsPage";
 import LoginPage from "../pages/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import { GuestRoute } from "./GuestRoute";
+import { ProtectedRoute } from "./ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
@@ -21,25 +22,31 @@ export const router = createBrowserRouter([
         path: "/dashboard",
         element: <DashboardPage />,
       },
+      // Rute terproteksi khusus admin (wajib sesi aktif dan token valid)
       {
-        path: "/admin/dashboard",
-        element: <AdminDashboardPage />,
-      },
-      {
-        path: "/admin/alerts",
-        element: <AlertVerificationPage />,
-      },
-      {
-        path: "/admin/manajemen-akun",
-        element: <SystemSettingsPage />,
-      },
-      {
-        path: "/admin/settings",
-        element: <SystemSettingsPage />,
-      },
-      {
-        path: "/admin/kesiapsiagaan",
-        element: <SystemSettingsPage />,
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: "/admin/dashboard",
+            element: <AdminDashboardPage />,
+          },
+          {
+            path: "/admin/alerts",
+            element: <AlertVerificationPage />,
+          },
+          {
+            path: "/admin/manajemen-akun",
+            element: <SystemSettingsPage />,
+          },
+          {
+            path: "/admin/settings",
+            element: <SystemSettingsPage />,
+          },
+          {
+            path: "/admin/kesiapsiagaan",
+            element: <SystemSettingsPage />,
+          },
+        ],
       },
     ],
   },

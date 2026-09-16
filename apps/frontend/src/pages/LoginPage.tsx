@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { authService } from "../services/authService";
-import { useAuthStore } from "../stores/authStore";
+import { useAuthStore, isTokenExpired } from "../stores/authStore";
 
 // skema validasi form login admin
 const loginSchema = z.object({
@@ -31,6 +31,8 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   useDocumentTitle("SIGAP Admin Portal - Desa Cibenda");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isSessionExpired = searchParams.get("expired") === "true";
 
   // matikan efek dark mode di halaman login admin dan kembalikan saat keluar
   useEffect(() => {
@@ -42,11 +44,15 @@ export default function LoginPage() {
     };
   }, []);
 
-  // alihkan langsung jika pengguna sudah memiliki token aktif
+  // alihkan langsung hanya jika pengguna memiliki token aktif yang masih valid
   useEffect(() => {
-    const token = localStorage.getItem("sigap_token");
-    if (token) {
-      navigate("/admin/dashboard", { replace: true });
+    const rawToken = localStorage.getItem("sigap_token");
+    if (rawToken) {
+      if (isTokenExpired(rawToken)) {
+        useAuthStore.getState().logout();
+      } else {
+        navigate("/admin/dashboard", { replace: true });
+      }
     }
   }, [navigate]);
 
@@ -170,6 +176,21 @@ export default function LoginPage() {
               </span>
               <span className="block text-[11px] sm:text-xs text-red-700/90 mt-0.5 leading-relaxed">
                 {securityMessage}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* banner informasi sesi kedaluwarsa jika dialihkan oleh interceptor 401 */}
+        {isSessionExpired && !showSecurityWarning && (
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3 text-left">
+            <TriangleAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="leading-tight">
+              <span className="block text-xs font-bold text-amber-800">
+                Sesi Login Berakhir
+              </span>
+              <span className="block text-[11px] sm:text-xs text-amber-700 mt-0.5 leading-relaxed">
+                Masa berlaku sesi login Anda telah habis. Silakan masukkan kredensial kembali untuk melanjutkan.
               </span>
             </div>
           </div>
