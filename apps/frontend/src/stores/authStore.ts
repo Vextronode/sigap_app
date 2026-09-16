@@ -61,6 +61,9 @@ const isInitialExpired = isTokenExpired(rawStoredToken);
 
 if (rawStoredToken && isInitialExpired) {
   localStorage.removeItem("sigap_token");
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem("sigap_session_expired", "true");
+  }
 }
 
 const initialToken = !isInitialExpired ? rawStoredToken : null;
@@ -116,6 +119,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     const currentToken = localStorage.getItem("sigap_token");
     if (isTokenExpired(currentToken)) {
       localStorage.removeItem("sigap_token");
+      if (currentToken && typeof window !== "undefined") {
+        sessionStorage.setItem("sigap_session_expired", "true");
+      }
       queryClient.clear();
       set({
         token: null,

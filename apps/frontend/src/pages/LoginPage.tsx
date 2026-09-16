@@ -31,8 +31,16 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   useDocumentTitle("SIGAP Admin Portal - Desa Cibenda");
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isSessionExpired = searchParams.get("expired") === "true";
+  const [isSessionExpired] = useState(() => {
+    const fromQuery = searchParams.get("expired") === "true";
+    const fromStorage =
+      typeof window !== "undefined" &&
+      sessionStorage.getItem("sigap_session_expired") === "true";
+    if (fromStorage && typeof window !== "undefined") {
+      sessionStorage.removeItem("sigap_session_expired");
+    }
+    return fromQuery || fromStorage;
+  });
 
   // matikan efek dark mode di halaman login admin dan kembalikan saat keluar
   useEffect(() => {

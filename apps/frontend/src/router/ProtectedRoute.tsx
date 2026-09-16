@@ -7,11 +7,15 @@ export const ProtectedRoute = () => {
   const location = useLocation();
 
   const isSessionValid = validateSession();
+  const wasSessionExpired =
+    typeof window !== "undefined" &&
+    sessionStorage.getItem("sigap_session_expired") === "true";
 
   if (!token || !isAdmin || !isSessionValid) {
+    const targetUrl = wasSessionExpired ? "/admin/login?expired=true" : "/admin/login";
     return (
       <Navigate
-        to="/admin/login"
+        to={targetUrl}
         state={{ from: location }}
         replace
       />
