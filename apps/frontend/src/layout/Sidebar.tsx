@@ -67,6 +67,19 @@ export const Sidebar = () => {
     });
   };
 
+  // state collapse menu admin di tampilan admin (tersimpan di localStorage)
+  const [isAdminNavCollapsed, setIsAdminNavCollapsed] = useState(() => {
+    return localStorage.getItem("sigap_admin_menu_collapsed") === "true";
+  });
+
+  const toggleAdminNav = () => {
+    setIsAdminNavCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("sigap_admin_menu_collapsed", String(next));
+      return next;
+    });
+  };
+
   // tampilkan menu admin jika role admin atau sedang di rute /admin/*
   const showAdminNav = isAdmin || location.pathname.startsWith("/admin");
 
@@ -197,23 +210,23 @@ export const Sidebar = () => {
         </div>
 
         <nav className="sidebar__nav">
-          {/* Header Seksi WARGA (khusus tampilan admin) dengan tombol dropdown collapse */}
+          {/* Header Seksi WARGA (khusus tampilan admin) dengan tombol dropdown collapse & warna biru SIGAP */}
           {showAdminNav && (
             <div className="pt-1.5 pb-1.5 px-2 flex items-center gap-2 select-none">
               <button
                 type="button"
                 onClick={toggleCitizenNav}
-                className="group flex items-center gap-1.5 px-1.5 py-0.5 -ml-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="group flex items-center gap-1.5 px-1.5 py-0.5 -ml-1 rounded-md text-[color:var(--primary)] hover:bg-blue-50/70 dark:hover:bg-blue-950/30 transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-expanded={!isCitizenNavCollapsed}
                 aria-label={isCitizenNavCollapsed ? "Buka menu navigasi warga" : "Tutup menu navigasi warga"}
                 title={isCitizenNavCollapsed ? "Buka menu warga" : "Tutup menu warga"}
               >
-                <span className="text-[11.5px] font-bold uppercase tracking-wider">
+                <span className="text-[11.5px] font-bold uppercase tracking-wider text-[color:var(--primary)]">
                   WARGA
                 </span>
                 <IoMdArrowDropdown
                   size={22}
-                  className={`text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-transform duration-200 ${
+                  className={`text-[color:var(--primary)] opacity-80 group-hover:opacity-100 transition-transform duration-200 ${
                     isCitizenNavCollapsed ? "-rotate-90" : "rotate-0"
                   }`}
                   aria-hidden="true"
@@ -268,55 +281,72 @@ export const Sidebar = () => {
             );
           })()}
 
-          {/* section menu khusus admin */}
+          {/* section menu khusus admin dengan tombol dropdown collapse & warna biru SIGAP */}
           {showAdminNav && (
             <>
-              <div className="mt-2.5 mb-0 px-2.5 flex items-center gap-2 select-none">
-                <span className="text-[11.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  ADMIN
-                </span>
+              <div className="mt-2.5 mb-0 px-2 flex items-center gap-2 select-none">
+                <button
+                  type="button"
+                  onClick={toggleAdminNav}
+                  className="group flex items-center gap-1.5 px-1.5 py-0.5 -ml-1 rounded-md text-[color:var(--primary)] hover:bg-blue-50/70 dark:hover:bg-blue-950/30 transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  aria-expanded={!isAdminNavCollapsed}
+                  aria-label={isAdminNavCollapsed ? "Buka menu navigasi admin" : "Tutup menu navigasi admin"}
+                  title={isAdminNavCollapsed ? "Buka menu admin" : "Tutup menu admin"}
+                >
+                  <span className="text-[11.5px] font-bold uppercase tracking-wider text-[color:var(--primary)]">
+                    ADMIN
+                  </span>
+                  <IoMdArrowDropdown
+                    size={22}
+                    className={`text-[color:var(--primary)] opacity-80 group-hover:opacity-100 transition-transform duration-200 ${
+                      isAdminNavCollapsed ? "-rotate-90" : "rotate-0"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
                 <div className="h-px flex-1 bg-[color:var(--border)]" />
               </div>
 
-              {adminLinks.map((item) => {
-                const Icon = item.icon;
-                const isRouterLink = item.href.startsWith("/");
-                const isMenuLinkActive = isRouterLink
-                  ? location.pathname === item.href
-                  : activeHash === item.href;
+              {!isAdminNavCollapsed &&
+                adminLinks.map((item) => {
+                  const Icon = item.icon;
+                  const isRouterLink = item.href.startsWith("/");
+                  const isMenuLinkActive = isRouterLink
+                    ? location.pathname === item.href
+                    : activeHash === item.href;
 
-                if (isRouterLink) {
+                  if (isRouterLink) {
+                    return (
+                      <Link
+                        to={item.href}
+                        key={item.label}
+                        onClick={() => {
+                          closeSidebar();
+                          setActiveHash("");
+                        }}
+                        className={isMenuLinkActive ? "active" : undefined}
+                      >
+                        <Icon size={20} />
+                        {item.label}
+                      </Link>
+                    );
+                  }
+
                   return (
-                    <Link
-                      to={item.href}
+                    <a
+                      href={item.href}
                       key={item.label}
                       onClick={() => {
                         closeSidebar();
-                        setActiveHash("");
+                        setActiveHash(item.href);
                       }}
                       className={isMenuLinkActive ? "active" : undefined}
                     >
                       <Icon size={20} />
                       {item.label}
-                    </Link>
+                    </a>
                   );
-                }
-
-                return (
-                  <a
-                    href={item.href}
-                    key={item.label}
-                    onClick={() => {
-                      closeSidebar();
-                      setActiveHash(item.href);
-                    }}
-                    className={isMenuLinkActive ? "active" : undefined}
-                  >
-                    <Icon size={20} />
-                    {item.label}
-                  </a>
-                );
-              })}
+                })}
             </>
           )}
         </nav>
