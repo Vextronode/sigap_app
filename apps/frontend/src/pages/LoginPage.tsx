@@ -291,7 +291,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting || remainingAttempts <= 0}
-            className="w-full h-11 sm:h-12 mt-2 rounded-xl bg-[#00247D] hover:bg-[#001c61] active:bg-[#00174f] text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-md shadow-[#00247D]/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="group w-full h-11 sm:h-12 mt-2 rounded-xl bg-[#00247D] hover:bg-[#001c61] active:bg-[#00174f] text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-md shadow-[#00247D]/25 hover:shadow-lg hover:shadow-[#00247D]/35 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md cursor-pointer"
           >
             {isSubmitting ? (
               <>
@@ -301,7 +301,7 @@ export default function LoginPage() {
             ) : (
               <>
                 <span>Masuk ke Dashboard Admin</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
               </>
             )}
           </button>
@@ -311,11 +311,12 @@ export default function LoginPage() {
         <div className="mt-8 pt-4 border-t border-slate-200 text-center">
           <Link
             to="/?view=warga"
-            style={{ color: "#334155" }}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold !text-slate-700 hover:!text-[#00247D] transition-colors cursor-pointer"
+            className="group inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-[#00247D] py-1.5 px-3 rounded-xl hover:bg-slate-100/90 transition-all duration-200 cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 !text-slate-700" style={{ color: "#334155" }} />
-            <span style={{ color: "#334155" }}>Kembali ke Portal Informasi Warga</span>
+            <ArrowLeft className="w-4 h-4 text-slate-500 transition-all duration-200 group-hover:-translate-x-1 group-hover:text-[#00247D]" />
+            <span className="transition-colors duration-200 group-hover:underline underline-offset-4">
+              Kembali ke Portal Informasi Warga
+            </span>
           </Link>
         </div>
       </div>
