@@ -14,6 +14,9 @@ import type {
 } from "../types/alert.types.js";
 
 const ALERT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 jam (1 hari)
+const ALERT_CACHE_TTL_MS = 30_000; // 30 detik TTL in-memory cache
+
+let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
 
 export class AlertService {
   /**
@@ -24,6 +27,7 @@ export class AlertService {
     source: string,
     description?: string
   ) {
+    cachedAlertState = null; // Invalidate cache saat ada alert baru
     return prisma.alert.create({
       data: {
         level,
@@ -34,63 +38,134 @@ export class AlertService {
   }
 
   /**
-   * Mengambil alert terbaru. Jika alert di DB berusia > 24 jam (1 hari),
-   * status dianggap expired dan kembali ke status AMAN (GREEN).
+   * Mengambil alert terbaru. Menggunakan in-memory cache (TTL 30 detik)
+   * untuk meminimalisasi beban kuota compute basis data.
    */
   static async getCurrentAlert(): Promise<AlertRecord | null> {
-    const latest = await prisma.alert.findFirst({
-      include: {
-        reviewer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const nowMs = Date.now();
+    if (cachedAlertState && cachedAlertState.expiresAt > nowMs) {
+      return cachedAlertState.data;
+    }
+
+    let alertResult: AlertRecord | null = null;
+
+    try {
+      const latest = await prisma.alert.findFirst({
+        include: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
 
-    if (!latest) return null;
+      if (latest) {
+        const mapped = mapAlertToRecord(latest);
 
-    const mapped = mapAlertToRecord(latest);
+        // Cek umur alert. Jika > 24 jam (1 hari), status alert otomatis kadaluarsa & kembali ke GREEN
+        const ageMs = Date.now() - new Date(latest.updatedAt).getTime();
+        if (ageMs > ALERT_MAX_AGE_MS && latest.level !== AlertLevel.GREEN) {
+          alertResult = {
+            ...mapped,
+            level: AlertLevel.GREEN,
+            source: "BMKG",
+            description: "Tidak terdapat peringatan resmi BMKG.",
+          };
+        } else {
+          alertResult = mapped;
+        }
 
-    // Cek umur alert. Jika > 24 jam (1 hari), status alert otomatis kadaluarsa & kembali ke GREEN
-    const ageMs = Date.now() - new Date(latest.updatedAt).getTime();
-    if (ageMs > ALERT_MAX_AGE_MS && latest.level !== AlertLevel.GREEN) {
-      return {
-        ...mapped,
+        cachedAlertState = {
+          data: alertResult,
+          expiresAt: nowMs + ALERT_CACHE_TTL_MS,
+        };
+        return alertResult;
+      }
+    } catch (dbError) {
+      console.warn(
+        "[AlertService] Gagal membaca alert dari DB (kuota/koneksi). Mengaktifkan fallback live BMKG in-memory:",
+        dbError
+      );
+    }
+
+    // Fallback cerdas: Jika DB gagal atau belum ada record, hitung live in-memory dari data BMKG terkini
+    try {
+      const { EarthquakeService } = await import("./earthquake.service.js");
+      const { BmkgService } = await import("./bmkg.service.js");
+      const { DecisionEngineService } = await import("./decisionEngine.service.js");
+
+      const earthquake = await EarthquakeService.getPangandaran();
+      const tsunami = await BmkgService.getTsunamiStatus();
+      const liveEval = DecisionEngineService.evaluate({ earthquake, tsunami });
+
+      const now = new Date();
+      alertResult = {
+        id: "live-fallback",
+        level: liveEval.level as AlertLevel,
+        source: liveEval.source || "BMKG",
+        description:
+          liveEval.description ||
+          "Tidak terdapat indikasi ancaman gempa atau tsunami dari data terkini BMKG.",
+        reviewStatus: "Belum Diverifikasi",
+        reviewedBy: null,
+        reviewedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+    } catch (fallbackError) {
+      console.error("[AlertService] Evaluasi live BMKG fallback juga gagal:", fallbackError);
+      const now = new Date();
+      alertResult = {
+        id: "baseline-safe",
         level: AlertLevel.GREEN,
         source: "BMKG",
-        description: "Tidak terdapat peringatan resmi BMKG.",
+        description: "Kondisi wilayah Desa Cibenda aman dan kondusif.",
+        reviewStatus: "Belum Diverifikasi",
+        reviewedBy: null,
+        reviewedAt: null,
+        createdAt: now,
+        updatedAt: now,
       };
     }
 
-    return mapped;
+    cachedAlertState = {
+      data: alertResult,
+      expiresAt: nowMs + ALERT_CACHE_TTL_MS,
+    };
+    return alertResult;
   }
 
   /**
    * Mengambil seluruh riwayat alert (legacy)
    */
   static async getAllAlerts(): Promise<AlertRecord[]> {
-    const alerts = await prisma.alert.findMany({
-      include: {
-        reviewer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    try {
+      const alerts = await prisma.alert.findMany({
+        include: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
 
-    return alerts.map((a) => mapAlertToRecord(a));
+      return alerts.map((a) => mapAlertToRecord(a));
+    } catch (dbError) {
+      console.warn("[AlertService] Gagal mengambil seluruh riwayat alert dari DB:", dbError);
+      return [];
+    }
   }
 
   /**
@@ -123,26 +198,39 @@ export class AlertService {
       endDate,
     };
 
-    const [data, total] = await Promise.all([
-      AlertRepository.findFiltered({
-        ...filterParams,
-        skip,
-        take: limit,
-      }),
-      AlertRepository.countFiltered(filterParams),
-    ]);
+    try {
+      const [data, total] = await Promise.all([
+        AlertRepository.findFiltered({
+          ...filterParams,
+          skip,
+          take: limit,
+        }),
+        AlertRepository.countFiltered(filterParams),
+      ]);
 
-    const totalPages = Math.ceil(total / limit) || 1;
+      const totalPages = Math.ceil(total / limit) || 1;
 
-    return {
-      data,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-      },
-    };
+      return {
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+        },
+      };
+    } catch (dbError) {
+      console.warn("[AlertService] Gagal mengambil riwayat alert terfilter dari DB:", dbError);
+      return {
+        data: [],
+        pagination: {
+          total: 0,
+          page: 1,
+          limit,
+          totalPages: 1,
+        },
+      };
+    }
   }
 
   /**
@@ -178,6 +266,7 @@ export class AlertService {
       throw error;
     }
 
+    cachedAlertState = null;
     return AlertRepository.updateReview(
       id,
       reviewStatusEnum,

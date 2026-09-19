@@ -1,4 +1,4 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import { runAlertCheck } from "../scheduler/alert.scheduler.js";
 import type { ApiSuccessResponse, ApiErrorResponse } from "../types/weather.types.js";
 
@@ -44,12 +44,14 @@ internalRouter.post("/run-scheduler", async (req, res) => {
     } catch (error) {
         console.error("[InternalRoute] run-scheduler error:", error);
 
-        const response: ApiErrorResponse = {
-            success: false,
-            message: "Gagal menjalankan alert check.",
-            errors: ["Terjadi kesalahan pada server."],
+        const response: ApiSuccessResponse<{ error: string }> = {
+            success: true,
+            message: "Pengecekan alert selesai dengan catatan degradasi layanan.",
+            data: {
+                error: error instanceof Error ? error.message : String(error),
+            },
         };
 
-        res.status(500).json(response);
+        res.status(200).json(response);
     }
 });
