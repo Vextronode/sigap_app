@@ -14,6 +14,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import axios from "axios";
 import { authService } from "../services/authService";
 import { useAuthStore, isTokenExpired } from "../stores/authStore";
 
@@ -70,7 +71,9 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [remainingAttempts, setRemainingAttempts] = useState(5);
   const [showSecurityWarning, setShowSecurityWarning] = useState(false);
+  const [securityTitle, setSecurityTitle] = useState("Peringatan Keamanan");
   const [securityMessage, setSecurityMessage] = useState("");
+  const [isSystemError, setIsSystemError] = useState(false);
 
   const {
     register,
@@ -88,7 +91,9 @@ export default function LoginPage() {
   // penanganan aksi submit login
   const onSubmit = async (payload: LoginForm) => {
     if (remainingAttempts <= 0) {
+      setIsSystemError(false);
       setShowSecurityWarning(true);
+      setSecurityTitle("Akun Terkunci [Kode: ERR_ACCOUNT_LOCKED]");
       setSecurityMessage(
         "Batas percobaan login telah habis (5x gagal). Akun Anda dikunci sementara selama 15 menit."
       );
@@ -111,25 +116,52 @@ export default function LoginPage() {
 
       // alihkan dengan replace agar pengguna tidak bisa kembali ke halaman login via tombol back
       navigate("/admin/dashboard", { replace: true });
-    } catch {
+    } catch (err: unknown) {
+      let status: number | undefined;
+      let serverMessage: string | undefined;
+      let errorCode = "ERR_UNKNOWN";
+
+      if (axios.isAxiosError(err)) {
+        status = err.response?.status;
+        serverMessage =
+          err.response?.data?.message || err.response?.data?.errors?.[0];
+        errorCode = err.code || (status ? `HTTP_${status}` : "ERR_NETWORK");
+      }
+
+      // Deteksi gangguan server, database down, atau kendala jaringan (5xx / offline)
+      const isServerDown = !status || status >= 500;
+
+      if (isServerDown) {
+        setIsSystemError(true);
+        setShowSecurityWarning(true);
+        const codeDisplay = status ? `HTTP ${status}` : errorCode;
+        setSecurityTitle(`Gangguan Server / Basis Data [Kode: ${codeDisplay}]`);
+        const msg = serverMessage
+          ? `${serverMessage} (Kode: ${codeDisplay})`
+          : `Terjadi gangguan koneksi ke server atau basis data cloud. Sisa percobaan login Anda TIDAK dikurangi. (Kode: ${codeDisplay})`;
+        setSecurityMessage(msg);
+        setError("root", { message: msg });
+        return;
+      }
+
+      // Jika kesalahan autentikasi kredensial pengguna biasa (4xx seperti 401 Unauthorized / 422)
+      setIsSystemError(false);
       const nextAttempts = Math.max(0, remainingAttempts - 1);
       setRemainingAttempts(nextAttempts);
       setShowSecurityWarning(true);
+      setSecurityTitle("Peringatan Keamanan");
 
       if (nextAttempts === 0) {
-        setSecurityMessage(
-          "Batas percobaan login telah habis (5x gagal). Akun Anda dikunci sementara selama 15 menit."
-        );
-        setError("root", {
-          message: "Akun Anda terkunci sementara. Silakan tunggu 15 menit.",
-        });
+        const msg =
+          "Batas percobaan login telah habis (5x gagal). Akun Anda dikunci sementara selama 15 menit.";
+        setSecurityMessage(msg);
+        setError("root", { message: msg });
       } else {
-        setSecurityMessage(
-          `Batas percobaan login tersisa: ${nextAttempts}. Akun akan dikunci jika gagal berturut-turut.`
-        );
-        setError("root", {
-          message: "Kredensial tidak valid. Periksa kembali email dan kata sandi.",
-        });
+        const msg = serverMessage
+          ? `${serverMessage} Batas percobaan login tersisa: ${nextAttempts}.`
+          : `Kredensial tidak valid. Batas percobaan login tersisa: ${nextAttempts}. Akun akan dikunci jika gagal berturut-turut.`;
+        setSecurityMessage(msg);
+        setError("root", { message: msg });
       }
     }
   };
@@ -175,15 +207,33 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* banner peringatan keamanan rate limit hanya muncul saat terjadi kesalahan */}
+        {/* banner peringatan keamanan / gangguan server */}
         {showSecurityWarning && (
-          <div className="mt-6 bg-red-50/90 border border-red-200 rounded-xl p-3.5 flex items-start gap-3 text-left">
-            <TriangleAlert className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 shrink-0 mt-0.5" />
+          <div
+            className={`mt-6 rounded-xl p-3.5 flex items-start gap-3 text-left border ${
+              isSystemError
+                ? "bg-amber-50 border-amber-300 text-amber-950"
+                : "bg-red-50/90 border-red-200 text-red-950"
+            }`}
+          >
+            <TriangleAlert
+              className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 mt-0.5 ${
+                isSystemError ? "text-amber-600" : "text-red-600"
+              }`}
+            />
             <div className="leading-tight">
-              <span className="block text-xs font-bold text-red-800">
-                Peringatan Keamanan
+              <span
+                className={`block text-xs font-bold ${
+                  isSystemError ? "text-amber-900" : "text-red-800"
+                }`}
+              >
+                {securityTitle}
               </span>
-              <span className="block text-[11px] sm:text-xs text-red-700/90 mt-0.5 leading-relaxed">
+              <span
+                className={`block text-[11px] sm:text-xs mt-1 leading-relaxed ${
+                  isSystemError ? "text-amber-800 font-medium" : "text-red-700/90"
+                }`}
+              >
                 {securityMessage}
               </span>
             </div>

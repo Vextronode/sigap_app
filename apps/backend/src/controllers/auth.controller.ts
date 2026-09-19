@@ -20,11 +20,15 @@ export async function loginController(req: Request, res: Response) {
       });
     }
 
+    const customErr = error as Error & { statusCode?: number };
+    const statusCode = customErr.statusCode || 500;
+    const message = customErr.message || "Terjadi kesalahan pada server.";
+
     console.error("Login error:", error);
-    return res.status(500).json({
+    return res.status(statusCode).json({
       success: false,
-      message: "Terjadi kesalahan pada server.",
-      errors: ["Terjadi kesalahan pada server."],
+      message,
+      errors: [message],
     });
   }
 }

@@ -47,9 +47,18 @@ export async function runAlertCheck(): Promise<{
         return { ...result, saved: false };
     }
 
-    // Simpan ke database
-    await AlertService.saveAlert(result.level, result.source, result.description);
-    console.log(`[AlertScheduler] Alert saved (${result.level}) - ${result.description}`);
+    // Simpan ke database jika DB tersedia
+    let isSaved = false;
+    try {
+        await AlertService.saveAlert(result.level, result.source, result.description);
+        console.log(`[AlertScheduler] Alert saved (${result.level}) - ${result.description}`);
+        isSaved = true;
+    } catch (dbError) {
+        console.warn(
+            `[AlertScheduler] Gagal menyimpan alert ke database (kuota/koneksi). Pemrosesan notifikasi tetap dilanjutkan:`,
+            dbError instanceof Error ? dbError.message : dbError
+        );
+    }
 
     // Kirim push notification otomatis jika level bukan GREEN.
     // shouldNotify() sudah menjamin GREEN tidak dikirim — warga tidak perlu
@@ -70,7 +79,7 @@ export async function runAlertCheck(): Promise<{
         }
     }
 
-    return { ...result, saved: true };
+    return { ...result, saved: isSaved };
 }
 
 /**
