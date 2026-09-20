@@ -133,13 +133,9 @@ async function main() {
     }
   }
 
-  // 6. Seeding record gempa Pangandaran dengan Shakemap BMKG
-  await prisma.earthquakeRecord.upsert({
-    where: { eventTime: "2026-08-20T14:31:33.000Z" },
-    update: {
-      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
-    },
-    create: {
+  // 6. Seeding 10 record gempa Pangandaran dengan Shakemap BMKG
+  const pangandaranEarthquakes = [
+    {
       eventTime: "2026-08-20T14:31:33.000Z",
       magnitude: 4.2,
       depth: "17 km",
@@ -148,12 +144,251 @@ async function main() {
       longitude: 107.88,
       distanceToVillage: 88,
       felt: "III Pangandaran, III Kalapanunggal, III Ciamis, III Pameungpeuk",
-      potential: "",
+      potential: "Tidak berpotensi tsunami",
       shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
     },
-  });
+    {
+      eventTime: "2026-09-03T08:14:10.000Z",
+      magnitude: 3.8,
+      depth: "21 km",
+      location: "Pusat gempa berada di laut 64 km Barat Daya Kab. Pangandaran",
+      latitude: -7.95,
+      longitude: 108.35,
+      distanceToVillage: 68,
+      felt: "II Pangandaran, II Parigi",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-06T04:22:05.000Z",
+      magnitude: 3.5,
+      depth: "19 km",
+      location: "Pusat gempa berada di laut 42 km Tenggara Kab. Pangandaran",
+      latitude: -7.88,
+      longitude: 108.72,
+      distanceToVillage: 45,
+      felt: "II-III Cijulang, II Parigi",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-08T21:18:44.000Z",
+      magnitude: 4.0,
+      depth: "25 km",
+      location: "Pusat gempa berada di laut 55 km Selatan Kab. Pangandaran",
+      latitude: -8.15,
+      longitude: 108.52,
+      distanceToVillage: 58,
+      felt: "III Pangandaran, II Kalipucang",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-11T12:05:12.000Z",
+      magnitude: 3.1,
+      depth: "10 km",
+      location: "Pusat gempa berada di darat 12 km Timur Laut Kab. Pangandaran",
+      latitude: -7.62,
+      longitude: 108.68,
+      distanceToVillage: 22,
+      felt: "II Kalipucang, II Padaherang",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-13T19:40:15.000Z",
+      magnitude: 2.9,
+      depth: "8 km",
+      location: "Pusat gempa berada di darat 8 km Barat Daya Parigi Pangandaran",
+      latitude: -7.72,
+      longitude: 108.48,
+      distanceToVillage: 14,
+      felt: "I-II Cibenda",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-16T07:55:02.000Z",
+      magnitude: 4.5,
+      depth: "30 km",
+      location: "Pusat gempa berada di laut 92 km Barat Daya Kab. Pangandaran",
+      latitude: -8.18,
+      longitude: 107.82,
+      distanceToVillage: 95,
+      felt: "III Pangandaran, III Parigi, II Ciamis",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-17T15:11:38.000Z",
+      magnitude: 3.3,
+      depth: "16 km",
+      location: "Pusat gempa berada di laut 32 km Selatan Parigi Pangandaran",
+      latitude: -7.98,
+      longitude: 108.52,
+      distanceToVillage: 36,
+      felt: "II Parigi, II Cijulang",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-18T09:30:19.000Z",
+      magnitude: 3.7,
+      depth: "22 km",
+      location: "Pusat gempa berada di laut 58 km Barat Daya Kab. Pangandaran",
+      latitude: -8.02,
+      longitude: 108.28,
+      distanceToVillage: 62,
+      felt: "II-III Pangandaran, II Cipatujah",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260820213133.mmi.jpg",
+    },
+    {
+      eventTime: "2026-09-19T00:40:22.000Z",
+      magnitude: 2.6,
+      depth: "7 km",
+      location: "Pusat gempa berada di darat 6 km Tenggara Kota Tasikmalaya",
+      latitude: -7.33,
+      longitude: 108.25,
+      distanceToVillage: 52,
+      felt: "III Tasikmalaya, III Ciamis",
+      potential: "Tidak berpotensi tsunami",
+      shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260919074022.mmi.jpg",
+    },
+  ];
 
-  console.log("EarthquakeRecord baseline Pangandaran berhasil diinisialisasi.");
+  for (const eq of pangandaranEarthquakes) {
+    await prisma.earthquakeRecord.upsert({
+      where: { eventTime: eq.eventTime },
+      update: {
+        shakemap: eq.shakemap,
+        location: eq.location,
+        magnitude: eq.magnitude,
+      },
+      create: eq,
+    });
+  }
+
+  console.log("10 EarthquakeRecord Pangandaran berhasil diinisialisasi.");
+
+  // Seeding 10 baseline alert kejadian gempa Pangandaran untuk verifikasi admin
+  const baselineEarthquakeAlerts = [
+    {
+      level: "ORANGE" as const,
+      source: "BMKG",
+      description: "Gempa M4.2 dirasakan di wilayah Pangandaran (intensitas III MMI). Harap waspada potensi gempa susulan dan pantau jalur evakuasi.",
+      reviewStatus: "DIKONFIRMASI" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: new Date("2026-08-20T15:00:00.000Z"),
+      createdAt: new Date("2026-08-20T14:31:33.000Z"),
+      updatedAt: new Date("2026-08-20T15:00:00.000Z"),
+    },
+    {
+      level: "YELLOW" as const,
+      source: "BMKG",
+      description: "Gempa M3.8 terdeteksi di laut 64 km Barat Daya Kab. Pangandaran. Getaran dirasakan warga di wilayah pesisir Parigi.",
+      reviewStatus: "DITINDAKLANJUTI" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: new Date("2026-09-03T08:30:00.000Z"),
+      createdAt: new Date("2026-09-03T08:14:10.000Z"),
+      updatedAt: new Date("2026-09-03T08:30:00.000Z"),
+    },
+    {
+      level: "YELLOW" as const,
+      source: "BMKG",
+      description: "Gempa M3.5 terdeteksi di laut 42 km Tenggara Kab. Pangandaran, kedalaman 19 km.",
+      reviewStatus: "DIKONFIRMASI" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: new Date("2026-09-06T05:00:00.000Z"),
+      createdAt: new Date("2026-09-06T04:22:05.000Z"),
+      updatedAt: new Date("2026-09-06T05:00:00.000Z"),
+    },
+    {
+      level: "ORANGE" as const,
+      source: "BMKG",
+      description: "Gempa M4.0 dirasakan di wilayah pesisir selatan Kab. Pangandaran skala III MMI.",
+      reviewStatus: "DITINDAKLANJUTI" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: new Date("2026-09-08T22:00:00.000Z"),
+      createdAt: new Date("2026-09-08T21:18:44.000Z"),
+      updatedAt: new Date("2026-09-08T22:00:00.000Z"),
+    },
+    {
+      level: "YELLOW" as const,
+      source: "BMKG",
+      description: "Gempa M3.1 terdeteksi di darat 12 km Timur Laut Kab. Pangandaran, getaran dangkal 10 km.",
+      reviewStatus: "BELUM_DITINJAU" as const,
+      reviewedBy: null,
+      reviewedAt: null,
+      createdAt: new Date("2026-09-11T12:05:12.000Z"),
+      updatedAt: new Date("2026-09-11T12:05:12.000Z"),
+    },
+    {
+      level: "YELLOW" as const,
+      source: "BMKG",
+      description: "Gempa M2.9 terdeteksi di darat 8 km Barat Daya Parigi Pangandaran. Belum terverifikasi warga (False Alarm / Getaran Mikro).",
+      reviewStatus: "DITOLAK" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: new Date("2026-09-13T20:15:00.000Z"),
+      createdAt: new Date("2026-09-13T19:40:15.000Z"),
+      updatedAt: new Date("2026-09-13T20:15:00.000Z"),
+    },
+    {
+      level: "ORANGE" as const,
+      source: "BMKG",
+      description: "Gempa M4.5 dirasakan di Pangandaran dan Parigi skala III MMI. Posko siaga telah diaktifkan.",
+      reviewStatus: "DIKONFIRMASI" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: new Date("2026-09-16T08:30:00.000Z"),
+      createdAt: new Date("2026-09-16T07:55:02.000Z"),
+      updatedAt: new Date("2026-09-16T08:30:00.000Z"),
+    },
+    {
+      level: "YELLOW" as const,
+      source: "BMKG",
+      description: "Gempa M3.3 terdeteksi di laut 32 km Selatan Parigi Pangandaran dalam radius pantau.",
+      reviewStatus: "BELUM_DITINJAU" as const,
+      reviewedBy: null,
+      reviewedAt: null,
+      createdAt: new Date("2026-09-17T15:11:38.000Z"),
+      updatedAt: new Date("2026-09-17T15:11:38.000Z"),
+    },
+    {
+      level: "YELLOW" as const,
+      source: "BMKG",
+      description: "Gempa M3.7 terdeteksi di laut 58 km Barat Daya Kab. Pangandaran, getaran dirasakan di pesisir.",
+      reviewStatus: "DIKONFIRMASI" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: new Date("2026-09-18T10:00:00.000Z"),
+      createdAt: new Date("2026-09-18T09:30:19.000Z"),
+      updatedAt: new Date("2026-09-18T10:00:00.000Z"),
+    },
+    {
+      level: "YELLOW" as const,
+      source: "BMKG",
+      description: "Gempa M2.6 terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.",
+      reviewStatus: "BELUM_DITINJAU" as const,
+      reviewedBy: null,
+      reviewedAt: null,
+      createdAt: new Date("2026-09-19T04:07:19.803Z"),
+      updatedAt: new Date("2026-09-19T04:07:19.803Z"),
+    },
+  ];
+
+  for (const alertData of baselineEarthquakeAlerts) {
+    const existing = await prisma.alert.findFirst({
+      where: {
+        description: alertData.description,
+      },
+    });
+
+    if (!existing) {
+      await prisma.alert.create({
+        data: alertData,
+      });
+      console.log(`Alert baseline (${alertData.level} - ${alertData.description.slice(0, 25)}...) berhasil ditambahkan.`);
+    }
+  }
 
   // 7. Seeding 3 Titik Evakuasi Strategis Desa Cibenda & Sekitarnya
   const strategicEvacuationPoints = [
