@@ -2,13 +2,16 @@ import { apiClient, protectedPath, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 import type { EvacuationPoint, EvacuationRoute } from "../types/dashboard";
 
-type EvacuationPointPayload = {
+export type EvacuationPointPayload = {
   name: string;
-  description?: string;
+  description?: string | null;
   latitude: number;
   longitude: number;
-  capacity?: number;
-  address?: string;
+  elevation?: number | null;
+  capacity?: number | null;
+  address?: string | null;
+  facilities?: string[];
+  isCore?: boolean;
 };
 
 type EvacuationRoutePayload = {

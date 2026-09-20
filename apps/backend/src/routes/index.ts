@@ -16,6 +16,10 @@ import {
   publicPreparednessGuideRouter,
   protectedPreparednessGuideRouter,
 } from "./preparednessGuide.route.js";
+import {
+  publicEvacuationPointRouter,
+  protectedEvacuationPointRouter,
+} from "./evacuationPoint.route.js";
 import { systemHealthRouter } from "./systemHealth.route.js";
 
 export const publicRouter = Router();
@@ -38,6 +42,9 @@ publicRouter.use("/emergency-contacts", publicEmergencyContactRouter);
 // panduan kesiapsiagaan
 publicRouter.use("/preparedness-guides", publicPreparednessGuideRouter);
 
+// titik evakuasi desa
+publicRouter.use("/evacuation-points", publicEvacuationPointRouter);
+
 // IoT Device
 publicRouter.use("/device", publicDeviceRouter);
 
@@ -57,7 +64,9 @@ protectedRouter.use("/alerts", protectedAlertsRouter);
 protectedRouter.use("/notifications", protectedNotificationRouter);
 protectedRouter.use("/emergency-contacts", protectedEmergencyContactRouter);
 protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
+protectedRouter.use("/evacuation-points", protectedEvacuationPointRouter);
 protectedRouter.use("/system-health", systemHealthRouter);
+
 
 
 

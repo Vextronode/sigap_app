@@ -154,6 +154,63 @@ async function main() {
   });
 
   console.log("EarthquakeRecord baseline Pangandaran berhasil diinisialisasi.");
+
+  // 7. Seeding 3 Titik Evakuasi Strategis Desa Cibenda & Sekitarnya
+  const strategicEvacuationPoints = [
+    {
+      name: "Kantor Pemerintahan Desa Cibenda",
+      address: "Jl. Raya Cijulang, Desa Cibenda, Kec. Parigi, Kab. Pangandaran",
+      latitude: -7.6789572,
+      longitude: 108.549459,
+      elevation: 12,
+      capacity: 500,
+      description: "Titik kumpul evakuasi gempa bumi dengan area terbuka (lapangan desa). Cocok untuk evakuasi darurat non-tsunami karena dekat dengan posko aparat desa.",
+      facilities: ["Air Bersih", "Listrik/Genset", "Akses Ambulans", "Posko Informasi"],
+      isCore: true,
+    },
+    {
+      name: "Titik Evakuasi Dataran Tinggi Citumang",
+      address: "Kompleks Wisata Citumang, Desa Bojong, Kec. Parigi (Akses via Jl. Cintaratu)",
+      latitude: -7.659273,
+      longitude: 108.5496681,
+      elevation: 38,
+      capacity: 1200,
+      description: "Titik Evakuasi Vertikal Mandiri Alami. Berada di area pelataran parkir atas dan perbukitan Citumang dengan elevasi aman (> 35 mdpl) bebas dari jangkauan gelombang tsunami (inundasi). Rute evakuasi dari Parigi/Cibenda melalui Jl. Raya Cijulang lalu ke utara via Jl. Cintaratu.",
+      facilities: ["Air Bersih", "Dataran Tinggi Anti-Tsunami", "Tenda Darurat", "Dapur Umum"],
+      isCore: true,
+    },
+    {
+      name: "Gedung Evakuasi Vertikal (TES) PUPR & BNPB",
+      address: "Kawasan Pesisir Pangandaran, Kab. Pangandaran",
+      latitude: -7.6913299,
+      longitude: 108.6453014,
+      elevation: 22,
+      capacity: 3000,
+      description: "Gedung shelter vertikal Tempat Evakuasi Sementara (TES) bertingkat konstruksi tahan gempa megathrust dan gelombang tsunami yang dibangun resmi oleh Kementerian PUPR dan BNPB Pangandaran.",
+      facilities: ["Konstruksi Tahan Gempa", "Rooftop Anti-Tsunami", "Tenaga Medis", "Genset Darurat", "Air Bersih", "Sistem Sirine Tsunami"],
+      isCore: true,
+    },
+  ];
+
+  for (const point of strategicEvacuationPoints) {
+    const existing = await prisma.evacuationPoint.findFirst({
+      where: { name: point.name },
+    });
+
+    if (!existing) {
+      await prisma.evacuationPoint.create({
+        data: point,
+      });
+      console.log(`Titik evakuasi "${point.name}" berhasil di-seed.`);
+    } else {
+      await prisma.evacuationPoint.update({
+        where: { id: existing.id },
+        data: point,
+      });
+      console.log(`Titik evakuasi "${point.name}" diperbarui.`);
+    }
+  }
+
   console.log("Seed selesai.");
 
 
