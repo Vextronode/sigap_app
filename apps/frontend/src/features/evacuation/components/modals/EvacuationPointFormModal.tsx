@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { X, MapPin, Loader2, Info, Plus } from "lucide-react";
 import type { EvacuationPoint } from "../../../../types/dashboard";
 import type { EvacuationPointPayload } from "../../../../services/evacuationService";
@@ -64,18 +64,17 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
   const [localCustomFacilities, setLocalCustomFacilities] = useState<string[]>([]);
 
   // Daftar fasilitas untuk titik ini: bawaan + fasilitas eksisting titik ini + fasilitas kustom lokal sesi ini
-  const availableFacilities = useMemo(() => {
-    const list = [...COMMON_FACILITIES];
-    if (point?.facilities) {
-      point.facilities.forEach((f) => {
-        if (!list.includes(f)) list.push(f);
-      });
-    }
-    localCustomFacilities.forEach((f) => {
-      if (!list.includes(f)) list.push(f);
-    });
-    return list;
-  }, [point?.facilities, localCustomFacilities]);
+  const availableFacilities = [
+    ...COMMON_FACILITIES,
+    ...(point?.facilities ?? []).filter(
+      (facility) => !COMMON_FACILITIES.includes(facility)
+    ),
+    ...localCustomFacilities.filter(
+      (facility) =>
+        !COMMON_FACILITIES.includes(facility) &&
+        !(point?.facilities ?? []).includes(facility)
+    ),
+  ];
 
   const [errors, setErrors] = useState<{
     name?: string;
