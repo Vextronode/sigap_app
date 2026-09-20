@@ -19,8 +19,11 @@ body {
 
 body,
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
+  font-family: inherit;
 }
 
 a {

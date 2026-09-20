@@ -230,3 +230,21 @@ model PreparednessGuide {
 
   @@map("preparedness_guides")
 }
+
+// model data titik evakuasi bencana desa cibenda
+model EvacuationPoint {
+  id          String   @id @default(uuid())
+  name        String
+  address     String?
+  latitude    Float
+  longitude   Float
+  elevation   Float?
+  capacity    Int?
+  description String?  @db.Text
+  facilities  String[] @default([])
+  isCore      Boolean  @default(false) @map("is_core")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("evacuation_points")
+}

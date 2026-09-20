@@ -89,13 +89,18 @@ export type GeoJsonFeature = {
 };
 
 export type EvacuationPoint = {
-  id: string | number;
+  id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   latitude: number;
   longitude: number;
-  capacity?: number;
-  address?: string;
+  elevation?: number | null;
+  capacity?: number | null;
+  address?: string | null;
+  facilities?: string[];
+  isCore?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type EvacuationRoute = {
