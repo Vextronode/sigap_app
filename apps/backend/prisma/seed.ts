@@ -390,28 +390,42 @@ async function main() {
     }
   }
 
-  // 7. Seeding 3 Titik Evakuasi Strategis Desa Cibenda & Sekitarnya
+  // 7. Seeding Titik Evakuasi Strategis Desa Cibenda & Sekitarnya (Sesuai Peta Resmi)
   const strategicEvacuationPoints = [
     {
-      name: "Kantor Pemerintahan Desa Cibenda",
+      name: "SDN 1 Cibenda (Titik Kumpul Utama)",
+      address: "Jl. Raya Parigi - Cijulang (Lintas Selatan), Desa Cibenda, Kec. Parigi, Kab. Pangandaran",
+      latitude: -7.67812,
+      longitude: 108.54483,
+      elevation: 14,
+      capacity: 800,
+      description:
+        "Sekolah ini terletak tepat di pinggir jalan raya utama akses Lintas Selatan Jawa Barat wilayah Parigi. Menjadi titik kumpul dan pusat edukasi/simulasi penyelamatan mandiri warga di sekitar zona pemukiman awal sebelum diarahkan lebih lanjut.",
+      facilities: ["Area Terbuka", "Air Bersih", "Akses Jalan Utama", "Posko Darurat"],
+      isCore: true,
+    },
+    {
+      name: "Kantor Desa Cibenda / Pusat Informasi Posyandu",
       address: "Jl. Raya Cijulang, Desa Cibenda, Kec. Parigi, Kab. Pangandaran",
-      latitude: -7.6789572,
-      longitude: 108.549459,
-      elevation: 12,
+      latitude: -7.6747,
+      longitude: 108.5544,
+      elevation: 16,
       capacity: 500,
-      description: "Titik kumpul evakuasi gempa bumi dengan area terbuka (lapangan desa). Cocok untuk evakuasi darurat non-tsunami karena dekat dengan posko aparat desa.",
+      description:
+        "Area pusat administrasi tempat peta kerentanan dipasang, posisinya berada sedikit masuk ke utara (daratan tinggi). Lokasi ini menjadi titik pusat penyebaran informasi di mana Peta Kerentanan Tsunami Desa Cibenda resmi dipasang dan diresmikan bagi warga. Warga diimbau berkumpul atau merujuk ke pos ini untuk melihat peta visual zonasi bahaya terdekat.",
       facilities: ["Air Bersih", "Listrik/Genset", "Akses Ambulans", "Posko Informasi"],
       isCore: true,
     },
     {
-      name: "Titik Evakuasi Dataran Tinggi Citumang",
-      address: "Kompleks Wisata Citumang, Desa Bojong, Kec. Parigi (Akses via Jl. Cintaratu)",
-      latitude: -7.659273,
-      longitude: 108.5496681,
-      elevation: 38,
+      name: "Dusun Parapat (Zona Dataran Tinggi)",
+      address: "Area Perbukitan Utara, Jalur Evakuasi Paralel Desa Cibenda - Bojong, Kec. Parigi",
+      latitude: -7.6495,
+      longitude: 108.5482,
+      elevation: 36,
       capacity: 1200,
-      description: "Titik Evakuasi Vertikal Mandiri Alami. Berada di area pelataran parkir atas dan perbukitan Citumang dengan elevasi aman (> 35 mdpl) bebas dari jangkauan gelombang tsunami (inundasi). Rute evakuasi dari Parigi/Cibenda melalui Jl. Raya Cijulang lalu ke utara via Jl. Cintaratu.",
-      facilities: ["Air Bersih", "Dataran Tinggi Anti-Tsunami", "Tenda Darurat", "Dapur Umum"],
+      description:
+        "Warga yang berada di kawasan pesisir (seperti RT/RW 04/07 Dusun Parapat) diarahkan melalui jalur evakuasi paralel ke arah utara menjauhi Samudra Hindia, menuju titik kumpul darurat di perbatasan Desa Bojong atau Desa Cintaratu yang memiliki topografi lebih tinggi dan aman dari jangkauan gelombang tsunami.",
+      facilities: ["Dataran Tinggi Anti-Tsunami", "Air Bersih", "Tenda Darurat", "Posko Darurat"],
       isCore: true,
     },
     {
@@ -421,7 +435,8 @@ async function main() {
       longitude: 108.6453014,
       elevation: 22,
       capacity: 3000,
-      description: "Gedung shelter vertikal Tempat Evakuasi Sementara (TES) bertingkat konstruksi tahan gempa megathrust dan gelombang tsunami yang dibangun resmi oleh Kementerian PUPR dan BNPB Pangandaran.",
+      description:
+        "Gedung shelter vertikal Tempat Evakuasi Sementara (TES) bertingkat konstruksi tahan gempa megathrust dan gelombang tsunami yang dibangun resmi oleh Kementerian PUPR dan BNPB Pangandaran.",
       facilities: ["Konstruksi Tahan Gempa", "Rooftop Anti-Tsunami", "Tenaga Medis", "Genset Darurat", "Air Bersih", "Sistem Sirine Tsunami"],
       isCore: true,
     },

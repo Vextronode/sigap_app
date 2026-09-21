@@ -27,8 +27,12 @@ export const evacuationService = {
     return response.data.data;
   },
   getRoutes: async () => {
-    const response = await apiClient.get<ApiResponse<EvacuationRoute[]>>(publicPath("/evacuation-routes"));
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<EvacuationRoute[]>>(publicPath("/evacuation-routes"));
+      return response.data.data ?? [];
+    } catch {
+      return [];
+    }
   },
   createPoint: async (payload: EvacuationPointPayload) => {
     const response = await apiClient.post<ApiResponse<EvacuationPoint>>(protectedPath("/evacuation-points"), payload);
