@@ -23,6 +23,8 @@ export const CitizenEvacuationList: React.FC<CitizenEvacuationListProps> = ({
   selectedPointId,
   onSelectPoint,
 }) => {
+  const [expandedDescId, setExpandedDescId] = React.useState<string | null>(null);
+
   return (
     <div className="flex flex-col gap-2.5 sm:gap-3 h-full overflow-y-auto pr-1 sm:pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
       {points.map((point, index) => {
@@ -113,17 +115,48 @@ export const CitizenEvacuationList: React.FC<CitizenEvacuationListProps> = ({
                 ) : null}
               </div>
 
-              {/* Catatan Rute & Akses */}
-              {point.description && (
-                <div className="mt-2">
-                  <span className="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                    Catatan Rute & Akses :
-                  </span>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800 line-clamp-2 sm:line-clamp-3">
-                    {point.description}
-                  </p>
-                </div>
-              )}
+              {/* Catatan Rute & Akses - expand/collapse elegan */}
+              {point.description && (() => {
+                const isExpanded = expandedDescId === point.id;
+                const isLong = point.description.length > 120;
+                return (
+                  <div className="mt-2">
+                    <span className="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+                      Catatan Rute &amp; Akses :
+                    </span>
+                    <div className="relative">
+                      <p
+                        className={`text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800 ${
+                          isLong && !isExpanded ? "line-clamp-2" : ""
+                        }`}
+                      >
+                        {point.description}
+                      </p>
+                      {/* Gradient fade-out hanya ketika teks panjang & belum di-expand */}
+                      {isLong && !isExpanded && (
+                        <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-slate-50 dark:from-slate-800/50 to-transparent rounded-b-lg pointer-events-none" />
+                      )}
+                    </div>
+                    {isLong && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedDescId(isExpanded ? null : point.id);
+                        }}
+                        className="mt-0.5 flex items-center gap-0.5 w-full justify-end"
+                      >
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          {isExpanded ? "Sembunyikan" : "Lihat selengkapnya"}
+                        </span>
+                        <span className="text-[11px] font-bold text-blue-500 dark:text-blue-400 leading-none">
+                          {isExpanded ? "↑" : "↓"}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Fasilitas Chips */}
               {point.facilities && point.facilities.length > 0 && (

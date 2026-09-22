@@ -103,7 +103,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
     return CIBENDA_CENTER;
   }, [points, userCoords]);
 
-  const createMarkerIcon = (point: PointWithDistance) => {
+  const createMarkerIcon = (point: PointWithDistance, index: number) => {
     const isNearest = nearestPointId === point.id;
     const isSelected = selectedPointId === point.id;
     const isCore = point.isCore;
@@ -112,10 +112,10 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
     const bgColor = isNearest
       ? "#F59E0B"
       : isSelected
-      ? "#2563EB"
-      : isCore
-      ? "#00247D"
-      : "#0D9488";
+        ? "#2563EB"
+        : isCore
+          ? "#00247D"
+          : "#0D9488";
 
     const pulseRing = isNearest
       ? `<div style="
@@ -130,6 +130,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
       : "";
 
     const size = isNearest || isSelected ? 38 : 32;
+    const fontSize = isNearest || isSelected ? "13px" : "11px";
 
     return L.divIcon({
       className: "citizen-map-pin",
@@ -149,12 +150,16 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
             border: 2px solid #ffffff;
             transition: all 0.2s ease;
           ">
-            <div style="
-              width: 9px;
-              height: 9px;
-              background-color: #ffffff;
-              border-radius: 50%;
-            "></div>
+            <span style="
+              transform: rotate(45deg);
+              color: #ffffff;
+              font-size: ${fontSize};
+              font-weight: 800;
+              font-family: system-ui, -apple-system, sans-serif;
+              line-height: 1;
+              letter-spacing: -0.5px;
+              text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            ">${index + 1}</span>
           </div>
         </div>
       `,
@@ -224,7 +229,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         )}
 
         {/* Marker Seluruh Titik Evakuasi */}
-        {points.map((point) => {
+        {points.map((point, index) => {
           const isNearest = nearestPointId === point.id;
           const googleMapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${point.latitude},${point.longitude}&travelmode=walking`;
 
@@ -232,7 +237,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
             <Marker
               key={point.id}
               position={[point.latitude, point.longitude]}
-              icon={createMarkerIcon(point)}
+              icon={createMarkerIcon(point, index)}
               eventHandlers={{
                 click: () => onSelectPoint?.(point),
               }}
@@ -322,10 +327,10 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         })}
       </MapContainer>
 
-      {/* Floating Info Tag: Peta Sebaran Evakuasi */}
-      <div className="absolute bottom-3 left-3 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 pointer-events-none">
+      {/* Floating Info Tag: Peta Sebaran Evakuasi - sedikit di atas attribution Leaflet */}
+      <div className="absolute bottom-6 left-3 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 pointer-events-none">
         <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-        <span>{points.length} Titik Kumpul Evakuasi Terdaftar</span>
+        <span>Total {points.length} Titik Evakuasi</span>
       </div>
 
       {/* Floating Pill: Titik Terdekat (jika GPS terdeteksi) */}
