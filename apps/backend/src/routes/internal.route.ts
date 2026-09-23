@@ -2,31 +2,34 @@ import { Router } from "express";
 import { runAlertCheck } from "../scheduler/alert.scheduler.js";
 import type { ApiSuccessResponse, ApiErrorResponse } from "../types/weather.types.js";
 
+const CRON_SECRET = process.env.CRON_SECRET;
+
+if (!CRON_SECRET) {
+    throw new Error("CRON_SECRET is not defined in environment variables.");
+}
+
 export const internalRouter = Router();
 
 /**
- * POST /api/v1/public/internal/run-scheduler
+ * POST /api/public/internal/run-scheduler
  *
  * Trigger satu siklus pengecekan alert BMKG + auto-dispatch notifikasi.
  * Dipanggil oleh cron-job.org setiap 1 menit di Vercel/production.
  *
- * Dilindungi oleh header Authorization: Bearer <CRON_SECRET>.
- * Jika CRON_SECRET tidak di-set di env, endpoint terbuka (untuk testing awal).
+ * Dilindungi oleh header Authorization: Bearer <CRON_SECRET>. Wajib di-set —
+ * server tidak akan start tanpa env var ini.
  */
 internalRouter.post("/run-scheduler", async (req, res) => {
-    const secret = process.env.CRON_SECRET;
+    const authHeader = req.headers.authorization;
 
-    if (secret) {
-        const authHeader = req.headers.authorization;
-        if (authHeader !== `Bearer ${secret}`) {
-            const response: ApiErrorResponse = {
-                success: false,
-                message: "Unauthorized.",
-                errors: ["Kredensial tidak valid atau tidak tersedia."],
-            };
-            res.status(401).json(response);
-            return;
-        }
+    if (authHeader !== `Bearer ${CRON_SECRET}`) {
+        const response: ApiErrorResponse = {
+            success: false,
+            message: "Unauthorized",
+            errors: ["Kredensial tidak valid atau tidak tersedia."],
+        };
+        res.status(401).json(response);
+        return;
     }
 
     try {
