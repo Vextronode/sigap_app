@@ -8,12 +8,11 @@ import { EvacuationRoutes } from "../features/dashboard/components/EvacuationRou
 import { PreparednessGuide } from "../features/dashboard/components/PreparednessGuide";
 import { TsunamiCard } from "../features/dashboard/components/TsunamiCard";
 import { WeatherSection } from "../features/dashboard/components/WeatherSection";
-import { useAnnouncements } from "../features/dashboard/hooks/useAnnouncements";
+import { dummyAnnouncements } from "../features/dashboard/data/dummyData";
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { useIndonesiaEarthquake } from "../features/dashboard/hooks/useIndonesiaEarthquake";
 import { useEmergencyContacts } from "../features/dashboard/hooks/useEmergencyContacts";
 import { useEvacuation } from "../features/dashboard/hooks/useEvacuation";
-import { useEvacuationRoutes } from "../features/dashboard/hooks/useEvacuationRoutes";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
 import { usePangandaranHistory } from "../features/dashboard/hooks/usePangandaranHistory";
@@ -48,10 +47,8 @@ export default function DashboardPage() {
   const pangandaranHistoryQuery = usePangandaranHistory();
   const tsunamiQuery = useTsunamiStatus();
   const alertQuery = useCurrentAlert();
-  const announcementsQuery = useAnnouncements();
   const contactsQuery = useEmergencyContacts();
   const evacuationQuery = useEvacuation();
-  const evacuationRoutesQuery = useEvacuationRoutes();
 
   /**
    * Global loading indicator hanya aktif ketika data pertama kali dimuat.
@@ -68,10 +65,8 @@ export default function DashboardPage() {
     pangandaranEarthquakeQuery,
     tsunamiQuery,
     alertQuery,
-    announcementsQuery,
     contactsQuery,
     evacuationQuery,
-    evacuationRoutesQuery,
   ].some((query) => query.isLoading);
 
   return (
@@ -148,11 +143,8 @@ export default function DashboardPage() {
         </section>
         <EvacuationRoutes
           points={evacuationQuery.data ?? []}
-          routes={evacuationRoutesQuery.data ?? []}
           isPointsLoading={evacuationQuery.isLoading}
           isPointsError={evacuationQuery.isError}
-          isRoutesLoading={evacuationRoutesQuery.isLoading}
-          isRoutesError={evacuationRoutesQuery.isError}
         />
         <EmergencyContacts
           contacts={contactsQuery.data ?? []}
@@ -161,9 +153,7 @@ export default function DashboardPage() {
         />
         <PreparednessGuide />
         <Announcements
-          announcements={announcementsQuery.data ?? []}
-          isLoading={announcementsQuery.isLoading}
-          isError={announcementsQuery.isError}
+          announcements={dummyAnnouncements}
         />
       </div>
     </div>

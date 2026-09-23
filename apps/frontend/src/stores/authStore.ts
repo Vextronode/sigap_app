@@ -77,7 +77,7 @@ const initialUser: AuthUser | null = decoded
     }
   : null;
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: initialToken,
   user: initialUser,
   isAdmin: Boolean(initialToken),
@@ -122,12 +122,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (currentToken && typeof window !== "undefined") {
         sessionStorage.setItem("sigap_session_expired", "true");
       }
-      queryClient.clear();
-      set({
-        token: null,
-        user: null,
-        isAdmin: false,
-      });
+      const { token, user, isAdmin } = get();
+      if (token !== null || user !== null || isAdmin) {
+        queryClient.clear();
+        set({
+          token: null,
+          user: null,
+          isAdmin: false,
+        });
+      }
       return false;
     }
     return true;
