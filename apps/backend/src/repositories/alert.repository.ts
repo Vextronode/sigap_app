@@ -191,7 +191,10 @@ export class AlertRepository {
         skip: params.skip,
         take: params.take,
       }),
-      prisma.earthquakeRecord.findMany(),
+      prisma.earthquakeRecord.findMany({
+        take: 100,
+        orderBy: { eventTime: "desc" },
+      }),
     ]);
 
     return alerts.map((a) =>
@@ -266,7 +269,10 @@ export class AlertRepository {
           },
         },
       }),
-      prisma.earthquakeRecord.findMany(),
+      prisma.earthquakeRecord.findMany({
+        take: 100,
+        orderBy: { eventTime: "desc" },
+      }),
     ]);
 
     if (!alert) return null;
@@ -298,7 +304,10 @@ export class AlertRepository {
           },
         },
       }),
-      prisma.earthquakeRecord.findMany(),
+      prisma.earthquakeRecord.findMany({
+        take: 100,
+        orderBy: { eventTime: "desc" },
+      }),
     ]);
 
     return mapAlertToRecord(updated, matchAlertToEarthquake(updated, eqRecords));
