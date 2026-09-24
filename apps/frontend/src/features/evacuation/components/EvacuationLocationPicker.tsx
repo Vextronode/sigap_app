@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
-import { Navigation, Crosshair, MapPin } from "lucide-react";
+import { Navigation, Crosshair, MapPin, Layers, Map as MapIcon } from "lucide-react";
 import { CIBENDA_CENTER } from "../../../utils/map";
 
 type EvacuationLocationPickerProps = {
@@ -45,6 +45,7 @@ export const EvacuationLocationPicker = ({
 }: EvacuationLocationPickerProps) => {
   const [isLocating, setIsLocating] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
 
   const markerPosition = useMemo<[number, number]>(() => {
     const validLat = typeof latitude === "number" && !isNaN(latitude) ? latitude : CIBENDA_CENTER[0];
@@ -170,10 +171,23 @@ export const EvacuationLocationPicker = ({
           scrollWheelZoom={true}
           style={{ height: "100%", width: "100%", zIndex: 0 }}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          {mapType === "streets" ? (
+            <TileLayer
+              key="google-streets"
+              attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
+              url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+              subdomains={["0", "1", "2", "3"]}
+              maxZoom={20}
+            />
+          ) : (
+            <TileLayer
+              key="google-satellite"
+              attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
+              url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+              subdomains={["0", "1", "2", "3"]}
+              maxZoom={20}
+            />
+          )}
           <MapController center={markerPosition} />
           <LocationEvents onLocationSelect={onChange} />
           <Marker
@@ -185,6 +199,36 @@ export const EvacuationLocationPicker = ({
             }}
           />
         </MapContainer>
+
+        {/* Kontrol Pilihan Mode Peta: Jalan / Satelit - Pojok Kanan Atas Super Ringkas (~70%) */}
+        <div className="absolute top-2 right-2 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-0.5 select-none pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setMapType("streets")}
+            className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              mapType === "streets"
+                ? "bg-[#00247D] text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+            title="Tampilan Peta Jalan Google Maps"
+          >
+            <MapIcon size={10} />
+            <span>Jalan</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMapType("satellite")}
+            className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              mapType === "satellite"
+                ? "bg-[#00247D] text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+            title="Tampilan Foto Citra Satelit Bumi Nyata"
+          >
+            <Layers size={10} />
+            <span>Satelit</span>
+          </button>
+        </div>
 
         {/* Badge Koordinat Live di Pojok Bawah Peta */}
         <div className="absolute bottom-2 left-2 z-[400] bg-slate-900/85 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-lg shadow-md font-mono flex items-center gap-2 pointer-events-none">

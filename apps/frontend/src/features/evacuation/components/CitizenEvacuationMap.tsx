@@ -15,6 +15,8 @@ import {
   Sparkles,
   ShieldCheck,
   ZoomIn,
+  Layers,
+  Map as MapIcon,
 } from "lucide-react";
 import type { EvacuationPoint } from "../../../types/dashboard";
 import type { PointWithDistance, UserCoordinates } from "../hooks/useCitizenLocation";
@@ -92,6 +94,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
   heightClass = "h-[440px] sm:h-[480px]",
 }) => {
   const [isZoomActive, setIsZoomActive] = useState(false);
+  const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
 
   const defaultCenter = useMemo<[number, number]>(() => {
     if (userCoords) {
@@ -189,10 +192,23 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         touchZoom={true}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {mapType === "streets" ? (
+          <TileLayer
+            key="google-streets"
+            attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
+            url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+            subdomains={["0", "1", "2", "3"]}
+            maxZoom={20}
+          />
+        ) : (
+          <TileLayer
+            key="google-satellite"
+            attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
+            url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+            subdomains={["0", "1", "2", "3"]}
+            maxZoom={20}
+          />
+        )}
 
         <MapZoomController
           isInteractive={isZoomActive}
@@ -242,81 +258,69 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
                 click: () => onSelectPoint?.(point),
               }}
             >
-              <Popup className="sigap-map-popup">
+              <Popup
+                className="sigap-map-popup"
+                minWidth={175}
+                maxWidth={215}
+                autoPan={true}
+                autoPanPadding={[12, 12]}
+              >
                 <div
-                  className="p-1 space-y-2.5 text-left min-w-[220px] font-sans"
+                  className="p-0.5 space-y-1.5 text-left font-sans"
                   style={{ fontFamily: "inherit" }}
                 >
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1 flex-wrap">
                     {isNearest && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                        <Sparkles size={11} /> Terdekat
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                        <Sparkles size={10} /> Terdekat
                       </span>
                     )}
                     {point.isCore && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#00247D]">
-                        <ShieldCheck size={11} /> Utama
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-[#00247D]">
+                        <ShieldCheck size={10} /> Utama
                       </span>
                     )}
                     {point.elevation && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        <Mountain size={11} /> {point.elevation} mdpl
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        <Mountain size={10} /> {point.elevation} m
                       </span>
                     )}
                     {point.distanceLabel && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-                        <Navigation size={10} /> ±{point.distanceLabel}
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                        ±{point.distanceLabel}
                       </span>
                     )}
                   </div>
 
-                  <strong className="block text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                  <strong className="block text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                     {point.name}
                   </strong>
 
                   {point.address && (
-                    <p className="text-[11px] text-slate-600 line-clamp-2">
+                    <p className="text-[10px] text-slate-500 line-clamp-1">
                       {point.address}
                     </p>
                   )}
 
                   {point.capacity && (
-                    <div className="text-[11px] text-slate-700 font-medium">
-                      Kapasitas: <span className="font-bold">{point.capacity.toLocaleString()} Jiwa</span>
+                    <div className="text-[10px] text-slate-600 font-medium">
+                      Kapasitas: <span className="font-bold text-slate-800">{point.capacity.toLocaleString()} Jiwa</span>
                     </div>
                   )}
 
-                  {point.facilities && point.facilities.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-0.5">
-                      {point.facilities.slice(0, 3).map((f) => (
-                        <span
-                          key={f}
-                          className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded-md text-slate-700 font-medium"
-                        >
-                          {f}
-                        </span>
-                      ))}
-                      {point.facilities.length > 3 && (
-                        <span className="text-[9px] text-slate-400">
-                          +{point.facilities.length - 3} lainnya
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Tombol Buka Rute Google Maps di Pop Up (Teks putih tebal, ikon panah di kanan) */}
-                  <div className="pt-2">
+                  {/* Tombol Buka Rute Google Maps di Pop Up (Kompak & Ramping) */}
+                  <div className="pt-1">
                     <a
                       href={googleMapsDirUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: "#ffffff" }}
-                      className="group inline-flex items-center justify-center gap-2 w-full px-3.5 py-2.5 bg-[#00247D] hover:bg-[#001D66] !text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                      className="group inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-[#00247D] hover:bg-[#001D66] !text-white rounded-lg text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
                     >
-                      <span className="!text-white font-bold">Buka Rute Google Maps</span>
+                      <span className="!text-white font-bold">Buka Rute Maps</span>
                       <Navigation
-                        size={13}
-                        className="!text-white shrink-0 group-hover:translate-x-1 group-hover:-translate-y-0.5 transition-transform"
+                        size={11}
+                        className="!text-white shrink-0 group-hover:translate-x-0.5 transition-transform"
                       />
                     </a>
                   </div>
@@ -327,27 +331,57 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         })}
       </MapContainer>
 
+      {/* Kontrol Pilihan Mode Peta: Jalan (Kontras Jelas) / Satelit (Foto Udara Nyata) - Pojok Kanan Atas Super Ringkas (~70%) */}
+      <div className="absolute top-2 right-2 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-0.5 select-none pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => setMapType("streets")}
+          className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+            mapType === "streets"
+              ? "bg-[#00247D] text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+          title="Tampilan Peta Jalan Google Maps (Kontras Jelas)"
+        >
+          <MapIcon size={10} />
+          <span>Jalan</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMapType("satellite")}
+          className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+            mapType === "satellite"
+              ? "bg-[#00247D] text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+          title="Tampilan Foto Citra Satelit Bumi Nyata"
+        >
+          <Layers size={10} />
+          <span>Satelit</span>
+        </button>
+      </div>
+
       {/* Floating Info Tag: Peta Sebaran Evakuasi - sedikit di atas attribution Leaflet */}
-      <div className="absolute bottom-6 left-3 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 pointer-events-none">
-        <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+      <div className="absolute bottom-6 left-3 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 pointer-events-none">
+        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
         <span>Total {points.length} Titik Evakuasi</span>
       </div>
 
       {/* Floating Pill: Titik Terdekat (jika GPS terdeteksi) */}
       {nearestPoint && (
-        <div className="absolute top-3 left-3 z-1000 bg-amber-500/95 text-white backdrop-blur-md px-3 py-1.5 rounded-xl shadow-md text-xs font-bold flex items-center gap-1.5 pointer-events-auto animate-fade-in">
-          <Sparkles size={14} className="animate-spin-slow" />
+        <div className="absolute bottom-14 left-3 z-1000 bg-amber-500/95 text-white backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm text-[11px] font-bold flex items-center gap-1.5 pointer-events-auto animate-fade-in">
+          <Sparkles size={12} className="animate-spin-slow" />
           <span>
             Terdekat: {nearestPoint.name} (±{nearestPoint.distanceLabel})
           </span>
         </div>
       )}
 
-      {/* Indikator Proteksi Zoom (klik 1x untuk zoom) - Pojok Kanan Atas */}
+      {/* Indikator Proteksi Zoom (klik 1x untuk zoom) - Di bawah kontrol zoom +/- di Kiri Atas */}
       {!isZoomActive && (
-        <div className="absolute top-3 right-3 z-1000 bg-slate-900/80 text-white text-[11px] px-2.5 py-1 rounded-lg backdrop-blur-xs flex items-center gap-1.5 opacity-85 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <ZoomIn size={12} className="text-amber-400" />
-          <span>Klik peta untuk mengaktifkan zoom</span>
+        <div className="absolute top-[76px] left-2.5 z-1000 bg-slate-900/85 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-xs flex items-center gap-1 shadow-sm opacity-85 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <ZoomIn size={11} className="text-amber-400" />
+          <span>Klik aktifkan zoom</span>
         </div>
       )}
     </div>

@@ -166,15 +166,15 @@
 }
 
 .sigap-map-popup .leaflet-popup-content-wrapper {
-  border-radius: 18px !important;
-  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.22), 0 8px 12px -6px rgba(0, 0, 0, 0.12) !important;
-  padding: 6px !important;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.22), 0 4px 8px -2px rgba(0, 0, 0, 0.1) !important;
+  padding: 1px !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
 }
 
 .sigap-map-popup .leaflet-popup-content {
-  margin: 12px 14px !important;
-  line-height: 1.5 !important;
+  margin: 7px 9px !important;
+  line-height: 1.35 !important;
 }
 
 .sigap-map-popup a {
