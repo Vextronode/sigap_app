@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import {
   X,
   Upload,
@@ -31,8 +31,20 @@ interface PreparednessGuideFormModalProps {
 
 export const PreparednessGuideFormModal: React.FC<
   PreparednessGuideFormModalProps
+> = (props) => {
+  if (!props.isOpen) return null;
+
+  return (
+    <PreparednessGuideFormModalContent
+      key={props.guide?.id ?? "create-new"}
+      {...props}
+    />
+  );
+};
+
+const PreparednessGuideFormModalContent: React.FC<
+  PreparednessGuideFormModalProps
 > = ({
-  isOpen,
   guide,
   onClose,
   onSubmit,
@@ -42,44 +54,26 @@ export const PreparednessGuideFormModal: React.FC<
   const isEdit = Boolean(guide);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [title, setTitle] = useState("");
-  const [formatType, setFormatType] = useState<GuideFormatType>("ARTICLE");
-  const [sourceType, setSourceType] = useState<GuideSourceType>("RESMI");
-  const [content, setContent] = useState("");
-  const [externalUrl, setExternalUrl] = useState("");
-  const [sourceLabel, setSourceLabel] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imagePreview, setImagePreview] = useState("");
+  const isExternalInitial = Boolean(
+    guide?.externalUrl && guide.externalUrl.trim().length > 0
+  );
+
+  const [title, setTitle] = useState(guide?.title ?? "");
+  const [formatType, setFormatType] = useState<GuideFormatType>(
+    isExternalInitial ? "EXTERNAL_URL" : "ARTICLE"
+  );
+  const [sourceType, setSourceType] = useState<GuideSourceType>(
+    guide?.sourceType ?? (isExternalInitial ? "MITRA" : "RESMI")
+  );
+  const [content, setContent] = useState(guide?.content ?? "");
+  const [externalUrl, setExternalUrl] = useState(guide?.externalUrl ?? "");
+  const [sourceLabel, setSourceLabel] = useState(
+    guide?.sourceLabel ?? "Pemerintah Desa Cibenda"
+  );
+  const [imageUrl, setImageUrl] = useState(guide?.imageUrl ?? "");
+  const [imagePreview, setImagePreview] = useState(guide?.imageUrl ?? "");
   const [isCompressing, setIsCompressing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Inisialisasi formulir saat modal dibuka
-  useEffect(() => {
-    if (guide) {
-      setTitle(guide.title || "");
-      // Jika memiliki externalUrl, maka tipenya Tautan Eksternal/PDF
-      const isExt = Boolean(guide.externalUrl && guide.externalUrl.trim().length > 0);
-      setFormatType(isExt ? "EXTERNAL_URL" : "ARTICLE");
-      setSourceType(guide.sourceType || (isExt ? "MITRA" : "RESMI"));
-      setContent(guide.content || "");
-      setExternalUrl(guide.externalUrl || "");
-      setSourceLabel(guide.sourceLabel || "");
-      setImageUrl(guide.imageUrl || "");
-      setImagePreview(guide.imageUrl || "");
-    } else {
-      setTitle("");
-      setFormatType("ARTICLE");
-      setSourceType("RESMI");
-      setContent("");
-      setExternalUrl("");
-      setSourceLabel("Pemerintah Desa Cibenda");
-      setImageUrl("");
-      setImagePreview("");
-    }
-    setErrorMessage(null);
-  }, [guide, isOpen]);
-
-  if (!isOpen) return null;
 
   // Tangani kompresi gambar saat admin memilih berkas lokal
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,8 +93,10 @@ export const PreparednessGuideFormModal: React.FC<
 
       setImageUrl(compressedWebp);
       setImagePreview(compressedWebp);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Gagal memproses gambar.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Gagal memproses gambar.";
+      setErrorMessage(message);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -189,8 +185,12 @@ export const PreparednessGuideFormModal: React.FC<
         };
         await onSubmit(payload);
       }
-    } catch (err: any) {
-      const respErr = err.response?.data?.message || err.message;
+    } catch (err: unknown) {
+      const errorObj = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      const respErr = errorObj.response?.data?.message || errorObj.message;
       setErrorMessage(respErr || "Gagal menyimpan panduan kesiapsiagaan.");
     }
   };
@@ -327,7 +327,10 @@ export const PreparednessGuideFormModal: React.FC<
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setFormatType("ARTICLE")}
+                onClick={() => {
+                  setFormatType("ARTICLE");
+                  setSourceType("RESMI");
+                }}
                 className={`flex items-start gap-3 p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                   formatType === "ARTICLE"
                     ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 ring-2 ring-blue-500/20"
@@ -355,7 +358,10 @@ export const PreparednessGuideFormModal: React.FC<
 
               <button
                 type="button"
-                onClick={() => setFormatType("EXTERNAL_URL")}
+                onClick={() => {
+                  setFormatType("EXTERNAL_URL");
+                  setSourceType("MITRA");
+                }}
                 className={`flex items-start gap-3 p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                   formatType === "EXTERNAL_URL"
                     ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 ring-2 ring-blue-500/20"
