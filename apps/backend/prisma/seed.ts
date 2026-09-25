@@ -461,6 +461,19 @@ async function main() {
     }
   }
 
+  // Perangkat Hardware Sirine IoT (ESP32)
+  await prisma.device.upsert({
+    where: { deviceCode: "ESP32-01" },
+    update: {},
+    create: {
+      deviceCode: "ESP32-01",
+      name: "Sirine Balai Desa Cibenda",
+      status: "OFFLINE",
+      lastSeen: null,
+    },
+  });
+  console.log('Perangkat IoT baseline "ESP32-01" berhasil di-seed.');
+
   console.log("Seed selesai.");
 
 

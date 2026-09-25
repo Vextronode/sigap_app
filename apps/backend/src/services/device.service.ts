@@ -71,10 +71,10 @@ export class DeviceService {
 
         if (devices.length === 0) {
             return {
-                status: "UNAVAILABLE",
-                tone: "neutral",
-                label: "Koneksi Alat Tidak Tersedia",
-                description: "Belum ada perangkat terdaftar",
+                status: "OFFLINE",
+                tone: "danger",
+                label: "Koneksi Alat Terputus",
+                description: "Tidak ada perangkat terhubung",
                 totalDevices: 0,
                 activeDevices: 0,
                 lastSeen: null,
