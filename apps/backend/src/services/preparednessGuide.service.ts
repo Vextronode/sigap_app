@@ -29,6 +29,15 @@ export class PreparednessGuideService {
 
   // buat entri panduan kesiapsiagaan baru
   static async create(data: CreatePreparednessGuideDto) {
+    const totalCount = await preparednessGuideRepo.count();
+    if (totalCount >= 5) {
+      const error: CustomHttpError = new Error(
+        "Kapasitas maksimal 5 panduan kesiapsiagaan telah tercapai. Hapus salah satu panduan untuk menambahkan yang baru."
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
     const hasContent = Boolean(data.content && data.content.trim() !== "");
     const hasExternalUrl = Boolean(
       data.externalUrl && data.externalUrl.trim() !== ""
@@ -47,6 +56,7 @@ export class PreparednessGuideService {
       title: data.title.trim(),
       content: hasContent ? data.content!.trim() : null,
       externalUrl: hasExternalUrl ? data.externalUrl!.trim() : null,
+      imageUrl: data.imageUrl ?? null,
       sourceType: data.sourceType ?? "RESMI",
       publishedAt: data.publishedAt,
     });
@@ -66,6 +76,9 @@ export class PreparednessGuideService {
         ? (data.externalUrl && data.externalUrl.trim() !== "" ? data.externalUrl.trim() : null)
         : existing.externalUrl;
 
+    const nextImageUrl =
+      data.imageUrl !== undefined ? data.imageUrl : existing.imageUrl;
+
     // validasi batas gabungan setelah pembaruan tidak boleh kosong dua duanya
     if (!nextContent && !nextExternalUrl) {
       const error: CustomHttpError = new Error(
@@ -79,6 +92,7 @@ export class PreparednessGuideService {
       ...(data.title !== undefined && { title: data.title.trim() }),
       ...(data.content !== undefined && { content: nextContent }),
       ...(data.externalUrl !== undefined && { externalUrl: nextExternalUrl }),
+      ...(data.imageUrl !== undefined && { imageUrl: nextImageUrl }),
       ...(data.sourceType !== undefined && { sourceType: data.sourceType }),
       ...(data.publishedAt !== undefined && { publishedAt: data.publishedAt }),
     });

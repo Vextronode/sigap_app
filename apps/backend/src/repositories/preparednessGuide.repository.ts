@@ -18,6 +18,11 @@ export async function findById(id: string) {
   });
 }
 
+// hitung total panduan kesiapsiagaan tersimpan
+export async function count() {
+  return prisma.preparednessGuide.count();
+}
+
 // buat entri panduan kesiapsiagaan baru
 export async function create(data: CreatePreparednessGuideDto) {
   return prisma.preparednessGuide.create({
@@ -25,6 +30,7 @@ export async function create(data: CreatePreparednessGuideDto) {
       title: data.title,
       content: data.content ?? null,
       externalUrl: data.externalUrl ?? null,
+      imageUrl: data.imageUrl ?? null,
       sourceType: data.sourceType ?? "RESMI",
       publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
     },
@@ -39,6 +45,7 @@ export async function update(id: string, data: UpdatePreparednessGuideDto) {
       ...(data.title !== undefined && { title: data.title }),
       ...(data.content !== undefined && { content: data.content }),
       ...(data.externalUrl !== undefined && { externalUrl: data.externalUrl }),
+      ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
       ...(data.sourceType !== undefined && { sourceType: data.sourceType }),
       ...(data.publishedAt !== undefined && {
         publishedAt: new Date(data.publishedAt),

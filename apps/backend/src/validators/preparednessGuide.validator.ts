@@ -8,11 +8,17 @@ export function validateCreatePreparednessGuide(
   res: Response,
   next: NextFunction
 ) {
-  const { title, content, externalUrl, sourceType } = req.body ?? {};
+  const { title, content, externalUrl, imageUrl, sourceType } = req.body ?? {};
   const errors: Record<string, string> = {};
 
   if (!title || typeof title !== "string" || title.trim() === "") {
     errors.title = "Judul panduan kesiapsiagaan wajib diisi.";
+  } else if (title.trim().length > 150) {
+    errors.title = "Judul panduan maksimal 150 karakter.";
+  }
+
+  if (!imageUrl || typeof imageUrl !== "string" || imageUrl.trim() === "") {
+    errors.imageUrl = "Gambar panduan kesiapsiagaan wajib diunggah.";
   }
 
   const hasContent = Boolean(
@@ -56,7 +62,7 @@ export function validateUpdatePreparednessGuide(
   res: Response,
   next: NextFunction
 ) {
-  const { title, externalUrl, sourceType } = req.body ?? {};
+  const { title, externalUrl, imageUrl, sourceType } = req.body ?? {};
   const errors: Record<string, string> = {};
 
   if (
@@ -64,6 +70,15 @@ export function validateUpdatePreparednessGuide(
     (typeof title !== "string" || title.trim() === "")
   ) {
     errors.title = "Judul panduan tidak boleh kosong.";
+  } else if (title !== undefined && typeof title === "string" && title.trim().length > 150) {
+    errors.title = "Judul panduan maksimal 150 karakter.";
+  }
+
+  if (
+    imageUrl !== undefined &&
+    (typeof imageUrl !== "string" || imageUrl.trim() === "")
+  ) {
+    errors.imageUrl = "Gambar panduan tidak boleh kosong.";
   }
 
   if (

@@ -51,11 +51,12 @@ export class PreparednessGuideController {
   // buat entri panduan kesiapsiagaan baru
   static async create(req: Request, res: Response) {
     try {
-      const { title, content, externalUrl, sourceType, publishedAt } = req.body;
+      const { title, content, externalUrl, imageUrl, sourceType, publishedAt } = req.body;
       const data = await PreparednessGuideService.create({
         title,
         content,
         externalUrl,
+        imageUrl,
         sourceType,
         publishedAt,
       });
@@ -81,11 +82,12 @@ export class PreparednessGuideController {
   static async update(req: Request, res: Response) {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const { title, content, externalUrl, sourceType, publishedAt } = req.body;
+      const { title, content, externalUrl, imageUrl, sourceType, publishedAt } = req.body;
       const data = await PreparednessGuideService.update(id, {
         title,
         content,
         externalUrl,
+        imageUrl,
         sourceType,
         publishedAt,
       });

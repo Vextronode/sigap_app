@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, MapPin, BookOpen, Mountain, Users, ShieldCheck } from "lucide-react";
+import { Plus, MapPin, Mountain, Users, ShieldCheck } from "lucide-react";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import {
   useEmergencyContactsList,
@@ -22,6 +22,22 @@ import { EvacuationOverviewMap } from "../features/evacuation/components/Evacuat
 import { EvacuationPointCards } from "../features/evacuation/components/EvacuationPointCards";
 import { EvacuationPointFormModal } from "../features/evacuation/components/modals/EvacuationPointFormModal";
 import { EvacuationPointDeleteModal } from "../features/evacuation/components/modals/EvacuationPointDeleteModal";
+import {
+  usePreparednessGuidesAdmin,
+  useCreatePreparednessGuide,
+  useUpdatePreparednessGuide,
+  useDeletePreparednessGuide,
+} from "../features/preparedness/hooks/usePreparednessGuides";
+import { PreparednessGuideCards } from "../features/preparedness/components/PreparednessGuideCards";
+import { PreparednessGuideFormModal } from "../features/preparedness/components/modals/PreparednessGuideFormModal";
+import { PreparednessGuideDeleteModal } from "../features/preparedness/components/modals/PreparednessGuideDeleteModal";
+import { PreparednessGuideReaderModal } from "../features/preparedness/components/modals/PreparednessGuideReaderModal";
+import { ActionFeedbackModal } from "../components/common/ActionFeedbackModal";
+import type {
+  PreparednessGuideRecord,
+  CreatePreparednessGuideInput,
+  UpdatePreparednessGuideInput,
+} from "../features/preparedness/types/preparedness.types";
 import type { EmergencyIconKey } from "../features/emergency-contacts/utils/emergencyIconPresets";
 import type {
   EmergencyContactRecord,
@@ -226,6 +242,141 @@ export default function SystemSettingsPage() {
     createEvacuationMutation.isPending || updateEvacuationMutation.isPending;
   const isEvacuationDeleting = deleteEvacuationMutation.isPending;
 
+  // React Queries & Mutations untuk Panduan Kesiapsiagaan
+  const guidesQuery = usePreparednessGuidesAdmin();
+  const createGuideMutation = useCreatePreparednessGuide();
+  const updateGuideMutation = useUpdatePreparednessGuide();
+  const deleteGuideMutation = useDeletePreparednessGuide();
+
+  const guides = guidesQuery.data ?? [];
+
+  // State Modal Form Panduan (Tambah / Edit)
+  const [isGuideFormOpen, setIsGuideFormOpen] = useState(false);
+  const [selectedGuideForEdit, setSelectedGuideForEdit] =
+    useState<PreparednessGuideRecord | null>(null);
+
+  // State Modal Hapus Panduan
+  const [isGuideDeleteOpen, setIsGuideDeleteOpen] = useState(false);
+  const [selectedGuideForDelete, setSelectedGuideForDelete] =
+    useState<PreparednessGuideRecord | null>(null);
+
+  // State Modal Baca Pratinjau
+  const [isGuideReaderOpen, setIsGuideReaderOpen] = useState(false);
+  const [selectedGuideForReader, setSelectedGuideForReader] =
+    useState<PreparednessGuideRecord | null>(null);
+
+  // State Pop-up Notifikasi (ActionFeedbackModal)
+  const [popupFeedback, setPopupFeedback] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info";
+    title?: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const showPopup = (
+    type: "success" | "error" | "info",
+    message: string,
+    title?: string
+  ) => {
+    setPopupFeedback({
+      isOpen: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  // Handlers Panduan Kesiapsiagaan
+  const handleOpenCreateGuide = () => {
+    if (guides.length >= 5) {
+      showPopup(
+        "error",
+        "Batas kuota 5 panduan kesiapsiagaan telah tercapai. Harap hapus panduan lama untuk menambah baru.",
+        "Kuota Maksimal Tercapai"
+      );
+      return;
+    }
+    setSelectedGuideForEdit(null);
+    setIsGuideFormOpen(true);
+  };
+
+  const handleOpenEditGuide = (guide: PreparednessGuideRecord) => {
+    setSelectedGuideForEdit(guide);
+    setIsGuideFormOpen(true);
+  };
+
+  const handleOpenDeleteGuide = (guide: PreparednessGuideRecord) => {
+    setSelectedGuideForDelete(guide);
+    setIsGuideDeleteOpen(true);
+  };
+
+  const handleOpenPreviewGuide = (guide: PreparednessGuideRecord) => {
+    setSelectedGuideForReader(guide);
+    setIsGuideReaderOpen(true);
+  };
+
+  const handleGuideFormSubmit = async (
+    payload: CreatePreparednessGuideInput | UpdatePreparednessGuideInput
+  ) => {
+    try {
+      if (selectedGuideForEdit) {
+        await updateGuideMutation.mutateAsync({
+          id: selectedGuideForEdit.id,
+          payload,
+        });
+        showPopup(
+          "success",
+          `Panduan kesiapsiagaan "${payload.title}" berhasil diperbarui. Perubahan langsung disinkronkan ke dashboard warga.`,
+          "Perubahan Disimpan"
+        );
+      } else {
+        await createGuideMutation.mutateAsync(
+          payload as CreatePreparednessGuideInput
+        );
+        showPopup(
+          "success",
+          `Panduan kesiapsiagaan "${payload.title}" berhasil ditambahkan. Warga kini dapat mengakses panduan ini.`,
+          "Panduan Baru Ditambahkan"
+        );
+      }
+      setIsGuideFormOpen(false);
+      setSelectedGuideForEdit(null);
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan panduan.";
+      showPopup("error", `Gagal menyimpan panduan: ${errorMsg}`, "Operasi Gagal");
+      throw err;
+    }
+  };
+
+  const handleGuideDeleteConfirm = async () => {
+    if (!selectedGuideForDelete) return;
+
+    try {
+      await deleteGuideMutation.mutateAsync(selectedGuideForDelete.id);
+      showPopup(
+        "success",
+        `Panduan "${selectedGuideForDelete.title}" dan berkas gambar sampulnya berhasil dihapus secara permanen.`,
+        "Panduan Berhasil Dihapus"
+      );
+      setIsGuideDeleteOpen(false);
+      setSelectedGuideForDelete(null);
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus data.";
+      showPopup("error", `Gagal menghapus: ${errorMsg}`, "Gagal Menghapus");
+    }
+  };
+
+  const isGuideSubmitting =
+    createGuideMutation.isPending || updateGuideMutation.isPending;
+  const isGuideDeleting = deleteGuideMutation.isPending;
+
   // Statistik Titik Evakuasi
   const evacuationPoints = evacuationQuery.data ?? [];
   const totalCapacity = evacuationPoints.reduce(
@@ -271,6 +422,23 @@ export default function SystemSettingsPage() {
             <span>Tambah Titik Evakuasi</span>
           </button>
         )}
+
+        {activeTab === "guides" && (
+          <button
+            type="button"
+            onClick={handleOpenCreateGuide}
+            disabled={guides.length >= 5}
+            title={
+              guides.length >= 5
+                ? "Batas kuota 5 panduan tercapai"
+                : "Tambah Panduan Kesiapsiagaan Baru"
+            }
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00247D] hover:bg-[#001d66] disabled:bg-slate-400 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+          >
+            <Plus size={16} />
+            <span>Tambah Panduan</span>
+          </button>
+        )}
       </div>
 
       {/* Navigasi Tab */}
@@ -306,12 +474,17 @@ export default function SystemSettingsPage() {
           <button
             type="button"
             onClick={() => setActiveTab("guides")}
-            className={`pb-3 text-xs sm:text-sm font-bold whitespace-nowrap transition-colors cursor-pointer border-b-2 ${activeTab === "guides"
+            className={`pb-3 text-xs sm:text-sm font-bold whitespace-nowrap transition-colors cursor-pointer border-b-2 flex items-center gap-2 ${activeTab === "guides"
                 ? "border-[#00247D] text-[#00247D] dark:text-blue-400"
                 : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
               }`}
           >
-            Panduan Kesiapsiagaan
+            <span>Panduan Kesiapsiagaan</span>
+            {guides.length > 0 && (
+              <span className="px-2 py-0.5 text-[11px] rounded-full bg-blue-100 dark:bg-blue-950 text-[#00247D] dark:text-blue-300 font-semibold">
+                {guides.length}/5
+              </span>
+            )}
           </button>
         </nav>
       </div>
@@ -438,16 +611,75 @@ export default function SystemSettingsPage() {
 
       {/* Konten Tab 3: Panduan Kesiapsiagaan */}
       {activeTab === "guides" && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-8 text-center shadow-2xs">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto mb-3">
-            <BookOpen size={26} />
+        <div className="space-y-6">
+          {/* Banner Kuota Penyimpanan Desa */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  Kapasitas Kuota Panduan Desa
+                </span>
+                {guides.length >= 5 && (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-[10px] font-bold">
+                    Maksimal Tercapai
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                {guides.length} dari 5 Panduan Kesiapsiagaan Aktif
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Penyimpanan dioptimalkan agar basis data tetap hemat kuota dengan kompresi WebP otomatis.
+              </p>
+            </div>
+
+            {/* Progress Bar Visual */}
+            <div className="w-full md:w-64 space-y-1.5">
+              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    guides.length >= 5
+                      ? "bg-rose-500"
+                      : guides.length >= 3
+                      ? "bg-amber-500"
+                      : "bg-blue-600"
+                  }`}
+                  style={{
+                    width: `${Math.min((guides.length / 5) * 100, 100)}%`,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px]">
+                <span
+                  className={
+                    guides.length >= 5
+                      ? "text-rose-600 dark:text-rose-400 font-bold"
+                      : "text-slate-500 dark:text-slate-400 font-medium"
+                  }
+                >
+                  {guides.length} Panduan
+                </span>
+                <span
+                  className={
+                    guides.length >= 5
+                      ? "text-rose-600 dark:text-rose-400 font-bold"
+                      : "text-slate-500 dark:text-slate-400"
+                  }
+                >
+                  Maks. 5 Panduan
+                </span>
+              </div>
+            </div>
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            Modul Panduan Kesiapsiagaan
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
-            Pengelolaan buku saku mitigasi bencana gempa megathrust dan SOP kedaruratan (Roadmap FS-05).
-          </p>
+
+          {/* Grid Kartu Panduan Kesiapsiagaan */}
+          <PreparednessGuideCards
+            guides={guides}
+            isLoading={guidesQuery.isLoading}
+            onEdit={handleOpenEditGuide}
+            onDelete={handleOpenDeleteGuide}
+            onPreview={handleOpenPreviewGuide}
+          />
         </div>
       )}
 
@@ -495,6 +727,50 @@ export default function SystemSettingsPage() {
         }}
         onConfirm={handleEvacuationDeleteConfirm}
         isDeleting={isEvacuationDeleting}
+      />
+
+      {/* Modal Panduan Kesiapsiagaan */}
+      <PreparednessGuideFormModal
+        isOpen={isGuideFormOpen}
+        guide={selectedGuideForEdit}
+        onClose={() => {
+          setIsGuideFormOpen(false);
+          setSelectedGuideForEdit(null);
+        }}
+        onSubmit={handleGuideFormSubmit}
+        isSubmitting={isGuideSubmitting}
+        totalExistingGuides={guides.length}
+      />
+
+      <PreparednessGuideDeleteModal
+        isOpen={isGuideDeleteOpen}
+        guide={selectedGuideForDelete}
+        onClose={() => {
+          setIsGuideDeleteOpen(false);
+          setSelectedGuideForDelete(null);
+        }}
+        onConfirm={handleGuideDeleteConfirm}
+        isDeleting={isGuideDeleting}
+      />
+
+      <PreparednessGuideReaderModal
+        isOpen={isGuideReaderOpen}
+        guide={selectedGuideForReader}
+        onClose={() => {
+          setIsGuideReaderOpen(false);
+          setSelectedGuideForReader(null);
+        }}
+      />
+
+      {/* Pop-up Notifikasi Hasil Aksi Admin */}
+      <ActionFeedbackModal
+        isOpen={popupFeedback.isOpen}
+        type={popupFeedback.type}
+        title={popupFeedback.title}
+        message={popupFeedback.message}
+        onClose={() =>
+          setPopupFeedback((prev) => ({ ...prev, isOpen: false }))
+        }
       />
     </div>
   );
