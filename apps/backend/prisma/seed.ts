@@ -109,14 +109,18 @@ async function main() {
   const baselineGuides = [
     {
       title: "Panduan Mitigasi Gempa Bumi Megathrust",
-      content: "Tetap tenang saat guncangan terjadi. Lindungi kepala dengan berlindung di bawah meja yang kokoh. Jauhi jendela kaca dan tiang listrik. Segera evakuasi ke titik kumpul aman di Balai Desa Cibenda setelah gempa reda.",
+      content:
+        "Tetap tenang saat guncangan terjadi. Lindungi kepala dengan berlindung di bawah meja yang kokoh. Jauhi jendela kaca dan tiang listrik. Segera evakuasi ke titik kumpul aman di Balai Desa Cibenda setelah gempa reda.\n\nLangkah-langkah Penyelamatan:\n1. Sebelum Gempa: Pahami jalur evakuasi desa dan simpan kontak darurat penting.\n2. Saat Gempa: Merunduk, lindungi kepala di bawah meja yang kokoh (Drop, Cover, Hold On).\n3. Setelah Gempa: Matikan kompor dan arus listrik, lalu keluar ke tempat terbuka menjauhi bangunan retak.",
       externalUrl: null,
+      imageUrl: "/assets/image/earthquake-ilustration.webp",
       sourceType: "RESMI" as const,
     },
     {
-      title: "Buku Saku Tanggap Bencana BNPB",
+      title: "Buku Saku Kesiapsiagaan Bencana Gempa & Tsunami",
       content: null,
-      externalUrl: "https://bnpb.go.id/buku-saku-tanggap-bencana",
+      externalUrl:
+        "https://content.bmkg.go.id/wp-content/uploads/PPT-SLG_Kesiapsiagaan-Menghadapai-Gempabumii.pdf",
+      imageUrl: "/assets/image/tsunami-ilustration.webp",
       sourceType: "MITRA" as const,
     },
   ];
@@ -128,6 +132,11 @@ async function main() {
 
     if (!existing) {
       await prisma.preparednessGuide.create({
+        data: guide,
+      });
+    } else {
+      await prisma.preparednessGuide.update({
+        where: { id: existing.id },
         data: guide,
       });
     }
