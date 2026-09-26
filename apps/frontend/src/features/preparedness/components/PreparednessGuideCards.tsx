@@ -82,13 +82,13 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
           >
             {/* Bagian Atas: Cover Image & Info Header */}
             <div>
-              {/* Gambar Sampul */}
-              <div className="relative h-44 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+              {/* Gambar Sampul (Tanpa Overlay Gelap) */}
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
                 {guide.imageUrl ? (
                   <img
                     src={guide.imageUrl}
                     alt={guide.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
                 ) : (
@@ -97,47 +97,38 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
                   </div>
                 )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-
                 {/* Badge di atas gambar */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-auto">
                   <div className="flex flex-wrap gap-1.5 items-center">
                     {isArticle ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-semibold backdrop-blur-xs">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-semibold backdrop-blur-md shadow-xs">
                         <FileText size={12} />
                         Artikel Mandiri
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-600/90 text-white text-[11px] font-semibold backdrop-blur-xs">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/85 text-white text-[11px] font-semibold backdrop-blur-md shadow-xs">
                         <ExternalLink size={12} />
                         Tautan Eksternal
                       </span>
                     )}
 
                     {isPdf && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-600/90 text-white text-[11px] font-bold backdrop-blur-xs animate-pulse">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-600 text-white text-[11px] font-bold backdrop-blur-md shadow-xs">
                         <FileDown size={12} />
                         Dokumen PDF
                       </span>
                     )}
                   </div>
                 </div>
-
-                {/* Judul di dasar gambar */}
-                <div className="absolute bottom-3 left-4 right-4">
-                  <h3 className="text-base sm:text-lg font-bold text-white drop-shadow-sm line-clamp-2 leading-snug">
-                    {guide.title}
-                  </h3>
-                </div>
               </div>
 
-              {/* Rincian Ringkas */}
-              <div className="p-4 sm:p-5 space-y-3">
+              {/* Rincian Ringkas di Bawah Foto */}
+              <div className="p-4 sm:p-5 space-y-2.5">
                 {/* Meta Penerbit & Tanggal */}
                 <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
                   {guide.sourceLabel && (
                     <span className="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                      <Building2 size={12} className="text-blue-500" />
+                      <Building2 size={12} className="text-[#00247D] dark:text-blue-400" />
                       {guide.sourceLabel}
                     </span>
                   )}
@@ -149,18 +140,27 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
                   )}
                 </div>
 
+                {/* Judul di Bawah Foto (Warna Biru Khas SIGAP, Ukuran Proporsional) */}
+                <h3 className="text-sm sm:text-base font-bold text-[#00247D] dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 line-clamp-2 leading-snug transition-colors">
+                  {guide.title}
+                </h3>
+
                 {/* Snippet Teks atau Link */}
-                {isArticle ? (
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">
-                    {guide.content || "Belum ada rincian deskripsi."}
-                  </p>
-                ) : (
+                <p className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">
+                  {guide.content || (
+                    isExternal
+                      ? `Materi rujukan resmi dari ${guide.sourceLabel || "instansi terkait"}. Buka tautan untuk mengakses panduan lengkap.`
+                      : "Belum ada rincian deskripsi panduan."
+                  )}
+                </p>
+
+                {isExternal && guide.externalUrl && (
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                       Target URL Referensi:
                     </p>
                     <a
-                      href={guide.externalUrl || "#"}
+                      href={guide.externalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 dark:text-blue-400 hover:underline truncate block font-medium mt-0.5"

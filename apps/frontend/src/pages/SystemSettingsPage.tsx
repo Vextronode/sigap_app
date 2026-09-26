@@ -629,7 +629,7 @@ export default function SystemSettingsPage() {
                 {guides.length} dari 5 Panduan Kesiapsiagaan Aktif
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Penyimpanan dioptimalkan agar basis data tetap hemat kuota dengan kompresi WebP otomatis.
+                Kelola hingga 5 materi edukasi kebencanaan aktif untuk kesiapsiagaan warga Desa Cibenda.
               </p>
             </div>
 
