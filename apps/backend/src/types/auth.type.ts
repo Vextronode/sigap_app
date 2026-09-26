@@ -3,6 +3,8 @@ export interface JwtPayload {
   email: string;
   roles: string[];
   permissions: string[];
+  jti: string;
+  exp?: number;
 }
 
 export interface LoginRequestBody {

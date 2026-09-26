@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwt.util.js";
+import { isTokenRevoked } from "../repositories/token.repository.js";
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -15,7 +16,18 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   const token = authHeader.slice("Bearer ".length);
 
   try {
-    req.user = verifyToken(token);
+    const payload = verifyToken(token);
+
+    const revoked = await isTokenRevoked(payload.jti);
+    if (revoked) {
+      return res.status(401).json({
+        success: false,
+        message: "Token tidak valid atau kedaluwarsa.",
+        errors: ["Sesi ini sudah diakhiri, silahkan login kembali."],
+      });
+    }
+
+    req.user = payload;
     next();
   } catch {
     return res.status(401).json({
