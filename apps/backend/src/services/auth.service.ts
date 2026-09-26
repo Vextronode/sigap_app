@@ -57,7 +57,9 @@ export async function login(email: string, password: string) {
     throw new AuthenticationError("Email atau password salah.");
   }
 
-  await resetFailedLogin(user.id);
+  if (user.failedLoginCount > 0 || user.lockedUntil !== null) {
+    await resetFailedLogin(user.id);
+  }
 
   const roles = user.userRoles.map((ur) => ur.role.name);
   const permissions = Array.from(

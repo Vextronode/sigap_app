@@ -21,6 +21,14 @@ export async function loginController(req: Request, res: Response) {
       });
     }
 
+    if (error instanceof AccountLockedError) {
+      return res.status(403).json({
+        success: false,
+        message: error.message,
+        errors: [error.message],
+      });
+    }
+
     const customErr = error as Error & { statusCode?: number };
     const statusCode = customErr.statusCode || 500;
     const message = customErr.message || "Terjadi kesalahan pada server.";
@@ -43,14 +51,33 @@ export async function meController(req: Request, res: Response) {
 }
 
 export async function logoutController(req: Request, res: Response) {
-  const { jti, sub, exp } = req.user!;
-  const expiresAt = exp ? new Date(exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000); // Default 1 hour if exp is not set
+  try {
+    if (!req.user || !req.user.jti) {
+      return res.status(400).json({
+        success: false,
+        message: "Identitas sesi tidak valid.",
+        errors: ["Token JWT tidak memuat jti yang valid."],
+      });
+    }
 
-  await revokeToken(jti, sub, expiresAt);
+    const { jti, sub, exp } = req.user;
+    const expiresAt = exp
+      ? new Date(exp * 1000)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  return res.status(200).json({
-    success: true,
-    message: "Logout berhasil.",
-    data: {},
-  });
+    await revokeToken(jti, sub, expiresAt);
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout berhasil.",
+      data: {},
+    });
+  } catch (error) {
+    console.error("[AuthController] Logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat mengakhiri sesi.",
+      errors: ["Gagal memproses logout pada server."],
+    });
+  }
 }

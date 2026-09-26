@@ -14,6 +14,6 @@ export default defineConfig({
     // sebelumnya menunjuk ke DIRECT_URL yang tidak pernah ada di .env, bikin
     // `prisma generate`/`migrate`/`studio` gagal total untuk siapa pun yang
     // clone repo ini (bahkan `npm install` ikut gagal lewat postinstall).
-    url: env("DIRECT_URL"),
+    url: env("DATABASE_URL"),
   },
 });

@@ -4,7 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import { publicRouter, protectedRouter } from "./routes/index.js";
-import { generateRateLimiter } from "./middleware/rateLimit.middleware.js";
+import { generalRateLimiter } from "./middleware/rateLimit.middleware.js";
 
 const app = express();
 
@@ -16,10 +16,10 @@ app.use(morgan("dev"));
 
 app.use(express.json());
 
-app.use("/api/public", generateRateLimiter, publicRouter);
-app.use("/api/protected", protectedRouter);
+app.use("/api/public", generalRateLimiter, publicRouter);
+app.use("/api/protected", generalRateLimiter, protectedRouter);
 // Alias agar endpoint publik juga dapat diakses langsung via /api/... di Postman
-app.use("/api", generateRateLimiter, publicRouter);
+app.use("/api", generalRateLimiter, publicRouter);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
