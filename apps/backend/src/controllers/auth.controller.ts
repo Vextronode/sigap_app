@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { login, AuthenticationError } from "../services/auth.service.js";
+import { login, AuthenticationError, AccountLockedError } from "../services/auth.service.js";
+import { revokeToken } from "../repositories/token.repository.js";
 
 export async function loginController(req: Request, res: Response) {
   try {
@@ -38,5 +39,18 @@ export async function meController(req: Request, res: Response) {
     success: true,
     message: "Profil berhasil diambil.",
     data: { user: req.user },
+  });
+}
+
+export async function logoutController(req: Request, res: Response) {
+  const { jti, sub, exp } = req.user!;
+  const expiresAt = exp ? new Date(exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000); // Default 1 hour if exp is not set
+
+  await revokeToken(jti, sub, expiresAt);
+
+  return res.status(200).json({
+    success: true,
+    message: "Logout berhasil.",
+    data: {},
   });
 }
