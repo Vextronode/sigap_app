@@ -168,7 +168,7 @@ const PreparednessGuideFormModalContent: React.FC<
         const payload: UpdatePreparednessGuideInput = {
           title: title.trim(),
           sourceType: calculatedSourceType,
-          content: formatType === "ARTICLE" ? content.trim() : null,
+          content: content.trim() || null,
           externalUrl: formatType === "EXTERNAL_URL" ? externalUrl.trim() : null,
           imageUrl,
           sourceLabel: sourceLabel.trim() || undefined,
@@ -178,7 +178,7 @@ const PreparednessGuideFormModalContent: React.FC<
         const payload: CreatePreparednessGuideInput = {
           title: title.trim(),
           sourceType: calculatedSourceType,
-          content: formatType === "ARTICLE" ? content.trim() : null,
+          content: content.trim() || null,
           externalUrl: formatType === "EXTERNAL_URL" ? externalUrl.trim() : null,
           imageUrl,
           sourceLabel: sourceLabel.trim() || undefined,
@@ -243,7 +243,7 @@ const PreparednessGuideFormModalContent: React.FC<
 
             <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
               {/* Preview Gambar */}
-              <div className="relative w-full sm:w-44 h-32 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 flex items-center justify-center shrink-0">
+              <div className="relative w-full sm:w-48 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
                 {imagePreview ? (
                   <img
                     src={imagePreview}
@@ -256,6 +256,10 @@ const PreparednessGuideFormModalContent: React.FC<
                     <span>Belum ada gambar</span>
                   </div>
                 )}
+                {/* Badge Rasio 16:9 */}
+                <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[10px] font-bold text-white/90">
+                  16:9
+                </div>
                 {isCompressing && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-2xs flex flex-col items-center justify-center text-white text-xs gap-1.5">
                     <Loader2 size={20} className="animate-spin text-blue-400" />
@@ -277,16 +281,19 @@ const PreparednessGuideFormModalContent: React.FC<
                 />
                 <label
                   htmlFor="guide-image-input"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00247D] hover:bg-[#001b5e] text-white text-xs font-semibold shadow-xs cursor-pointer transition disabled:opacity-50"
                 >
                   <Upload size={14} />
                   {imagePreview ? "Ganti Gambar Sampul" : "Pilih Gambar Sampul"}
                 </label>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Format JPG, PNG, atau WebP. Maksimal ukuran berkas{" "}
-                  <strong className="text-slate-700 dark:text-slate-300">5 MB</strong>.
-                  Sistem otomatis mengompresi gambar ke WebP super ringan (~30-50 KB).
-                </p>
+                <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p>
+                    <strong className="text-slate-800 dark:text-slate-200">Gunakan rasio 16:9</strong> (misal 1280×720 atau 800×450 px) agar foto pas di kartu warga dan tidak terpotong.
+                  </p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                    Format JPG, PNG, atau WebP (maks. 5 MB). Gambar otomatis dikompresi ke WebP super ringan.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -315,7 +322,12 @@ const PreparednessGuideFormModalContent: React.FC<
               maxLength={150}
               required
               disabled={isSubmitting}
-              className="w-full px-4 py-2.5 font-sans text-sm rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 transition"
+              style={{
+                backgroundColor: "#f8fafc",
+                color: "#0f172a",
+                fontFamily: "var(--font-sans, inherit)",
+              }}
+              className="w-full px-4 py-2.5 font-sans text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:text-[11px] sm:placeholder:text-xs focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 transition"
             />
           </div>
 
@@ -389,17 +401,17 @@ const PreparednessGuideFormModalContent: React.FC<
             </div>
           </div>
 
-          {/* Form Kondisional Berdasarkan Tipe */}
-          {formatType === "ARTICLE" ? (
-            <div className="space-y-1.5">
+          {/* Form Tautan jika Tipe EXTERNAL_URL */}
+          {formatType === "EXTERNAL_URL" && (
+            <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Deskripsi & Rincian Panduan <span className="text-rose-500">*</span>
+                Tautan URL Eksternal / Saluran / PDF <span className="text-rose-500">*</span>
               </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Tuliskan teks instruksi, poin-poin mitigasi, atau langkah kesiapsiagaan di sini. Format teks bebas berupa paragraf panjang atau daftar poin..."
-                rows={6}
+              <input
+                type="url"
+                value={externalUrl}
+                onChange={(e) => setExternalUrl(e.target.value)}
+                placeholder="https://whatsapp.com/channel/... atau https://bmkg.go.id/..."
                 required
                 disabled={isSubmitting}
                 style={{
@@ -407,22 +419,7 @@ const PreparednessGuideFormModalContent: React.FC<
                   color: "#0f172a",
                   fontFamily: "var(--font-sans, inherit)",
                 }}
-                className="w-full px-4 py-3 font-sans text-xs sm:text-sm font-normal rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 min-h-[130px] resize-y leading-relaxed transition-colors"
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Tautan URL Eksternal / Berkas PDF <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="url"
-                value={externalUrl}
-                onChange={(e) => setExternalUrl(e.target.value)}
-                placeholder="https://content.bmkg.go.id/wp-content/uploads/PPT-SLG_Kesiapsiagaan.pdf"
-                required
-                disabled={isSubmitting}
-                className="w-full px-4 py-2.5 font-sans text-sm rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 transition"
+                className="w-full px-4 py-2.5 font-sans text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:text-[11px] sm:placeholder:text-xs focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 transition"
               />
 
               {/* Indikator Deteksi Dokumen PDF */}
@@ -438,6 +435,38 @@ const PreparednessGuideFormModalContent: React.FC<
             </div>
           )}
 
+          {/* Deskripsi & Rincian Panduan */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Deskripsi / Ringkasan Panduan{" "}
+                {formatType === "ARTICLE" ? (
+                  <span className="text-rose-500">*</span>
+                ) : (
+                  <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                )}
+              </label>
+            </div>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder={
+                formatType === "ARTICLE"
+                  ? "Tuliskan poin mitigasi, instruksi penyelamatan, atau protokol kesiapsiagaan warga di sini..."
+                  : "Ringkasan isi dokumen atau saluran resmi untuk warga (contoh: Update gempa & cuaca ekstrem BMKG)..."
+              }
+              rows={formatType === "ARTICLE" ? 5 : 3}
+              required={formatType === "ARTICLE"}
+              disabled={isSubmitting}
+              style={{
+                backgroundColor: "#f8fafc",
+                color: "#0f172a",
+                fontFamily: "var(--font-sans, inherit)",
+              }}
+              className="w-full px-3.5 py-2.5 font-sans text-[11px] sm:text-xs font-normal rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:text-[11px] sm:placeholder:text-xs focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 min-h-[90px] resize-y leading-relaxed transition-colors"
+            />
+          </div>
+
           {/* Sumber Penerbit / Label */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -447,9 +476,14 @@ const PreparednessGuideFormModalContent: React.FC<
               type="text"
               value={sourceLabel}
               onChange={(e) => setSourceLabel(e.target.value)}
-              placeholder="Contoh: BPBD Pangandaran / BNPB RI / Relawan Desa Cibenda"
+              placeholder="Contoh: BMKG RI / BPBD Pangandaran / Pemerintah Desa Cibenda"
               disabled={isSubmitting}
-              className="w-full px-4 py-2.5 font-sans text-sm rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 transition"
+              style={{
+                backgroundColor: "#f8fafc",
+                color: "#0f172a",
+                fontFamily: "var(--font-sans, inherit)",
+              }}
+              className="w-full px-3.5 py-2 font-sans text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:text-[11px] sm:placeholder:text-xs focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 transition"
             />
           </div>
 
