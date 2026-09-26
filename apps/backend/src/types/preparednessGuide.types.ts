@@ -9,6 +9,7 @@ export interface PreparednessGuideRecord {
   externalUrl: string | null;
   imageUrl: string | null;
   sourceType: GuideSourceType;
+  sourceLabel: string | null;
   publishedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +22,7 @@ export interface CreatePreparednessGuideDto {
   externalUrl?: string | null;
   imageUrl?: string | null;
   sourceType?: GuideSourceType;
+  sourceLabel?: string | null;
   publishedAt?: Date | string;
 }
 
@@ -31,5 +33,6 @@ export interface UpdatePreparednessGuideDto {
   externalUrl?: string | null;
   imageUrl?: string | null;
   sourceType?: GuideSourceType;
+  sourceLabel?: string | null;
   publishedAt?: Date | string;
 }

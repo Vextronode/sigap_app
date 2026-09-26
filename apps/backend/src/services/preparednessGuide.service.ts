@@ -58,6 +58,7 @@ export class PreparednessGuideService {
       externalUrl: hasExternalUrl ? data.externalUrl!.trim() : null,
       imageUrl: data.imageUrl ?? null,
       sourceType: data.sourceType ?? "RESMI",
+      sourceLabel: data.sourceLabel ? data.sourceLabel.trim() : "Pemerintah Desa Cibenda",
       publishedAt: data.publishedAt,
     });
   }
@@ -79,6 +80,11 @@ export class PreparednessGuideService {
     const nextImageUrl =
       data.imageUrl !== undefined ? data.imageUrl : existing.imageUrl;
 
+    const nextSourceLabel =
+      data.sourceLabel !== undefined
+        ? (data.sourceLabel && data.sourceLabel.trim() !== "" ? data.sourceLabel.trim() : "Pemerintah Desa Cibenda")
+        : existing.sourceLabel;
+
     // validasi batas gabungan setelah pembaruan tidak boleh kosong dua duanya
     if (!nextContent && !nextExternalUrl) {
       const error: CustomHttpError = new Error(
@@ -94,6 +100,7 @@ export class PreparednessGuideService {
       ...(data.externalUrl !== undefined && { externalUrl: nextExternalUrl }),
       ...(data.imageUrl !== undefined && { imageUrl: nextImageUrl }),
       ...(data.sourceType !== undefined && { sourceType: data.sourceType }),
+      ...(data.sourceLabel !== undefined && { sourceLabel: nextSourceLabel }),
       ...(data.publishedAt !== undefined && { publishedAt: data.publishedAt }),
     });
   }

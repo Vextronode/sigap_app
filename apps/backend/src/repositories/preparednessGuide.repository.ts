@@ -32,6 +32,7 @@ export async function create(data: CreatePreparednessGuideDto) {
       externalUrl: data.externalUrl ?? null,
       imageUrl: data.imageUrl ?? null,
       sourceType: data.sourceType ?? "RESMI",
+      sourceLabel: data.sourceLabel ?? "Pemerintah Desa Cibenda",
       publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
     },
   });
@@ -47,6 +48,7 @@ export async function update(id: string, data: UpdatePreparednessGuideDto) {
       ...(data.externalUrl !== undefined && { externalUrl: data.externalUrl }),
       ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
       ...(data.sourceType !== undefined && { sourceType: data.sourceType }),
+      ...(data.sourceLabel !== undefined && { sourceLabel: data.sourceLabel }),
       ...(data.publishedAt !== undefined && {
         publishedAt: new Date(data.publishedAt),
       }),
