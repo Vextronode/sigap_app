@@ -30,17 +30,17 @@ export const PreparednessGuide = () => {
       />
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-          {[1, 2].map((idx) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5 sm:gap-5 mt-4">
+          {[1, 2, 3].map((idx) => (
             <div
               key={idx}
-              className="bg-card rounded-2xl border border-[color:var(--border)] overflow-hidden shadow-xs animate-pulse p-4 space-y-4"
+              className="bg-card rounded-2xl border border-[color:var(--border)] overflow-hidden shadow-xs animate-pulse p-4 space-y-3"
             >
-              <div className="aspect-[16/9] bg-slate-200 dark:bg-slate-800 rounded-xl w-full" />
+              <div className="aspect-[16/9] max-h-48 bg-slate-200 dark:bg-slate-800 rounded-xl w-full" />
               <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-md w-1/3" />
               <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded-md w-3/4" />
-              <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded-md w-full" />
-              <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-xl w-full" />
+              <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-md w-full" />
+              <div className="h-9 bg-slate-200 dark:bg-slate-800 rounded-xl w-full" />
             </div>
           ))}
         </div>
@@ -52,7 +52,7 @@ export const PreparednessGuide = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5 sm:gap-5 mt-4">
           {displayGuides.map((guide) => {
             const isExternal = Boolean(
               guide.externalUrl && guide.externalUrl.trim().length > 0
@@ -85,8 +85,8 @@ export const PreparednessGuide = () => {
               >
                 {/* Bagian Atas: Gambar Sampul & Info */}
                 <div>
-                  {/* Container Foto Bersih & Terang (Tidak Tertutup Overlay Gelap) */}
-                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
+                  {/* Container Foto Bersih & Terang (Tinggi Terkendali di Layar Lebar) */}
+                  <div className="relative aspect-[16/9] max-h-48 sm:max-h-52 w-full overflow-hidden bg-slate-100 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
                     <img
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       src={
@@ -98,29 +98,29 @@ export const PreparednessGuide = () => {
                     />
 
                     {/* Floating Badges di Atas Foto */}
-                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 pointer-events-auto">
+                    <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 pointer-events-auto">
                       {isArticle ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-semibold backdrop-blur-md shadow-xs">
-                          <FileText size={12} />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white text-[10px] sm:text-[11px] font-semibold backdrop-blur-md shadow-xs">
+                          <FileText size={11} />
                           Artikel Mandiri
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/85 text-white text-[11px] font-semibold backdrop-blur-md shadow-xs">
-                          <ExternalLink size={12} />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900/85 text-white text-[10px] sm:text-[11px] font-semibold backdrop-blur-md shadow-xs">
+                          <ExternalLink size={11} />
                           Referensi Eksternal
                         </span>
                       )}
 
                       {isPdf && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-600 text-white text-[11px] font-bold backdrop-blur-md shadow-xs">
-                          <FileDown size={12} />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] sm:text-[11px] font-bold backdrop-blur-md shadow-xs">
+                          <FileDown size={11} />
                           Dokumen PDF
                         </span>
                       )}
 
                       {isWhatsApp && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-bold backdrop-blur-md shadow-xs">
-                          <MessageCircle size={12} />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] sm:text-[11px] font-bold backdrop-blur-md shadow-xs">
+                          <MessageCircle size={11} />
                           Saluran WhatsApp
                         </span>
                       )}
@@ -128,11 +128,11 @@ export const PreparednessGuide = () => {
                   </div>
 
                   {/* Bagian Konten Teks di Bawah Foto */}
-                  <div className="p-4 sm:p-5 space-y-2">
+                  <div className="p-3.5 sm:p-4 space-y-1.5">
                     {/* Instansi / Penerbit */}
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                       <Building2
-                        size={13}
+                        size={12}
                         className="text-[#00247D] dark:text-blue-400 shrink-0"
                       />
                       <span className="truncate">
@@ -141,26 +141,26 @@ export const PreparednessGuide = () => {
                     </div>
 
                     {/* Judul Panduan (Biru Khas SIGAP, Ukuran Proporsional & Rapi) */}
-                    <h3 className="text-sm sm:text-base font-bold text-[#00247D] dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 leading-snug line-clamp-2 transition-colors">
+                    <h3 className="text-xs sm:text-sm font-bold text-[#00247D] dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 leading-snug line-clamp-2 transition-colors">
                       {guide.title}
                     </h3>
 
                     {/* Teks Deskripsi yang Rapi */}
-                    <p className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed font-normal line-clamp-3">
+                    <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal line-clamp-2">
                       {guide.content || defaultDescription}
                     </p>
                   </div>
                 </div>
 
                 {/* Bagian Bawah: Aksi Buka / Baca */}
-                <div className="p-4 sm:p-5 pt-0 mt-2">
+                <div className="p-3.5 sm:p-4 pt-0 mt-1">
                   {isArticle ? (
                     <Button
                       type="button"
                       variant="secondary"
                       onClick={() => setSelectedGuideForReader(guide)}
-                      icon={<BookOpen size={15} />}
-                      className="w-full flex items-center justify-center cursor-pointer text-xs sm:text-sm font-semibold py-2.5"
+                      icon={<BookOpen size={14} />}
+                      className="w-full flex items-center justify-center cursor-pointer text-xs font-semibold py-2"
                     >
                       Baca Panduan Lengkap
                     </Button>
@@ -180,7 +180,7 @@ export const PreparednessGuide = () => {
                             className="text-rose-600 dark:text-rose-400"
                           />
                         }
-                        className="w-full flex items-center justify-center cursor-pointer text-xs sm:text-sm font-semibold py-2.5 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-700 dark:text-rose-300"
+                        className="w-full flex items-center justify-center cursor-pointer text-xs font-semibold py-2 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-700 dark:text-rose-300"
                       >
                         Buka Dokumen PDF
                       </Button>
@@ -197,11 +197,11 @@ export const PreparednessGuide = () => {
                         variant="secondary"
                         icon={
                           <MessageCircle
-                            size={15}
+                            size={14}
                             className="text-emerald-600 dark:text-emerald-400"
                           />
                         }
-                        className="w-full flex items-center justify-center cursor-pointer text-xs sm:text-sm font-semibold py-2.5 border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300"
+                        className="w-full flex items-center justify-center cursor-pointer text-xs font-semibold py-2 border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300"
                       >
                         Buka Saluran WhatsApp
                       </Button>
@@ -216,8 +216,8 @@ export const PreparednessGuide = () => {
                       <Button
                         type="button"
                         variant="secondary"
-                        icon={<ExternalLink size={15} />}
-                        className="w-full flex items-center justify-center cursor-pointer text-xs sm:text-sm font-semibold py-2.5"
+                        icon={<ExternalLink size={14} />}
+                        className="w-full flex items-center justify-center cursor-pointer text-xs font-semibold py-2"
                       >
                         Kunjungi Tautan Referensi
                       </Button>

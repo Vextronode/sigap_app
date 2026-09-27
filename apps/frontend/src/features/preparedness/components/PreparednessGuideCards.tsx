@@ -61,7 +61,7 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5 sm:gap-5">
       {guides.map((guide) => {
         const isExternal = Boolean(guide.externalUrl && guide.externalUrl.trim().length > 0);
         const isArticle = !isExternal;
@@ -82,8 +82,8 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
           >
             {/* Bagian Atas: Cover Image & Info Header */}
             <div>
-              {/* Gambar Sampul (Tanpa Overlay Gelap) */}
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
+              {/* Gambar Sampul (Tinggi Terkendali di Layar Lebar) */}
+              <div className="relative aspect-[16/9] max-h-48 sm:max-h-52 w-full overflow-hidden bg-slate-100 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
                 {guide.imageUrl ? (
                   <img
                     src={guide.imageUrl}
@@ -98,23 +98,23 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
                 )}
 
                 {/* Badge di atas gambar */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-auto">
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-auto">
                   <div className="flex flex-wrap gap-1.5 items-center">
                     {isArticle ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-semibold backdrop-blur-md shadow-xs">
-                        <FileText size={12} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white text-[10px] sm:text-[11px] font-semibold backdrop-blur-md shadow-xs">
+                        <FileText size={11} />
                         Artikel Mandiri
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/85 text-white text-[11px] font-semibold backdrop-blur-md shadow-xs">
-                        <ExternalLink size={12} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900/85 text-white text-[10px] sm:text-[11px] font-semibold backdrop-blur-md shadow-xs">
+                        <ExternalLink size={11} />
                         Tautan Eksternal
                       </span>
                     )}
 
                     {isPdf && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-600 text-white text-[11px] font-bold backdrop-blur-md shadow-xs">
-                        <FileDown size={12} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] sm:text-[11px] font-bold backdrop-blur-md shadow-xs">
+                        <FileDown size={11} />
                         Dokumen PDF
                       </span>
                     )}
@@ -123,9 +123,9 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
               </div>
 
               {/* Rincian Ringkas di Bawah Foto */}
-              <div className="p-4 sm:p-5 space-y-2.5">
+              <div className="p-3.5 sm:p-4 space-y-2">
                 {/* Meta Penerbit & Tanggal */}
-                <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                   {guide.sourceLabel && (
                     <span className="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                       <Building2 size={12} className="text-[#00247D] dark:text-blue-400" />
@@ -141,12 +141,12 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
                 </div>
 
                 {/* Judul di Bawah Foto (Warna Biru Khas SIGAP, Ukuran Proporsional) */}
-                <h3 className="text-sm sm:text-base font-bold text-[#00247D] dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 line-clamp-2 leading-snug transition-colors">
+                <h3 className="text-xs sm:text-sm font-bold text-[#00247D] dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 line-clamp-2 leading-snug transition-colors">
                   {guide.title}
                 </h3>
 
                 {/* Snippet Teks atau Link */}
-                <p className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">
+                <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
                   {guide.content || (
                     isExternal
                       ? `Materi rujukan resmi dari ${guide.sourceLabel || "instansi terkait"}. Buka tautan untuk mengakses panduan lengkap.`
