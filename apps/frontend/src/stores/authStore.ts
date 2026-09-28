@@ -68,13 +68,41 @@ if (rawStoredToken && isInitialExpired) {
 
 const initialToken = !isInitialExpired ? rawStoredToken : null;
 const decoded = parseToken(initialToken);
-const initialUser: AuthUser | null = decoded
-  ? {
-      id: decoded.sub,
-      email: decoded.email ?? "admin@cibenda.desa.id",
-      name: "Administrator Desa",
-      roles: decoded.roles ?? ["admin"],
-    }
+const storedUserRaw = typeof window !== "undefined" ? localStorage.getItem("sigap_user") : null;
+let parsedStoredUser: AuthUser | null = null;
+if (storedUserRaw) {
+  try {
+    parsedStoredUser = JSON.parse(storedUserRaw);
+  } catch {
+    parsedStoredUser = null;
+  }
+}
+
+const normalizeUserName = (name?: string, isAdminRole?: boolean): string => {
+  if (!name || name.trim() === "" || name === "Admin Placeholder") {
+    return isAdminRole ? "Administrator" : "Petugas Lapangan";
+  }
+  return name;
+};
+
+const initialUser: AuthUser | null = initialToken
+  ? (() => {
+      const base = parsedStoredUser || (decoded
+        ? {
+            id: decoded.sub,
+            email: decoded.email ?? "admin@cibenda.desa.id",
+            name: (decoded as unknown as { name?: string }).name || "Administrator",
+            roles: decoded.roles ?? ["admin"],
+          }
+        : null);
+
+      if (!base) return null;
+      const isAdminRole = base.roles?.includes("admin") ?? true;
+      return {
+        ...base,
+        name: normalizeUserName(base.name, isAdminRole),
+      };
+    })()
   : null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -86,12 +114,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: (token, user) => {
     localStorage.setItem("sigap_token", token);
     const parsed = parseToken(token);
-    const resolvedUser: AuthUser = user ?? {
-      id: parsed?.sub,
-      email: parsed?.email ?? "admin@cibenda.desa.id",
-      name: "Administrator Desa",
-      roles: parsed?.roles ?? ["admin"],
+    const roles = user?.roles ?? parsed?.roles ?? ["admin"];
+    const isAdminRole = roles.includes("admin");
+
+    const rawName = user?.name ?? (parsed as unknown as { name?: string })?.name;
+    const resolvedUser: AuthUser = {
+      id: user?.id ?? parsed?.sub,
+      email: user?.email ?? parsed?.email ?? (isAdminRole ? "admin@cibenda.desa.id" : "operator@cibenda.desa.id"),
+      name: normalizeUserName(rawName, isAdminRole),
+      roles,
     };
+
+    localStorage.setItem("sigap_user", JSON.stringify(resolvedUser));
 
     // Bersihkan cache query lama agar data baru langsung ditarik segar detik itu juga
     queryClient.clear();
@@ -106,6 +140,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // penanganan logout dan pembersihan sesi
   logout: () => {
     localStorage.removeItem("sigap_token");
+    localStorage.removeItem("sigap_user");
     queryClient.clear();
     set({
       token: null,
