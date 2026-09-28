@@ -5,7 +5,13 @@ import { revokeToken } from "../repositories/token.repository.js";
 export async function loginController(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
-    const result = await login(email, password);
+    const forwarded = req.headers["x-forwarded-for"];
+    const rawIp = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.ip || req.socket.remoteAddress || "";
+    let cleanIp = rawIp.replace(/^::ffff:/, "");
+    if (cleanIp === "::1" || cleanIp === "127.0.0.1") {
+      cleanIp = "127.0.0.1 (Localhost)";
+    }
+    const result = await login(email, password, cleanIp || undefined);
 
     return res.status(200).json({
       success: true,
@@ -78,6 +84,50 @@ export async function logoutController(req: Request, res: Response) {
       success: false,
       message: "Terjadi kesalahan saat mengakhiri sesi.",
       errors: ["Gagal memproses logout pada server."],
+    });
+  }
+}
+
+export async function changePasswordController(req: Request, res: Response) {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Sesi autentikasi tidak valid.",
+        errors: ["Identitas pengguna tidak ditemukan."],
+      });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    const { changeSelfPassword, AuthenticationError } = await import("../services/auth.service.js");
+
+    const result = await changeSelfPassword(userId, currentPassword, newPassword);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message || "Password berhasil diubah.",
+      data: {},
+    });
+  } catch (error) {
+    const { AuthenticationError } = await import("../services/auth.service.js");
+    if (error instanceof AuthenticationError) {
+      return res.status(401).json({
+        success: false,
+        message: error.message,
+        errors: [error.message],
+      });
+    }
+
+    const customErr = error as Error & { statusCode?: number };
+    const statusCode = customErr.statusCode || 500;
+    const message = customErr.message || "Terjadi kesalahan saat mengubah password.";
+
+    console.error("[AuthController] Change password error:", error);
+    return res.status(statusCode).json({
+      success: false,
+      message,
+      errors: [message],
     });
   }
 }

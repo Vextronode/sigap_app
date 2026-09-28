@@ -1,6 +1,6 @@
 import { comparePassword } from "../utils/password.util.js";
 import { signToken } from "../utils/jwt.util.js";
-import { findByEmail, incrementFailedLogin, resetFailedLogin } from "../repositories/user.repository.js";
+import { findByEmail, incrementFailedLogin, updateLastLogin } from "../repositories/user.repository.js";
 import { randomUUID } from "crypto";
 
 export class AuthenticationError extends Error { }
@@ -9,7 +9,7 @@ export class AccountLockedError extends Error {}
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, ip?: string) {
   let user;
   try {
     user = await findByEmail(email);
@@ -32,7 +32,7 @@ export async function login(email: string, password: string) {
     throw netErr;
   }
 
-  if (!user) {
+  if (!user || !user.isActive) {
     throw new AuthenticationError("Email atau password salah.");
   }
 
@@ -57,9 +57,7 @@ export async function login(email: string, password: string) {
     throw new AuthenticationError("Email atau password salah.");
   }
 
-  if (user.failedLoginCount > 0 || user.lockedUntil !== null) {
-    await resetFailedLogin(user.id);
-  }
+  await updateLastLogin(user.id, ip);
 
   const roles = user.userRoles.map((ur) => ur.role.name);
   const permissions = Array.from(
@@ -72,6 +70,7 @@ export async function login(email: string, password: string) {
 
   const token = signToken({
     sub: user.id,
+    name: user.name,
     email: user.email,
     roles,
     permissions,
@@ -87,4 +86,45 @@ export async function login(email: string, password: string) {
       roles,
     },
   };
+}
+
+export async function changeSelfPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) {
+  const { prisma } = await import("../config/prisma.js");
+  const { hashPassword } = await import("../utils/password.util.js");
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user || !user.isActive) {
+    throw new AuthenticationError("Pengguna tidak ditemukan atau tidak aktif.");
+  }
+
+  const isCurrentValid = await comparePassword(currentPassword, user.password);
+  if (!isCurrentValid) {
+    throw new AuthenticationError("Password saat ini salah.");
+  }
+
+  if (currentPassword === newPassword) {
+    const err = new Error("Password baru tidak boleh sama dengan password saat ini.");
+    (err as Error & { statusCode?: number }).statusCode = 422;
+    throw err;
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      password: hashedPassword,
+      failedLoginCount: 0,
+      lockedUntil: null,
+    },
+  });
+
+  return { message: "Password berhasil diperbarui." };
 }
