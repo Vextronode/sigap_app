@@ -19,13 +19,9 @@ export const TopNavbar = ({ alert, isLoading = false, isError = false }: TopNavb
   const meta = getAlertMeta(alert);
   const openSidebar = useUiStore((state) => state.openSidebar);
   const isAdmin = useAuthStore((state) => state.isAdmin);
-  const user = useAuthStore((state) => state.user);
   const location = useLocation();
 
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const isOperator = user?.roles?.some((r) => r.toLowerCase().includes("operator"));
-  const roleLabel = isOperator ? "OPERATOR" : "ADMIN";
-  const showRoleStatus = isAdminRoute;
 
   return (
     <header className="top-navbar">
@@ -35,21 +31,16 @@ export const TopNavbar = ({ alert, isLoading = false, isError = false }: TopNavb
         onClick={openSidebar} 
         aria-label="Buka menu"
       >        
-      <Menu size={22} />
+        <Menu size={22} />
       </button>
+
       <div className="top-navbar__title">
-        <strong>{showRoleStatus ? "ADMIN SIGAP" : "SIGAP Desa Cibenda"}</strong>
+        <strong>{isAdminRoute ? "ADMIN SIGAP" : "SIGAP Desa Cibenda"}</strong>
         <span>Sistem Informasi Gawat Darurat & Monitoring Cuaca</span>
       </div>
+
       <div className="top-navbar__actions">
-        {showRoleStatus ? (
-          <Badge
-            tone="neutral"
-            className="tracking-wider dark:!bg-[color:var(--primary-50)] dark:!text-[color:var(--primary)] dark:border dark:border-[color:var(--primary)]/30"
-          >
-            {`STATUS: ${roleLabel}`}
-          </Badge>
-        ) : (
+        {!isAdminRoute && (
           <Badge tone={isError ? "neutral" : meta.tone}>
             {isLoading
               ? "Status: Memuat"
