@@ -42,15 +42,14 @@ apiClient.interceptors.response.use(
       const authState = useAuthStore.getState();
       const hasStoredToken = Boolean(localStorage.getItem("sigap_token"));
 
-      // Jika ada token tersimpan atau sesi aktif yang ditolak backend (karena expired / invalid)
-      if (hasStoredToken || authState.token) {
+      // Determine if error originates from password change endpoint
+      const isPasswordChange = error.config?.url?.includes("/auth/change-password");
+      // Only logout for token expiration or invalid session, not for password errors
+      if (!isPasswordChange && (hasStoredToken || authState.token)) {
         authState.logout();
 
-        // Alihkan pengguna ke halaman login dengan indikator sesi berakhir jika belum di halaman login
-        if (
-          typeof window !== "undefined" &&
-          !window.location.pathname.includes("/login")
-        ) {
+        // Redirect to login if not already there
+        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
           window.location.href = "/admin/login?expired=true";
         }
       }

@@ -5,6 +5,7 @@ import DashboardPage from "../pages/DashboardPage";
 import AdminDashboardPage from "../pages/AdminDashboardPage";
 import AlertVerificationPage from "../pages/AlertVerificationPage";
 import SystemSettingsPage from "../pages/SystemSettingsPage";
+import UserManagementPage from "../pages/UserManagementPage";
 import LoginPage from "../pages/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import { GuestRoute } from "./GuestRoute";
@@ -36,6 +37,14 @@ export const router = createBrowserRouter([
           },
           {
             path: "/admin/manajemen-akun",
+            element: <UserManagementPage />,
+          },
+          {
+            path: "/admin/users",
+            element: <UserManagementPage />,
+          },
+          {
+            path: "/admin/pengaturan-sistem",
             element: <SystemSettingsPage />,
           },
           {

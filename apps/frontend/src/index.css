@@ -55,6 +55,11 @@
   .top-navbar__menu {
     display: flex; /* Tombol burger muncul di layar handphone/tablet */
   }
+
+  .top-navbar {
+    padding: 12px 14px;
+    gap: 8px;
+  }
 }
 
 /* 2. TAMPILAN DESKTOP & LAPTOP XL (Layar >= 1024px) */

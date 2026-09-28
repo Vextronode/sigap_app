@@ -44,3 +44,16 @@ export async function resetFailedLogin(userId: string) {
     },
   });
 }
+
+export async function updateLastLogin(userId: string, ip?: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      failedLoginCount: 0,
+      lastFailedLoginAt: null,
+      lockedUntil: null,
+      lastLoginAt: new Date(),
+      lastLoginIp: ip ?? null,
+    },
+  });
+}

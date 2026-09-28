@@ -18,6 +18,9 @@ model User {
   failedLoginCount  Int       @default(0) @map("failed_login_count")
   lastFailedLoginAt DateTime? @map("last_failed_login_at")
   lockedUntil       DateTime? @map("locked_until")
+  isActive          Boolean   @default(true) @map("is_active")
+  lastLoginAt       DateTime? @map("last_login_at")
+  lastLoginIp       String?   @map("last_login_ip")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
