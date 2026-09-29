@@ -240,7 +240,7 @@ export const EarthquakeCard = ({
                 onClick={() => setShowHistory(true)}
                 className="group inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md py-1.5 px-2 touch-manipulation cursor-pointer dark:text-blue-400 dark:hover:text-blue-300"
               >
-                <span>Lihat gempa Pangandaran terakhir</span>
+                <span>Lihat Gempa Pangandaran Terakhir</span>
                 <IoIosArrowRoundForward
                   size={24}
                   className="text-blue-600 transition-transform group-hover:translate-x-1 dark:text-blue-400"
