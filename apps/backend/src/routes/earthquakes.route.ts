@@ -28,7 +28,7 @@ const buildResponse = async ({ message, emptyMessage, fetcher }: EarthquakeHandl
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil data gempa BMKG",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Layanan data gempa BMKG sementara tidak dapat diakses. Silakan coba beberapa saat lagi."],
     };
 
     return res.status(502).json(response);

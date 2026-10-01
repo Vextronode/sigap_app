@@ -54,7 +54,7 @@ publicWeatherRouter.get("/current", async (_req, res) => {
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil data cuaca.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Layanan data cuaca BMKG & Open-Meteo sementara tidak tersedia. Silakan coba beberapa saat lagi."],
     };
     res.status(502).json(response);
   }
@@ -81,7 +81,7 @@ publicWeatherRouter.get("/forecast", async (_req, res) => {
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil data prakiraan cuaca dari Open-Meteo.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Layanan data prakiraan cuaca sementara tidak tersedia. Silakan coba beberapa saat lagi."],
     };
     res.status(502).json(response);
   }
