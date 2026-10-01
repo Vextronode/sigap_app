@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { NotificationService } from "../services/notification.service.js";
 import { VAPID_PUBLIC_KEY } from "../config/webPush.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import { requireRole } from "../middleware/rbac.middleware.js";
 import type { ApiErrorResponse, ApiSuccessResponse } from "../types/weather.types.js";
 import type { PushSubscriptionInput } from "../types/notification.types.js";
 
@@ -31,6 +32,41 @@ publicNotificationRouter.post("/subscribe", async (req: Request, res: Response) 
         ...(!subscription?.keys?.p256dh ? ["keys.p256dh: wajib diisi."] : []),
         ...(!subscription?.keys?.auth ? ["keys.auth: wajib diisi."] : []),
       ],
+    };
+    res.status(400).json(response);
+    return;
+  }
+
+  // SEC-06: Validasi endpoint URL untuk mencegah Blind SSRF.
+  // Hanya izinkan HTTPS ke domain push gateway terpercaya.
+  try {
+    const url = new URL(subscription.endpoint);
+
+    // Wajib HTTPS
+    if (url.protocol !== "https:") {
+      throw new Error("Protokol wajib HTTPS.");
+    }
+
+    // Whitelist push gateway terpercaya
+    const TRUSTED_PUSH_HOSTS = [
+      "fcm.googleapis.com",
+      "updates.push.services.mozilla.com",
+      "push.services.mozilla.com",
+      "notify.windows.com",
+    ];
+    const isTrustedHost =
+      TRUSTED_PUSH_HOSTS.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`)) ||
+      // Apple Push: *.push.apple.com
+      url.hostname.endsWith(".push.apple.com");
+
+    if (!isTrustedHost) {
+      throw new Error(`Host push endpoint tidak diizinkan: ${url.hostname}`);
+    }
+  } catch (err) {
+    const response: ApiErrorResponse = {
+      success: false,
+      message: "Endpoint subscription tidak valid.",
+      errors: [err instanceof Error ? err.message : "URL endpoint tidak dapat divalidasi."],
     };
     res.status(400).json(response);
     return;
@@ -110,37 +146,18 @@ publicNotificationRouter.get("/latest", async (_req: Request, res: Response) => 
 
 /**
  * GET /api/v1/public/notifications/logs
- * Menampilkan riwayat audit pengiriman push notification beserta statistik & status error jika ada.
+ * SEC-08: Endpoint logs dipindah ke protectedNotificationRouter — hanya admin.
+ * Alias publik dihapus agar statistik subscriber tidak terekspos ke siapapun.
+ * @deprecated Gunakan GET /api/protected/notifications/logs
  */
-publicNotificationRouter.get("/logs", async (req: Request, res: Response) => {
-  try {
-    const limitParam = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
-    const limit = isNaN(limitParam) ? 20 : Math.min(limitParam, 100);
+// publicNotificationRouter.get("/logs", ...) ← DIHAPUS (SEC-08)
 
-    const logs = await NotificationService.getLogs(limit);
-
-    const response: ApiSuccessResponse<typeof logs> = {
-      success: true,
-      message: `Berhasil mengambil ${logs.length} riwayat pengiriman notifikasi.`,
-      data: logs,
-    };
-    res.json(response);
-  } catch (error) {
-    console.error("[GET /notifications/logs] error:", error);
-    const response: ApiErrorResponse = {
-      success: false,
-      message: "Gagal mengambil riwayat log notifikasi.",
-      errors: ["Terjadi kesalahan pada server."],
-    };
-    res.status(500).json(response);
-  }
-});
 
 /**
  * POST /api/v1/protected/notifications/dispatch
- * Re-send atau dispatch manual oleh admin.
+ * SEC-05: Dispatch manual notifikasi darurat massal hanya untuk Administrator.
  */
-protectedNotificationRouter.post("/dispatch", authMiddleware, async (_req: Request, res: Response) => {
+protectedNotificationRouter.post("/dispatch", authMiddleware, requireRole("admin"), async (_req: Request, res: Response) => {
   try {
     const payload = await NotificationService.getLatestPayload();
 
@@ -177,6 +194,34 @@ protectedNotificationRouter.post("/dispatch", authMiddleware, async (_req: Reque
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengirim notifikasi.",
+      errors: ["Terjadi kesalahan pada server."],
+    };
+    res.status(500).json(response);
+  }
+});
+
+/**
+ * GET /api/v1/protected/notifications/logs
+ * SEC-08: Riwayat audit log notifikasi — hanya admin yang terautentikasi.
+ */
+protectedNotificationRouter.get("/logs", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const limitParam = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
+    const limit = isNaN(limitParam) ? 20 : Math.min(limitParam, 100);
+
+    const logs = await NotificationService.getLogs(limit);
+
+    const response: ApiSuccessResponse<typeof logs> = {
+      success: true,
+      message: `Berhasil mengambil ${logs.length} riwayat pengiriman notifikasi.`,
+      data: logs,
+    };
+    res.json(response);
+  } catch (error) {
+    console.error("[GET /protected/notifications/logs] error:", error);
+    const response: ApiErrorResponse = {
+      success: false,
+      message: "Gagal mengambil riwayat log notifikasi.",
       errors: ["Terjadi kesalahan pada server."],
     };
     res.status(500).json(response);
