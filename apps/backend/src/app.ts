@@ -15,22 +15,25 @@ app.use(helmet());
  * SEC-02: CORS dikonfigurasi dengan whitelist origin dari environment variable.
  * Set ALLOWED_ORIGINS di Vercel env: https://sigap.example.com,https://www.sigap.example.com
  */
-const allowedOrigins: string[] = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : ["http://localhost:5173", "http://localhost:4173"];
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim().replace(/\/+$/, ""))
+  : [];
+const defaultOrigins = ["http://localhost:5173", "http://localhost:4173"];
+const allowedOrigins: string[] = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     // Izinkan request tanpa origin (Postman, cURL, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    const cleanOrigin = origin.replace(/\/+$/, "");
+    if (allowedOrigins.includes(cleanOrigin)) {
       return callback(null, true);
     }
     return callback(new Error(`CORS: Origin '${origin}' tidak diizinkan.`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-cron-secret"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-cron-secret", "x-device-token"],
 };
 
 app.use(cors(corsOptions));
