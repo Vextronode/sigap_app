@@ -41,3 +41,20 @@ export const loginRateLimiter = rateLimit({
     ],
   },
 });
+
+/**
+ * SEC-10: Rate limiter khusus endpoint system health untuk mencegah flooding DoS
+ * terhadap pool koneksi database Neon dan pemblokiran IP oleh Open-Meteo/BMKG.
+ * - max: 60 request per 1 menit per IP.
+ */
+export const healthRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 menit
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Terlalu banyak permintaan pemantauan sistem.",
+    errors: ["Batas frekuensi pengecekan sistem terlampaui. Silakan coba lagi dalam 1 menit."],
+  },
+});
