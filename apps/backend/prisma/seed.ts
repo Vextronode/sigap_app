@@ -14,7 +14,7 @@ const PERMISSIONS = [
 
 const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   admin: ["content.manage", "alert.validate", "device.view", "device.manage", "siren.view", "user.manage"],
-  operator: ["alert.validate", "device.view", "siren.view", "siren.trigger"],
+  operator: ["content.manage", "alert.validate", "device.view", "siren.view", "siren.trigger"],
 };
 
 async function main() {
