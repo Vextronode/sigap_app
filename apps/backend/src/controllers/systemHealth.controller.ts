@@ -12,8 +12,32 @@ interface ServiceHealthItem {
   lastChecked: string;
 }
 
+// SEC-10: In-memory TTL cache (30 detik) untuk mencegah connection pool exhaustion & DoS
+interface HealthCacheEntry {
+  data: {
+    success: boolean;
+    message: string;
+    data: {
+      services: ServiceHealthItem[];
+      overallStatus: string;
+      checkedAt: string;
+    };
+  };
+  cachedAt: number;
+}
+
+let healthCache: HealthCacheEntry | null = null;
+const HEALTH_CACHE_TTL_MS = 30 * 1000; // 30 detik
+
 export class SystemHealthController {
   static async getHealth(_req: Request, res: Response) {
+    const now = Date.now();
+
+    // Jika cache masih valid dalam rentang 30 detik, kembalikan langsung tanpa hit database / upstream
+    if (healthCache && now - healthCache.cachedAt < HEALTH_CACHE_TTL_MS) {
+      return res.status(200).json(healthCache.data);
+    }
+
     const timestamp = new Date().toISOString();
 
     // Jalankan pengecekan latensi secara paralel (Promise.allSettled) agar waktu respons jauh lebih cepat
@@ -119,7 +143,7 @@ export class SystemHealthController {
       lastChecked: timestamp,
     };
 
-    return res.status(200).json({
+    const responseData = {
       success: true,
       message: "Status konektivitas sistem berhasil diambil.",
       data: {
@@ -127,6 +151,14 @@ export class SystemHealthController {
         overallStatus: dbHealthResult.status === "ONLINE" ? "HEALTHY" : "DEGRADED",
         checkedAt: timestamp,
       },
-    });
+    };
+
+    // Simpan ke in-memory cache
+    healthCache = {
+      data: responseData,
+      cachedAt: now,
+    };
+
+    return res.status(200).json(responseData);
   }
 }
