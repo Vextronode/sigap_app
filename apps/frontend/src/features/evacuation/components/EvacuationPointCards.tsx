@@ -52,7 +52,8 @@ export const EvacuationPointCards: React.FC<EvacuationPointCardsProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {points.map((point) => {
-        const googleMapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${point.latitude},${point.longitude}&travelmode=walking`;
+        // SEC-14: Sanitasi koordinat navigasi Google Maps dengan encodeURIComponent
+        const googleMapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(point.latitude)},${encodeURIComponent(point.longitude)}&travelmode=walking`;
         const isSafeTsunami = (point.elevation ?? 0) >= 20;
 
         return (

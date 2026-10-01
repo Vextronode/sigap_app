@@ -17,6 +17,8 @@ export function validateCreateEvacuationPoint(
 
   if (!name || typeof name !== "string" || name.trim().length < 3) {
     errors.name = "Nama titik evakuasi wajib diisi minimal 3 karakter.";
+  } else if (name.trim().length > 150) {
+    errors.name = "Nama titik evakuasi maksimal 150 karakter.";
   }
 
   const lat = Number(latitude);
@@ -43,8 +45,22 @@ export function validateCreateEvacuationPoint(
     }
   }
 
-  if (facilities !== undefined && !Array.isArray(facilities)) {
-    errors.facilities = "Fasilitas harus berupa array teks.";
+  if (address !== undefined && address !== null && typeof address === "string" && address.length > 255) {
+    errors.address = "Alamat maksimal 255 karakter.";
+  }
+
+  if (description !== undefined && description !== null && typeof description === "string" && description.length > 1000) {
+    errors.description = "Deskripsi maksimal 1000 karakter.";
+  }
+
+  if (facilities !== undefined) {
+    if (!Array.isArray(facilities)) {
+      errors.facilities = "Fasilitas harus berupa array teks.";
+    } else if (facilities.length > 20) {
+      errors.facilities = "Fasilitas maksimal 20 item.";
+    } else if (facilities.some((f) => typeof f !== "string" || f.length > 100)) {
+      errors.facilities = "Setiap item fasilitas harus berupa teks maksimal 100 karakter.";
+    }
   }
 
   if (Object.keys(errors).length > 0) {
@@ -64,7 +80,7 @@ export function validateUpdateEvacuationPoint(
   res: Response,
   next: NextFunction
 ) {
-  const { name, latitude, longitude, elevation, capacity, facilities } = req.body ?? {};
+  const { name, latitude, longitude, elevation, capacity, facilities, address, description } = req.body ?? {};
   const errors: Record<string, string> = {};
 
   // SEC-09: Strip `isCore` dari body saat update — hanya bisa diubah Administrator.
@@ -75,6 +91,8 @@ export function validateUpdateEvacuationPoint(
   if (name !== undefined) {
     if (typeof name !== "string" || name.trim().length < 3) {
       errors.name = "Nama titik evakuasi minimal 3 karakter.";
+    } else if (name.trim().length > 150) {
+      errors.name = "Nama titik evakuasi maksimal 150 karakter.";
     }
   }
 
@@ -106,8 +124,22 @@ export function validateUpdateEvacuationPoint(
     }
   }
 
-  if (facilities !== undefined && !Array.isArray(facilities)) {
-    errors.facilities = "Fasilitas harus berupa array teks.";
+  if (address !== undefined && address !== null && typeof address === "string" && address.length > 255) {
+    errors.address = "Alamat maksimal 255 karakter.";
+  }
+
+  if (description !== undefined && description !== null && typeof description === "string" && description.length > 1000) {
+    errors.description = "Deskripsi maksimal 1000 karakter.";
+  }
+
+  if (facilities !== undefined) {
+    if (!Array.isArray(facilities)) {
+      errors.facilities = "Fasilitas harus berupa array teks.";
+    } else if (facilities.length > 20) {
+      errors.facilities = "Fasilitas maksimal 20 item.";
+    } else if (facilities.some((f) => typeof f !== "string" || f.length > 100)) {
+      errors.facilities = "Setiap item fasilitas harus berupa teks maksimal 100 karakter.";
+    }
   }
 
   if (Object.keys(errors).length > 0) {

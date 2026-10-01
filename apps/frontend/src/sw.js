@@ -47,7 +47,10 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+  // SEC-13: Validasi URL tujuan klik notifikasi agar hanya relative path resmi aplikasi (mencegah Open Redirect)
+  const rawUrl = (event.notification.data && event.notification.data.url) || "/";
+  const isSafe = typeof rawUrl === "string" && rawUrl.startsWith("/") && !rawUrl.startsWith("//");
+  const targetUrl = isSafe ? rawUrl : "/";
 
   event.waitUntil(
     self.clients
