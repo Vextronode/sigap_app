@@ -30,7 +30,8 @@ export const CitizenEvacuationList: React.FC<CitizenEvacuationListProps> = ({
       {points.map((point, index) => {
         const isNearest = nearestPointId === point.id;
         const isSelected = selectedPointId === point.id;
-        const googleMapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${point.latitude},${point.longitude}&travelmode=walking`;
+        // SEC-14: Sanitasi koordinat navigasi Google Maps dengan encodeURIComponent
+        const googleMapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(point.latitude)},${encodeURIComponent(point.longitude)}&travelmode=walking`;
 
         return (
           <article
