@@ -1,10 +1,24 @@
 import { Router, Request, Response } from "express";
+import { timingSafeEqual, createHash } from "crypto";
 import { runAlertCheck } from "../scheduler/alert.scheduler.js";
 import type { ApiSuccessResponse, ApiErrorResponse } from "../types/weather.types.js";
 
-// Token fallback SIGAP jika env CRON_SECRET di Vercel/lokal belum tersinkronisasi
-const DEFAULT_CRON_SECRET = "sigap-internal-cron-secret-2026";
-const CRON_SECRET = process.env.CRON_SECRET || DEFAULT_CRON_SECRET;
+// SEC-01: Wajibkan CRON_SECRET dari environment variable, tolak fallback hardcoded
+const CRON_SECRET = process.env.CRON_SECRET;
+
+if (!CRON_SECRET) {
+    throw new Error("CRON_SECRET is not defined in environment variables.");
+}
+
+function safeTokenCompare(provided: string, expected: string): boolean {
+    try {
+        const a = createHash("sha256").update(provided).digest();
+        const b = createHash("sha256").update(expected).digest();
+        return timingSafeEqual(a, b);
+    } catch {
+        return false;
+    }
+}
 
 export const internalRouter = Router();
 
@@ -14,31 +28,25 @@ export const internalRouter = Router();
  * Trigger satu siklus pengecekan alert BMKG + auto-dispatch notifikasi.
  * Dipanggil oleh cron-job.org di Vercel/production.
  *
- * Autentikasi fleksibel & tangguh:
- * 1. Header: Authorization: Bearer <CRON_SECRET>
- * 2. Header: x-cron-secret: <CRON_SECRET>
- * 3. Query Parameter: ?secret=<CRON_SECRET>
+ * Dilindungi oleh header:
+ * 1. Authorization: Bearer <CRON_SECRET>
+ * 2. x-cron-secret: <CRON_SECRET>
+ * (Parameter query ?secret= ditiadakan untuk mencegah kebocoran secret di log URL)
  */
 const handleScheduler = async (req: Request, res: Response): Promise<void> => {
     const authHeader = req.headers.authorization;
     const customHeader = req.headers["x-cron-secret"];
-    const querySecret = req.query.secret;
 
-    // Ambil token dari berbagai kemungkinan sumber request
+    // Ambil token hanya dari header yang aman
     let providedToken: string | undefined;
     if (authHeader && authHeader.startsWith("Bearer ")) {
         providedToken = authHeader.substring(7).trim();
     } else if (typeof customHeader === "string") {
         providedToken = customHeader.trim();
-    } else if (typeof querySecret === "string") {
-        providedToken = querySecret.trim();
     }
 
-    // Validasi terhadap env CRON_SECRET Vercel ATAU token bersama SIGAP
-    const isValid =
-        (Boolean(CRON_SECRET) && providedToken === CRON_SECRET) ||
-        (Boolean(process.env.CRON_SECRET) && providedToken === process.env.CRON_SECRET) ||
-        providedToken === DEFAULT_CRON_SECRET;
+    // SEC-01: Validasi terhadap env CRON_SECRET menggunakan komparasi waktu konstan
+    const isValid = Boolean(providedToken) && safeTokenCompare(providedToken!, CRON_SECRET);
 
     if (!isValid) {
         const response: ApiErrorResponse = {
