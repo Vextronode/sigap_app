@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { DeviceService } from "../services/device.service.js";
 import { AlertService } from "../services/alert.service.js";
+import { deviceAuthMiddleware } from "../middleware/deviceAuth.middleware.js";
 import type {
     ApiErrorResponse,
     ApiSuccessResponse,
@@ -42,9 +43,9 @@ publicDeviceRouter.get("/status", async (_req, res) => {
 
 /**
  * POST /api/device/register
- * Mendaftarkan perangkat baru atau mengambil perangkat jika sudah terdaftar
+ * SEC-07: Wajib menyertakan header x-device-token dari perangkat ESP32.
  */
-publicDeviceRouter.post("/register", async (req, res) => {
+publicDeviceRouter.post("/register", deviceAuthMiddleware, async (req, res) => {
     try {
         const { deviceCode, name } = req.body;
 
@@ -84,9 +85,9 @@ publicDeviceRouter.post("/register", async (req, res) => {
 
 /**
  * POST /api/device/heartbeat
- * Dipanggil oleh ESP32 secara berkala
+ * SEC-07: Wajib menyertakan header x-device-token dari perangkat ESP32.
  */
-publicDeviceRouter.post("/heartbeat", async (req, res) => {
+publicDeviceRouter.post("/heartbeat", deviceAuthMiddleware, async (req, res) => {
     try {
         const { deviceCode } = req.body;
 
