@@ -8,13 +8,14 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { SectionHeader } from "../../../components/common/SectionHeader";
+import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
 import { usePreparednessGuidesPublic } from "../../preparedness/hooks/usePreparednessGuides";
 import { PreparednessGuideReaderModal } from "../../preparedness/components/modals/PreparednessGuideReaderModal";
 import type { PreparednessGuideRecord } from "../../preparedness/types/preparedness.types";
 
 export const PreparednessGuide = () => {
-  const { data: guides, isLoading } = usePreparednessGuidesPublic();
+  const { data: guides, isLoading, isError } = usePreparednessGuidesPublic();
   const [selectedGuideForReader, setSelectedGuideForReader] =
     useState<PreparednessGuideRecord | null>(null);
 
@@ -44,13 +45,30 @@ export const PreparednessGuide = () => {
             </div>
           ))}
         </div>
+      ) : isError ? (
+        <Card className="mt-4 p-8 text-center bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center mx-auto mb-3">
+            <BookOpen size={24} />
+          </div>
+          <h3 className="font-bold text-slate-900 dark:text-white text-base">
+            Gagal Memuat Panduan Kesiapsiagaan
+          </h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-md mx-auto">
+            Terjadi kendala jaringan saat mengambil data panduan. Silakan periksa koneksi internet Anda atau hubungi pihak desa.
+          </p>
+        </Card>
       ) : displayGuides.length === 0 ? (
-        <div className="mt-4 p-8 rounded-2xl border border-[color:var(--border)] bg-card text-center space-y-2">
-          <BookOpen size={28} className="mx-auto text-muted-foreground" />
-          <p className="text-sm text-foreground/80 font-medium">
+        <Card className="mt-4 p-8 text-center bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center mx-auto mb-3">
+            <BookOpen size={24} />
+          </div>
+          <h3 className="font-bold text-slate-900 dark:text-white text-base">
+            Belum Ada Panduan Kesiapsiagaan
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
             Belum ada panduan kesiapsiagaan yang dipublikasikan saat ini.
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5 sm:gap-5 mt-4">
           {displayGuides.map((guide) => {

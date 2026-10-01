@@ -997,12 +997,12 @@ svg {
 }
 
 .state-message--error {
-  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
-  background: var(--danger-50);
+  border-color: var(--border);
+  background: var(--surface);
 }
 
 .state-message--error svg {
-  color: var(--danger);
+  color: var(--text-muted);
 }
 
 .state-message strong {

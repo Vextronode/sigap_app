@@ -1,4 +1,5 @@
-import { AlertOctagon, AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertOctagon, AlertTriangle, ShieldAlert, RotateCw } from "lucide-react";
+import { AiFillAlert } from "react-icons/ai";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import { cn } from "../../../utils/cn";
@@ -51,11 +52,40 @@ export const CurrentAlertCard = ({
 
   if (isError) {
     return (
-      <StateMessage
-        type="error"
-        title="Status kesiapsiagaan gagal dimuat"
-        message="Status resmi belum dapat diambil. Bagian dashboard lain tetap tersedia."
-      />
+      <section
+        className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-7 text-center shadow-xs transition-all"
+        aria-label="Pusat Pemantauan Bencana Offline"
+      >
+        {/* Ikon alert sinyal warna merah dengan efek denyut */}
+        <div className="relative flex items-center justify-center mx-auto mb-3 w-12 h-12">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-40 dark:bg-red-500" aria-hidden="true" />
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-red-200/60 bg-red-100 text-red-600 dark:border-red-800/40 dark:bg-red-950/50 dark:text-red-400 shadow-2xs">
+            <AiFillAlert size={24} />
+          </div>
+        </div>
+
+        {/* Headline */}
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+          Pusat Data Kesiapsiagaan Sedang Disinkronkan
+        </h2>
+
+        {/* Description ringkas */}
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-md mx-auto">
+          Terjadi gangguan koneksi data atau internet saat mengambil status kesiapsiagaan terbaru.
+        </p>
+
+        {/* Action Button Utama */}
+        <div className="mt-4 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700/80 transition-all cursor-pointer active:scale-95"
+          >
+            <RotateCw size={14} className="text-blue-600 dark:text-blue-400" />
+            <span>Periksa & Muat Ulang</span>
+          </button>
+        </div>
+      </section>
     );
   }
 

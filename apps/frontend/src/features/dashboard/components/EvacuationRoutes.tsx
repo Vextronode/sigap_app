@@ -52,9 +52,9 @@ export const EvacuationRoutes: React.FC<EvacuationRoutesProps> = ({
           </div>
         </div>
       ) : isPointsError && points.length === 0 ? (
-        <Card className="p-8 text-center bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-900 rounded-2xl">
-          <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 flex items-center justify-center mx-auto mb-3">
-            <AlertTriangle size={24} />
+        <Card className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center mx-auto mb-3">
+            <Map size={24} />
           </div>
           <h3 className="font-bold text-slate-900 dark:text-white text-base">
             Gagal Memuat Titik Evakuasi

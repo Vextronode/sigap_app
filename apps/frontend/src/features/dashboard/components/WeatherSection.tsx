@@ -1,4 +1,4 @@
-import { Cloud, CloudLightning, CloudRain, CloudSun, LucideDroplet, Sun, Thermometer, Wind } from "lucide-react";
+import { Cloud, CloudLightning, CloudOff, CloudRain, CloudSun, LucideDroplet, Sun, Thermometer, Wind } from "lucide-react";
 import { BsMoon, BsCloudMoon } from "react-icons/bs";
 import { Card } from "../../../components/ui/Card";
 import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
@@ -96,33 +96,10 @@ const WeatherIcon = ({
   }
 };
 
-/**
- * Label ringkas untuk teks prakiraan (mis. di forecast card).
- * Gerimis dibedakan dari Hujan agar tidak membuat warga panik —
- * drizzle (gerimis) ≠ hujan deras.
- */
-const weatherLabel = (condition: string): string => {
-  const s = condition.toLowerCase();
-  // Gerimis: dibedakan dari hujan biasa
-  if (s.includes("gerimis")) return "Gerimis";
-  const category = classifyWeather(condition);
-  const labels: Record<WeatherCategory, string> = {
-    badai:        "Badai Petir",
-    hujan:        "Hujan",
-    berawan:      "Berawan",
-    cerahberawan: "Cerah Berawan",
-    cerah:        "Cerah",
-  };
-  return labels[category];
-};
-
 export const WeatherSection = ({
   weather,
-  forecast,
   isWeatherLoading = false,
   isWeatherError = false,
-  isForecastLoading = false,
-  isForecastError = false,
 }: WeatherSectionProps) => {
   return (
     <section aria-labelledby="weather">
@@ -137,11 +114,21 @@ export const WeatherSection = ({
           </div>
         </>
       ) : isWeatherError ? (
-        <StateMessage
-          type="error"
-          title="Cuaca gagal dimuat"
-          message="Data cuaca terkini belum dapat diambil dari API."
-        />
+        <Card className="overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-100 dark:border-sky-900/40 text-sky-600 dark:text-sky-400 shadow-2xs">
+              <CloudOff size={24} aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                Data Cuaca Belum Tersambung
+              </h3>
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 mt-1">
+                Terjadi gangguan koneksi data atau internet saat memuat informasi cuaca terkini.
+              </p>
+            </div>
+          </div>
+        </Card>
       ) : weather ? (
         <>
           <Card className="mb-6 flex items-center justify-between gap-4">
@@ -194,54 +181,6 @@ export const WeatherSection = ({
       ) : (
         <StateMessage title="Cuaca belum tersedia" message="Data cuaca resmi belum berhasil dimuat." />
       )}
-
-      <Card className="forecast-card" aria-label="Prakiraan cuaca">
-        {isForecastLoading ? (
-          <div className="forecast-list">
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-          </div>
-        ) : isForecastError ? (
-          <StateMessage
-            type="error"
-            title="Prakiraan gagal dimuat"
-            message="Data prakiraan cuaca belum dapat diambil dari API."
-          />
-        ) : forecast.length > 0 ? (
-          <div className="forecast-list">
-            {forecast.slice(0, 4).map((item) => (
-              <article
-                className="forecast-item"
-                key={`${item.label}-${item.date}`}
-              >
-                {/* Label hari — warna muted agar tidak bersaing dengan kondisi cuaca */}
-                <span className="text-[color:var(--text-muted)]">{item.label}</span>
-
-                <WeatherIcon condition={item.condition} label={item.label} size={22} />
-
-                {/* Kondisi cuaca — elemen paling penting, tampil bold & prominent */}
-                <strong>{weatherLabel(item.condition)}</strong>
-
-                {/* Suhu — informasi sekunder, tampil lebih kecil & muted */}
-                <small className="text-[color:var(--text-muted)]">{item.temperature}°C</small>
-
-                {item.rainProbability > 0 && (
-                  <small
-                    className="text-[#3b82f6]"
-                    title={`Probabilitas hujan: ${item.rainProbability}%`}
-                  >
-                    🌧 {item.rainProbability}%
-                  </small>
-                )}
-              </article>
-            ))}
-          </div>
-        ) : (
-          <StateMessage title="Prakiraan belum tersedia" message="Backend belum mengirim data prakiraan cuaca." />
-        )}
-      </Card>
     </section>
   );
 };
