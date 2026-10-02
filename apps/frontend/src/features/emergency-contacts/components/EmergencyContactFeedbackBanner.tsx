@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, AlertCircle, X } from "lucide-react";
+import { CheckCircle2, AlertTriangle, X } from "lucide-react";
 import type { EmergencyContactFeedback } from "../../../types/emergencyContact";
 
 interface EmergencyContactFeedbackBannerProps {
@@ -20,7 +20,7 @@ export const EmergencyContactFeedbackBanner: React.FC<EmergencyContactFeedbackBa
       className={`p-3.5 sm:p-4 rounded-xl border flex items-start justify-between gap-3 text-xs sm:text-sm animate-in fade-in duration-200 ${
         isSuccess
           ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300"
-          : "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/80 text-rose-800 dark:text-rose-300"
+          : "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200"
       }`}
       role="status"
     >
@@ -28,9 +28,9 @@ export const EmergencyContactFeedbackBanner: React.FC<EmergencyContactFeedbackBa
         {isSuccess ? (
           <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
         ) : (
-          <AlertCircle size={18} className="text-rose-600 dark:text-rose-400 shrink-0" />
+          <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0" />
         )}
-        <span className="font-medium">{feedback.message}</span>
+        <span className="font-medium whitespace-pre-line">{feedback.message}</span>
       </div>
       <button
         type="button"

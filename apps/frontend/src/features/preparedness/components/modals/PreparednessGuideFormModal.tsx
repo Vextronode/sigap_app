@@ -10,6 +10,8 @@ import {
   FileDown,
 } from "lucide-react";
 import { compressImageToWebp } from "../../../../utils/imageCompressor";
+import { ModalFormErrorBanner } from "../../../../components/common/ModalFormErrorBanner";
+import { parseApiError } from "../../../../utils/errorParser";
 import type {
   PreparednessGuideRecord,
   GuideFormatType,
@@ -154,9 +156,19 @@ const PreparednessGuideFormModalContent: React.FC<
         !externalUrl.startsWith("http://") &&
         !externalUrl.startsWith("https://")
       ) {
-        setErrorMessage("URL harus diawali dengan http:// atau https://");
+        setErrorMessage("Format tautan tidak valid: Tautan harus diawali dengan http:// atau https://");
         return;
       }
+      const URL_REGEX = /^https?:\/\/[^\s$.?#].[^\s]*$/i;
+      if (!URL_REGEX.test(externalUrl.trim())) {
+        setErrorMessage("Format tautan tidak valid: Masukkan tautan URL yang lengkap dan benar.");
+        return;
+      }
+    }
+
+    if (sourceLabel.trim().length > 100) {
+      setErrorMessage("Label nama instansi rujukan maksimal 100 karakter.");
+      return;
     }
 
     // Backend Prisma enum GuideSourceType: RESMI | MITRA
@@ -185,13 +197,11 @@ const PreparednessGuideFormModalContent: React.FC<
         };
         await onSubmit(payload);
       }
+      onClose();
     } catch (err: unknown) {
-      const errorObj = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      const respErr = errorObj.response?.data?.message || errorObj.message;
-      setErrorMessage(respErr || "Gagal menyimpan panduan kesiapsiagaan.");
+      // Tangani error tanpa menutup modal: tampilkan banner kuning di dalam pop up
+      const formatted = parseApiError(err);
+      setErrorMessage(formatted);
     }
   };
 
@@ -228,12 +238,11 @@ const PreparednessGuideFormModalContent: React.FC<
 
         {/* Modal Body Form */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-5">
-          {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs sm:text-sm flex items-start gap-2.5">
-              <AlertCircle size={18} className="shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+          {/* Banner Notifikasi Error / Peringatan Validasi Input */}
+          <ModalFormErrorBanner
+            error={errorMessage}
+            onDismiss={() => setErrorMessage(null)}
+          />
 
           {/* Upload Gambar Sampul (Wajib) */}
           <div className="space-y-2">
@@ -345,21 +354,27 @@ const PreparednessGuideFormModalContent: React.FC<
                 }}
                 className={`flex items-start gap-3 p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                   formatType === "ARTICLE"
-                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 ring-2 ring-blue-500/20"
+                    ? "border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-500/20"
                     : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40"
                 }`}
               >
                 <div
                   className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     formatType === "ARTICLE"
-                      ? "bg-blue-600 text-white"
+                      ? "bg-blue-600 text-white shadow-xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                   }`}
                 >
                   <FileText size={18} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                  <h4
+                    className={`text-xs font-bold ${
+                      formatType === "ARTICLE"
+                        ? "text-blue-900 dark:text-blue-200"
+                        : "text-slate-900 dark:text-white"
+                    }`}
+                  >
                     Artikel Mandiri
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
@@ -376,21 +391,27 @@ const PreparednessGuideFormModalContent: React.FC<
                 }}
                 className={`flex items-start gap-3 p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                   formatType === "EXTERNAL_URL"
-                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 ring-2 ring-blue-500/20"
+                    ? "border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 ring-2 ring-amber-500/25"
                     : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40"
                 }`}
               >
                 <div
                   className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     formatType === "EXTERNAL_URL"
-                      ? "bg-blue-600 text-white"
+                      ? "bg-amber-500 text-white shadow-xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                   }`}
                 >
                   <LinkIcon size={18} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                  <h4
+                    className={`text-xs font-bold ${
+                      formatType === "EXTERNAL_URL"
+                        ? "text-amber-950 dark:text-amber-200"
+                        : "text-slate-900 dark:text-white"
+                    }`}
+                  >
                     Tautan Eksternal / PDF
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
@@ -424,11 +445,11 @@ const PreparednessGuideFormModalContent: React.FC<
 
               {/* Indikator Deteksi Dokumen PDF */}
               {isPdf && (
-                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center gap-2.5 text-xs text-rose-700 dark:text-rose-300 font-medium">
-                  <FileDown size={16} className="shrink-0 text-rose-600" />
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200 font-medium">
+                  <FileDown size={16} className="shrink-0 text-rose-600 dark:text-rose-400" />
                   <span>
-                    <strong>Dokumen PDF Terdeteksi:</strong> Panduan ini akan diberi lencana
-                    merah khusus <strong>[📄 Dokumen PDF]</strong> dan dibuka langsung di tab baru saat diklik warga.
+                    <strong className="text-amber-950 dark:text-amber-100">Dokumen PDF Terdeteksi:</strong> Panduan ini akan diberi lencana
+                    merah khusus <strong className="text-rose-600 dark:text-rose-400">[📄 Dokumen PDF]</strong> dan dibuka langsung di tab baru saat diklik warga.
                   </span>
                 </div>
               )}

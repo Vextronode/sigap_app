@@ -7,6 +7,8 @@ import {
   detectDefaultIconKey,
   type EmergencyIconKey,
 } from "../../utils/emergencyIconPresets";
+import { ModalFormErrorBanner } from "../../../../components/common/ModalFormErrorBanner";
+import { parseApiError } from "../../../../utils/errorParser";
 
 interface EmergencyContactFormModalProps {
   isOpen: boolean;
@@ -52,31 +54,52 @@ const EmergencyContactFormModalContent: React.FC<EmergencyContactFormModalProps>
     return "phone";
   });
   const [hasManualIconSelection, setHasManualIconSelection] = useState(!!contact);
+  const [formError, setFormError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ institution?: string; phoneNumber?: string }>({});
 
   const isEdit = !!contact;
 
   const validate = () => {
     const newErrors: { institution?: string; phoneNumber?: string } = {};
+
+    // 1. Validasi Nama Institusi (2 - 150 karakter)
     if (!institution.trim()) {
-      newErrors.institution = "Nama institusi wajib diisi.";
+      newErrors.institution = "Nama institusi / layanan wajib diisi.";
     } else if (institution.trim().length < 2) {
       newErrors.institution = "Nama institusi minimal 2 karakter.";
+    } else if (institution.trim().length > 150) {
+      newErrors.institution = "Nama institusi melewati batas maksimal (maksimal 150 karakter).";
     }
 
+    // 2. Validasi Nomor Telepon (6 - 25 karakter, hanya angka, +, -, spasi)
+    const phoneRegex = /^[+0-9\s-]{6,25}$/;
     if (!phoneNumber.trim()) {
-      newErrors.phoneNumber = "Nomor telepon wajib diisi.";
-    } else if (phoneNumber.trim().length < 3) {
-      newErrors.phoneNumber = "Nomor telepon minimal 3 karakter.";
+      newErrors.phoneNumber = "Nomor telepon darurat wajib diisi.";
+    } else if (phoneNumber.trim().length < 6) {
+      newErrors.phoneNumber = "Nomor telepon minimal 6 karakter.";
+    } else if (phoneNumber.trim().length > 25) {
+      newErrors.phoneNumber = "Nomor telepon melewati batas maksimal (maksimal 25 digit).";
+    } else if (!phoneRegex.test(phoneNumber.trim())) {
+      newErrors.phoneNumber = "Format nomor telepon tidak valid. Gunakan 6-25 karakter (hanya angka, tanda plus +, strip -, atau spasi, tidak boleh huruf).";
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    setFormError(null);
+
+    const validationErrors = validate();
+    const errorKeys = Object.keys(validationErrors);
+    if (errorKeys.length > 0) {
+      const errorList = Object.values(validationErrors).filter(Boolean);
+      setFormError(errorList.join("\n• "));
+      return;
+    }
+
+    if (isSubmitting) return;
 
     try {
       await onSubmit({
@@ -85,8 +108,10 @@ const EmergencyContactFormModalContent: React.FC<EmergencyContactFormModalProps>
         iconKey: selectedIcon,
       });
       onClose();
-    } catch {
-      // Error ditangani oleh parent component
+    } catch (err: unknown) {
+      // Tangani error tanpa menutup modal: tampilkan banner kuning di dalam pop up
+      const formatted = parseApiError(err);
+      setFormError(formatted);
     }
   };
 
@@ -153,6 +178,11 @@ const EmergencyContactFormModalContent: React.FC<EmergencyContactFormModalProps>
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Banner Notifikasi Error / Peringatan Validasi Input */}
+          <ModalFormErrorBanner
+            error={formError}
+            onDismiss={() => setFormError(null)}
+          />
           {/* Input Institusi */}
           <div>
             <label

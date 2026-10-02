@@ -33,6 +33,7 @@ import { PreparednessGuideFormModal } from "../features/preparedness/components/
 import { PreparednessGuideDeleteModal } from "../features/preparedness/components/modals/PreparednessGuideDeleteModal";
 import { PreparednessGuideReaderModal } from "../features/preparedness/components/modals/PreparednessGuideReaderModal";
 import { ActionFeedbackModal } from "../components/common/ActionFeedbackModal";
+import { parseApiError } from "../utils/errorParser";
 import type {
   PreparednessGuideRecord,
   CreatePreparednessGuideInput,
@@ -148,9 +149,7 @@ export default function SystemSettingsPage() {
       setIsFormModalOpen(false);
       setSelectedContactForEdit(null);
     } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan data.";
-      showFeedback("error", `Gagal menyimpan: ${errorMsg}`);
+      // Error ditangani langsung di dalam pop-up modal
       throw err;
     }
   };
@@ -167,8 +166,7 @@ export default function SystemSettingsPage() {
       setIsDeleteModalOpen(false);
       setSelectedContactForDelete(null);
     } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus data.";
+      const errorMsg = parseApiError(err);
       showFeedback("error", `Gagal menghapus kontak: ${errorMsg}`);
     }
   };
@@ -210,9 +208,7 @@ export default function SystemSettingsPage() {
       setIsEvacuationFormOpen(false);
       setSelectedEvacuationForEdit(null);
     } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan data.";
-      showFeedback("error", `Gagal menyimpan titik evakuasi: ${errorMsg}`);
+      // Error ditangani langsung di dalam pop-up modal
       throw err;
     }
   };
@@ -229,9 +225,8 @@ export default function SystemSettingsPage() {
       setIsEvacuationDeleteOpen(false);
       setSelectedEvacuationForDelete(null);
     } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus data.";
-      showFeedback("error", `Gagal menghapus titik: ${errorMsg}`);
+      const errorMsg = parseApiError(err);
+      showFeedback("error", `Gagal menghapus titik evakuasi: ${errorMsg}`);
     }
   };
 
@@ -347,9 +342,7 @@ export default function SystemSettingsPage() {
       setIsGuideFormOpen(false);
       setSelectedGuideForEdit(null);
     } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan panduan.";
-      showPopup("error", `Gagal menyimpan panduan: ${errorMsg}`, "Operasi Gagal");
+      // Error ditangani langsung di dalam pop-up modal
       throw err;
     }
   };
@@ -367,9 +360,8 @@ export default function SystemSettingsPage() {
       setIsGuideDeleteOpen(false);
       setSelectedGuideForDelete(null);
     } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus data.";
-      showPopup("error", `Gagal menghapus: ${errorMsg}`, "Gagal Menghapus");
+      const errorMsg = parseApiError(err);
+      showPopup("error", `Gagal menghapus panduan: ${errorMsg}`, "Gagal Menghapus");
     }
   };
 

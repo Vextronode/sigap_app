@@ -4,6 +4,8 @@ import type { EvacuationPoint } from "../../../../types/dashboard";
 import type { EvacuationPointPayload } from "../../../../services/evacuationService";
 import { EvacuationLocationPicker } from "../EvacuationLocationPicker";
 import { CIBENDA_CENTER } from "../../../../utils/map";
+import { ModalFormErrorBanner } from "../../../../components/common/ModalFormErrorBanner";
+import { parseApiError } from "../../../../utils/errorParser";
 
 interface EvacuationPointFormModalProps {
   isOpen: boolean;
@@ -76,18 +78,24 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
     ),
   ];
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const [errors, setErrors] = useState<{
     name?: string;
     latitude?: string;
     longitude?: string;
     elevation?: string;
     capacity?: string;
+    address?: string;
+    description?: string;
+    facilities?: string;
   }>({});
 
   const handleLocationChange = (lat: number, lng: number) => {
     setLatitude(lat);
     setLongitude(lng);
     setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined }));
+    setFormError(null);
   };
 
   const toggleFacility = (facility: string) => {
@@ -96,12 +104,21 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
         ? prev.filter((f) => f !== facility)
         : [...prev, facility]
     );
+    setFormError(null);
   };
 
   const handleAddCustomFacility = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = customFacilityInput.trim();
     if (trimmed) {
+      if (trimmed.length > 100) {
+        setFormError("Nama item fasilitas maksimal 100 karakter.");
+        return;
+      }
+      if (facilities.length >= 20) {
+        setFormError("Fasilitas titik evakuasi maksimal 20 item.");
+        return;
+      }
       if (!localCustomFacilities.includes(trimmed)) {
         setLocalCustomFacilities((prev) => [...prev, trimmed]);
       }
@@ -109,53 +126,101 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
         setFacilities((prev) => [...prev, trimmed]);
       }
       setCustomFacilityInput("");
+      setFormError(null);
     }
   };
 
   const validate = () => {
     const newErrors: typeof errors = {};
 
+    // 1. Nama Shelter (3 - 150 karakter)
     if (!name.trim()) {
-      newErrors.name = "Nama titik evakuasi wajib diisi.";
+      newErrors.name = "Nama titik evakuasi wajib diisi minimal 3 karakter.";
     } else if (name.trim().length < 3) {
       newErrors.name = "Nama titik evakuasi minimal 3 karakter.";
+    } else if (name.trim().length > 150) {
+      newErrors.name = "Nama titik evakuasi melewati batas maksimal (maksimal 150 karakter).";
     }
 
+    // 2. Alamat (maksimal 255 karakter)
+    if (address.trim().length > 255) {
+      newErrors.address = "Alamat titik evakuasi melewati batas maksimal (maksimal 255 karakter).";
+    }
+
+    // 3. Deskripsi / Petunjuk Akses (maksimal 1000 karakter)
+    if (description.trim().length > 1000) {
+      newErrors.description = "Deskripsi titik evakuasi melewati batas maksimal (maksimal 1000 karakter).";
+    }
+
+    // 4. Koordinat Latitude & Longitude
     if (isNaN(latitude) || latitude < -90 || latitude > 90) {
-      newErrors.latitude = "Latitude harus valid antara -90 dan 90.";
+      newErrors.latitude = "Latitude harus berupa angka valid antara -90 dan 90.";
     }
 
     if (isNaN(longitude) || longitude < -180 || longitude > 180) {
-      newErrors.longitude = "Longitude harus valid antara -180 dan 180.";
+      newErrors.longitude = "Longitude harus berupa angka valid antara -180 dan 180.";
     }
 
-    if (elevation.trim() !== "" && isNaN(Number(elevation))) {
-      newErrors.elevation = "Elevasi harus berupa angka mdpl.";
+    // 5. Elevasi (angka mdpl)
+    if (elevation.trim() !== "") {
+      const elNum = Number(elevation);
+      if (isNaN(elNum)) {
+        newErrors.elevation = "Elevasi harus berupa angka mdpl (tidak boleh berisi huruf atau simbol).";
+      }
     }
 
-    if (capacity.trim() !== "" && (isNaN(Number(capacity)) || Number(capacity) < 0)) {
-      newErrors.capacity = "Kapasitas harus berupa angka positif.";
+    // 6. Kapasitas (angka positif)
+    if (capacity.trim() !== "") {
+      const capNum = Number(capacity);
+      if (isNaN(capNum) || capNum < 0) {
+        newErrors.capacity = "Kapasitas harus berupa angka positif (tidak boleh berisi huruf).";
+      }
+    }
+
+    // 7. Fasilitas (maksimal 20 item, maks 100 karakter)
+    if (facilities.length > 20) {
+      newErrors.facilities = "Jumlah fasilitas maksimal 20 item.";
+    } else if (facilities.some((f) => f.length > 100)) {
+      newErrors.facilities = "Setiap item fasilitas maksimal 100 karakter.";
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate() || isSubmitting) return;
+    setFormError(null);
 
-    await onSubmit({
-      name: name.trim(),
-      address: address.trim() || null,
-      latitude,
-      longitude,
-      elevation: elevation.trim() !== "" ? Number(elevation) : null,
-      capacity: capacity.trim() !== "" ? Number(capacity) : null,
-      description: description.trim() || null,
-      facilities,
-      isCore,
-    });
+    const validationErrors = validate();
+    const errorKeys = Object.keys(validationErrors);
+    if (errorKeys.length > 0) {
+      const errorList = Object.values(validationErrors).filter(Boolean);
+      setFormError(errorList.join("\n• "));
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    try {
+      await onSubmit({
+        name: name.trim(),
+        address: address.trim() || null,
+        latitude,
+        longitude,
+        elevation: elevation.trim() !== "" ? Number(elevation) : null,
+        capacity: capacity.trim() !== "" ? Number(capacity) : null,
+        description: description.trim() || null,
+        facilities,
+        isCore,
+      });
+      // Sukses: tutup modal
+      onClose();
+    } catch (err: unknown) {
+      // Tangani error tanpa menutup modal: tampilkan banner kuning di dalam pop up
+      const formatted = parseApiError(err);
+      setFormError(formatted);
+    }
   };
 
   return (
@@ -193,10 +258,16 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
 
         {/* Body Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+          {/* Banner Notifikasi Error / Peringatan Validasi Input */}
+          <ModalFormErrorBanner
+            error={formError}
+            onDismiss={() => setFormError(null)}
+          />
+
           {/* Peta Pin-Drop Picker */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Tentukan Titik di Peta (Interactive Pin-Drop) *
+              Tentukan Titik di Peta (Interactive Pin-Drop) <span className="text-rose-500">*</span>
             </label>
             <EvacuationLocationPicker
               latitude={latitude}
@@ -210,7 +281,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                Latitude (Garis Lintang) *
+                Latitude (Garis Lintang) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
@@ -233,7 +304,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                Longitude (Garis Bujur) *
+                Longitude (Garis Bujur) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
@@ -260,7 +331,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Nama Titik / Tempat Evakuasi *
+                Nama Titik / Tempat Evakuasi <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -283,15 +354,25 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
 
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                Alamat / Lokasi Dusun
+                Alamat / Lokasi Dusun (Maks. 255 Karakter)
               </label>
               <input
                 type="text"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  if (errors.address) setErrors((prev) => ({ ...prev, address: undefined }));
+                }}
+                className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 ${
+                  errors.address
+                    ? "border-rose-500 focus:ring-rose-500/20"
+                    : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                }`}
                 placeholder="Contoh: Jl. Raya Cijulang, Dusun Cikubang RT 02 / RW 01"
               />
+              {errors.address && (
+                <p className="mt-1 text-[11px] text-rose-500">{errors.address}</p>
+              )}
             </div>
           </div>
 
@@ -414,21 +495,36 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
 
           {/* Deskripsi & Panduan Akses */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Catatan Akses Jalan / Instruksi Singkat
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Catatan Akses Jalan / Instruksi Singkat (Maks. 1000 Karakter)
+              </label>
+              <span className={`text-[11px] ${description.length > 1000 ? "text-rose-500 font-bold" : "text-slate-400"}`}>
+                {description.length}/1000
+              </span>
+            </div>
             <textarea
               rows={4}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }));
+              }}
               style={{
                 backgroundColor: "#f8fafc",
                 color: "#0f172a",
                 fontFamily: "var(--font-sans, inherit)",
               }}
-              className="w-full px-3.5 py-2.5 font-sans text-xs sm:text-sm font-normal rounded-xl border border-slate-200 dark:border-slate-700 !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30 min-h-[105px] resize-y leading-relaxed transition-colors"
+              className={`w-full px-3.5 py-2.5 font-sans text-xs sm:text-sm font-normal rounded-xl border !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 min-h-[105px] resize-y leading-relaxed transition-colors ${
+                errors.description
+                  ? "border-rose-500 focus:ring-rose-500/20"
+                  : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+              }`}
               placeholder="Contoh: Akses jalan dapat dilalui kendaraan roda empat dan ambulans via Jl. Raya Cijulang."
             />
+            {errors.description && (
+              <p className="mt-1 text-[11px] text-rose-500">{errors.description}</p>
+            )}
           </div>
 
           {/* Checkbox Titik Utama */}
