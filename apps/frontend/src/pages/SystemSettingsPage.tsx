@@ -123,35 +123,30 @@ export default function SystemSettingsPage() {
     phoneNumber: string;
     iconKey: EmergencyIconKey;
   }) => {
-    try {
-      const apiPayload = {
-        institution: payload.institution,
-        phoneNumber: payload.phoneNumber,
-        icon: payload.iconKey,
-      };
+    const apiPayload = {
+      institution: payload.institution,
+      phoneNumber: payload.phoneNumber,
+      icon: payload.iconKey,
+    };
 
-      if (selectedContactForEdit) {
-        await updateMutation.mutateAsync({
-          id: selectedContactForEdit.id,
-          payload: apiPayload,
-        });
-        showFeedback(
-          "success",
-          `Kontak darurat "${payload.institution}" berhasil diperbarui.`
-        );
-      } else {
-        await createMutation.mutateAsync(apiPayload);
-        showFeedback(
-          "success",
-          `Kontak darurat "${payload.institution}" berhasil ditambahkan.`
-        );
-      }
-      setIsFormModalOpen(false);
-      setSelectedContactForEdit(null);
-    } catch (err: unknown) {
-      // Error ditangani langsung di dalam pop-up modal
-      throw err;
+    if (selectedContactForEdit) {
+      await updateMutation.mutateAsync({
+        id: selectedContactForEdit.id,
+        payload: apiPayload,
+      });
+      showFeedback(
+        "success",
+        `Kontak darurat "${payload.institution}" berhasil diperbarui.`
+      );
+    } else {
+      await createMutation.mutateAsync(apiPayload);
+      showFeedback(
+        "success",
+        `Kontak darurat "${payload.institution}" berhasil ditambahkan.`
+      );
     }
+    setIsFormModalOpen(false);
+    setSelectedContactForEdit(null);
   };
 
   const handleDeleteConfirm = async () => {
@@ -188,29 +183,24 @@ export default function SystemSettingsPage() {
   };
 
   const handleEvacuationFormSubmit = async (payload: EvacuationPointPayload) => {
-    try {
-      if (selectedEvacuationForEdit) {
-        await updateEvacuationMutation.mutateAsync({
-          id: selectedEvacuationForEdit.id,
-          payload,
-        });
-        showFeedback(
-          "success",
-          `Titik evakuasi "${payload.name}" berhasil diperbarui.`
-        );
-      } else {
-        await createEvacuationMutation.mutateAsync(payload);
-        showFeedback(
-          "success",
-          `Titik evakuasi "${payload.name}" berhasil ditambahkan.`
-        );
-      }
-      setIsEvacuationFormOpen(false);
-      setSelectedEvacuationForEdit(null);
-    } catch (err: unknown) {
-      // Error ditangani langsung di dalam pop-up modal
-      throw err;
+    if (selectedEvacuationForEdit) {
+      await updateEvacuationMutation.mutateAsync({
+        id: selectedEvacuationForEdit.id,
+        payload,
+      });
+      showFeedback(
+        "success",
+        `Titik evakuasi "${payload.name}" berhasil diperbarui.`
+      );
+    } else {
+      await createEvacuationMutation.mutateAsync(payload);
+      showFeedback(
+        "success",
+        `Titik evakuasi "${payload.name}" berhasil ditambahkan.`
+      );
     }
+    setIsEvacuationFormOpen(false);
+    setSelectedEvacuationForEdit(null);
   };
 
   const handleEvacuationDeleteConfirm = async () => {
@@ -318,33 +308,28 @@ export default function SystemSettingsPage() {
   const handleGuideFormSubmit = async (
     payload: CreatePreparednessGuideInput | UpdatePreparednessGuideInput
   ) => {
-    try {
-      if (selectedGuideForEdit) {
-        await updateGuideMutation.mutateAsync({
-          id: selectedGuideForEdit.id,
-          payload,
-        });
-        showPopup(
-          "success",
-          `Panduan kesiapsiagaan "${payload.title}" berhasil diperbarui. Perubahan langsung disinkronkan ke dashboard warga.`,
-          "Perubahan Disimpan"
-        );
-      } else {
-        await createGuideMutation.mutateAsync(
-          payload as CreatePreparednessGuideInput
-        );
-        showPopup(
-          "success",
-          `Panduan kesiapsiagaan "${payload.title}" berhasil ditambahkan. Warga kini dapat mengakses panduan ini.`,
-          "Panduan Baru Ditambahkan"
-        );
-      }
-      setIsGuideFormOpen(false);
-      setSelectedGuideForEdit(null);
-    } catch (err: unknown) {
-      // Error ditangani langsung di dalam pop-up modal
-      throw err;
+    if (selectedGuideForEdit) {
+      await updateGuideMutation.mutateAsync({
+        id: selectedGuideForEdit.id,
+        payload,
+      });
+      showPopup(
+        "success",
+        `Panduan kesiapsiagaan "${payload.title}" berhasil diperbarui. Perubahan langsung disinkronkan ke dashboard warga.`,
+        "Perubahan Disimpan"
+      );
+    } else {
+      await createGuideMutation.mutateAsync(
+        payload as CreatePreparednessGuideInput
+      );
+      showPopup(
+        "success",
+        `Panduan kesiapsiagaan "${payload.title}" berhasil ditambahkan. Warga kini dapat mengakses panduan ini.`,
+        "Panduan Baru Ditambahkan"
+      );
     }
+    setIsGuideFormOpen(false);
+    setSelectedGuideForEdit(null);
   };
 
   const handleGuideDeleteConfirm = async () => {

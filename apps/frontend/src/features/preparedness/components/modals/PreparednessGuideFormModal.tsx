@@ -6,7 +6,6 @@ import {
   FileText,
   Link as LinkIcon,
   Loader2,
-  AlertCircle,
   FileDown,
 } from "lucide-react";
 import { compressImageToWebp } from "../../../../utils/imageCompressor";

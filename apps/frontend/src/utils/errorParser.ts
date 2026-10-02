@@ -25,9 +25,9 @@ export function parseApiError(
     if (status === 422 || status === 400) {
       if (data?.errors) {
         if (typeof data.errors === "object" && !Array.isArray(data.errors)) {
-          const fieldMessages = Object.entries(data.errors)
-            .map(([field, msg]) => {
-              // Terjemahkan nama field bila perlu, atau gunakan pesan langsung dari backend
+          const fieldMessages = Object.values(data.errors)
+            .map((msg) => {
+              // Gunakan pesan langsung dari backend
               return typeof msg === "string" ? msg : String(msg);
             })
             .filter(Boolean);
