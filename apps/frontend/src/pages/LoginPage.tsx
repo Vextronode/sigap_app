@@ -107,6 +107,26 @@ export default function LoginPage() {
       const result = await authService.login(payload);
       useAuthStore.getState().login(result.token, result.user);
 
+      // Simpan informasi notifikasi login untuk pop-up toast di dashboard
+      const isOperator =
+        result.user?.roles?.some((r: string) =>
+          r.toLowerCase().includes("operator")
+        ) ?? false;
+      const roleName = isOperator ? "Operator" : "Administrator";
+
+      try {
+        sessionStorage.setItem(
+          "sigap_login_toast",
+          JSON.stringify({
+            role: roleName,
+            name: result.user?.name || "",
+            timestamp: Date.now(),
+          })
+        );
+      } catch {
+        // Abaikan jika storage penuh atau dinonaktifkan
+      }
+
       // simpan atau hapus preferensi email yang diingat
       if (rememberMe) {
         localStorage.setItem("sigap_remember_email", payload.email);

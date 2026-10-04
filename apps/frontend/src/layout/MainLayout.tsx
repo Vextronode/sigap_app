@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { TopNavbar } from "./TopNavbar";
 import { Footer } from "./Footer";
+import { LoginSuccessToast } from "../components/common/LoginSuccessToast";
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 
 export const MainLayout = () => {
@@ -18,6 +19,7 @@ export const MainLayout = () => {
           isLoading={alertQuery.isLoading}
           isError={alertQuery.isError}
         />
+        <LoginSuccessToast />
         <main className={`main-content ${isAdminRoute ? "main-content--admin" : ""}`}>
           <Outlet />
         </main>

@@ -25,6 +25,19 @@
   animation: radarPulse 2s infinite ease-out;
 }
 
+@keyframes loginProgressFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-login-progress {
+  animation: loginProgressFill var(--toast-duration, 7000ms) linear forwards;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
