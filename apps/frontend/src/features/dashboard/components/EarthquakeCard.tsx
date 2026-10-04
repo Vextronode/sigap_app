@@ -170,7 +170,7 @@ export const EarthquakeCard = ({
 }: EarthquakeCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
 
-  if (isLoading) return <CardSkeleton />;
+  if (isLoading && !isError) return <CardSkeleton />;
 
   const variant = getVariant(title);
   const config = variantConfig[variant];
@@ -225,10 +225,12 @@ export const EarthquakeCard = ({
                 {config.renderCustomIcon()}
               </div>
               <h3 className="text-base font-semibold text-foreground">
-                {config.emptyTitle}
+                {isError ? "Data Belum Tersambung" : config.emptyTitle}
               </h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {config.emptyMessage}
+                {isError
+                  ? `Terjadi gangguan koneksi data saat memuat informasi gempa ${regionLabel}.`
+                  : config.emptyMessage}
               </p>
             </div>
           </div>

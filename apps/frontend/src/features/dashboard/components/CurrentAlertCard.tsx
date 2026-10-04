@@ -37,19 +37,8 @@ export const CurrentAlertCard = ({
   isError = false, 
   showSystemStatus = false 
 }: CurrentAlertCardProps) => {
-  if (isLoading) {
-    return (
-      <section
-        className="card flex flex-col items-center gap-4 px-6 py-10 text-center"
-        aria-label="Memuat status kesiapsiagaan"
-      >
-        <Skeleton className="h-[76px] w-[76px] !rounded-full" />
-        <Skeleton className="h-9 w-40 !rounded-lg" />
-        <Skeleton className="h-4 w-72 !rounded-lg" />
-      </section>
-    );
-  }
-
+  // Jika terjadi error koneksi, tampilkan indikator offline/error secara stabil
+  // agar kartu tidak berkedip (blinking) menjadi skeleton saat sistem melakukan retry / refetch
   if (isError) {
     return (
       <section
@@ -85,6 +74,19 @@ export const CurrentAlertCard = ({
             <span>Periksa & Muat Ulang</span>
           </button>
         </div>
+      </section>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <section
+        className="card flex flex-col items-center gap-4 px-6 py-10 text-center"
+        aria-label="Memuat status kesiapsiagaan"
+      >
+        <Skeleton className="h-[76px] w-[76px] !rounded-full" />
+        <Skeleton className="h-9 w-40 !rounded-lg" />
+        <Skeleton className="h-4 w-72 !rounded-lg" />
       </section>
     );
   }

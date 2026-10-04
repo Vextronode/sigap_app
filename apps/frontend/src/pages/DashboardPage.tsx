@@ -67,7 +67,7 @@ export default function DashboardPage() {
     alertQuery,
     contactsQuery,
     evacuationQuery,
-  ].some((query) => query.isLoading);
+  ].some((query) => query.isLoading && !query.isError);
 
   return (
     <div className="dashboard-page">

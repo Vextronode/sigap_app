@@ -104,16 +104,7 @@ export const WeatherSection = ({
   return (
     <section aria-labelledby="weather">
       <SectionHeader id="weather" title="Monitoring Cuaca" icon={<CloudSun size={22} />} />
-      {isWeatherLoading ? (
-        <>
-          <Skeleton className="mb-6 h-[100px] w-full !rounded-2xl" />
-          <div className="weather-grid">
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-          </div>
-        </>
-      ) : isWeatherError ? (
+      {isWeatherError ? (
         <Card className="overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-xs">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-100 dark:border-sky-900/40 text-sky-600 dark:text-sky-400 shadow-2xs">
@@ -129,6 +120,15 @@ export const WeatherSection = ({
             </div>
           </div>
         </Card>
+      ) : isWeatherLoading ? (
+        <>
+          <Skeleton className="mb-6 h-[100px] w-full !rounded-2xl" />
+          <div className="weather-grid">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        </>
       ) : weather ? (
         <>
           <Card className="mb-6 flex items-center justify-between gap-4">

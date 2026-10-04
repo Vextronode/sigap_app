@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
     pangandaranEarthquakeQuery,
     tsunamiQuery,
     alertQuery,
-  ].some((query) => query.isLoading);
+  ].some((query) => query.isLoading && !query.isError);
 
   return (
     <div className="dashboard-page">

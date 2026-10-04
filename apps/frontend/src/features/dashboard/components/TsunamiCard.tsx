@@ -55,7 +55,7 @@ export const TsunamiCard = ({
   isLoading = false,
   isError = false,
 }: TsunamiCardProps) => {
-  if (isLoading) return <CardSkeleton />;
+  if (isLoading && !isError) return <CardSkeleton />;
 
   const displayTsunami = isError ? null : tsunami;
   const tone = getTone(displayTsunami?.status);
@@ -84,6 +84,8 @@ export const TsunamiCard = ({
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
               {displayTsunami
                 ? displayTsunami.description
+                : isError
+                ? "Terjadi gangguan koneksi data saat memuat status tsunami terkini."
                 : "Informasi status tsunami belum tersedia saat ini."}
             </p>
           </div>
@@ -114,7 +116,7 @@ export const TsunamiCard = ({
             </div>
           ) : (
             <span className="text-xs font-medium text-muted-foreground">
-              Status belum tersedia
+              {isError ? "Koneksi Terputus" : "Status belum tersedia"}
             </span>
           )}
         </div>
