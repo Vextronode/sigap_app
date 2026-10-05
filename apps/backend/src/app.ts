@@ -23,11 +23,27 @@ const defaultOrigins = [
   "http://localhost:4173",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:4173",
+  "https://sigap-app-git-dev-vextronode.vercel.app",
 ];
+if (process.env.VERCEL_URL) {
+  defaultOrigins.push(`https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`);
+}
 const allowedOrigins: string[] = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
 const isLocalDevOrigin = (origin: string) => {
   return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+};
+
+const isVercelOrigin = (origin: string) => {
+  try {
+    const url = new URL(origin);
+    return (
+      url.protocol === "https:" &&
+      (url.hostname.endsWith(".vercel.app") || url.hostname === "vercel.app")
+    );
+  } catch {
+    return false;
+  }
 };
 
 const corsOptions: CorsOptions = {
@@ -38,6 +54,11 @@ const corsOptions: CorsOptions = {
 
     // Di development, izinkan port apa pun pada localhost dan 127.0.0.1
     if (process.env.NODE_ENV !== "production" && isLocalDevOrigin(cleanOrigin)) {
+      return callback(null, true);
+    }
+
+    // Izinkan seluruh deployment dan preview domain Vercel (*.vercel.app)
+    if (isVercelOrigin(cleanOrigin)) {
       return callback(null, true);
     }
 
