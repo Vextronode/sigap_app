@@ -57,7 +57,11 @@ export async function login(email: string, password: string, ip?: string) {
     throw new AuthenticationError("Email atau password salah.");
   }
 
-  await updateLastLogin(user.id, ip);
+  try {
+    await updateLastLogin(user.id, ip);
+  } catch (lastLoginErr) {
+    console.warn("[AuthService] Peringatan: Gagal memperbarui metadata lastLogin:", lastLoginErr);
+  }
 
   const roles = user.userRoles.map((ur) => ur.role.name);
   const permissions = Array.from(

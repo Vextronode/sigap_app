@@ -18,18 +18,36 @@ app.use(helmet());
 const envOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim().replace(/\/+$/, ""))
   : [];
-const defaultOrigins = ["http://localhost:5173", "http://localhost:4173"];
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:4173",
+];
 const allowedOrigins: string[] = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
+const isLocalDevOrigin = (origin: string) => {
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+};
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     // Izinkan request tanpa origin (Postman, cURL, server-to-server)
     if (!origin) return callback(null, true);
     const cleanOrigin = origin.replace(/\/+$/, "");
+
+    // Di development, izinkan port apa pun pada localhost dan 127.0.0.1
+    if (process.env.NODE_ENV !== "production" && isLocalDevOrigin(cleanOrigin)) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.includes(cleanOrigin)) {
       return callback(null, true);
     }
-    return callback(new Error(`CORS: Origin '${origin}' tidak diizinkan.`));
+
+    const corsError = new Error(`CORS: Origin '${origin}' tidak diizinkan oleh kebijakan server.`);
+    (corsError as Error & { statusCode?: number }).statusCode = 403;
+    return callback(corsError);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -68,12 +86,38 @@ app.use(
     res: Response,
     next: NextFunction
   ) => {
-    console.error(err);
+    console.error("[ServerError]", err);
 
-    res.status(500).json({
+    const errorObj = err as Error & { statusCode?: number; status?: number };
+    const statusCode = errorObj.statusCode || errorObj.status || 500;
+
+    // Khusus penolakan CORS
+    if (errorObj.message?.includes("CORS")) {
+      return res.status(403).json({
+        success: false,
+        message: "Akses ditolak oleh kebijakan keamanan browser (CORS).",
+        errors: [errorObj.message],
+      });
+    }
+
+    // Khusus sintaks JSON rusak dari body parser
+    if (errorObj instanceof SyntaxError && "body" in errorObj) {
+      return res.status(400).json({
+        success: false,
+        message: "Format payload JSON tidak valid.",
+        errors: ["Request body mengandung sintaks JSON yang rusak."],
+      });
+    }
+
+    const isDev = process.env.NODE_ENV !== "production";
+    const message = isDev || statusCode < 500
+      ? (errorObj.message || "Terjadi kesalahan pada server.")
+      : "Terjadi kesalahan pada server.";
+
+    res.status(statusCode).json({
       success: false,
-      message: "Terjadi kesalahan pada server.",
-      errors: {},
+      message,
+      errors: [message],
     });
   }
 );
