@@ -6,7 +6,19 @@ import { Card } from "../../../components/ui/Card";
 import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import type { Earthquake } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
-import { formatDateTime } from "../../../utils/date";
+import { formatDateTime, getDaysAgoInfo, type DaysAgoTone } from "../../../utils/date";
+
+const getDaysAgoBadgeClass = (tone: DaysAgoTone) => {
+  switch (tone) {
+    case "today":
+      return "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50";
+    case "recent":
+      return "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50";
+    case "past":
+    default:
+      return "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700/50";
+  }
+};
 
 type EarthquakeCardProps = {
   title: string;
@@ -175,9 +187,12 @@ export const EarthquakeCard = ({
   const variant = getVariant(title);
   const config = variantConfig[variant];
 
-  // Jika sedang mode riwayat pada gempa Pangandaran, tampilkan data riwayat terakhir
-  const resolvedHistory = historicalEarthquake ?? PANGANDARAN_FALLBACK_HISTORY;
-  const isHistoryActive = variant === "pangandaran" && showHistory;
+  // Jika sedang mode riwayat pada gempa Pangandaran atau Jawa Barat, tampilkan data riwayat terakhir
+  const resolvedHistory =
+    historicalEarthquake ??
+    (variant === "pangandaran" ? PANGANDARAN_FALLBACK_HISTORY : null);
+  const isHistoryActive =
+    (variant === "pangandaran" || variant === "west-java") && showHistory && !!resolvedHistory;
   const displayEarthquake = isHistoryActive
     ? resolvedHistory
     : isError
@@ -236,13 +251,13 @@ export const EarthquakeCard = ({
           </div>
 
           <div className="border-t border-[color:var(--border)] px-4 py-3 text-center sm:px-5">
-            {variant === "pangandaran" ? (
+            {(variant === "pangandaran" || variant === "west-java") && (historicalEarthquake || variant === "pangandaran") ? (
               <button
                 type="button"
                 onClick={() => setShowHistory(true)}
                 className="group inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md py-1.5 px-2 touch-manipulation cursor-pointer dark:text-blue-400 dark:hover:text-blue-300"
               >
-                <span>Lihat Gempa Pangandaran Terakhir</span>
+                <span>Lihat Gempa {regionLabel} Terakhir</span>
                 <IoIosArrowRoundForward
                   size={24}
                   className="text-blue-600 transition-transform group-hover:translate-x-1 dark:text-blue-400"
@@ -261,6 +276,7 @@ export const EarthquakeCard = ({
   }
 
   const formattedDate = formatDateTime(displayEarthquake.updatedAt);
+  const daysAgoInfo = getDaysAgoInfo(displayEarthquake.updatedAt);
 
   return (
     <Card
@@ -275,7 +291,7 @@ export const EarthquakeCard = ({
           <div className="flex items-center justify-between gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs font-semibold text-amber-800 dark:text-amber-300 sm:px-5 sm:text-sm">
             <div className="flex items-center gap-2 min-w-0">
               <History size={16} className="shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-              <span className="truncate">Menampilkan riwayat gempa Pangandaran terakhir</span>
+              <span className="truncate">Menampilkan riwayat gempa {regionLabel} terakhir</span>
             </div>
             <span className="shrink-0 text-xs font-bold uppercase tracking-wider opacity-85">BMKG</span>
           </div>
@@ -302,19 +318,32 @@ export const EarthquakeCard = ({
         )}
 
         <div className="border-b border-[color:var(--border)] px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-              {config.renderCustomIcon()}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                {config.renderCustomIcon()}
+              </div>
+
+              <div className="min-w-0">
+                <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
+                  Info Gempa
+                </p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {regionLabel}
+                </p>
+              </div>
             </div>
 
-            <div className="min-w-0">
-              <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
-                Info Gempa
-              </p>
-              <p className="text-xs font-medium text-muted-foreground">
-                {regionLabel}
-              </p>
-            </div>
+            {daysAgoInfo && (
+              <span
+                className={cn(
+                  "shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs",
+                  getDaysAgoBadgeClass(daysAgoInfo.tone)
+                )}
+              >
+                {daysAgoInfo.text}
+              </span>
+            )}
           </div>
 
           {tsunamiBadge && (
@@ -417,7 +446,7 @@ export const EarthquakeCard = ({
                 className="text-blue-600 transition-transform group-hover:-translate-x-1 dark:text-blue-400"
                 aria-hidden="true"
               />
-              <span>Lihat data saat ini</span>
+              <span>Lihat Data Gempa Saat Ini</span>
             </button>
           </div>
         )}

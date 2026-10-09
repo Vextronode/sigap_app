@@ -144,15 +144,102 @@ export class EarthquakeService {
     return this.getIndonesia();
   }
 
-  static async getWestJava(): Promise<EarthquakeInfo | null> {
+  static async getWestJava(ignoreAgeLimit = false): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
-    return this.findNearestEarthquake(
+    let liveNearest = this.findNearestEarthquake(
       rawItems,
       WEST_JAVA_RADIUS_KM,
       WEST_JAVA_MAX_AGE_DAYS,
       "latest",
     );
+
+    if (liveNearest) {
+      liveNearest = await this.attachShakemapIfSameEvent(liveNearest);
+    }
+
+    // Simpan data gempa live ke database jika ada
+    const savedLive = liveNearest
+      ? await this.persistAndRetrievePangandaranShakemap(liveNearest)
+      : null;
+
+    if (!ignoreAgeLimit) {
+      if (savedLive) {
+        return savedLive;
+      }
+
+      // Cek apakah ada record di database yang masih dalam batas umur 7 hari untuk Jawa Barat
+      const cutoffMs = Date.now() - WEST_JAVA_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+      const recentDbRecord = await prisma.earthquakeRecord.findFirst({
+        where: {
+          OR: [
+            { location: { contains: "Jawa Barat", mode: "insensitive" } },
+            { location: { contains: "Jabar", mode: "insensitive" } },
+            { distanceToVillage: { lte: WEST_JAVA_RADIUS_KM } },
+          ],
+        },
+        orderBy: { eventTime: "desc" },
+      });
+
+      if (recentDbRecord && new Date(recentDbRecord.eventTime).getTime() >= cutoffMs) {
+        return {
+          magnitude: recentDbRecord.magnitude,
+          depth: recentDbRecord.depth,
+          location: recentDbRecord.location,
+          coordinates: {
+            latitude: recentDbRecord.latitude,
+            longitude: recentDbRecord.longitude,
+          },
+          distanceToVillage: recentDbRecord.distanceToVillage,
+          felt: recentDbRecord.felt ?? "",
+          potential: recentDbRecord.potential ?? "",
+          shakemap: recentDbRecord.shakemap ?? "",
+          updatedAt: recentDbRecord.eventTime,
+        };
+      }
+
+      return null;
+    }
+
+    // Jika mode riwayat (ignoreAgeLimit = true):
+    // Ambil gempa terakhir secara kronologis (eventTime terbaru) dari database
+    const latestDbRecord = await prisma.earthquakeRecord.findFirst({
+      where: {
+        OR: [
+          { location: { contains: "Jawa Barat", mode: "insensitive" } },
+          { location: { contains: "Jabar", mode: "insensitive" } },
+          { distanceToVillage: { lte: WEST_JAVA_RADIUS_KM } },
+        ],
+      },
+      orderBy: { eventTime: "desc" },
+    });
+
+    if (latestDbRecord) {
+      const dbInfo: EarthquakeInfo = {
+        magnitude: latestDbRecord.magnitude,
+        depth: latestDbRecord.depth,
+        location: latestDbRecord.location,
+        coordinates: {
+          latitude: latestDbRecord.latitude,
+          longitude: latestDbRecord.longitude,
+        },
+        distanceToVillage: latestDbRecord.distanceToVillage,
+        felt: latestDbRecord.felt ?? "",
+        potential: latestDbRecord.potential ?? "",
+        shakemap: latestDbRecord.shakemap ?? "",
+        updatedAt: latestDbRecord.eventTime,
+      };
+
+      if (savedLive) {
+        const liveTime = new Date(savedLive.updatedAt).getTime();
+        const dbTime = new Date(dbInfo.updatedAt).getTime();
+        return liveTime >= dbTime ? savedLive : dbInfo;
+      }
+
+      return dbInfo;
+    }
+
+    return savedLive ?? null;
   }
 
   static async getPangandaran(ignoreAgeLimit = false): Promise<EarthquakeInfo | null> {

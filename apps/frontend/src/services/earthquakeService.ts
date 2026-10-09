@@ -19,5 +19,9 @@ export const earthquakeService = {
     const response = await apiClient.get<ApiResponse<Earthquake | null>>(publicPath("/earthquakes/pangandaran/history"));
     return response.data.data;
   },
+  getWestJavaHistory: async () => {
+    const response = await apiClient.get<ApiResponse<Earthquake | null>>(publicPath("/earthquakes/west-java/history"));
+    return response.data.data;
+  },
   getLatest: async () => earthquakeService.getIndonesia(),
 };
