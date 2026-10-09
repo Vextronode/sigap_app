@@ -92,8 +92,8 @@ const variantConfig: Record<
     badgeTone: "safe",
     badgeClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     titleClassName: "text-foreground",
-    valueClassName: "text-blue-600 dark:text-blue-400",
-    noteClassName: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
+    valueClassName: "text-emerald-600 dark:text-emerald-400",
+    noteClassName: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
     emptyTitle: "Data Belum Tersedia",
     emptyMessage: "Informasi gempa Indonesia belum dapat ditampilkan saat ini.",
   },
@@ -114,8 +114,8 @@ const variantConfig: Record<
     badgeTone: "safe",
     badgeClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     titleClassName: "text-foreground",
-    valueClassName: "text-emerald-600 dark:text-emerald-400",
-    noteClassName: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    valueClassName: "text-red-600 dark:text-red-400",
+    noteClassName: "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400",
     emptyTitle: "Data Belum Tersedia",
     emptyMessage:
       "Tidak ada gempa yang berdampak ke wilayah sekitar Desa Cibenda pada data saat ini dari BMKG.",
@@ -211,6 +211,9 @@ export const EarthquakeCard = ({
 
   const regionLabel = title.replace(/^Info Gempa\s*/i, "");
 
+  const referenceEarthquake = displayEarthquake ?? resolvedHistory ?? earthquake;
+  const daysAgoInfo = getDaysAgoInfo(referenceEarthquake?.updatedAt);
+
   if (!displayEarthquake) {
     return (
       <Card
@@ -220,18 +223,31 @@ export const EarthquakeCard = ({
         )}
       >
         <div className="flex h-full min-h-[420px] flex-col justify-between">
-          <div className="flex items-center gap-3 border-b border-[color:var(--border)] px-5 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-              {config.renderCustomIcon()}
+          <div className="flex items-center justify-between gap-3 border-b border-[color:var(--border)] px-5 py-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                {config.renderCustomIcon()}
+              </div>
+              <div className="min-w-0">
+                <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
+                  Info Gempa
+                </p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {regionLabel}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
-                Info Gempa
-              </p>
-              <p className="text-xs font-medium text-muted-foreground">
-                {regionLabel}
-              </p>
-            </div>
+
+            {daysAgoInfo && (
+              <span
+                className={cn(
+                  "shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs",
+                  getDaysAgoBadgeClass(daysAgoInfo.tone)
+                )}
+              >
+                {daysAgoInfo.text}
+              </span>
+            )}
           </div>
 
           <div className="flex flex-1 items-center justify-center px-6 py-8 text-center">
@@ -276,7 +292,6 @@ export const EarthquakeCard = ({
   }
 
   const formattedDate = formatDateTime(displayEarthquake.updatedAt);
-  const daysAgoInfo = getDaysAgoInfo(displayEarthquake.updatedAt);
 
   return (
     <Card
@@ -410,9 +425,7 @@ export const EarthquakeCard = ({
             </div>
           </div>
 
-          <div className="my-5 border-t border-[color:var(--border)]" />
-
-          <div className="mt-auto grid grid-cols-2 gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="mt-6 grid grid-cols-2 gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             <div>
               <div className="text-[color:var(--text-muted)]">Sumber Data</div>
               <div className="mt-1 text-sm font-semibold uppercase tracking-normal text-foreground">
