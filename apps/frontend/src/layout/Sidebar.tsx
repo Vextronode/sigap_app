@@ -521,18 +521,29 @@ export const Sidebar = () => {
       {/* modal informasi profil dan manajemen password */}
       {showProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm sm:max-w-md w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                {isAdminRole ? (
-                  <GrUserAdmin className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
-                ) : (
-                  <CircleUser className="w-5 h-5 text-[#00247D] dark:text-blue-400 shrink-0" />
-                )}
-                <h3 className="font-bold text-slate-900 dark:text-white text-base">
-                  {isAdminRole ? "Profil Administrator" : "Profil Petugas Lapangan"}
-                </h3>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  isAdminRole
+                    ? "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/50"
+                    : "bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/50"
+                }`}>
+                  {isAdminRole ? (
+                    <GrUserAdmin className="w-4 h-4" />
+                  ) : (
+                    <CircleUser className="w-4 h-4" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-snug">
+                    {isAdminRole ? "Profil Administrator" : "Profil Petugas Lapangan"}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Informasi kredensial & hak akses
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -541,18 +552,21 @@ export const Sidebar = () => {
                   setShowChangePassword(false);
                   resetPasswordForm();
                 }}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 aria-label="Tutup modal profil"
               >
-                <X size={18} />
+                <X size={17} />
               </button>
             </div>
 
-            {/* Profile Information */}
-            <div className="py-4 space-y-3.5 text-sm text-left">
-              <div>
-                <span className="text-xs text-slate-400 dark:text-slate-500 block">Nama Akun</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
+            {/* Profile Information List Card */}
+            <div className="my-3.5 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200/70 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/70 overflow-hidden text-left shadow-2xs">
+              {/* Nama Akun */}
+              <div className="px-3.5 py-2.5">
+                <span className="text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-400 uppercase block">
+                  Nama Akun
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 block mt-0.5">
                   {(() => {
                     const raw = user?.name;
                     if (!raw || raw.trim() === "" || raw === "Admin Placeholder") {
@@ -562,35 +576,49 @@ export const Sidebar = () => {
                   })()}
                 </span>
               </div>
-              <div>
-                <span className="text-xs text-slate-400 dark:text-slate-500 block">Email Terdaftar</span>
-                <span className="font-medium text-slate-800 dark:text-slate-100 text-sm">
+
+              {/* Email Terdaftar */}
+              <div className="px-3.5 py-2.5">
+                <span className="text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-400 uppercase block">
+                  Email Terdaftar
+                </span>
+                <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 break-all block mt-0.5">
                   {user?.email || (isAdminRole ? "admin@cibenda.desa.id" : "operator@cibenda.desa.id")}
                 </span>
               </div>
-              <div>
-                <span className="text-xs text-slate-400 dark:text-slate-500 block mb-0.5">Peran & Akses</span>
-                {isAdminRole ? (
-                  <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-xs">
-                    Administrator (Akses Penuh)
-                  </span>
-                ) : (
-                  <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-xs">
-                    Petugas Lapangan (Operasional)
-                  </span>
-                )}
+
+              {/* Peran & Akses */}
+              <div className="px-3.5 py-2.5">
+                <span className="text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-400 uppercase block mb-1">
+                  Peran & Akses
+                </span>
+                <div>
+                  {isAdminRole ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200/90 dark:border-rose-800/80">
+                      Administrator (Akses Penuh)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/70 text-[#00247D] dark:text-blue-300 border border-blue-200/90 dark:border-blue-800/80">
+                      Petugas Lapangan (Operasional)
+                    </span>
+                  )}
+                </div>
               </div>
-              <div>
-                <span className="text-xs text-slate-400 dark:text-slate-500 block mb-0.5">Status Sesi</span>
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+
+              {/* Status Sesi */}
+              <div className="px-3.5 py-2.5">
+                <span className="text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-400 uppercase block mb-1">
+                  Status Sesi
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Aktif Terautentikasi
                 </span>
               </div>
             </div>
 
             {/* Section Ganti Password Mandiri */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
@@ -598,16 +626,16 @@ export const Sidebar = () => {
                   setPwError(null);
                   setPwSuccess(null);
                 }}
-                className="w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300/80 dark:border-amber-700/60 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 text-amber-950 dark:text-amber-200 text-xs font-semibold shadow-xs shadow-amber-200/50 dark:shadow-none transition-all cursor-pointer"
+                className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/90 dark:border-amber-800/60 hover:bg-amber-100/70 dark:hover:bg-amber-900/30 text-amber-900 dark:text-amber-200 text-xs font-medium transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2">
-                  <KeyRound size={15} className="text-amber-500 shrink-0" />
+                  <KeyRound size={14} className="text-amber-500 shrink-0" />
                   <span>Ubah Kata Sandi Akun</span>
                 </div>
                 {showChangePassword ? (
-                  <ChevronUp size={16} className="text-amber-600 dark:text-amber-400" />
+                  <ChevronUp size={14} className="text-amber-600 dark:text-amber-400" />
                 ) : (
-                  <ChevronDown size={16} className="text-amber-600 dark:text-amber-400" />
+                  <ChevronDown size={14} className="text-amber-600 dark:text-amber-400" />
                 )}
               </button>
 
@@ -714,7 +742,7 @@ export const Sidebar = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="pt-4 mt-2">
+            <div className="pt-2 mt-2">
               <button
                 type="button"
                 onClick={() => {

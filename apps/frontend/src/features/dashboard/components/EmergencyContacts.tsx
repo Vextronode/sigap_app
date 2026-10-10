@@ -90,12 +90,9 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
             );
 
             return (
-              <button
+              <div
                 key={contactKey}
-                type="button"
-                onClick={() => setSelectedContact(contact)}
-                className="w-full text-left group bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 rounded-xl sm:rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer"
-                title={`Klik untuk memanggil ${contact.institution}`}
+                className="w-full bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-2xs transition-all duration-200"
               >
                 {/* Icon + Nama & Nomor */}
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -106,7 +103,7 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
                   </div>
 
                   <div className="min-w-0">
-                    <h4 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate group-hover:text-[#00247D] dark:group-hover:text-blue-400 transition-colors">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate">
                       {contact.institution}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate font-mono">
@@ -115,11 +112,17 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
                   </div>
                 </div>
 
-                {/* Ikon Telepon di Kanan */}
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-[#00247D] dark:group-hover:text-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/40 transition-colors shrink-0">
+                {/* Tombol Ikon Telepon Kotak (mirip tombol light mode & admin di navbar) */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedContact(contact)}
+                  className="icon-button text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/60 dark:hover:bg-blue-950/40 transition-all cursor-pointer shrink-0 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  title={`Klik untuk memanggil ${contact.institution}`}
+                  aria-label={`Panggil ${contact.institution}`}
+                >
                   <Phone size={19} strokeWidth={2} />
-                </div>
-              </button>
+                </button>
+              </div>
             );
           })}
         </div>
@@ -147,13 +150,17 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
               <X size={18} />
             </button>
 
-            {/* Icon Header */}
+            {/* Icon Header — mengikuti preset ikon kontak darurat yang dipilih */}
             <div
               className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto shadow-sm ${
                 selectedPreset?.boxClass ?? "bg-blue-600 text-white"
               }`}
             >
-              <PhoneCall size={26} strokeWidth={2.2} />
+              {selectedPreset ? (
+                <selectedPreset.Icon size={28} strokeWidth={2.2} />
+              ) : (
+                <PhoneCall size={26} strokeWidth={2.2} />
+              )}
             </div>
 
             {/* Judul & Pertanyaan */}
