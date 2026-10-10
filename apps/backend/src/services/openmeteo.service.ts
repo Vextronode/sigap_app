@@ -150,18 +150,26 @@ export class OpenMeteoService {
   }
 
   /**
-   * Fetch ringan — hanya current_weather, tanpa hourly/daily.
-   * Dipakai oleh getCurrentCondition() agar tidak membebani quota
-   * saat endpoint /weather/current dipanggil (forecast punya fetchRaw sendiri).
+   * Fetch ringan — current_weather + hourly visibility 1 hari.
+   * Dipakai oleh getCurrentCondition() agar menyediakan kondisi cuaca
+   * serta jarak pandang fallback jika BMKG tidak menyediakan vs_text.
    */
-  private static fetchCurrentOnly(): Promise<Pick<OpenMeteoResponse, "current_weather">> {
-    return requestWithRetry<Pick<OpenMeteoResponse, "current_weather">>(
+  private static fetchCurrentOnly(): Promise<{
+    current_weather: OpenMeteoResponse["current_weather"];
+    hourly?: { time: string[]; visibility: number[] };
+  }> {
+    return requestWithRetry<{
+      current_weather: OpenMeteoResponse["current_weather"];
+      hourly?: { time: string[]; visibility: number[] };
+    }>(
       BASE_URL,
       {
         params: {
           latitude: LAT,
           longitude: LON,
           current_weather: true,
+          hourly: "visibility",
+          forecast_days: 1,
           timezone: "Asia/Jakarta",
         },
       },
@@ -170,18 +178,36 @@ export class OpenMeteoService {
   }
 
   /**
-   * Hanya kondisi cuaca saat ini (WMO code → teks Indonesia) + timestamp.
+   * Kondisi cuaca saat ini (WMO code → teks Indonesia) + jarak pandang fallback + timestamp.
    *
    * Digunakan oleh /weather/current dalam mode hybrid:
    *   - Kondisi (cerah/hujan/gerimis dll) dari Open-Meteo — update tiap jam
-   *   - Suhu, kelembapan, angin dari BMKG — sesuai permintaan user
+   *   - Suhu, kelembapan, angin dari BMKG
+   *   - Jarak pandang: fallback Open-Meteo jika BMKG mengembalikan null
    */
-  static async getCurrentCondition(): Promise<{ weather: string; updatedAt: string }> {
+  static async getCurrentCondition(): Promise<{
+    weather: string;
+    visibility: string;
+    updatedAt: string;
+  }> {
     const raw = await this.fetchCurrentOnly();
     const cw = raw.current_weather;
 
+    let visibility = "";
+    if (raw.hourly?.time && raw.hourly?.visibility) {
+      const idx = raw.hourly.time.indexOf(cw.time);
+      const vsMeters = idx >= 0 ? raw.hourly.visibility[idx] : raw.hourly.visibility[0];
+      if (typeof vsMeters === "number" && Number.isFinite(vsMeters)) {
+        visibility =
+          vsMeters >= 10000
+            ? "> 10 km"
+            : `${Math.max(1, Math.round(vsMeters / 1000))} km`;
+      }
+    }
+
     return {
       weather: wmoToCondition(cw.weathercode),
+      visibility,
       updatedAt: new Date(
         cw.time.includes("+") || cw.time.includes("Z")
           ? cw.time

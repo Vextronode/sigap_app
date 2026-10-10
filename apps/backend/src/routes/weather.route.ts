@@ -39,7 +39,8 @@ publicWeatherRouter.get("/current", async (_req, res) => {
       weather:       openMeteo.weather,   // Open-Meteo: kondisi lebih akurat
       windSpeed:     bmkg.windSpeed,
       windDirection: bmkg.windDirection,
-      visibility:    bmkg.visibility,
+      // Prioritas data BMKG; jika BMKG null/kosong, gunakan fallback Open-Meteo
+      visibility:    bmkg.visibility?.trim() || openMeteo.visibility || "",
       updatedAt:     openMeteo.updatedAt, // Open-Meteo: lebih fresh (tiap jam)
     };
 

@@ -163,7 +163,7 @@ export const WeatherSection = ({
                 <LucideDroplet size={26} aria-hidden="true" />
                 {weather.humidity}%
               </strong>
-              <small>{weather.visibility ? `Jarak pandang ${weather.visibility}` : "—"}</small>
+              <small>{weather.visibility ? `Jarak pandang ${weather.visibility}` : "Data BMKG"}</small>
             </Card>
             <Card className="metric-card">
               <span>Laju & Arah Angin</span>
