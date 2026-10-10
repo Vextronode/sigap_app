@@ -17,7 +17,6 @@ import { useForecast } from "../features/dashboard/hooks/useForecast";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
 import { usePangandaranHistory } from "../features/dashboard/hooks/usePangandaranHistory";
 import { useWestJavaEarthquake } from "../features/dashboard/hooks/useWestJavaEarthquake";
-import { useWestJavaHistory } from "../features/dashboard/hooks/useWestJavaHistory";
 import { useTsunamiStatus } from "../features/dashboard/hooks/useTsunamiStatus";
 import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
@@ -44,7 +43,6 @@ export default function DashboardPage() {
   const forecastQuery = useForecast();
   const indonesiaEarthquakeQuery = useIndonesiaEarthquake();
   const westJavaEarthquakeQuery = useWestJavaEarthquake();
-  const westJavaHistoryQuery = useWestJavaHistory();
   const pangandaranEarthquakeQuery = usePangandaranEarthquake();
   const pangandaranHistoryQuery = usePangandaranHistory();
   const tsunamiQuery = useTsunamiStatus();
@@ -127,7 +125,6 @@ export default function DashboardPage() {
                 earthquake={westJavaEarthquakeQuery.data ?? null}
                 isLoading={westJavaEarthquakeQuery.isLoading}
                 isError={westJavaEarthquakeQuery.isError}
-                historicalEarthquake={westJavaHistoryQuery.data ?? null}
               />
             </div>
           </div>

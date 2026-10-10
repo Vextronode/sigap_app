@@ -45,18 +45,14 @@ const handleIndonesiaEarthquake = async (_req: Request, res: Response) =>
   );
 
 const handleWestJavaEarthquake = async (
-  req: Request,
+  _req: Request,
   res: Response,
-  forceHistory = false
 ) => {
-  const isHistory = forceHistory || req.query.history === "true";
   return buildResponse(
     {
-      message: isHistory
-        ? "West Java historical earthquake retrieved successfully."
-        : "West Java earthquake retrieved successfully.",
-      emptyMessage: "Tidak ditemukan gempa Jawa Barat pada daftar BMKG terbaru.",
-      fetcher: () => EarthquakeService.getWestJava(isHistory),
+      message: "West Java earthquake retrieved successfully.",
+      emptyMessage: "Tidak ditemukan data gempa Jawa Barat.",
+      fetcher: () => EarthquakeService.getWestJava(),
     },
     res
   );
@@ -85,14 +81,10 @@ const handlePangandaranEarthquake = async (
 publicEarthquakesRouter.get("/indonesia", handleIndonesiaEarthquake);
 
 /** GET /api/public/earthquakes/west-java/history */
-publicEarthquakesRouter.get("/west-java/history", (req, res) =>
-  handleWestJavaEarthquake(req, res, true)
-);
+publicEarthquakesRouter.get("/west-java/history", handleWestJavaEarthquake);
 
 /** GET /api/public/earthquakes/west-java */
-publicEarthquakesRouter.get("/west-java", (req, res) =>
-  handleWestJavaEarthquake(req, res, false)
-);
+publicEarthquakesRouter.get("/west-java", handleWestJavaEarthquake);
 
 /** GET /api/public/earthquakes/pangandaran/history */
 publicEarthquakesRouter.get("/pangandaran/history", (req, res) =>

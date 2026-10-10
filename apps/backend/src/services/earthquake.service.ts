@@ -81,14 +81,17 @@ export class EarthquakeService {
   private static findNearestEarthquake(
     earthquakes: BmkgEarthquakeItem[],
     radiusKm: number,
-    maxAgeDays: number,
+    maxAgeDays?: number,
     sortBy: "nearest" | "latest" = "nearest",
   ): EarthquakeInfo | null {
     if (earthquakes.length === 0) {
       return null;
     }
 
-    const cutoffMs = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
+    const cutoffMs =
+      typeof maxAgeDays === "number"
+        ? Date.now() - maxAgeDays * 24 * 60 * 60 * 1000
+        : null;
 
     return (
       earthquakes
@@ -97,7 +100,7 @@ export class EarthquakeService {
           (earthquake) =>
             Number.isFinite(earthquake.distanceToVillage) &&
             earthquake.distanceToVillage <= radiusKm &&
-            new Date(earthquake.updatedAt).getTime() >= cutoffMs,
+            (cutoffMs === null || new Date(earthquake.updatedAt).getTime() >= cutoffMs),
         )
         .sort((left, right) => {
           if (sortBy === "latest") {
@@ -144,13 +147,14 @@ export class EarthquakeService {
     return this.getIndonesia();
   }
 
-  static async getWestJava(ignoreAgeLimit = false): Promise<EarthquakeInfo | null> {
+  static async getWestJava(): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
+    // 1. Ambil gempa terbaru wilayah Jawa Barat dari feed BMKG jika ada
     let liveNearest = this.findNearestEarthquake(
       rawItems,
       WEST_JAVA_RADIUS_KM,
-      WEST_JAVA_MAX_AGE_DAYS,
+      undefined,
       "latest",
     );
 
@@ -158,51 +162,12 @@ export class EarthquakeService {
       liveNearest = await this.attachShakemapIfSameEvent(liveNearest);
     }
 
-    // Simpan data gempa live ke database jika ada
+    // 2. Simpan gempa feed ke database history jika ditemukan
     const savedLive = liveNearest
       ? await this.persistAndRetrievePangandaranShakemap(liveNearest)
       : null;
 
-    if (!ignoreAgeLimit) {
-      if (savedLive) {
-        return savedLive;
-      }
-
-      // Cek apakah ada record di database yang masih dalam batas umur 7 hari untuk Jawa Barat
-      const cutoffMs = Date.now() - WEST_JAVA_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
-      const recentDbRecord = await prisma.earthquakeRecord.findFirst({
-        where: {
-          OR: [
-            { location: { contains: "Jawa Barat", mode: "insensitive" } },
-            { location: { contains: "Jabar", mode: "insensitive" } },
-            { distanceToVillage: { lte: WEST_JAVA_RADIUS_KM } },
-          ],
-        },
-        orderBy: { eventTime: "desc" },
-      });
-
-      if (recentDbRecord && new Date(recentDbRecord.eventTime).getTime() >= cutoffMs) {
-        return {
-          magnitude: recentDbRecord.magnitude,
-          depth: recentDbRecord.depth,
-          location: recentDbRecord.location,
-          coordinates: {
-            latitude: recentDbRecord.latitude,
-            longitude: recentDbRecord.longitude,
-          },
-          distanceToVillage: recentDbRecord.distanceToVillage,
-          felt: recentDbRecord.felt ?? "",
-          potential: recentDbRecord.potential ?? "",
-          shakemap: recentDbRecord.shakemap ?? "",
-          updatedAt: recentDbRecord.eventTime,
-        };
-      }
-
-      return null;
-    }
-
-    // Jika mode riwayat (ignoreAgeLimit = true):
-    // Ambil gempa terakhir secara kronologis (eventTime terbaru) dari database
+    // 3. Ambil record gempa Jawa Barat terakhir dari database history
     const latestDbRecord = await prisma.earthquakeRecord.findFirst({
       where: {
         OR: [

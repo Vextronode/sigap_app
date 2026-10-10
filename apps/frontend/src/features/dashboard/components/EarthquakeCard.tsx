@@ -187,12 +187,13 @@ export const EarthquakeCard = ({
   const variant = getVariant(title);
   const config = variantConfig[variant];
 
-  // Jika sedang mode riwayat pada gempa Pangandaran atau Jawa Barat, tampilkan data riwayat terakhir
+  // Mode riwayat interaktif eksklusif hanya untuk gempa Pangandaran
   const resolvedHistory =
-    historicalEarthquake ??
-    (variant === "pangandaran" ? PANGANDARAN_FALLBACK_HISTORY : null);
+    variant === "pangandaran"
+      ? (historicalEarthquake ?? PANGANDARAN_FALLBACK_HISTORY)
+      : null;
   const isHistoryActive =
-    (variant === "pangandaran" || variant === "west-java") && showHistory && !!resolvedHistory;
+    variant === "pangandaran" && showHistory && !!resolvedHistory;
   const displayEarthquake = isHistoryActive
     ? resolvedHistory
     : isError
@@ -267,7 +268,7 @@ export const EarthquakeCard = ({
           </div>
 
           <div className="border-t border-[color:var(--border)] px-4 py-3 text-center sm:px-5">
-            {(variant === "pangandaran" || variant === "west-java") && (historicalEarthquake || variant === "pangandaran") ? (
+            {variant === "pangandaran" && resolvedHistory ? (
               <button
                 type="button"
                 onClick={() => setShowHistory(true)}
