@@ -105,7 +105,18 @@ export function mapAlertToRecord(
         };
       };
     };
-  }>,
+  }> & {
+    reviewer?: {
+      id: string;
+      name: string;
+      email: string;
+      userRoles?: {
+        role: {
+          name: string;
+        };
+      }[];
+    } | null;
+  },
   eqMeta?: { location?: string | null; shakemap?: string | null } | null
 ): AlertRecord {
   return {
@@ -119,7 +130,14 @@ export function mapAlertToRecord(
       REVIEW_STATUS_TO_LABEL[alert.reviewStatus] ?? "Belum Diverifikasi",
     reviewedBy: alert.reviewedBy,
     reviewedAt: alert.reviewedAt,
-    reviewer: alert.reviewer ?? null,
+    reviewer: alert.reviewer
+      ? {
+          id: alert.reviewer.id,
+          name: alert.reviewer.name,
+          email: alert.reviewer.email,
+          roles: alert.reviewer.userRoles?.map((ur) => ur.role.name) ?? [],
+        }
+      : null,
     createdAt: alert.createdAt,
     updatedAt: alert.updatedAt,
   };
@@ -182,6 +200,15 @@ export class AlertRepository {
               id: true,
               name: true,
               email: true,
+              userRoles: {
+                select: {
+                  role: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -265,6 +292,15 @@ export class AlertRepository {
               id: true,
               name: true,
               email: true,
+              userRoles: {
+                select: {
+                  role: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -300,6 +336,15 @@ export class AlertRepository {
               id: true,
               name: true,
               email: true,
+              userRoles: {
+                select: {
+                  role: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },

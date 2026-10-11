@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import {
-  Activity,
-  Bell,
   BookOpen,
   CircleUser,
   Cloud,
-  CloudRain,
   Contact,
   Home,
   LayoutDashboard,
@@ -25,9 +22,11 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { BiBarChartAlt } from "react-icons/bi";
+import { FaSearchLocation } from "react-icons/fa";
 import { GrUserAdmin } from "react-icons/gr";
 import { IoMdArrowDropdown } from "react-icons/io";
-import { MdOutlineManageAccounts } from "react-icons/md";
+import { LuBookOpenCheck, LuSiren } from "react-icons/lu";
+import { MdContactPhone, MdOutlineManageAccounts } from "react-icons/md";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
@@ -50,9 +49,10 @@ const sectionLinks = [
 const adminLinks = [
   { label: "Dashboard Admin", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Verifikasi Gempa", href: "/admin/alerts", icon: BiBarChartAlt },
-  { label: "Monitoring Cuaca", href: "#weather", icon: CloudRain },
-  { label: "Aktivitas Seismik", href: "#earthquake", icon: Activity },
-  { label: "Kontrol Sirine & IoT", href: "/admin/sirine-iot", icon: Bell },
+  { label: "Kontak Darurat", href: "/admin/kontak-darurat", icon: MdContactPhone },
+  { label: "Kelola Titik Evakuasi", href: "/admin/titik-evakuasi", icon: FaSearchLocation },
+  { label: "Panduan Kesiapsiagaan", href: "/admin/panduan-kesiapsiagaan", icon: LuBookOpenCheck },
+  { label: "Kontrol Sirine & IoT", href: "/admin/sirine-iot", icon: LuSiren },
   { label: "Manajemen Akun", href: "/admin/manajemen-akun", icon: MdOutlineManageAccounts, adminOnly: true },
   { label: "Pengaturan Sistem", href: "/admin/pengaturan-sistem", icon: Settings },
 ];

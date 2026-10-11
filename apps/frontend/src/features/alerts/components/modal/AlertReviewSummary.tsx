@@ -1,5 +1,6 @@
 import React from "react";
 import { Radio, Calendar, Clock, User, ExternalLink, MapPin } from "lucide-react";
+import { GrUserAdmin } from "react-icons/gr";
 import type { AlertItem } from "../../../../types/alert";
 import { AlertSeverityBadge } from "../badges/AlertSeverityBadge";
 import { formatAlertTimestamp } from "../../utils/alertFormatters";
@@ -11,6 +12,20 @@ interface AlertReviewSummaryProps {
 export const AlertReviewSummary: React.FC<AlertReviewSummaryProps> = ({ alert }) => {
   const createdTime = formatAlertTimestamp(alert.createdAt);
   const reviewedTime = alert.reviewedAt ? formatAlertTimestamp(alert.reviewedAt) : null;
+
+  // Logika penentuan role peninjau: Administrator = Merah, Operator = Biru
+  const reviewerName = alert.reviewer?.name || alert.reviewedBy || "";
+  const reviewerEmail = alert.reviewer?.email || "";
+  const reviewerRoles = alert.reviewer?.roles || [];
+
+  const isOperatorReviewer =
+    reviewerRoles.some((r) => r.toLowerCase().includes("operator")) ||
+    reviewerEmail.toLowerCase().includes("operator") ||
+    reviewerName.toLowerCase().includes("operator") ||
+    reviewerName.toLowerCase().includes("petugas") ||
+    reviewerName.toLowerCase().includes("lapangan");
+
+  const isAdminReviewer = !isOperatorReviewer;
 
   return (
     <div className="space-y-3">
@@ -87,9 +102,19 @@ export const AlertReviewSummary: React.FC<AlertReviewSummaryProps> = ({ alert })
 
       {/* Info Reviewer Sebelumnya */}
       {alert.reviewedBy && (
-        <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 flex items-start gap-3 text-xs">
-          <User size={16} className="text-[#00247D] dark:text-blue-400 mt-0.5 shrink-0" />
-          <div className="space-y-0.5">
+        <div
+          className={`p-3 rounded-xl border flex items-start gap-3 text-xs transition-colors ${
+            isAdminReviewer
+              ? "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/50"
+              : "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50"
+          }`}
+        >
+          {isAdminReviewer ? (
+            <GrUserAdmin className="w-4 h-4 text-rose-600 dark:text-rose-400 mt-0.5 shrink-0" />
+          ) : (
+            <User size={16} className="text-[#00247D] dark:text-blue-400 mt-0.5 shrink-0" />
+          )}
+          <div className="space-y-0.5 min-w-0 flex-1">
             <p className="font-semibold text-slate-800 dark:text-slate-100">
               Terakhir ditinjau oleh: {alert.reviewer?.name || alert.reviewedBy}
             </p>

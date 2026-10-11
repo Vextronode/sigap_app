@@ -48,6 +48,7 @@ export interface AlertReviewerInfo {
   id: string;
   name: string;
   email: string;
+  roles?: string[];
 }
 
 export interface AlertRecord {

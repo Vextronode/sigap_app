@@ -11,6 +11,7 @@ export interface AlertReviewer {
   id: string;
   name: string;
   email: string;
+  roles?: string[];
 }
 
 export interface AlertItem {

@@ -4,6 +4,10 @@ import { MainLayout } from "../layout/MainLayout";
 import DashboardPage from "../pages/DashboardPage";
 import AdminDashboardPage from "../pages/AdminDashboardPage";
 import AlertVerificationPage from "../pages/AlertVerificationPage";
+import EmergencyContactsAdminPage from "../pages/EmergencyContactsAdminPage";
+import EvacuationPointsAdminPage from "../pages/EvacuationPointsAdminPage";
+import PreparednessGuidesAdminPage from "../pages/PreparednessGuidesAdminPage";
+import SirenIotControlPage from "../pages/SirenIotControlPage";
 import SystemSettingsPage from "../pages/SystemSettingsPage";
 import UserManagementPage from "../pages/UserManagementPage";
 import LoginPage from "../pages/LoginPage";
@@ -36,23 +40,27 @@ export const router = createBrowserRouter([
             element: <AlertVerificationPage />,
           },
           {
+            path: "/admin/kontak-darurat",
+            element: <EmergencyContactsAdminPage />,
+          },
+          {
+            path: "/admin/titik-evakuasi",
+            element: <EvacuationPointsAdminPage />,
+          },
+          {
+            path: "/admin/panduan-kesiapsiagaan",
+            element: <PreparednessGuidesAdminPage />,
+          },
+          {
+            path: "/admin/sirine-iot",
+            element: <SirenIotControlPage />,
+          },
+          {
             path: "/admin/manajemen-akun",
             element: <UserManagementPage />,
           },
           {
-            path: "/admin/users",
-            element: <UserManagementPage />,
-          },
-          {
             path: "/admin/pengaturan-sistem",
-            element: <SystemSettingsPage />,
-          },
-          {
-            path: "/admin/settings",
-            element: <SystemSettingsPage />,
-          },
-          {
-            path: "/admin/kesiapsiagaan",
             element: <SystemSettingsPage />,
           },
         ],
