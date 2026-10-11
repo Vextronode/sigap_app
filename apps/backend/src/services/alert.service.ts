@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { AlertLevel } from "../../generated/prisma/enums.js";
+import { AlertLevel, AlertReviewStatus } from "../../generated/prisma/enums.js";
 import {
   AlertRepository,
   LABEL_TO_REVIEW_STATUS,
@@ -61,16 +61,19 @@ export class AlertService {
           },
         },
         orderBy: {
-          updatedAt: "desc",
+          createdAt: "desc",
         },
       });
 
       if (latest) {
         const mapped = mapAlertToRecord(latest);
 
-        // Cek umur alert. Jika > 24 jam (1 hari), status alert otomatis kadaluarsa & kembali ke GREEN
-        const ageMs = Date.now() - new Date(latest.updatedAt).getTime();
-        if (ageMs > ALERT_MAX_AGE_MS && latest.level !== AlertLevel.GREEN) {
+        // Cek umur alert dari waktu bencana (createdAt), BUKAN kapan admin klik verifikasi (updatedAt).
+        // Jika > 24 jam (1 hari) ATAU statusnya "Ditolak" (False Alarm), status alert otomatis kembali ke GREEN (Aman).
+        const ageMs = Date.now() - new Date(latest.createdAt).getTime();
+        const isRejected = latest.reviewStatus === AlertReviewStatus.DITOLAK;
+
+        if ((ageMs > ALERT_MAX_AGE_MS || isRejected) && latest.level !== AlertLevel.GREEN) {
           alertResult = {
             ...mapped,
             level: AlertLevel.GREEN,
@@ -157,7 +160,7 @@ export class AlertService {
           },
         },
         orderBy: {
-          updatedAt: "desc",
+          createdAt: "desc",
         },
       });
 
