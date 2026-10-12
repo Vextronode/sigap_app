@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import { MapPin, Navigation, ShieldCheck, Mountain, ZoomIn, Layers, Map as MapIcon } from "lucide-react";
 import type { EvacuationPoint } from "../../../types/dashboard";
 import { CIBENDA_CENTER } from "../../../utils/map";
@@ -20,6 +20,20 @@ const MapZoomController = ({
   onActivate: () => void;
 }) => {
   const map = useMap();
+
+  useEffect(() => {
+    // Pastikan zoom control bawaan di bagian atas dibersihkan agar tidak terduplikasi
+    if (map.zoomControl) {
+      try {
+        map.removeControl(map.zoomControl);
+      } catch {
+        // ignore
+      }
+    }
+    const container = map.getContainer();
+    const topZooms = container.querySelectorAll(".leaflet-top .leaflet-control-zoom");
+    topZooms.forEach((el) => el.remove());
+  }, [map]);
 
   useEffect(() => {
     if (isInteractive) {
@@ -91,16 +105,18 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
 
   return (
     <div
-      className="relative w-full h-[440px] sm:h-[430px] rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-2xs z-0"
+      className="relative w-full h-[440px] sm:h-[430px] rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-2xs z-0 [&_.leaflet-top_.leaflet-control-zoom]:!hidden"
       onMouseLeave={() => setIsZoomActive(false)}
     >
       <MapContainer
         center={defaultCenter}
         zoom={14}
+        zoomControl={false}
         scrollWheelZoom={false}
         touchZoom={true}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
       >
+        <ZoomControl position="bottomleft" />
         {mapType === "streets" ? (
           <TileLayer
             key="google-streets"
@@ -230,18 +246,18 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
         </button>
       </div>
 
-      {/* Indikator Status Zoom Interaktif - Di bawah tombol zoom Leaflet */}
+      {/* Indikator Status Zoom Interaktif - Di bawah tag Jalan/Satelit di Kanan Atas */}
       {!isZoomActive && (
-        <div className="absolute top-[76px] left-2.5 z-1000 bg-slate-900/85 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] text-white/90 shadow-sm flex items-center gap-1 pointer-events-none transition-opacity">
-          <ZoomIn size={11} className="text-amber-400" />
+        <div className="absolute top-[46px] right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm flex items-center gap-1.5 pointer-events-none opacity-90 transition-opacity">
+          <ZoomIn size={12} className="text-amber-400 shrink-0" />
           <span>Klik aktifkan zoom</span>
         </div>
       )}
 
-      {/* Tag Peta Sebaran Dipindahkan ke Ujung Kiri Bawah agar tidak menimpa copyright OpenStreetMap */}
-      <div className="absolute bottom-3 left-3 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 shadow-sm flex items-center gap-2 pointer-events-none">
+      {/* Tag Total / Sebaran Titik Evakuasi - Pojok Kiri Atas */}
+      <div className="absolute top-2.5 left-2.5 z-1000 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 shadow-xs flex items-center gap-1.5 pointer-events-none">
         <MapPin size={13} className="text-[#00247D] dark:text-blue-400" />
-        <span>Peta Sebaran {points.length} Titik Evakuasi Desa Cibenda</span>
+        <span>Total {points.length} Titik Evakuasi</span>
       </div>
     </div>
   );

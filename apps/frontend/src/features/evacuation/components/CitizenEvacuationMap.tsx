@@ -6,6 +6,7 @@ import {
   Marker,
   Popup,
   CircleMarker,
+  ZoomControl,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -40,6 +41,20 @@ const MapZoomController = ({
   onActivate: () => void;
 }) => {
   const map = useMap();
+
+  useEffect(() => {
+    // Pastikan zoom control bawaan di bagian atas dibersihkan agar tidak terduplikasi
+    if (map.zoomControl) {
+      try {
+        map.removeControl(map.zoomControl);
+      } catch {
+        // ignore
+      }
+    }
+    const container = map.getContainer();
+    const topZooms = container.querySelectorAll(".leaflet-top .leaflet-control-zoom");
+    topZooms.forEach((el) => el.remove());
+  }, [map]);
 
   useEffect(() => {
     if (isInteractive) {
@@ -182,16 +197,18 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
 
   return (
     <div
-      className={`relative w-full ${heightClass} rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm z-0 group`}
+      className={`relative w-full ${heightClass} rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm z-0 group [&_.leaflet-top_.leaflet-control-zoom]:!hidden`}
       onMouseLeave={() => setIsZoomActive(false)}
     >
       <MapContainer
         center={defaultCenter}
         zoom={14}
+        zoomControl={false}
         scrollWheelZoom={false}
         touchZoom={true}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
       >
+        <ZoomControl position="bottomleft" />
         {mapType === "streets" ? (
           <TileLayer
             key="google-streets"
@@ -361,27 +378,27 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         </button>
       </div>
 
-      {/* Floating Info Tag: Peta Sebaran Evakuasi - sedikit di atas attribution Leaflet */}
-      <div className="absolute bottom-6 left-3 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 pointer-events-none">
+      {/* Indikator Proteksi Zoom (klik 1x untuk zoom) - Pojok Kanan Atas di bawah tag Jalan/Satelit */}
+      {!isZoomActive && (
+        <div className="absolute top-[46px] right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <ZoomIn size={12} className="text-amber-400 shrink-0" />
+          <span>Klik aktifkan zoom</span>
+        </div>
+      )}
+
+      {/* Floating Info Tag: Total Titik Evakuasi - Pojok Kiri Atas */}
+      <div className="absolute top-2.5 left-2.5 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 pointer-events-none">
         <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
         <span>Total {points.length} Titik Evakuasi</span>
       </div>
 
-      {/* Floating Pill: Titik Terdekat (jika GPS terdeteksi) */}
+      {/* Floating Pill: Titik Terdekat (jika GPS terdeteksi) - Ditumpuk rapi di bawah Tag Total Titik Evakuasi */}
       {nearestPoint && (
-        <div className="absolute bottom-14 left-3 z-1000 bg-amber-500/95 text-white backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm text-[11px] font-bold flex items-center gap-1.5 pointer-events-auto animate-fade-in">
-          <Sparkles size={12} className="animate-spin-slow" />
-          <span>
+        <div className="absolute top-[44px] left-2.5 z-1000 bg-amber-500/95 text-white backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm text-[11px] font-bold flex items-center gap-1.5 pointer-events-auto animate-fade-in max-w-[calc(100%-140px)] truncate">
+          <Sparkles size={12} className="animate-spin-slow shrink-0" />
+          <span className="truncate">
             Terdekat: {nearestPoint.name} (±{nearestPoint.distanceLabel})
           </span>
-        </div>
-      )}
-
-      {/* Indikator Proteksi Zoom (klik 1x untuk zoom) - Di bawah kontrol zoom +/- di Kiri Atas */}
-      {!isZoomActive && (
-        <div className="absolute top-[76px] left-2.5 z-1000 bg-slate-900/85 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-xs flex items-center gap-1 shadow-sm opacity-85 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <ZoomIn size={11} className="text-amber-400" />
-          <span>Klik aktifkan zoom</span>
         </div>
       )}
     </div>

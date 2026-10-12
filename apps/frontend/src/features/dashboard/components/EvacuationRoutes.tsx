@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Map, AlertTriangle, ShieldCheck, Navigation, Loader2 } from "lucide-react";
+import { Map, AlertTriangle, Navigation, Loader2 } from "lucide-react";
+import { MdShareLocation } from "react-icons/md";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import { Card } from "../../../components/ui/Card";
 import { CardSkeleton } from "../../../components/ui/Skeleton";
@@ -81,7 +82,7 @@ export const EvacuationRoutes: React.FC<EvacuationRoutesProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xs">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#00247D] dark:text-blue-400 flex items-center justify-center shrink-0">
-                <ShieldCheck size={20} />
+                <MdShareLocation size={20} />
               </div>
               <div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-tight">

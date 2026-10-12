@@ -201,4 +201,10 @@
 
 .sigap-map-popup a:hover {
   text-decoration: none !important;
-}
+}
+
+/* Hilangkan kontrol zoom di bagian atas peta agar tidak terduplikasi */
+.leaflet-top .leaflet-control-zoom {
+  display: none !important;
+}
+
