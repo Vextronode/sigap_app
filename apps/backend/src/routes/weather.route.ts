@@ -39,7 +39,8 @@ publicWeatherRouter.get("/current", async (_req, res) => {
       weather:       openMeteo.weather,   // Open-Meteo: kondisi lebih akurat
       windSpeed:     bmkg.windSpeed,
       windDirection: bmkg.windDirection,
-      visibility:    bmkg.visibility,
+      // Prioritas data BMKG; jika BMKG null/kosong, gunakan fallback Open-Meteo
+      visibility:    bmkg.visibility?.trim() || openMeteo.visibility || "",
       updatedAt:     openMeteo.updatedAt, // Open-Meteo: lebih fresh (tiap jam)
     };
 
@@ -54,7 +55,7 @@ publicWeatherRouter.get("/current", async (_req, res) => {
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil data cuaca.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Layanan data cuaca BMKG & Open-Meteo sementara tidak tersedia. Silakan coba beberapa saat lagi."],
     };
     res.status(502).json(response);
   }
@@ -81,7 +82,7 @@ publicWeatherRouter.get("/forecast", async (_req, res) => {
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil data prakiraan cuaca dari Open-Meteo.",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Layanan data prakiraan cuaca sementara tidak tersedia. Silakan coba beberapa saat lagi."],
     };
     res.status(502).json(response);
   }

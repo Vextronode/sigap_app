@@ -1,6 +1,8 @@
-import { AlertOctagon, AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertOctagon, AlertTriangle, ShieldAlert, RotateCw } from "lucide-react";
+import { AiFillAlert } from "react-icons/ai";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
+import { cn } from "../../../utils/cn";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
 
@@ -8,6 +10,7 @@ type CurrentAlertCardProps = {
   alert: CurrentAlert | null;
   isLoading?: boolean;
   isError?: boolean;
+  showSystemStatus?: boolean;
 };
 
 const formatKeIndonesia = (dateString?: string) => {
@@ -28,7 +31,53 @@ const formatKeIndonesia = (dateString?: string) => {
   return terformat.replace(' pukul ', ' - ').replace(':', '.') + ' WIB';
 };
 
-export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: CurrentAlertCardProps) => {
+export const CurrentAlertCard = ({ 
+  alert, 
+  isLoading = false, 
+  isError = false, 
+  showSystemStatus = false 
+}: CurrentAlertCardProps) => {
+  // Jika terjadi error koneksi, tampilkan indikator offline/error secara stabil
+  // agar kartu tidak berkedip (blinking) menjadi skeleton saat sistem melakukan retry / refetch
+  if (isError) {
+    return (
+      <section
+        className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-7 text-center shadow-xs transition-all"
+        aria-label="Pusat Pemantauan Bencana Offline"
+      >
+        {/* Ikon alert sinyal warna merah dengan efek denyut */}
+        <div className="relative flex items-center justify-center mx-auto mb-3 w-12 h-12">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-40 dark:bg-red-500" aria-hidden="true" />
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-red-200/60 bg-red-100 text-red-600 dark:border-red-800/40 dark:bg-red-950/50 dark:text-red-400 shadow-2xs">
+            <AiFillAlert size={24} />
+          </div>
+        </div>
+
+        {/* Headline */}
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+          Pusat Data Kesiapsiagaan Sedang Disinkronkan
+        </h2>
+
+        {/* Description ringkas */}
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-md mx-auto">
+          Terjadi gangguan koneksi data atau internet saat mengambil status kesiapsiagaan terbaru.
+        </p>
+
+        {/* Action Button Utama */}
+        <div className="mt-4 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700/80 transition-all cursor-pointer active:scale-95"
+          >
+            <RotateCw size={14} className="text-blue-600 dark:text-blue-400" />
+            <span>Periksa & Muat Ulang</span>
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   if (isLoading) {
     return (
       <section
@@ -39,16 +88,6 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
         <Skeleton className="h-9 w-40 !rounded-lg" />
         <Skeleton className="h-4 w-72 !rounded-lg" />
       </section>
-    );
-  }
-
-  if (isError) {
-    return (
-      <StateMessage
-        type="error"
-        title="Status kesiapsiagaan gagal dimuat"
-        message="Status resmi belum dapat diambil. Bagian dashboard lain tetap tersedia."
-      />
     );
   }
 
@@ -81,6 +120,29 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
     }
   };
 
+  const getSystemMonitoringMeta = () => {
+    if (isLoading) {
+      return {
+        label: "Memeriksa Sistem Pemantauan...",
+        dotColor: "bg-slate-200",
+      };
+    }
+
+    if (isError) {
+      return {
+        label: "Sistem Pemantauan Terganggu",
+        dotColor: "bg-amber-400",
+      };
+    }
+
+    return {
+      label: "Sistem Pemantauan Aktif",
+      dotColor: "bg-emerald-400",
+    };
+  };
+
+  const monitoringMeta = getSystemMonitoringMeta();
+
   return (
     <section className={`status-banner status-banner--${meta.tone}`} aria-labelledby="status-title">
       <div className="status-banner__icon">
@@ -106,6 +168,26 @@ export const CurrentAlertCard = ({ alert, isLoading = false, isError = false }: 
         <span className="text-xs opacity-75 mt-1">
           Sumber data resmi: {alert?.source ?? "BMKG"}
         </span>
+
+        {showSystemStatus && (
+          <div className="mt-3.5 inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/20 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white shadow-xs backdrop-blur-xs">
+            <span className="relative flex h-2 w-2">
+              <span
+                className={cn(
+                  "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                  monitoringMeta.dotColor
+                )}
+              />
+              <span
+                className={cn(
+                  "relative inline-flex h-2 w-2 rounded-full",
+                  monitoringMeta.dotColor
+                )}
+              />
+            </span>
+            <span>{monitoringMeta.label}</span>
+          </div>
+        )}
       </div>
     </section>
   );

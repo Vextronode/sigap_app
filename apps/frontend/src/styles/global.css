@@ -1,5 +1,4 @@
-global.css
-
+/* global.css */
 * {
   box-sizing: border-box;
 }
@@ -20,8 +19,11 @@ body {
 
 body,
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
+  font-family: inherit;
 }
 
 a {
@@ -56,10 +58,12 @@ svg {
   padding-left: var(--sidebar-width);
 }
 
-.main-content {
-  width: min(100%, var(--content-width));
-  margin: 0 auto;
-  padding: 28px 24px 0;
+.main-content,
+.main-content--admin {
+  width: 100%;
+  max-width: 100%;
+  padding: 28px 32px 40px;
+  margin: 0;
 }
 
 .brand-mark {
@@ -89,7 +93,7 @@ svg {
   flex-direction: column;
   border-right: 1px solid var(--border);
   background: var(--surface);
-  padding: 28px 24px;
+  padding: 22px 18px;
 }
 
 .sidebar__brand {
@@ -123,19 +127,20 @@ svg {
 
 .sidebar__nav {
   display: grid;
-  gap: 10px;
-  margin-top: 44px;
+  gap: 6px;
+  margin-top: 24px;
 }
 
 .sidebar__nav a {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 48px;
+  gap: 13px;
+  min-height: 45px;
   border-radius: var(--radius);
   color: var(--text-muted);
-  font-weight: 700;
-  padding: 0 14px;
+  font-weight: 600;
+  font-size: 0.915rem;
+  padding: 0 13px;
   transition: background 160ms ease, color 160ms ease;
 }
 
@@ -145,15 +150,35 @@ svg {
   color: var(--primary);
 }
 
+/* Khusus side navbar di tampilan warga agar lebih proporsional, nyaman dilihat, dan tidak kosong di bawah */
+.sidebar--citizen {
+  padding: 24px 18px;
+}
+
+.sidebar--citizen .sidebar__nav {
+  margin-top: 34px;
+  gap: 10px;
+}
+
+.sidebar--citizen .sidebar__nav a {
+  min-height: 52px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  gap: 14px;
+  padding: 0 16px;
+  border-radius: 12px;
+}
+
 .sidebar__device-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: auto;
+  gap: 9px;
+  margin-top: 18px;
+  margin-bottom: 2px;
   background: var(--surface, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
-  border-radius: 14px;
-  padding: 10px 16px;
+  border-radius: 12px;
+  padding: 9px 14px;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
   transition: background 200ms ease, border-color 200ms ease;
 }
@@ -166,7 +191,7 @@ svg {
 
 .sidebar__device-label {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text, #0f172a);
   line-height: 1.25;
 }
@@ -174,6 +199,52 @@ svg {
 .sidebar__device-label--neutral {
   color: var(--text-muted, #94a3b8) !important;
 }
+
+/* garis pembatas sidebar dengan token border tema */
+.sidebar__divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0 10px;
+  width: 100%;
+}
+
+/* wadah tombol aksi admin di bagian bawah sidebar */
+.sidebar__bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+/* tombol aksi profil dan logout dengan ukuran dan warna konsisten */
+.sidebar__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 40px;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.915rem;
+  padding: 0 13px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease;
+  cursor: pointer;
+}
+
+.sidebar__action-btn:hover {
+  background: var(--primary-50);
+  color: var(--primary);
+}
+
+.sidebar__action-btn--danger:hover {
+  background: var(--danger-50);
+  color: var(--danger);
+}
+
 
 .status-dot {
   width: 11px;
@@ -683,9 +754,10 @@ svg {
 .evacuation-preview__image {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  max-height: 440px;
   object-fit: contain;
   background: var(--surface-muted, #f8f9fa);
+  padding: 16px;
 }
 
 .evacuation-preview__body {
@@ -925,12 +997,12 @@ svg {
 }
 
 .state-message--error {
-  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
-  background: var(--danger-50);
+  border-color: var(--border);
+  background: var(--surface);
 }
 
 .state-message--error svg {
-  color: var(--danger);
+  color: var(--text-muted);
 }
 
 .state-message strong {
@@ -1127,7 +1199,8 @@ svg {
     padding-inline: 18px;
   }
 
-  .main-content {
+  .main-content,
+  .main-content--admin {
     padding-inline: 18px;
   }
 
@@ -1160,7 +1233,8 @@ svg {
     display: none;
   }
 
-  .main-content {
+  .main-content,
+  .main-content--admin {
     padding: 18px 10px 0;
   }
 
@@ -1228,6 +1302,11 @@ svg {
   .evacuation-map {
     height: 260px;
     min-height: 260px;
+  }
+
+  .evacuation-preview__image {
+    max-height: 220px;
+    padding: 8px;
   }
 
   .contact-grid {

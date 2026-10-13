@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, .dark, .dark *));
+
 @keyframes radarPulse {
   0% {
     transform: scale(0.95);
@@ -21,6 +23,19 @@
   background-color: currentColor; 
   z-index: -1; 
   animation: radarPulse 2s infinite ease-out;
+}
+
+@keyframes loginProgressFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-login-progress {
+  animation: loginProgressFill var(--toast-duration, 7000ms) linear forwards;
 }
 
 @media (max-width: 768px) {
@@ -53,6 +68,11 @@
   .top-navbar__menu {
     display: flex; /* Tombol burger muncul di layar handphone/tablet */
   }
+
+  .top-navbar {
+    padding: 12px 14px;
+    gap: 8px;
+  }
 }
 
 /* 2. TAMPILAN DESKTOP & LAPTOP XL (Layar >= 1024px) */
@@ -76,12 +96,6 @@
     display: none !important;
   }
 
-  /* INFO TAMBAHAN: Pastikan area konten dashboard kamu (di luar file sidebar) 
-     diberikan margin-left sebesar 260px agar tidak tertutup oleh sidebar yang menetap. 
-     Contoh kelas pembungkus konten utama kamu: */
-  .main-content {
-    margin-left: 260px;
-  }
 }
 
 .metric-label {
@@ -159,3 +173,38 @@
 
     font-weight:500 !important;
 }
+
+/* =========================================
+   Styling Leaflet Popup Interaktif SIGAP
+   ========================================= */
+.leaflet-container,
+.leaflet-popup-content-wrapper,
+.leaflet-popup-content {
+  font-family: inherit !important;
+}
+
+.sigap-map-popup .leaflet-popup-content-wrapper {
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.22), 0 4px 8px -2px rgba(0, 0, 0, 0.1) !important;
+  padding: 1px !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+}
+
+.sigap-map-popup .leaflet-popup-content {
+  margin: 7px 9px !important;
+  line-height: 1.35 !important;
+}
+
+.sigap-map-popup a {
+  color: inherit;
+}
+
+.sigap-map-popup a:hover {
+  text-decoration: none !important;
+}
+
+/* Hilangkan kontrol zoom di bagian atas peta agar tidak terduplikasi */
+.leaflet-top .leaflet-control-zoom {
+  display: none !important;
+}
+

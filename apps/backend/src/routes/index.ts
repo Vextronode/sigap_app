@@ -2,12 +2,26 @@ import { Router } from "express";
 
 import { publicAuthRouter, protectedAuthRouter } from "./auth.route.js";
 import { publicWeatherRouter } from "./weather.route.js";
-import { publicAlertsRouter } from "./alert.route.js";
+import { publicAlertsRouter, protectedAlertsRouter } from "./alert.route.js";
 import { publicEarthquakesRouter } from "./earthquakes.route.js";
 import { publicTsunamiRouter } from "./tsunami.route.js";
 import { publicDeviceRouter } from "./device.route.js";
 import { publicNotificationRouter, protectedNotificationRouter } from "./notification.route.js";
 import { internalRouter } from "./internal.route.js";
+import {
+  publicEmergencyContactRouter,
+  protectedEmergencyContactRouter,
+} from "./emergencyContact.route.js";
+import {
+  publicPreparednessGuideRouter,
+  protectedPreparednessGuideRouter,
+} from "./preparednessGuide.route.js";
+import {
+  publicEvacuationPointRouter,
+  protectedEvacuationPointRouter,
+} from "./evacuationPoint.route.js";
+import { systemHealthRouter } from "./systemHealth.route.js";
+import { protectedUserManagementRouter } from "./userManagement.route.js";
 
 export const publicRouter = Router();
 
@@ -23,15 +37,56 @@ publicRouter.use("/earthquakes", publicEarthquakesRouter);
 publicRouter.use("/tsunami", publicTsunamiRouter);
 publicRouter.use("/tsunamis", publicTsunamiRouter);
 
+// kontak darurat
+publicRouter.use("/emergency-contacts", publicEmergencyContactRouter);
+
+// panduan kesiapsiagaan
+publicRouter.use("/preparedness-guides", publicPreparednessGuideRouter);
+
+// titik evakuasi desa
+publicRouter.use("/evacuation-points", publicEvacuationPointRouter);
+
+// pengumuman desa (fallback SSOT agar tidak 404 di dashboard publik sebelum CMS pengumuman aktif)
+publicRouter.get("/announcements", (_req, res) => {
+  res.json({
+    success: true,
+    data: [],
+    message: "Daftar pengumuman desa",
+  });
+});
+
+// rute jalur evakuasi (fallback SSOT rute jalur evakuasi)
+publicRouter.get("/evacuation-routes", (_req, res) => {
+  res.json({
+    success: true,
+    data: [],
+    message: "Daftar rute jalur evakuasi desa",
+  });
+});
+
 // IoT Device
 publicRouter.use("/device", publicDeviceRouter);
 
 // Push Notification
 publicRouter.use("/notifications", publicNotificationRouter);
 
+// System Health
+publicRouter.use("/system-health", systemHealthRouter);
+publicRouter.use("/system/health", systemHealthRouter);
+
 // Internal — trigger untuk cron-job.org (Vercel production)
 publicRouter.use("/internal", internalRouter);
 
 export const protectedRouter = Router();
 protectedRouter.use("/auth", protectedAuthRouter);
+protectedRouter.use("/alerts", protectedAlertsRouter);
 protectedRouter.use("/notifications", protectedNotificationRouter);
+protectedRouter.use("/emergency-contacts", protectedEmergencyContactRouter);
+protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
+protectedRouter.use("/evacuation-points", protectedEvacuationPointRouter);
+protectedRouter.use("/system-health", systemHealthRouter);
+protectedRouter.use("/users", protectedUserManagementRouter);
+
+
+
+

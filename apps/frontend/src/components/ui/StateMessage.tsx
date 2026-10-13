@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, Inbox } from "lucide-react";
+import { AlertCircle, Inbox } from "lucide-react";
 
 type StateMessageProps = {
   title: string;
@@ -9,7 +9,7 @@ type StateMessageProps = {
 };
 
 export const StateMessage = ({ title, message, type = "empty", action }: StateMessageProps) => {
-  const Icon = type === "error" ? AlertTriangle : Inbox;
+  const Icon = type === "error" ? AlertCircle : Inbox;
 
   return (
     <div className={`state-message state-message--${type}`} role={type === "error" ? "alert" : "status"}>

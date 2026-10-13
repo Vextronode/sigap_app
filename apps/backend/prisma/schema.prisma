@@ -15,14 +15,37 @@ model User {
   name      String
   email     String   @unique
   password  String
+  failedLoginCount  Int       @default(0) @map("failed_login_count")
+  lastFailedLoginAt DateTime? @map("last_failed_login_at")
+  lockedUntil       DateTime? @map("locked_until")
+  isActive          Boolean   @default(true) @map("is_active")
+  lastLoginAt       DateTime? @map("last_login_at")
+  lastLoginIp       String?   @map("last_login_ip")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userRoles UserRole[]
+  userRoles      UserRole[]
+  reviewedAlerts Alert[]    @relation("AlertReviewer")
+  revokedTokens RevokedToken[]
 
   @@index([email])
 
   @@map("users")
+}
+
+model RevokedToken {
+  id        String   @id @default(uuid())
+  jti       String   @unique
+  userId    String   @map("user_id")
+  revokedAt DateTime @default(now()) @map("revoked_at")
+  expiresAt DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([jti])
+  @@index([expiresAt])
+
+  @@map("revoked_tokens")
 }
 
 model Role {
@@ -101,17 +124,32 @@ model Device {
   @@map("devices")
 }
 
+enum AlertReviewStatus {
+  BELUM_DITINJAU  @map("Belum Ditinjau")
+  DIKONFIRMASI    @map("Dikonfirmasi")
+  DITOLAK         @map("Ditolak")
+  DITINDAKLANJUTI @map("Ditindaklanjuti")
+
+  @@map("alert_review_status")
+}
+
 model Alert {
-  id          String     @id @default(uuid())
-  level       AlertLevel
-  source      String
-  description String?
+  id           String            @id @default(uuid())
+  level        AlertLevel
+  source       String
+  description  String?
+  reviewStatus AlertReviewStatus @default(BELUM_DITINJAU) @map("review_status")
+  reviewedBy   String?           @map("reviewed_by")
+  reviewedAt   DateTime?         @map("reviewed_at")
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  reviewer         User?             @relation("AlertReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   notificationLogs NotificationLog[]
 
+  @@index([reviewStatus])
+  @@index([createdAt])
   @@map("alerts")
 }
 
@@ -180,4 +218,57 @@ model EarthquakeRecord {
   updatedAt         DateTime @updatedAt
 
   @@map("earthquake_records")
+}
+
+// model data kontak darurat desa cibenda
+model EmergencyContact {
+  id          String   @id @default(uuid())
+  institution String   @map("institution")
+  phoneNumber String   @map("phone_number")
+  isCore      Boolean  @default(false) @map("is_core")
+  icon        String?  @map("icon")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("emergency_contacts")
+}
+
+// tipe sumber panduan kesiapsiagaan
+enum GuideSourceType {
+  RESMI
+  MITRA
+}
+
+// model data panduan kesiapsiagaan bencana
+model PreparednessGuide {
+  id          String          @id @default(uuid())
+  title       String
+  content     String?         @db.Text
+  externalUrl String?         @map("external_url")
+  imageUrl    String?         @map("image_url") @db.Text
+  sourceType  GuideSourceType @default(RESMI) @map("source_type")
+  sourceLabel String?         @default("Pemerintah Desa Cibenda") @map("source_label")
+  publishedAt DateTime        @default(now()) @map("published_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@map("preparedness_guides")
+}
+
+// model data titik evakuasi bencana desa cibenda
+model EvacuationPoint {
+  id          String   @id @default(uuid())
+  name        String
+  address     String?
+  latitude    Float
+  longitude   Float
+  elevation   Float?
+  capacity    Int?
+  description String?  @db.Text
+  facilities  String[] @default([])
+  isCore      Boolean  @default(false) @map("is_core")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("evacuation_points")
 }

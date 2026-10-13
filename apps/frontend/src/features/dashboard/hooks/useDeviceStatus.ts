@@ -8,6 +8,7 @@ export const useDeviceStatus = () =>
     options: {
       staleTime: 10_000,
       refetchInterval: 15_000,
-      refetchIntervalInBackground: true,
+      refetchIntervalInBackground: false,
+      refetchOnWindowFocus: false,
     },
   });

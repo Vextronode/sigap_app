@@ -14,7 +14,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto; -- untuk gen_random_uuid()
 --   kuning = Waspada
 --   oranye = Siaga
 --   merah  = Awas
-CREATE TYPE status_level AS ENUM ('hijau', 'kuning', 'oranye', 'merah');
+CREATE TYPE status_level AS ENUM ('GREEN', 'YELLOW', 'ORANGE', 'RED');
 
 -- Status konektivitas perangkat IoT
 CREATE TYPE device_connectivity AS ENUM ('online', 'offline', 'degraded');

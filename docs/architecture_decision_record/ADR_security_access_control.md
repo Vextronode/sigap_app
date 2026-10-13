@@ -151,3 +151,20 @@ Baseline awal ditetapkan per kategori endpoint:
 ### Dampak Terhadap Sistem
 - Angka-angka ini bersifat baseline, bukan keputusan permanen - perlu ditinjau ulang setelah tersedia data trafik dari penggunaan awal.
 - Tidak ada perubahan pada kontrak API (`openapi.yaml`) akibat keputusan ini - rate limiting beroperasi di lapisan middleware/infrastruktur, transparan terhadap skema request/response.
+
+---
+
+## ADR-026: Revisi Permission Operator - Menambahkan `content.manage`
+
+### Latar Belakang Keputusan
+ADR-007 menetapkan operator hanya memegang `alert.validate`, `device.view`, `siren.view`, `siren.trigger` - tidak termasuk `content.manage`. Pada penyusunan ulang FS-03/FS-04/FS-05 (Tahap 2), ditetapkan bahwa operator turut bertanggung jawab mengelola kontak darurat, titik/jalur evakuasi, dan panduan kesiapsiagaan - bukan hanya admin.
+
+### Keputusan yang Dipilih
+`content.manage` ditambahkan ke role `operator`, menyusul (bukan menggantikan) permission yang sudah ada di ADR-007.
+
+### Alasan Pemilihan
+Pembagian kerja lapangan operator ternyata mencakup pembaruan konten kesiapsiagaan langsung (mis. update kontak darurat pasca-insiden), bukan hanya verifikasi status - keputusan ADR-007 sebelumnya terlalu sempit terhadap kebutuhan operasional nyata yang baru teridentifikasi.
+
+### Dampak Terhadap Sistem
+- Seed data di `006_rbac.sql`/`DD_rbac.md` diperbarui untuk menyertakan `content.manage` pada baris `role_permissions` milik operator.
+- ADR-007 tetap dipertahankan apa adanya sebagai catatan historis keputusan awal - tidak diedit ulang. Perubahan didokumentasikan di sini (ADR-016) mengikuti prinsip immutable decision record.

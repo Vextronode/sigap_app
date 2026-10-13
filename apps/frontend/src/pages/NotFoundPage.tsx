@@ -8,7 +8,11 @@ export default function NotFoundPage() {
   return (
     <main className="not-found-page">
       <Card className="not-found-card">
-        <span className="brand-mark">S</span>
+        <img
+          src="/assets/image/lambang-kabupaten-pangandaran.webp"
+          alt="Lambang Kabupaten Pangandaran"
+          className="w-16 h-16 object-contain mb-3"
+        />
         <h1>Halaman tidak ditemukan</h1>
         <p>Alamat yang dibuka tidak tersedia pada dashboard SIGAP.</p>
         <Link className="button button--primary" to="/">

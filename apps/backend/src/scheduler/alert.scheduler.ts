@@ -1,4 +1,4 @@
-﻿import { EarthquakeService } from "../services/earthquake.service.js";
+import { EarthquakeService } from "../services/earthquake.service.js";
 import { DecisionEngineService } from "../services/decisionEngine.service.js";
 import { AlertService } from "../services/alert.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
@@ -29,6 +29,13 @@ export async function runAlertCheck(): Promise<{
     // Jalankan Decision Engine
     const result = DecisionEngineService.evaluate({ earthquake, tsunami });
 
+    // Jika hasil evaluasi adalah GREEN (Aman / tidak ada ancaman aktif),
+    // jangan simpan ke riwayat alert verifikasi. Alert verifikasi khusus mencatat
+    // kejadian darurat nyata (WASPADA, SIAGA, AWAS) untuk ditinjau admin.
+    if (result.level === "GREEN") {
+        return { ...result, saved: false };
+    }
+
     const latestAlert = await AlertService.getCurrentAlert();
     const isDuplicate =
         latestAlert?.level === result.level &&
@@ -40,9 +47,18 @@ export async function runAlertCheck(): Promise<{
         return { ...result, saved: false };
     }
 
-    // Simpan ke database
-    await AlertService.saveAlert(result.level, result.source, result.description);
-    console.log(`[AlertScheduler] Alert saved (${result.level}) - ${result.description}`);
+    // Simpan ke database jika DB tersedia
+    let isSaved = false;
+    try {
+        await AlertService.saveAlert(result.level, result.source, result.description);
+        console.log(`[AlertScheduler] Alert saved (${result.level}) - ${result.description}`);
+        isSaved = true;
+    } catch (dbError) {
+        console.warn(
+            `[AlertScheduler] Gagal menyimpan alert ke database (kuota/koneksi). Pemrosesan notifikasi tetap dilanjutkan:`,
+            dbError instanceof Error ? dbError.message : dbError
+        );
+    }
 
     // Kirim push notification otomatis jika level bukan GREEN.
     // shouldNotify() sudah menjamin GREEN tidak dikirim — warga tidak perlu
@@ -63,7 +79,7 @@ export async function runAlertCheck(): Promise<{
         }
     }
 
-    return { ...result, saved: true };
+    return { ...result, saved: isSaved };
 }
 
 /**

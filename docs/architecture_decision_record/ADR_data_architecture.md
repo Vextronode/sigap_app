@@ -99,3 +99,26 @@ Opsi 2 - kolom `status` (`online`/`offline`/`degraded`) dan `current_level` dipi
 ### Dampak Terhadap Sistem
 - Seluruh konsumen data `iot_devices` (frontend dashboard, dokumentasi API) wajib merujuk kombinasi `(status, last_seen_at)`, bukan `current_level` semata - didokumentasikan eksplisit sebagai komentar pada kolom di skema.
 - Menambah kewajiban desain UI: tampilan indikator perlu mode visual terpisah untuk kondisi "tidak diketahui/offline", bukan sekadar menampilkan warna level terakhir.
+
+---
+
+## ADR-030: Rekonsiliasi Nilai ENUM terhadap Implementasi Live (status_level & device_connectivity)
+
+### Latar Belakang Keputusan
+ADR-003 menetapkan `status_level` dengan nilai berbahasa Indonesia (`hijau`/`kuning`/`oranye`/`merah`). ADR-004 menyebut status konektivitas perangkat dengan 3 nilai (`online`/`offline`/`degraded`). Audit langsung terhadap schema Prisma live menemukan dua penyimpangan: `AlertLevel` enum nyata berbahasa Inggris (`GREEN`/`YELLOW`/`ORANGE`/`RED`), dan `DeviceStatus` enum nyata hanya 2 nilai (`ONLINE`/`OFFLINE`) - `degraded` tidak pernah diimplementasikan maupun diputuskan lewat FS manapun.
+
+### Alternatif yang Dipertimbangkan
+1. Memaksa migrasi kode mengikuti nilai ADR-003/ADR-004 asli.
+2. Merevisi dokumen mengikuti nilai yang sudah live dan berfungsi.
+
+### Keputusan yang Dipilih
+Opsi 2 - konsisten dengan pola ADR-013 dan ADR-027 (Delivery > Complexity, ikuti kode yang sudah berfungsi alih-alih memaksakan migrasi tanpa manfaat proporsional).
+
+### Alasan Pemilihan
+- Konsep 4-level (ADR-003) dan pemisahan status konektivitas dari level (ADR-004) **tidak berubah** - yang direvisi murni representasi nilai, bukan struktur keputusan itu sendiri.
+- `degraded` dibuang dari desain karena tidak pernah punya definisi bisnis yang jelas (kapan device dianggap "degraded" vs "offline" tidak pernah diputuskan) - kalau granularitas status koneksi lebih detail dibutuhkan nanti (mis. kualitas sinyal RF Sirine, sudah dibahas terpisah di FS-06/FS-08), itu jadi field baru, bukan menghidupkan kembali nilai enum yang tidak pernah terdefinisi jelas.
+
+### Dampak Terhadap Sistem
+- Nilai final: `status_level` → `GREEN`/`YELLOW`/`ORANGE`/`RED`; label Indonesia jadi pemetaan tampilan frontend, bukan nilai tersimpan. `device_connectivity` → `ONLINE`/`OFFLINE` saja.
+- Seluruh dokumen yang mengutip nilai lama perlu diperbarui - sudah dilakukan di `005_iot_kesiapsiagaan.sql`, `DD_iot_kesiapsiagaan.md`, `05_iot_architecture.md` pada sesi review sebelumnya; sisanya (`02_building_block_view.md`, dst.) direvisi pada sesi ini.
+- ADR-003 dan ADR-004 dipertahankan apa adanya sebagai catatan historis, tidak diedit.

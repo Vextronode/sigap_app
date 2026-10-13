@@ -28,7 +28,7 @@ const buildResponse = async ({ message, emptyMessage, fetcher }: EarthquakeHandl
     const response: ApiErrorResponse = {
       success: false,
       message: "Gagal mengambil data gempa BMKG",
-      errors: [error instanceof Error ? error.message : String(error)],
+      errors: ["Layanan data gempa BMKG sementara tidak dapat diakses. Silakan coba beberapa saat lagi."],
     };
 
     return res.status(502).json(response);
@@ -44,34 +44,57 @@ const handleIndonesiaEarthquake = async (_req: Request, res: Response) =>
     res
   );
 
-const handleWestJavaEarthquake = async (_req: Request, res: Response) =>
-  buildResponse(
+const handleWestJavaEarthquake = async (
+  _req: Request,
+  res: Response,
+) => {
+  return buildResponse(
     {
       message: "West Java earthquake retrieved successfully.",
-      emptyMessage: "Tidak ditemukan gempa Jawa Barat pada daftar BMKG terbaru.",
+      emptyMessage: "Tidak ditemukan data gempa Jawa Barat.",
       fetcher: () => EarthquakeService.getWestJava(),
     },
     res
   );
+};
 
-const handlePangandaranEarthquake = async (_req: Request, res: Response) =>
-  buildResponse(
+const handlePangandaranEarthquake = async (
+  req: Request,
+  res: Response,
+  forceHistory = false
+) => {
+  const isHistory = forceHistory || req.query.history === "true";
+  return buildResponse(
     {
-      message: "Pangandaran earthquake retrieved successfully.",
-      emptyMessage: "Tidak ditemukan gempa Pangandaran atau wilayah sekitar pada daftar BMKG terbaru.",
-      fetcher: () => EarthquakeService.getPangandaran(),
+      message: isHistory
+        ? "Pangandaran historical earthquake retrieved successfully."
+        : "Pangandaran earthquake retrieved successfully.",
+      emptyMessage:
+        "Tidak ditemukan gempa Pangandaran atau wilayah sekitar pada daftar BMKG terbaru.",
+      fetcher: () => EarthquakeService.getPangandaran(isHistory),
     },
     res
   );
+};
 
 /** GET /api/public/earthquakes/indonesia */
 publicEarthquakesRouter.get("/indonesia", handleIndonesiaEarthquake);
 
+/** GET /api/public/earthquakes/west-java/history */
+publicEarthquakesRouter.get("/west-java/history", handleWestJavaEarthquake);
+
 /** GET /api/public/earthquakes/west-java */
 publicEarthquakesRouter.get("/west-java", handleWestJavaEarthquake);
 
+/** GET /api/public/earthquakes/pangandaran/history */
+publicEarthquakesRouter.get("/pangandaran/history", (req, res) =>
+  handlePangandaranEarthquake(req, res, true)
+);
+
 /** GET /api/public/earthquakes/pangandaran */
-publicEarthquakesRouter.get("/pangandaran", handlePangandaranEarthquake);
+publicEarthquakesRouter.get("/pangandaran", (req, res) =>
+  handlePangandaranEarthquake(req, res, false)
+);
 
 /** Alias lama untuk kompatibilitas */
 publicEarthquakesRouter.get("/latest", handleIndonesiaEarthquake);
