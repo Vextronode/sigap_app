@@ -6,10 +6,11 @@ import morgan from "morgan";
 
 import { publicRouter, protectedRouter } from "./routes/index.js";
 import { generalRateLimiter } from "./middleware/rateLimit.middleware.js";
+import { helmetOptions } from "./config/helmet.config.js";
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet(helmetOptions));
 
 /**
  * SEC-02: CORS dikonfigurasi dengan whitelist origin dari environment variable.
