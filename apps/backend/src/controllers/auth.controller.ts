@@ -5,8 +5,8 @@ import { revokeToken } from "../repositories/token.repository.js";
 export async function loginController(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
-    const forwarded = req.headers["x-forwarded-for"];
-    const rawIp = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.ip || req.socket.remoteAddress || "";
+    // SEC-02b: sumber IP sama dengan rate limiter (req.ip mengikuti setting "trust proxy").
+    const rawIp = req.ip || req.socket.remoteAddress || "";
     let cleanIp = rawIp.replace(/^::ffff:/, "");
     if (cleanIp === "::1" || cleanIp === "127.0.0.1") {
       cleanIp = "127.0.0.1 (Localhost)";

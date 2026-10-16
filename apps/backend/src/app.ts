@@ -10,6 +10,16 @@ import { helmetOptions } from "./config/helmet.config.js";
 
 const app = express();
 
+/**
+ * SEC-02b: Vercel menimpa X-Forwarded-For dengan IP klien, jadi hop=1 mengambil
+ * entri paling kanan (yang ditulis Vercel) sebagai req.ip untuk rate limiter.
+ * JANGAN pakai `true` (entri paling kiri bisa dipalsukan klien) dan jangan aktifkan
+ * di luar Vercel. Tinjau ulang jumlah hop bila ada CDN/proxy lain di depan Vercel.
+ */
+if (process.env.VERCEL) {
+  app.set("trust proxy", 1);
+}
+
 app.use(helmet(helmetOptions));
 
 /**
