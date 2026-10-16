@@ -15,9 +15,5 @@ export interface CreateEmergencyContactDto {
   icon?: string | null;
 }
 
-export interface UpdateEmergencyContactDto {
-  institution?: string;
-  phoneNumber?: string;
-  icon?: string | null;
-}
+export type UpdateEmergencyContactDto = Partial<CreateEmergencyContactDto>;
 

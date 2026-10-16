@@ -63,18 +63,9 @@ export type Announcement = {
   priority: PriorityLevel;
 };
 
-export type EmergencyContact = {
-  id?: string | number;
-  institution: string;
-  contactPerson?: string;
-  phone?: string;
-  phoneNumber?: string;
-  address?: string;
-  isCore?: boolean;
-  icon?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-};
+import type { EmergencyContactRecord } from "./emergencyContact";
+
+export type EmergencyContact = EmergencyContactRecord;
 
 
 export type GeoJsonLineString = {

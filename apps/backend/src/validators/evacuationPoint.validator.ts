@@ -1,111 +1,29 @@
 import type { Request, Response, NextFunction } from "express";
 
-// validasi input pembuatan titik evakuasi
-export function validateCreateEvacuationPoint(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  const { name, latitude, longitude, elevation, capacity, facilities, address, description } = req.body ?? {};
+function validateEvacuationFields(body: any, isUpdate: boolean = false): Record<string, string> {
+  const { name, latitude, longitude, elevation, capacity, facilities, address, description } = body ?? {};
   const errors: Record<string, string> = {};
 
-  // SEC-09: Strip `isCore` dari body — hanya bisa diubah oleh Administrator
-  // langsung di database / seeder, bukan via request body biasa.
-  if (req.body && "isCore" in req.body) {
-    delete req.body.isCore;
-  }
-
-  if (!name || typeof name !== "string" || name.trim().length < 3) {
-    errors.name = "Nama titik evakuasi wajib diisi minimal 3 karakter.";
-  } else if (name.trim().length > 150) {
-    errors.name = "Nama titik evakuasi maksimal 150 karakter.";
-  }
-
-  const lat = Number(latitude);
-  if (latitude === undefined || latitude === null || isNaN(lat) || lat < -90 || lat > 90) {
-    errors.latitude = "Latitude harus berupa angka valid antara -90 dan 90.";
-  }
-
-  const lng = Number(longitude);
-  if (longitude === undefined || longitude === null || isNaN(lng) || lng < -180 || lng > 180) {
-    errors.longitude = "Longitude harus berupa angka valid antara -180 dan 180.";
-  }
-
-  if (elevation !== undefined && elevation !== null && elevation !== "") {
-    const el = Number(elevation);
-    if (isNaN(el)) {
-      errors.elevation = "Elevasi harus berupa angka (mdpl).";
-    }
-  }
-
-  if (capacity !== undefined && capacity !== null && capacity !== "") {
-    const cap = Number(capacity);
-    if (isNaN(cap) || cap < 0) {
-      errors.capacity = "Kapasitas harus berupa angka positif.";
-    }
-  }
-
-  if (address !== undefined && address !== null && typeof address === "string" && address.length > 255) {
-    errors.address = "Alamat maksimal 255 karakter.";
-  }
-
-  if (description !== undefined && description !== null && typeof description === "string" && description.length > 1000) {
-    errors.description = "Deskripsi maksimal 1000 karakter.";
-  }
-
-  if (facilities !== undefined) {
-    if (!Array.isArray(facilities)) {
-      errors.facilities = "Fasilitas harus berupa array teks.";
-    } else if (facilities.length > 20) {
-      errors.facilities = "Fasilitas maksimal 20 item.";
-    } else if (facilities.some((f) => typeof f !== "string" || f.length > 100)) {
-      errors.facilities = "Setiap item fasilitas harus berupa teks maksimal 100 karakter.";
-    }
-  }
-
-  if (Object.keys(errors).length > 0) {
-    return res.status(422).json({
-      success: false,
-      message: "Validasi gagal.",
-      errors,
-    });
-  }
-
-  next();
-}
-
-// validasi input pembaruan titik evakuasi
-export function validateUpdateEvacuationPoint(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  const { name, latitude, longitude, elevation, capacity, facilities, address, description } = req.body ?? {};
-  const errors: Record<string, string> = {};
-
-  // SEC-09: Strip `isCore` dari body saat update — hanya bisa diubah Administrator.
-  if (req.body && "isCore" in req.body) {
-    delete req.body.isCore;
-  }
-
-  if (name !== undefined) {
-    if (typeof name !== "string" || name.trim().length < 3) {
-      errors.name = "Nama titik evakuasi minimal 3 karakter.";
+  if (!isUpdate || name !== undefined) {
+    if (!name || typeof name !== "string" || name.trim().length < 3) {
+      errors.name = isUpdate
+        ? "Nama titik evakuasi minimal 3 karakter."
+        : "Nama titik evakuasi wajib diisi minimal 3 karakter.";
     } else if (name.trim().length > 150) {
       errors.name = "Nama titik evakuasi maksimal 150 karakter.";
     }
   }
 
-  if (latitude !== undefined) {
+  if (!isUpdate || latitude !== undefined) {
     const lat = Number(latitude);
-    if (isNaN(lat) || lat < -90 || lat > 90) {
+    if (latitude === undefined || latitude === null || isNaN(lat) || lat < -90 || lat > 90) {
       errors.latitude = "Latitude harus berupa angka valid antara -90 dan 90.";
     }
   }
 
-  if (longitude !== undefined) {
+  if (!isUpdate || longitude !== undefined) {
     const lng = Number(longitude);
-    if (isNaN(lng) || lng < -180 || lng > 180) {
+    if (longitude === undefined || longitude === null || isNaN(lng) || lng < -180 || lng > 180) {
       errors.longitude = "Longitude harus berupa angka valid antara -180 dan 180.";
     }
   }
@@ -142,6 +60,23 @@ export function validateUpdateEvacuationPoint(
     }
   }
 
+  return errors;
+}
+
+// validasi input pembuatan titik evakuasi
+export function validateCreateEvacuationPoint(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  // SEC-09: Strip `isCore` dari body — hanya bisa diubah oleh Administrator
+  // langsung di database / seeder, bukan via request body biasa.
+  if (req.body && "isCore" in req.body) {
+    delete req.body.isCore;
+  }
+
+  const errors = validateEvacuationFields(req.body, false);
+
   if (Object.keys(errors).length > 0) {
     return res.status(422).json({
       success: false,
@@ -152,3 +87,28 @@ export function validateUpdateEvacuationPoint(
 
   next();
 }
+
+// validasi input pembaruan titik evakuasi
+export function validateUpdateEvacuationPoint(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  // SEC-09: Strip `isCore` dari body saat update — hanya bisa diubah Administrator.
+  if (req.body && "isCore" in req.body) {
+    delete req.body.isCore;
+  }
+
+  const errors = validateEvacuationFields(req.body, true);
+
+  if (Object.keys(errors).length > 0) {
+    return res.status(422).json({
+      success: false,
+      message: "Validasi gagal.",
+      errors,
+    });
+  }
+
+  next();
+}
+

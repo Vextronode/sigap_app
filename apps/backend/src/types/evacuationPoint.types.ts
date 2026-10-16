@@ -26,14 +26,4 @@ export interface CreateEvacuationPointDto {
   isCore?: boolean;
 }
 
-export interface UpdateEvacuationPointDto {
-  name?: string;
-  address?: string | null;
-  latitude?: number;
-  longitude?: number;
-  elevation?: number | null;
-  capacity?: number | null;
-  description?: string | null;
-  facilities?: string[];
-  isCore?: boolean;
-}
+export type UpdateEvacuationPointDto = Partial<CreateEvacuationPointDto>;

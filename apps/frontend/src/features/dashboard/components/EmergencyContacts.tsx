@@ -2,14 +2,11 @@ import React, { useState } from "react";
 import { Contact, Phone, PhoneCall, X } from "lucide-react";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import type { EmergencyContact } from "../../../types/dashboard";
-import type { EmergencyContactRecord } from "../../../types/emergencyContact";
 import { dummyContacts } from "../data/dummyData";
 import { resolveContactIcon } from "../../emergency-contacts/utils/emergencyIconPresets";
 
-type AnyEmergencyContact = EmergencyContact | EmergencyContactRecord;
-
 type EmergencyContactsProps = {
-  contacts: AnyEmergencyContact[];
+  contacts: EmergencyContact[];
   isLoading?: boolean;
   isError?: boolean;
 };
@@ -20,17 +17,13 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
   isError = false,
 }) => {
   const [selectedContact, setSelectedContact] =
-    useState<AnyEmergencyContact | null>(null);
+    useState<EmergencyContact | null>(null);
 
   const displayContacts =
     isError || contacts.length === 0 ? dummyContacts : contacts;
 
   // Ekstrak info kontak yang sedang dipilih untuk modal konfirmasi
-  const selectedPhone =
-    selectedContact &&
-    (("phoneNumber" in selectedContact && selectedContact.phoneNumber) ||
-      ("phone" in selectedContact && selectedContact.phone) ||
-      "");
+  const selectedPhone = selectedContact?.phoneNumber || "";
 
   const selectedPreset = selectedContact
     ? resolveContactIcon(
@@ -76,10 +69,7 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mt-4">
           {displayContacts.map((contact, index) => {
-            const phone =
-              ("phoneNumber" in contact && contact.phoneNumber) ||
-              ("phone" in contact && contact.phone) ||
-              "";
+            const phone = contact.phoneNumber || "";
             const idStr = contact.id ? String(contact.id) : `contact-${index}`;
             const contactKey = `${contact.institution}-${phone}-${idStr}`;
 
