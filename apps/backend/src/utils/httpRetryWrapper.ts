@@ -34,10 +34,10 @@ export class HttpRequestError extends Error {
 }
 
 const DEFAULT_OPTIONS: Required<Omit<RetryOptions, "onRetry">> = {
-  retries: 3,
-  retryDelayMs: 500,
+  retries: Number(process.env.HTTP_RETRY_COUNT ?? 2),
+  retryDelayMs: Number(process.env.HTTP_RETRY_DELAY_MS ?? 500),
   backoffFactor: 2,
-  timeoutMs: 8000,
+  timeoutMs: Number(process.env.HTTP_TIMEOUT_MS ?? 8000),
 };
 
 function sleep(ms: number): Promise<void> {

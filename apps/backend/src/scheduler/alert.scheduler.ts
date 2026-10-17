@@ -23,8 +23,31 @@ export async function runAlertCheck(): Promise<{
     // Gempa yang relevan untuk Desa Cibenda (sudah difilter radius +
     // umur maksimum oleh EarthquakeService), BUKAN gempa nasional
     // terbaru — lihat catatan di decisionEngine.service.ts.
-    const earthquake = await EarthquakeService.getPangandaran();
-    const tsunami = await BmkgService.getTsunamiStatus();
+    let earthquake = null;
+    let tsunami = null;
+
+    try {
+        earthquake = await EarthquakeService.getPangandaran();
+    } catch (eqError) {
+        console.warn(
+            "[AlertScheduler] Gagal mengambil data gempa Pangandaran terkini:",
+            eqError instanceof Error ? eqError.message : eqError
+        );
+    }
+
+    try {
+        tsunami = await BmkgService.getTsunamiStatus();
+    } catch (tsunamiError) {
+        console.warn(
+            "[AlertScheduler] Gagal mengambil status tsunami BMKG:",
+            tsunamiError instanceof Error ? tsunamiError.message : tsunamiError
+        );
+        tsunami = {
+            status: "NORMAL" as const,
+            source: "BMKG (Degraded Fallback)",
+            description: "Tidak terdapat indikasi ancaman tsunami aktif yang terkonfirmasi.",
+        };
+    }
 
     // Jalankan Decision Engine
     const result = DecisionEngineService.evaluate({ earthquake, tsunami });

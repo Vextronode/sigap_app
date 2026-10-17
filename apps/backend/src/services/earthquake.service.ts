@@ -68,9 +68,36 @@ const DESA_CIBENDA_COORDINATES = getVillageCoordinates();
 
 export class EarthquakeService {
   static async getIndonesia(): Promise<EarthquakeInfo> {
-    const raw =
-      await this.fetchCached<BmkgAutogempaResponse>(BMKG_AUTOGEMPA_URL);
-    return this.parse(raw.Infogempa.gempa);
+    try {
+      const raw =
+        await this.fetchCached<BmkgAutogempaResponse>(BMKG_AUTOGEMPA_URL);
+      return this.parse(raw.Infogempa.gempa);
+    } catch (error) {
+      console.warn(
+        "[EarthquakeService] Gagal fetch autogempa BMKG, mencoba fallback DB history:",
+        error instanceof Error ? error.message : error
+      );
+      const latestDbRecord = await prisma.earthquakeRecord.findFirst({
+        orderBy: { eventTime: "desc" },
+      });
+      if (latestDbRecord) {
+        return {
+          magnitude: latestDbRecord.magnitude,
+          depth: latestDbRecord.depth,
+          location: latestDbRecord.location,
+          coordinates: {
+            latitude: latestDbRecord.latitude,
+            longitude: latestDbRecord.longitude,
+          },
+          distanceToVillage: latestDbRecord.distanceToVillage,
+          felt: latestDbRecord.felt ?? "",
+          potential: latestDbRecord.potential ?? "",
+          shakemap: latestDbRecord.shakemap ?? "",
+          updatedAt: latestDbRecord.eventTime,
+        };
+      }
+      throw error;
+    }
   }
 
   /**
@@ -386,7 +413,7 @@ export class EarthquakeService {
     const data = await requestWithRetry<T>(
       url,
       {},
-      { retries: 3, retryDelayMs: 1000, backoffFactor: 2, timeoutMs: 8000 },
+      { retries: 1, retryDelayMs: 500, backoffFactor: 2, timeoutMs: 6000 },
     );
 
     earthquakeCache.set(url, {
@@ -411,16 +438,24 @@ export class EarthquakeService {
   ): Promise<EarthquakeInfo> {
     if (earthquake.shakemap) return earthquake;
 
-    const rawLatest = await this.fetchCached<BmkgAutogempaResponse>(
-      BMKG_AUTOGEMPA_URL,
-    );
-    const latest = this.parse(rawLatest.Infogempa.gempa);
+    try {
+      const rawLatest = await this.fetchCached<BmkgAutogempaResponse>(
+        BMKG_AUTOGEMPA_URL,
+      );
+      const latest = this.parse(rawLatest.Infogempa.gempa);
 
-    const isSameEvent = latest.updatedAt === earthquake.updatedAt;
+      const isSameEvent = latest.updatedAt === earthquake.updatedAt;
 
-    return isSameEvent
-      ? { ...earthquake, shakemap: latest.shakemap }
-      : earthquake;
+      return isSameEvent
+        ? { ...earthquake, shakemap: latest.shakemap }
+        : earthquake;
+    } catch (error) {
+      console.warn(
+        "[EarthquakeService] Gagal fetch shakemap untuk event gempa:",
+        error instanceof Error ? error.message : error
+      );
+      return earthquake;
+    }
   }
 
   private static parse(raw: BmkgEarthquakeItem): EarthquakeInfo {

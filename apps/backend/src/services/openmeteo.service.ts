@@ -145,22 +145,30 @@ export class OpenMeteoService {
           forecast_days: 5,
         },
       },
-      { retries: 3, retryDelayMs: 1000, backoffFactor: 2, timeoutMs: 8000 }
+      { retries: 1, retryDelayMs: 500, backoffFactor: 2, timeoutMs: 6000 }
     );
   }
 
   /**
-   * Fetch ringan — current_weather + hourly visibility 1 hari.
-   * Dipakai oleh getCurrentCondition() agar menyediakan kondisi cuaca
-   * serta jarak pandang fallback jika BMKG tidak menyediakan vs_text.
+   * Fetch ringan — current_weather + hourly visibility & kelembapan 1 hari.
+   * Dipakai oleh getCurrentCondition() agar menyediakan kondisi cuaca,
+   * metrik komprehensif, serta jarak pandang fallback jika BMKG tidak tersedia.
    */
   private static fetchCurrentOnly(): Promise<{
     current_weather: OpenMeteoResponse["current_weather"];
-    hourly?: { time: string[]; visibility: number[] };
+    hourly?: {
+      time: string[];
+      visibility?: number[];
+      relativehumidity_2m?: number[];
+    };
   }> {
     return requestWithRetry<{
       current_weather: OpenMeteoResponse["current_weather"];
-      hourly?: { time: string[]; visibility: number[] };
+      hourly?: {
+        time: string[];
+        visibility?: number[];
+        relativehumidity_2m?: number[];
+      };
     }>(
       BASE_URL,
       {
@@ -168,12 +176,12 @@ export class OpenMeteoService {
           latitude: LAT,
           longitude: LON,
           current_weather: true,
-          hourly: "visibility",
+          hourly: "visibility,relativehumidity_2m",
           forecast_days: 1,
           timezone: "Asia/Jakarta",
         },
       },
-      { retries: 3, retryDelayMs: 1000, backoffFactor: 2, timeoutMs: 8000 }
+      { retries: 1, retryDelayMs: 500, backoffFactor: 2, timeoutMs: 6000 }
     );
   }
 
@@ -182,11 +190,15 @@ export class OpenMeteoService {
    *
    * Digunakan oleh /weather/current dalam mode hybrid:
    *   - Kondisi (cerah/hujan/gerimis dll) dari Open-Meteo — update tiap jam
-   *   - Suhu, kelembapan, angin dari BMKG
+   *   - Suhu, kelembapan, angin dari BMKG (atau fallback Open-Meteo jika BMKG down)
    *   - Jarak pandang: fallback Open-Meteo jika BMKG mengembalikan null
    */
   static async getCurrentCondition(): Promise<{
     weather: string;
+    temperature: number;
+    humidity: number;
+    windSpeed: number;
+    windDirection: string;
     visibility: string;
     updatedAt: string;
   }> {
@@ -194,20 +206,35 @@ export class OpenMeteoService {
     const cw = raw.current_weather;
 
     let visibility = "";
-    if (raw.hourly?.time && raw.hourly?.visibility) {
+    let humidity = 80;
+    if (raw.hourly?.time) {
       const idx = raw.hourly.time.indexOf(cw.time);
-      const vsMeters = idx >= 0 ? raw.hourly.visibility[idx] : raw.hourly.visibility[0];
-      if (typeof vsMeters === "number" && Number.isFinite(vsMeters)) {
+      const chosenIdx = idx >= 0 ? idx : 0;
+      if (
+        raw.hourly.visibility &&
+        typeof raw.hourly.visibility[chosenIdx] === "number"
+      ) {
+        const vsMeters = raw.hourly.visibility[chosenIdx];
         visibility =
           vsMeters >= 10000
             ? "> 10 km"
             : `${Math.max(1, Math.round(vsMeters / 1000))} km`;
       }
+      if (
+        raw.hourly.relativehumidity_2m &&
+        typeof raw.hourly.relativehumidity_2m[chosenIdx] === "number"
+      ) {
+        humidity = Math.round(raw.hourly.relativehumidity_2m[chosenIdx]);
+      }
     }
 
     return {
       weather: wmoToCondition(cw.weathercode),
-      visibility,
+      temperature: Math.round(cw.temperature),
+      humidity,
+      windSpeed: Math.round(cw.windspeed),
+      windDirection: degreesToCompass(cw.winddirection),
+      visibility: visibility || "> 10 km",
       updatedAt: new Date(
         cw.time.includes("+") || cw.time.includes("Z")
           ? cw.time
