@@ -47,6 +47,19 @@ type CacheEntry<T> = {
 
 const earthquakeCache = new Map<string, CacheEntry<unknown>>();
 
+// In-Memory cache khusus fallback database PostgreSQL Neon untuk mencegah
+// kuota compute terkuras habis pada kondisi feed tenang (tanpa gempa baru).
+const DB_FALLBACK_CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit
+let cachedWestJavaDbRecord: { data: EarthquakeInfo | null; expiresAt: number } | null = null;
+let cachedPangandaranRecentDbRecord: { data: EarthquakeInfo | null; expiresAt: number } | null = null;
+let cachedPangandaranHistoryDbRecord: { data: EarthquakeInfo | null; expiresAt: number } | null = null;
+
+export function invalidateEarthquakeDbCache() {
+  cachedWestJavaDbRecord = null;
+  cachedPangandaranRecentDbRecord = null;
+  cachedPangandaranHistoryDbRecord = null;
+}
+
 const getVillageCoordinates = () => {
   const latitude = Number.parseFloat(process.env.VILLAGE_LAT ?? "");
   const longitude = Number.parseFloat(process.env.VILLAGE_LON ?? "");
@@ -194,34 +207,48 @@ export class EarthquakeService {
       ? await this.persistAndRetrievePangandaranShakemap(liveNearest)
       : null;
 
-    // 3. Ambil record gempa Jawa Barat terakhir dari database history
-    const latestDbRecord = await prisma.earthquakeRecord.findFirst({
-      where: {
-        OR: [
-          { location: { contains: "Jawa Barat", mode: "insensitive" } },
-          { location: { contains: "Jabar", mode: "insensitive" } },
-          { distanceToVillage: { lte: WEST_JAVA_RADIUS_KM } },
-        ],
-      },
-      orderBy: { eventTime: "desc" },
-    });
+    // 3. Ambil record gempa Jawa Barat terakhir dari database history (dengan cache 10 menit)
+    const now = Date.now();
+    let dbInfo: EarthquakeInfo | null = null;
 
-    if (latestDbRecord) {
-      const dbInfo: EarthquakeInfo = {
-        magnitude: latestDbRecord.magnitude,
-        depth: latestDbRecord.depth,
-        location: latestDbRecord.location,
-        coordinates: {
-          latitude: latestDbRecord.latitude,
-          longitude: latestDbRecord.longitude,
+    if (cachedWestJavaDbRecord && cachedWestJavaDbRecord.expiresAt > now) {
+      dbInfo = cachedWestJavaDbRecord.data;
+    } else {
+      const latestDbRecord = await prisma.earthquakeRecord.findFirst({
+        where: {
+          OR: [
+            { location: { contains: "Jawa Barat", mode: "insensitive" } },
+            { location: { contains: "Jabar", mode: "insensitive" } },
+            { distanceToVillage: { lte: WEST_JAVA_RADIUS_KM } },
+          ],
         },
-        distanceToVillage: latestDbRecord.distanceToVillage,
-        felt: latestDbRecord.felt ?? "",
-        potential: latestDbRecord.potential ?? "",
-        shakemap: latestDbRecord.shakemap ?? "",
-        updatedAt: latestDbRecord.eventTime,
-      };
+        orderBy: { eventTime: "desc" },
+      });
 
+      if (latestDbRecord) {
+        dbInfo = {
+          magnitude: latestDbRecord.magnitude,
+          depth: latestDbRecord.depth,
+          location: latestDbRecord.location,
+          coordinates: {
+            latitude: latestDbRecord.latitude,
+            longitude: latestDbRecord.longitude,
+          },
+          distanceToVillage: latestDbRecord.distanceToVillage,
+          felt: latestDbRecord.felt ?? "",
+          potential: latestDbRecord.potential ?? "",
+          shakemap: latestDbRecord.shakemap ?? "",
+          updatedAt: latestDbRecord.eventTime,
+        };
+      }
+
+      cachedWestJavaDbRecord = {
+        data: dbInfo,
+        expiresAt: now + DB_FALLBACK_CACHE_TTL_MS,
+      };
+    }
+
+    if (dbInfo) {
       if (savedLive) {
         const liveTime = new Date(savedLive.updatedAt).getTime();
         const dbTime = new Date(dbInfo.updatedAt).getTime();
@@ -275,9 +302,60 @@ export class EarthquakeService {
         return savedLive;
       }
 
-      // Cek apakah ada record di database yang masih dalam batas umur 7 hari
-      const cutoffMs = Date.now() - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
-      const recentDbRecord = await prisma.earthquakeRecord.findFirst({
+      // Cek apakah ada record di database yang masih dalam batas umur 7 hari (dengan cache 10 menit)
+      const now = Date.now();
+      let recentDbInfo: EarthquakeInfo | null = null;
+
+      if (cachedPangandaranRecentDbRecord && cachedPangandaranRecentDbRecord.expiresAt > now) {
+        recentDbInfo = cachedPangandaranRecentDbRecord.data;
+      } else {
+        const cutoffMs = now - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+        const recentDbRecord = await prisma.earthquakeRecord.findFirst({
+          where: {
+            OR: [
+              { location: { contains: "Pangandaran", mode: "insensitive" } },
+              { felt: { contains: "Pangandaran", mode: "insensitive" } },
+              { distanceToVillage: { lte: 100 } },
+            ],
+          },
+          orderBy: { eventTime: "desc" },
+        });
+
+        if (recentDbRecord && new Date(recentDbRecord.eventTime).getTime() >= cutoffMs) {
+          recentDbInfo = {
+            magnitude: recentDbRecord.magnitude,
+            depth: recentDbRecord.depth,
+            location: recentDbRecord.location,
+            coordinates: {
+              latitude: recentDbRecord.latitude,
+              longitude: recentDbRecord.longitude,
+            },
+            distanceToVillage: recentDbRecord.distanceToVillage,
+            felt: recentDbRecord.felt ?? "",
+            potential: recentDbRecord.potential ?? "",
+            shakemap: recentDbRecord.shakemap ?? "",
+            updatedAt: recentDbRecord.eventTime,
+          };
+        }
+
+        cachedPangandaranRecentDbRecord = {
+          data: recentDbInfo,
+          expiresAt: now + DB_FALLBACK_CACHE_TTL_MS,
+        };
+      }
+
+      return recentDbInfo;
+    }
+
+    // Jika mode riwayat (ignoreAgeLimit = true):
+    // Ambil gempa terakhir secara kronologis (eventTime terbaru) dari database (dengan cache 10 menit)
+    const now = Date.now();
+    let historyDbInfo: EarthquakeInfo | null = null;
+
+    if (cachedPangandaranHistoryDbRecord && cachedPangandaranHistoryDbRecord.expiresAt > now) {
+      historyDbInfo = cachedPangandaranHistoryDbRecord.data;
+    } else {
+      const latestDbRecord = await prisma.earthquakeRecord.findFirst({
         where: {
           OR: [
             { location: { contains: "Pangandaran", mode: "insensitive" } },
@@ -288,62 +366,37 @@ export class EarthquakeService {
         orderBy: { eventTime: "desc" },
       });
 
-      if (recentDbRecord && new Date(recentDbRecord.eventTime).getTime() >= cutoffMs) {
-        return {
-          magnitude: recentDbRecord.magnitude,
-          depth: recentDbRecord.depth,
-          location: recentDbRecord.location,
+      if (latestDbRecord) {
+        historyDbInfo = {
+          magnitude: latestDbRecord.magnitude,
+          depth: latestDbRecord.depth,
+          location: latestDbRecord.location,
           coordinates: {
-            latitude: recentDbRecord.latitude,
-            longitude: recentDbRecord.longitude,
+            latitude: latestDbRecord.latitude,
+            longitude: latestDbRecord.longitude,
           },
-          distanceToVillage: recentDbRecord.distanceToVillage,
-          felt: recentDbRecord.felt ?? "",
-          potential: recentDbRecord.potential ?? "",
-          shakemap: recentDbRecord.shakemap ?? "",
-          updatedAt: recentDbRecord.eventTime,
+          distanceToVillage: latestDbRecord.distanceToVillage,
+          felt: latestDbRecord.felt ?? "",
+          potential: latestDbRecord.potential ?? "",
+          shakemap: latestDbRecord.shakemap ?? "",
+          updatedAt: latestDbRecord.eventTime,
         };
       }
 
-      return null;
+      cachedPangandaranHistoryDbRecord = {
+        data: historyDbInfo,
+        expiresAt: now + DB_FALLBACK_CACHE_TTL_MS,
+      };
     }
 
-    // Jika mode riwayat (ignoreAgeLimit = true):
-    // Ambil gempa terakhir secara kronologis (eventTime terbaru) dari database
-    const latestDbRecord = await prisma.earthquakeRecord.findFirst({
-      where: {
-        OR: [
-          { location: { contains: "Pangandaran", mode: "insensitive" } },
-          { felt: { contains: "Pangandaran", mode: "insensitive" } },
-          { distanceToVillage: { lte: 100 } },
-        ],
-      },
-      orderBy: { eventTime: "desc" },
-    });
-
-    if (latestDbRecord) {
-      const dbInfo: EarthquakeInfo = {
-        magnitude: latestDbRecord.magnitude,
-        depth: latestDbRecord.depth,
-        location: latestDbRecord.location,
-        coordinates: {
-          latitude: latestDbRecord.latitude,
-          longitude: latestDbRecord.longitude,
-        },
-        distanceToVillage: latestDbRecord.distanceToVillage,
-        felt: latestDbRecord.felt ?? "",
-        potential: latestDbRecord.potential ?? "",
-        shakemap: latestDbRecord.shakemap ?? "",
-        updatedAt: latestDbRecord.eventTime,
-      };
-
+    if (historyDbInfo) {
       if (savedLive) {
         const liveTime = new Date(savedLive.updatedAt).getTime();
-        const dbTime = new Date(dbInfo.updatedAt).getTime();
-        return liveTime >= dbTime ? savedLive : dbInfo;
+        const dbTime = new Date(historyDbInfo.updatedAt).getTime();
+        return liveTime >= dbTime ? savedLive : historyDbInfo;
       }
 
-      return dbInfo;
+      return historyDbInfo;
     }
 
     return savedLive;
@@ -392,6 +445,9 @@ export class EarthquakeService {
           shakemap: finalShakemap,
         },
       });
+
+      // Reset cache database in-memory agar record gempa baru langsung terbaca seketika
+      invalidateEarthquakeDbCache();
 
       return {
         ...earthquake,

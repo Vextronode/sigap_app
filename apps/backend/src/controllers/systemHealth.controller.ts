@@ -27,7 +27,7 @@ interface HealthCacheEntry {
 }
 
 let healthCache: HealthCacheEntry | null = null;
-const HEALTH_CACHE_TTL_MS = 30 * 1000; // 30 detik
+const HEALTH_CACHE_TTL_MS = 120 * 1000; // 120 detik (2 menit) in-memory cache untuk melindungi Neon DB compute
 
 export class SystemHealthController {
   static async getHealth(_req: Request, res: Response) {

@@ -15,6 +15,9 @@ const isLocalDatabase = /localhost|127\.0\.0\.1/.test(databaseUrl);
 const pool = new Pool({
   connectionString: databaseUrl,
   ssl: isLocalDatabase ? false : { rejectUnauthorized: false },
+  max: 5,
+  idleTimeoutMillis: 10_000, // Tutup koneksi idle setelah 10 detik agar Neon bisa auto-suspend
+  connectionTimeoutMillis: 5_000,
 });
 
 const adapter = new PrismaPg(pool);

@@ -15,7 +15,7 @@ import type {
 } from "../types/alert.types.js";
 
 const ALERT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 jam (1 hari)
-const ALERT_CACHE_TTL_MS = 30_000; // 30 detik TTL in-memory cache
+const ALERT_CACHE_TTL_MS = 60_000; // 60 detik TTL in-memory cache (menghemat compute DB)
 
 let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
 
