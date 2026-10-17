@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { NotFoundError, ValidationError } from "../errors/AppError.js";
 import { AlertLevel, AlertReviewStatus } from "../../generated/prisma/enums.js";
 import {
   AlertRepository,
@@ -242,9 +243,7 @@ export class AlertService {
   static async getAlertById(id: string): Promise<AlertRecord> {
     const alert = await AlertRepository.findById(id);
     if (!alert) {
-      const error = new Error("Alert tidak ditemukan.");
-      (error as Error & { statusCode?: number }).statusCode = 404;
-      throw error;
+      throw new NotFoundError("Alert tidak ditemukan.");
     }
     return alert;
   }
@@ -262,11 +261,9 @@ export class AlertService {
 
     const reviewStatusEnum = LABEL_TO_REVIEW_STATUS[payload.reviewStatus];
     if (!reviewStatusEnum) {
-      const error = new Error(
+      throw new ValidationError(
         `Status review '${payload.reviewStatus}' tidak valid.`
       );
-      (error as Error & { statusCode?: number }).statusCode = 422;
-      throw error;
     }
 
     cachedAlertState = null;

@@ -120,7 +120,11 @@ app.use(
   ) => {
     console.error("[ServerError]", err);
 
-    const errorObj = err as Error & { statusCode?: number; status?: number };
+    const errorObj = err as Error & {
+      statusCode?: number;
+      status?: number;
+      errors?: string[];
+    };
     const statusCode = errorObj.statusCode || errorObj.status || 500;
 
     // Khusus penolakan CORS
@@ -146,10 +150,15 @@ app.use(
       ? (errorObj.message || "Terjadi kesalahan pada server.")
       : "Terjadi kesalahan pada server.";
 
+    const errors =
+      errorObj.errors && errorObj.errors.length > 0
+        ? errorObj.errors
+        : [message];
+
     res.status(statusCode).json({
       success: false,
       message,
-      errors: [message],
+      errors,
     });
   }
 );

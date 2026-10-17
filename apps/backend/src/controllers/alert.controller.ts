@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import { AlertLevel } from "../../generated/prisma/enums.js";
 
 import { AlertService } from "../services/alert.service.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { UnauthorizedError } from "../errors/AppError.js";
 import type {
   ApiErrorResponse,
   ApiSuccessResponse,
@@ -11,10 +13,6 @@ import type {
   AlertListPagination,
   AlertRecord,
 } from "../types/alert.types.js";
-
-interface CustomHttpError extends Error {
-  statusCode?: number;
-}
 
 export class AlertController {
   // ambil alert terkini (public)
@@ -117,65 +115,41 @@ export class AlertController {
   }
 
   // ambil detail satu entri alert berdasarkan ID (FS-02 AC2)
-  static async getById(req: Request, res: Response) {
-    try {
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const data = await AlertService.getAlertById(id);
+  static getById = asyncHandler(async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const data = await AlertService.getAlertById(id);
 
-      return res.status(200).json({
-        success: true,
-        message: "Detail alert berhasil diambil.",
-        data,
-      });
-    } catch (error) {
-      const customError = error as CustomHttpError;
-      const statusCode = customError.statusCode ?? 500;
-      return res.status(statusCode).json({
-        success: false,
-        message: customError.message || "Gagal mengambil detail alert.",
-        errors: [customError.message || String(error)],
-      });
-    }
-  }
+    return res.status(200).json({
+      success: true,
+      message: "Detail alert berhasil diambil.",
+      data,
+    });
+  });
 
   // perbarui status review klasifikasi alert (FS-02 FR3)
-  static async review(req: Request, res: Response) {
-    try {
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const reviewerId = req.user?.sub;
+  static review = asyncHandler(async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const reviewerId = req.user?.sub;
 
-      if (!reviewerId) {
-        return res.status(401).json({
-          success: false,
-          message: "Autentikasi diperlukan.",
-          errors: ["Identitas reviewer tidak ditemukan dalam sesi."],
-        });
-      }
-
-      const updated = await AlertService.reviewAlert(
-        id,
-        {
-          reviewStatus: req.body.reviewStatus,
-        },
-        reviewerId
+    if (!reviewerId) {
+      throw new UnauthorizedError(
+        "Identitas reviewer tidak ditemukan dalam sesi."
       );
-
-      return res.status(200).json({
-        success: true,
-        message: "Status review alert berhasil diperbarui.",
-        data: updated,
-      });
-    } catch (error) {
-      console.error("[PATCH /alerts/:id/review] error:", error);
-      const customError = error as CustomHttpError;
-      const statusCode = customError.statusCode ?? 500;
-      return res.status(statusCode).json({
-        success: false,
-        message:
-          customError.message || "Gagal memperbarui status review alert.",
-        errors: [customError.message || String(error)],
-      });
     }
-  }
+
+    const updated = await AlertService.reviewAlert(
+      id,
+      {
+        reviewStatus: req.body.reviewStatus,
+      },
+      reviewerId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Status review alert berhasil diperbarui.",
+      data: updated,
+    });
+  });
 }
 

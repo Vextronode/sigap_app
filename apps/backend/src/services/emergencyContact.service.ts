@@ -1,4 +1,5 @@
 import * as emergencyContactRepo from "../repositories/emergencyContact.repository.js";
+import { NotFoundError, BadRequestError } from "../errors/AppError.js";
 import type {
   CreateEmergencyContactDto,
   UpdateEmergencyContactDto,
@@ -14,9 +15,7 @@ export class EmergencyContactService {
   static async getById(id: string) {
     const contact = await emergencyContactRepo.findById(id);
     if (!contact) {
-      const error = new Error("Kontak darurat tidak ditemukan.");
-      (error as Error & { statusCode?: number }).statusCode = 404;
-      throw error;
+      throw new NotFoundError("Kontak darurat tidak ditemukan.");
     }
     return contact;
   }
@@ -55,9 +54,7 @@ export class EmergencyContactService {
 
     // tolak penghapusan jika kontak berstatus kontak inti
     if (contact.isCore) {
-      const error = new Error("Kontak darurat inti tidak dapat dihapus.");
-      (error as Error & { statusCode?: number }).statusCode = 400;
-      throw error;
+      throw new BadRequestError("Kontak darurat inti tidak dapat dihapus.");
     }
 
     return emergencyContactRepo.deleteById(id);
