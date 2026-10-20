@@ -60,14 +60,18 @@ export function invalidateEarthquakeDbCache() {
   cachedPangandaranHistoryDbRecord = null;
 }
 
+const DEFAULT_VILLAGE_LAT = -7.6838;
+const DEFAULT_VILLAGE_LON = 108.5610;
+
 const getVillageCoordinates = () => {
-  const latitude = Number.parseFloat(process.env.VILLAGE_LAT ?? "");
-  const longitude = Number.parseFloat(process.env.VILLAGE_LON ?? "");
+  const latStr = process.env.VILLAGE_LAT;
+  const lonStr = process.env.VILLAGE_LON;
+
+  const latitude = latStr ? Number.parseFloat(latStr) : DEFAULT_VILLAGE_LAT;
+  const longitude = lonStr ? Number.parseFloat(lonStr) : DEFAULT_VILLAGE_LON;
 
   if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-    throw new Error(
-      "VILLAGE_LAT and VILLAGE_LON must be defined in environment variables.",
-    );
+    return { latitude: DEFAULT_VILLAGE_LAT, longitude: DEFAULT_VILLAGE_LON };
   }
 
   return { latitude, longitude };
