@@ -228,13 +228,12 @@ export const WeatherSection = ({
                     href="https://www.bmkg.go.id/cuaca/prakiraan-cuaca/32.18.01.2008"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[color:var(--primary)] hover:underline transition-colors max-w-full"
+                    className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold text-[color:var(--primary)] hover:underline transition-colors max-w-full"
                     style={{ color: "var(--primary)" }}
                     title="Lihat Prakiraan Cuaca Desa Cibenda di Situs Resmi BMKG"
                   >
-                    <span className="leading-snug break-words" style={{ color: "var(--primary)" }}>
-                      <span className="inline sm:hidden">Sumber: BMKG Desa Cibenda</span>
-                      <span className="hidden sm:inline">Sumber: BMKG (Prakiraan Cuaca Desa Cibenda)</span>
+                    <span className="break-words leading-normal" style={{ color: "var(--primary)" }}>
+                      Sumber: BMKG (Prakiraan Cuaca Desa Cibenda)
                     </span>
                     <ExternalLink size={12} className="shrink-0" style={{ color: "var(--primary)" }} aria-hidden="true" />
                   </a>
