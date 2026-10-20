@@ -45,9 +45,22 @@ export type TsunamiStatus = {
 };
 
 export type CurrentAlert = {
+  id?: string;
   level: AlertLevel;
   source: string;
   description: string | null;
+  location?: string | null;
+  shakemap?: string | null;
+  reviewStatus?: string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  reviewer?: {
+    id: string;
+    name: string;
+    email: string;
+    roles?: string[];
+  } | null;
+  createdAt?: string;
   updatedAt: string;
 };
 

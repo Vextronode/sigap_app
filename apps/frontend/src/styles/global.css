@@ -26,8 +26,12 @@ select {
   font-family: inherit;
 }
 
-a {
+a:not([class*="text-"]) {
   color: inherit;
+  text-decoration: none;
+}
+
+a {
   text-decoration: none;
 }
 

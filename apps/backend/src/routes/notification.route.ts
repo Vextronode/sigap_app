@@ -227,3 +227,28 @@ protectedNotificationRouter.get("/logs", authMiddleware, async (req: Request, re
     res.status(500).json(response);
   }
 });
+
+/**
+ * GET /api/v1/protected/notifications/subscribers/count
+ * Mengambil total subscriber warga penerima Web Push aktif — admin & operator.
+ */
+protectedNotificationRouter.get("/subscribers/count", authMiddleware, async (_req: Request, res: Response) => {
+  try {
+    const total = await NotificationService.getSubscriberCount();
+    const response: ApiSuccessResponse<{ total: number }> = {
+      success: true,
+      message: "Berhasil mengambil statistik subscriber web push.",
+      data: { total },
+    };
+    res.json(response);
+  } catch (error) {
+    console.error("[GET /protected/notifications/subscribers/count] error:", error);
+    const response: ApiErrorResponse = {
+      success: false,
+      message: "Gagal mengambil data subscriber.",
+      errors: ["Terjadi kesalahan pada server."],
+    };
+    res.status(500).json(response);
+  }
+});
+
