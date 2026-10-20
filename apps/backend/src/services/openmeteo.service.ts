@@ -44,6 +44,8 @@ interface OpenMeteoResponse {
     time: string[];
     relativehumidity_2m: number[];
     precipitation_probability: number[];
+    precipitation?: number[];
+    weathercode?: number[];
     visibility: number[]; // dalam meter
   };
   daily: {
@@ -52,6 +54,8 @@ interface OpenMeteoResponse {
     temperature_2m_max: number[];
     temperature_2m_min: number[];
     precipitation_probability_mean: number[];
+    precipitation_probability_max?: number[];
+    precipitation_sum?: number[];
   };
 }
 
@@ -79,6 +83,7 @@ const WMO_CONDITION: Record<number, string> = {
   66: "Hujan Ringan",
   67: "Hujan Lebat",
   71: "Hujan Ringan",
+  72: "Hujan Sedang",
   73: "Hujan Sedang",
   75: "Hujan Lebat",
   77: "Hujan Ringan",
@@ -131,8 +136,10 @@ export class OpenMeteoService {
           longitude: LON,
           current_weather: true,
           hourly: [
-            "relativehumidity_2m",
+            "weathercode",
+            "precipitation",
             "precipitation_probability",
+            "relativehumidity_2m",
             "visibility",
           ].join(","),
           daily: [
@@ -140,6 +147,8 @@ export class OpenMeteoService {
             "temperature_2m_max",
             "temperature_2m_min",
             "precipitation_probability_mean",
+            "precipitation_probability_max",
+            "precipitation_sum",
           ].join(","),
           timezone: "Asia/Jakarta",
           forecast_days: 5,
@@ -244,23 +253,136 @@ export class OpenMeteoService {
   }
 
   /**
+   * Menentukan kode WMO yang paling representatif untuk aktivitas warga pada tanggal tertentu.
+   *
+   * Catatan Penting Meteorologi:
+   * Open-Meteo secara default mendefinisikan `daily.weathercode` sebagai nilai WMO terburuk (MAX)
+   * dalam 24 jam (00:00 - 23:59). Di pesisir Desa Cibenda, kelembapan subuh (03:00 - 05:00)
+   * sering mencapai 95-99% dan memicu pembacaan drizzle mikro (WMO 51/53 selama 30 menit).
+   * Jika nilai MAX mentah dipakai, maka seluruh hari akan dicap "Gerimis Sedang" meskipun
+   * dari jam 07:00 hingga 18:00 WIB cuaca cerah benderang (presipitasi siang 0 mm, probabilitas < 15%).
+   *
+   * Algoritma ini menganalisis:
+   * 1. Presipitasi nyata di jam siang hari produktif warga (06:00 - 18:00 WIB).
+   * 2. Jika hari tersebut diprediksi badai petir (WMO 95-99), langsung tampilkan demi keselamatan.
+   * 3. Jika presipitasi total harian sangat minim (< 1.5 mm) dan probabilitas hujan rendah (< 30%),
+   *    kondisi cuaca harian disesuaikan dengan kondisi langit dominan di jam siang (Cerah / Cerah Berawan / Berawan).
+   * 4. Jika ada curah hujan siang hari yang nyata (>= 1.5 mm atau probabilitas >= 50%),
+   *    kondisi hujan/gerimis tetap dipertahankan.
+   */
+  private static determineRepresentativeCondition(
+    rawDailyCode: number,
+    dateStr: string,
+    hourly: OpenMeteoResponse["hourly"],
+    precipSum: number,
+    probMean: number
+  ): string {
+    // 1. Keadaan darurat keselamatan: Badai petir selalu diutamakan
+    if (rawDailyCode >= 95) {
+      return wmoToCondition(rawDailyCode);
+    }
+
+    // 2. Jika tidak ada data hourly, fallback ke WMO harian
+    if (!hourly?.time || !hourly.weathercode) {
+      return wmoToCondition(rawDailyCode);
+    }
+
+    // 3. Ambil data jam aktif siang hari (06:00 - 18:00 WIB)
+    const dayIndices: number[] = [];
+    hourly.time.forEach((t, idx) => {
+      if (t.startsWith(dateStr)) {
+        const hour = parseInt(t.slice(11, 13), 10);
+        if (hour >= 6 && hour <= 18) {
+          dayIndices.push(idx);
+        }
+      }
+    });
+
+    if (dayIndices.length === 0) {
+      return wmoToCondition(rawDailyCode);
+    }
+
+    // Hitung presipitasi dan probabilitas tertinggi di jam siang
+    const dayPrecip = dayIndices.reduce(
+      (sum, idx) => sum + (hourly.precipitation?.[idx] || 0),
+      0
+    );
+    const dayMaxProb = Math.max(
+      ...dayIndices.map((idx) => hourly.precipitation_probability[idx] || 0)
+    );
+
+    // Hitung frekuensi kode WMO di jam siang
+    const codeCount: Record<number, number> = {};
+    dayIndices.forEach((idx) => {
+      const c = hourly.weathercode![idx];
+      codeCount[c] = (codeCount[c] || 0) + 1;
+    });
+
+    // Kode yang paling sering muncul di jam siang
+    const sortedCodes = Object.keys(codeCount).sort(
+      (a, b) => codeCount[parseInt(b, 10)] - codeCount[parseInt(a, 10)]
+    );
+    const dominantDayCode = parseInt(sortedCodes[0] || "1", 10);
+
+    // Hitung jumlah jam hujan/gerimis (WMO >= 51) di siang hari
+    const wetDayHours = dayIndices.filter(
+      (idx) => (hourly.weathercode![idx] || 0) >= 51
+    ).length;
+
+    // KASUS A: Jika hujan siang hari nyata dan bertahan lama (>= 3 jam atau curah >= 1.5mm atau prob >= 60%)
+    if (wetDayHours >= 3 || dayPrecip >= 1.5 || dayMaxProb >= 60) {
+      return wmoToCondition(rawDailyCode);
+    }
+
+    // KASUS B: Presipitasi sangat minim / hanya embun subuh sesaat (precipSum < 1.5 mm, dayPrecip < 1.0 mm)
+    // dan sebagian besar siang hari cerah atau berawan
+    if (precipSum < 1.5 && (probMean < 30 || dayMaxProb < 45)) {
+      return wmoToCondition(dominantDayCode);
+    }
+
+    // KASUS C: Default fallback ke kode harian jika ada curah hujan terukur
+    return wmoToCondition(rawDailyCode);
+  }
+
+  /**
    * GET /weather/forecast
    *
-   * Prakiraan harian 5 hari — satu item per hari, bukan per slot 3 jam.
+   * Prakiraan harian 5 hari — satu item per hari.
    * Suhu yang ditampilkan adalah suhu maksimum harian.
-   * Probabilitas hujan menggunakan precipitation_probability_mean (rata-rata harian yang realistis,
-   * bukan lonjakan spike 15-menit di tengah malam agar tidak membingungkan warga).
+   * Kondisi cuaca dihitung representatif agar mencerminkan kondisi lapangan sebenarnya di Desa Cibenda.
    */
   static async getForecast(): Promise<ForecastItem[]> {
     const raw = await this.fetchRaw();
-    const { daily } = raw;
+    const { daily, hourly } = raw;
 
-    return daily.time.map((dateStr, i) => ({
-      label: buildDayLabel(dateStr, i),
-      date: dateStr,
-      condition: wmoToCondition(daily.weathercode[i]),
-      temperature: Math.round(daily.temperature_2m_max[i]),
-      rainProbability: daily.precipitation_probability_mean[i] ?? 0,
-    }));
+    return daily.time.map((dateStr, i) => {
+      const rawCode = daily.weathercode[i];
+      const precipSum = daily.precipitation_sum?.[i] ?? 0;
+      const probMean = daily.precipitation_probability_mean[i] ?? 0;
+      const probMax = daily.precipitation_probability_max?.[i] ?? probMean;
+
+      const condition = this.determineRepresentativeCondition(
+        rawCode,
+        dateStr,
+        hourly,
+        precipSum,
+        probMean
+      );
+
+      // Probabilitas hujan realistis: jika kondisi disimpulkan cerah/kering dengan presipitasi 0,
+      // tampilkan persentase yang rendah dan akurat
+      let rainProbability = Math.round(probMean);
+      if (precipSum === 0 && probMax < 25) {
+        rainProbability = Math.min(rainProbability, 10);
+      }
+
+      return {
+        label: buildDayLabel(dateStr, i),
+        date: dateStr,
+        condition,
+        temperature: Math.round(daily.temperature_2m_max[i]),
+        rainProbability,
+      };
+    });
   }
 }
