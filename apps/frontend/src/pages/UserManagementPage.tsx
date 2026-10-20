@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 import { Navigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
@@ -19,24 +18,14 @@ import { UserFormModal } from "../features/users/components/UserFormModal";
 import { ResetPasswordModal } from "../features/users/components/ResetPasswordModal";
 import { ActionFeedbackModal } from "../components/common/ActionFeedbackModal";
 import { exportUsersToCSV } from "../features/users/utils/exportUsers";
+import { parseApiError } from "../utils/errorParser";
 import type {
   UserRecord,
   CreateUserPayload,
   UpdateUserPayload,
 } from "../types/userManagement";
 
-const getErrorMessage = (err: unknown, fallback: string): string => {
-  if (axios.isAxiosError(err)) {
-    const apiMsg = err.response?.data?.message;
-    if (typeof apiMsg === "string" && apiMsg.trim()) {
-      return apiMsg;
-    }
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return fallback;
-};
+const getErrorMessage = (err: unknown, fallback: string): string => parseApiError(err, fallback);
 
 export default function UserManagementPage() {
   useDocumentTitle("Manajemen Akun & Role - SIGAP Desa Cibenda");

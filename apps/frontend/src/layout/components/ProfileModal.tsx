@@ -14,7 +14,7 @@ import {
 import { GrUserAdmin } from "react-icons/gr";
 import { useAuthStore } from "../../stores/authStore";
 import { authService } from "../../services/authService";
-import axios from "axios";
+import { parseApiError } from "../../utils/errorParser";
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -97,15 +97,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
       setPwSuccess("Password akun Anda berhasil diperbarui!");
       resetPasswordForm();
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const resp = err.response?.data;
-        const msg = resp?.message || (Array.isArray(resp?.errors) ? resp.errors[0] : null);
-        setPwError(msg || "Gagal mengubah password.");
-      } else if (err instanceof Error) {
-        setPwError(err.message);
-      } else {
-        setPwError("Terjadi kesalahan pada server saat mengubah password.");
-      }
+      setPwError(parseApiError(err, "Gagal mengubah password."));
     } finally {
       setPwLoading(false);
     }

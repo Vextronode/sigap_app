@@ -17,6 +17,7 @@ import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import type { CurrentWeather, WeatherForecastItem } from "../../../types/dashboard";
+import { formatShortDate } from "../../../utils/date";
 
 type WeatherSectionProps = {
   weather: CurrentWeather | null;
@@ -134,33 +135,7 @@ const WeatherIcon = ({
 };
 
 /** Helper memformat string tanggal YYYY-MM-DD menjadi format ringkas misal 20 Okt */
-const formatForecastDate = (dateStr: string) => {
-  try {
-    const parts = dateStr.split("-");
-    if (parts.length === 3) {
-      const day = parseInt(parts[2], 10);
-      const months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "Mei",
-        "Jun",
-        "Jul",
-        "Agu",
-        "Sep",
-        "Okt",
-        "Nov",
-        "Des",
-      ];
-      const month = months[parseInt(parts[1], 10) - 1];
-      return `${day} ${month}`;
-    }
-    return dateStr;
-  } catch {
-    return dateStr;
-  }
-};
+const formatForecastDate = formatShortDate;
 
 export const WeatherSection = ({
   weather,
