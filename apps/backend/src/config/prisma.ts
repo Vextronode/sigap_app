@@ -1,8 +1,9 @@
+import "dotenv/config";
 import { PrismaClient } from "../../generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
-const databaseUrl = process.env.DATABASE_URL ?? "";
+const databaseUrl = process.env.DATABASE_URL || process.env.DIRECT_URL || "";
 
 // Postgres lokal (dev) biasanya tidak mengaktifkan SSL sama sekali — memaksa
 // SSL di sini bikin SEMUA query gagal ("The server does not support SSL

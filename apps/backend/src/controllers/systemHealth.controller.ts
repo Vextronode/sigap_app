@@ -90,12 +90,18 @@ export class SystemHealthController {
       }));
 
     const startDb = Date.now();
+    const dbProviderName = /supabase/.test(process.env.DATABASE_URL || "")
+      ? "Supabase PostgreSQL Cloud"
+      : /neon/.test(process.env.DATABASE_URL || "")
+      ? "Neon PostgreSQL Cloud"
+      : "PostgreSQL Database";
+
     const dbPromise = prisma.$queryRaw`SELECT 1`
       .then((): ServiceHealthItem => ({
         name: "PostgreSQL Cloud Database",
         category: "database",
         status: "ONLINE",
-        provider: "Neon PostgreSQL Cloud",
+        provider: dbProviderName,
         latencyMs: Date.now() - startDb,
         message: "Koneksi database stabil dan terenkripsi SSL.",
         lastChecked: timestamp,
@@ -104,7 +110,7 @@ export class SystemHealthController {
         name: "PostgreSQL Cloud Database",
         category: "database",
         status: "OFFLINE",
-        provider: "Neon PostgreSQL Cloud",
+        provider: dbProviderName,
         latencyMs: Date.now() - startDb,
         message: "Terjadi gangguan koneksi ke basis data.",
         lastChecked: timestamp,

@@ -10,10 +10,7 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    // Samakan dengan yang benar-benar dipakai runtime (lihat config/prisma.ts) —
-    // sebelumnya menunjuk ke DIRECT_URL yang tidak pernah ada di .env, bikin
-    // `prisma generate`/`migrate`/`studio` gagal total untuk siapa pun yang
-    // clone repo ini (bahkan `npm install` ikut gagal lewat postinstall).
-    url: env("DATABASE_URL"),
+    // Gunakan DIRECT_URL (port 5432 session pooler) untuk CLI migrasi/push Prisma jika tersedia
+    url: env("DIRECT_URL") || env("DATABASE_URL"),
   },
 });
