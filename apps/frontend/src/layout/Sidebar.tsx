@@ -11,6 +11,7 @@ import {
   Megaphone,
   Radio,
   Settings,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { BiBarChartAlt } from "react-icons/bi";
@@ -379,6 +380,31 @@ export const Sidebar = () => {
             </>
           )}
         </nav>
+
+        {/* tautan login staf desa di bagian bawah khusus mode warga */}
+        {!showAdminNav && (
+          <div className="mt-auto pt-4 pb-2 px-1">
+            <hr className="sidebar__divider !my-3" />
+            <Link
+              to="/admin/login"
+              onClick={closeSidebar}
+              className="sidebar__staff-btn"
+              title="Portal Khusus Petugas & Admin SIGAP"
+            >
+              <div className="sidebar__staff-btn-icon">
+                <ShieldCheck size={18} />
+              </div>
+              <div className="flex flex-col text-left leading-tight">
+                <span className="font-bold text-[0.88rem] tracking-tight">
+                  Akses Petugas Desa
+                </span>
+                <span className="text-[11px] opacity-75 font-medium mt-0.5">
+                  Login Admin & Operator
+                </span>
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* kartu monitor status alat iot (khusus admin) */}
         {showAdminNav && (

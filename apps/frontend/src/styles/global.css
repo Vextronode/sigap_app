@@ -212,6 +212,64 @@ svg {
   width: 100%;
 }
 
+/* Tombol Akses Petugas Desa di bagian bawah sidebar publik warga */
+.sidebar__staff-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--primary-50);
+  color: var(--primary);
+  text-decoration: none;
+  border: 1px solid rgba(0, 55, 176, 0.15);
+  transition: background 160ms ease, border-color 160ms ease, transform 120ms ease;
+  box-shadow: 0 1px 3px rgba(0, 36, 125, 0.04);
+  cursor: pointer;
+}
+
+.sidebar__staff-btn:hover {
+  background: rgba(0, 55, 176, 0.12);
+  border-color: rgba(0, 55, 176, 0.25);
+}
+
+.sidebar__staff-btn:active {
+  transform: scale(0.985);
+}
+
+.sidebar__staff-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--primary);
+  border: 1px solid rgba(0, 55, 176, 0.15);
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 36, 125, 0.04);
+}
+
+:root[data-theme="dark"] .sidebar__staff-btn {
+  background: var(--primary-50);
+  color: var(--primary);
+  border-color: rgba(125, 162, 255, 0.2);
+}
+
+:root[data-theme="dark"] .sidebar__staff-btn:hover {
+  background: rgba(125, 162, 255, 0.18);
+  border-color: rgba(125, 162, 255, 0.35);
+}
+
+:root[data-theme="dark"] .sidebar__staff-btn-icon {
+  background: rgba(23, 28, 34, 0.85);
+  border-color: rgba(125, 162, 255, 0.25);
+  color: var(--primary);
+}
+
 /* wadah tombol aksi admin di bagian bawah sidebar */
 .sidebar__bottom-actions {
   display: flex;
