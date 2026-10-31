@@ -8,7 +8,11 @@ import { publicRouter, protectedRouter } from "./routes/index.js";
 import { healthRouter } from "./routes/health.route.js";
 import { generalRateLimiter } from "./middleware/rateLimit.middleware.js";
 import { helmetOptions } from "./config/helmet.config.js";
-import { resolveTrustProxy } from "./config/runtimeOptions.js";
+import {
+  assertAllowedOriginsConfigured,
+  parseAllowedOrigins,
+  resolveTrustProxy,
+} from "./config/runtimeOptions.js";
 
 const app = express();
 
@@ -29,23 +33,25 @@ console.log(`[Proxy] trust proxy = ${String(trustProxy)}`);
 app.use(helmet(helmetOptions));
 
 /**
- * SEC-02: CORS dikonfigurasi dengan whitelist origin dari environment variable.
- * Set ALLOWED_ORIGINS di Vercel env: https://sigap.example.com,https://www.sigap.example.com
+ * SEC-02 / DEPLOY-01 (FR-A7): CORS dengan whitelist origin dari ALLOWED_ORIGINS,
+ * mis. https://sigap.example.com,https://www.sigap.example.com.
+ * - Browser tetap mengirim Origin pada request tulis meskipun same-origin, jadi origin
+ *   aplikasi wajib terdaftar (startup gagal di production non-Vercel bila kosong).
+ * - Origin localhost/127.0.0.1 (port apa pun) hanya diizinkan bila NODE_ENV !== "production".
+ * - Izin khusus Vercel (*.vercel.app, VERCEL_URL, URL preview dev) hanya aktif bila VERCEL di-set.
  */
-const envOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim().replace(/\/+$/, ""))
+const isVercel = Boolean(process.env.VERCEL);
+const isProduction = process.env.NODE_ENV === "production";
+const envOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+assertAllowedOriginsConfigured(envOrigins, isProduction, isVercel);
+
+const vercelOrigins = isVercel
+  ? [
+      "https://sigap-app-git-dev-vextronode.vercel.app",
+      ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`] : []),
+    ]
   : [];
-const defaultOrigins = [
-  "http://localhost:5173",
-  "http://localhost:4173",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:4173",
-  "https://sigap-app-git-dev-vextronode.vercel.app",
-];
-if (process.env.VERCEL_URL) {
-  defaultOrigins.push(`https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`);
-}
-const allowedOrigins: string[] = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+const allowedOrigins: string[] = Array.from(new Set([...vercelOrigins, ...envOrigins]));
 
 const isLocalDevOrigin = (origin: string) => {
   return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
@@ -70,12 +76,12 @@ const corsOptions: CorsOptions = {
     const cleanOrigin = origin.replace(/\/+$/, "");
 
     // Di development, izinkan port apa pun pada localhost dan 127.0.0.1
-    if (process.env.NODE_ENV !== "production" && isLocalDevOrigin(cleanOrigin)) {
+    if (!isProduction && isLocalDevOrigin(cleanOrigin)) {
       return callback(null, true);
     }
 
-    // Izinkan seluruh deployment dan preview domain Vercel (*.vercel.app)
-    if (isVercelOrigin(cleanOrigin)) {
+    // Di Vercel, izinkan seluruh deployment dan preview domain Vercel (*.vercel.app)
+    if (isVercel && isVercelOrigin(cleanOrigin)) {
       return callback(null, true);
     }
 

@@ -28,6 +28,30 @@ export function parseIntEnv(name: string, raw: string | undefined, defaultValue:
   return Number(value);
 }
 
+/**
+ * Daftar origin CORS dari ALLOWED_ORIGINS (dipisah koma, trailing slash dibuang).
+ */
+export function parseAllowedOrigins(raw: string | undefined): string[] {
+  if (isUnset(raw)) return [];
+  return raw
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
+/**
+ * Di production non-Vercel, origin aplikasi WAJIB ada di ALLOWED_ORIGINS: browser
+ * tetap mengirim header Origin pada request tulis meskipun same-origin.
+ */
+export function assertAllowedOriginsConfigured(origins: string[], isProduction: boolean, isVercel: boolean): void {
+  if (isProduction && !isVercel && origins.length === 0) {
+    throw new Error(
+      "ALLOWED_ORIGINS wajib di-set saat NODE_ENV=production di luar Vercel " +
+        "(isi dengan origin aplikasi, mis. https://<hostname>); tanpa itu semua request tulis ditolak CORS."
+    );
+  }
+}
+
 export type TrustProxySetting = false | number | string;
 
 /**
