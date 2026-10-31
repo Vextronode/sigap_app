@@ -26,7 +26,9 @@ export const internalRouter = Router();
  * POST & GET /api/public/internal/run-scheduler
  *
  * Trigger satu siklus pengecekan alert BMKG + auto-dispatch notifikasi.
- * Dipanggil oleh cron-job.org di Vercel/production.
+ * Pemicu manual atau dari penjadwal eksternal; di lingkungan dengan proses
+ * backend yang berjalan terus, siklus utama dijalankan oleh scheduler internal
+ * (ENABLE_LOCAL_SCHEDULER=true).
  *
  * Dilindungi oleh header:
  * 1. Authorization: Bearer <CRON_SECRET>

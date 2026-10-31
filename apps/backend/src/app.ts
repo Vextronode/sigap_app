@@ -5,41 +5,53 @@ import type { CorsOptions } from "cors";
 import morgan from "morgan";
 
 import { publicRouter, protectedRouter } from "./routes/index.js";
+import { healthRouter } from "./routes/health.route.js";
 import { generalRateLimiter } from "./middleware/rateLimit.middleware.js";
 import { helmetOptions } from "./config/helmet.config.js";
+import {
+  assertAllowedOriginsConfigured,
+  parseAllowedOrigins,
+  resolveTrustProxy,
+} from "./config/runtimeOptions.js";
 
 const app = express();
 
 /**
- * SEC-02b: Vercel menimpa X-Forwarded-For dengan IP klien, jadi hop=1 mengambil
- * entri paling kanan (yang ditulis Vercel) sebagai req.ip untuk rate limiter.
- * JANGAN pakai `true` (entri paling kiri bisa dipalsukan klien) dan jangan aktifkan
- * di luar Vercel. Tinjau ulang jumlah hop bila ada CDN/proxy lain di depan Vercel.
+ * DEPLOY-01 (FR-A3): Di belakang reverse proxy, req.ip (dipakai rate limiter dan
+ * lastLoginIp) baru berisi IP klien bila Express diberi tahu hop mana yang dipercaya.
+ * Nilai diambil dari TRUST_PROXY: jumlah hop, atau daftar subnet/preset seperti
+ * `loopback, linklocal, uniquelocal` (melewati semua hop ber-IP privat). Tanpa
+ * TRUST_PROXY, hop=1 hanya dipakai di Vercel (perilaku lama).
+ * JANGAN pakai `true`: entri X-Forwarded-For paling kiri bisa dipalsukan klien,
+ * sehingga rate limit per IP bisa dihindari. Tinjau ulang nilainya setiap kali
+ * topologi proxy di depan aplikasi berubah.
  */
-if (process.env.VERCEL) {
-  app.set("trust proxy", 1);
-}
+const trustProxy = resolveTrustProxy(process.env.TRUST_PROXY, Boolean(process.env.VERCEL));
+app.set("trust proxy", trustProxy);
+console.log(`[Proxy] trust proxy = ${String(trustProxy)}`);
 
 app.use(helmet(helmetOptions));
 
 /**
- * SEC-02: CORS dikonfigurasi dengan whitelist origin dari environment variable.
- * Set ALLOWED_ORIGINS di Vercel env: https://sigap.example.com,https://www.sigap.example.com
+ * SEC-02 / DEPLOY-01 (FR-A7): CORS dengan whitelist origin dari ALLOWED_ORIGINS,
+ * mis. https://sigap.example.com,https://www.sigap.example.com.
+ * - Browser tetap mengirim Origin pada request tulis meskipun same-origin, jadi origin
+ *   aplikasi wajib terdaftar (startup gagal di production non-Vercel bila kosong).
+ * - Origin localhost/127.0.0.1 (port apa pun) hanya diizinkan bila NODE_ENV !== "production".
+ * - Izin khusus Vercel (*.vercel.app, VERCEL_URL, URL preview dev) hanya aktif bila VERCEL di-set.
  */
-const envOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim().replace(/\/+$/, ""))
+const isVercel = Boolean(process.env.VERCEL);
+const isProduction = process.env.NODE_ENV === "production";
+const envOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+assertAllowedOriginsConfigured(envOrigins, isProduction, isVercel);
+
+const vercelOrigins = isVercel
+  ? [
+      "https://sigap-app-git-dev-vextronode.vercel.app",
+      ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`] : []),
+    ]
   : [];
-const defaultOrigins = [
-  "http://localhost:5173",
-  "http://localhost:4173",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:4173",
-  "https://sigap-app-git-dev-vextronode.vercel.app",
-];
-if (process.env.VERCEL_URL) {
-  defaultOrigins.push(`https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`);
-}
-const allowedOrigins: string[] = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+const allowedOrigins: string[] = Array.from(new Set([...vercelOrigins, ...envOrigins]));
 
 const isLocalDevOrigin = (origin: string) => {
   return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
@@ -64,12 +76,12 @@ const corsOptions: CorsOptions = {
     const cleanOrigin = origin.replace(/\/+$/, "");
 
     // Di development, izinkan port apa pun pada localhost dan 127.0.0.1
-    if (process.env.NODE_ENV !== "production" && isLocalDevOrigin(cleanOrigin)) {
+    if (!isProduction && isLocalDevOrigin(cleanOrigin)) {
       return callback(null, true);
     }
 
-    // Izinkan seluruh deployment dan preview domain Vercel (*.vercel.app)
-    if (isVercelOrigin(cleanOrigin)) {
+    // Di Vercel, izinkan seluruh deployment dan preview domain Vercel (*.vercel.app)
+    if (isVercel && isVercelOrigin(cleanOrigin)) {
       return callback(null, true);
     }
 
@@ -88,7 +100,9 @@ const corsOptions: CorsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(morgan("dev"));
+// DEPLOY-01 (FR-A11): format log akses dari LOG_FORMAT; default `combined` di production
+// (tanpa warna, cocok untuk log container), `dev` di luar production.
+app.use(morgan(process.env.LOG_FORMAT ?? (isProduction ? "combined" : "dev")));
 
 /**
  * SEC-03: Batasi ukuran body JSON/URL-encoded agar tidak bisa di-abuse
@@ -96,6 +110,10 @@ app.use(morgan("dev"));
  */
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true, limit: "100kb" }));
+
+// DEPLOY-01 (FR-A4): /api/healthz & /api/readyz harus sebelum router /api yang
+// memakai rate limiter, agar healthcheck tidak terkena limit atau tertangkap router lain.
+app.use("/api", healthRouter);
 
 app.use("/api/public", generalRateLimiter, publicRouter);
 app.use("/api/protected", generalRateLimiter, protectedRouter);
@@ -118,13 +136,20 @@ app.use(
     res: Response,
     next: NextFunction
   ) => {
-    console.error("[ServerError]", err);
-
     const errorObj = err as Error & {
       statusCode?: number;
       status?: number;
       errors?: string[];
+      type?: string;
     };
+
+    // DEPLOY-01 (FR-A11): body-parser menempelkan raw request body di `err.body`, dan
+    // pesan SyntaxError bisa memuat potongan input; keduanya bisa berisi password.
+    if (errorObj instanceof SyntaxError && "body" in errorObj) {
+      console.error(`[ServerError] Payload JSON tidak valid (${errorObj.type ?? "parse error"}); isi body tidak di-log.`);
+    } else {
+      console.error("[ServerError]", err);
+    }
     const statusCode = errorObj.statusCode || errorObj.status || 500;
 
     // Khusus penolakan CORS

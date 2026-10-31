@@ -1,6 +1,6 @@
 /**
  * Utility untuk kompresi gambar di sisi klien sebelum dikirim ke database backend.
- * Memastikan payload tetap hemat kuota Neon DB (target ~30-60 KB per gambar dalam format WebP).
+ * Memastikan payload tetap hemat ruang penyimpanan DB (target ~30-60 KB per gambar dalam format WebP).
  */
 
 export interface CompressionOptions {

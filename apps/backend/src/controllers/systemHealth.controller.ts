@@ -27,7 +27,7 @@ interface HealthCacheEntry {
 }
 
 let healthCache: HealthCacheEntry | null = null;
-const HEALTH_CACHE_TTL_MS = 120 * 1000; // 120 detik (2 menit) in-memory cache untuk melindungi Neon DB compute
+const HEALTH_CACHE_TTL_MS = 120 * 1000; // 120 detik (2 menit) in-memory cache agar pengecekan berulang tidak membebani DB dan API eksternal
 
 export class SystemHealthController {
   static async getHealth(_req: Request, res: Response) {
@@ -90,11 +90,8 @@ export class SystemHealthController {
       }));
 
     const startDb = Date.now();
-    const dbProviderName = /supabase/.test(process.env.DATABASE_URL || "")
-      ? "Supabase PostgreSQL Cloud"
-      : /neon/.test(process.env.DATABASE_URL || "")
-      ? "Neon PostgreSQL Cloud"
-      : "PostgreSQL Database";
+    // DEPLOY-01 (FR-A10): label generik, tidak membuka penyedia DB di endpoint publik.
+    const dbProviderName = "PostgreSQL";
 
     const dbPromise = prisma.$queryRaw`SELECT 1`
       .then((): ServiceHealthItem => ({

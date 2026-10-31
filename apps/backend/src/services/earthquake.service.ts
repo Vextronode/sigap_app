@@ -47,8 +47,8 @@ type CacheEntry<T> = {
 
 const earthquakeCache = new Map<string, CacheEntry<unknown>>();
 
-// In-Memory cache khusus fallback database PostgreSQL Neon untuk mencegah
-// kuota compute terkuras habis pada kondisi feed tenang (tanpa gempa baru).
+// In-Memory cache khusus fallback database PostgreSQL untuk mencegah
+// query berulang ke DB pada kondisi feed tenang (tanpa gempa baru).
 const DB_FALLBACK_CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit
 let cachedWestJavaDbRecord: { data: EarthquakeInfo | null; expiresAt: number } | null = null;
 let cachedPangandaranRecentDbRecord: { data: EarthquakeInfo | null; expiresAt: number } | null = null;
