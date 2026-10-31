@@ -26,7 +26,6 @@ backend/prisma/dev.db-journal
 
 #Claude
 .claude/
-.vercel
 .env*
 !**/.env.example
 .direnv/

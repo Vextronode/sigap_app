@@ -19,14 +19,11 @@ deploy
 .git
 .github
 .claude
-.vercel
 .direnv
 docs
 AI
 assets/design
 SIGAP Desain Admin
-api
-vercel.json
 flake.*
 *.zip
 **/*.log

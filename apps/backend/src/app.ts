@@ -21,12 +21,12 @@ const app = express();
  * lastLoginIp) baru berisi IP klien bila Express diberi tahu hop mana yang dipercaya.
  * Nilai diambil dari TRUST_PROXY: jumlah hop, atau daftar subnet/preset seperti
  * `loopback, linklocal, uniquelocal` (melewati semua hop ber-IP privat). Tanpa
- * TRUST_PROXY, hop=1 hanya dipakai di Vercel (perilaku lama).
+ * TRUST_PROXY, tidak ada proxy yang dipercaya.
  * JANGAN pakai `true`: entri X-Forwarded-For paling kiri bisa dipalsukan klien,
  * sehingga rate limit per IP bisa dihindari. Tinjau ulang nilainya setiap kali
  * topologi proxy di depan aplikasi berubah.
  */
-const trustProxy = resolveTrustProxy(process.env.TRUST_PROXY, Boolean(process.env.VERCEL));
+const trustProxy = resolveTrustProxy(process.env.TRUST_PROXY);
 app.set("trust proxy", trustProxy);
 console.log(`[Proxy] trust proxy = ${String(trustProxy)}`);
 
@@ -36,37 +36,15 @@ app.use(helmet(helmetOptions));
  * SEC-02 / DEPLOY-01 (FR-A7): CORS dengan whitelist origin dari ALLOWED_ORIGINS,
  * mis. https://sigap.example.com,https://www.sigap.example.com.
  * - Browser tetap mengirim Origin pada request tulis meskipun same-origin, jadi origin
- *   aplikasi wajib terdaftar (startup gagal di production non-Vercel bila kosong).
+ *   aplikasi wajib terdaftar (startup gagal di production bila kosong).
  * - Origin localhost/127.0.0.1 (port apa pun) hanya diizinkan bila NODE_ENV !== "production".
- * - Izin khusus Vercel (*.vercel.app, VERCEL_URL, URL preview dev) hanya aktif bila VERCEL di-set.
  */
-const isVercel = Boolean(process.env.VERCEL);
 const isProduction = process.env.NODE_ENV === "production";
-const envOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
-assertAllowedOriginsConfigured(envOrigins, isProduction, isVercel);
-
-const vercelOrigins = isVercel
-  ? [
-      "https://sigap-app-git-dev-vextronode.vercel.app",
-      ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`] : []),
-    ]
-  : [];
-const allowedOrigins: string[] = Array.from(new Set([...vercelOrigins, ...envOrigins]));
+const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+assertAllowedOriginsConfigured(allowedOrigins, isProduction);
 
 const isLocalDevOrigin = (origin: string) => {
   return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-};
-
-const isVercelOrigin = (origin: string) => {
-  try {
-    const url = new URL(origin);
-    return (
-      url.protocol === "https:" &&
-      (url.hostname.endsWith(".vercel.app") || url.hostname === "vercel.app")
-    );
-  } catch {
-    return false;
-  }
 };
 
 const corsOptions: CorsOptions = {
@@ -77,11 +55,6 @@ const corsOptions: CorsOptions = {
 
     // Di development, izinkan port apa pun pada localhost dan 127.0.0.1
     if (!isProduction && isLocalDevOrigin(cleanOrigin)) {
-      return callback(null, true);
-    }
-
-    // Di Vercel, izinkan seluruh deployment dan preview domain Vercel (*.vercel.app)
-    if (isVercel && isVercelOrigin(cleanOrigin)) {
       return callback(null, true);
     }
 
