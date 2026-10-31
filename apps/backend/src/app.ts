@@ -7,18 +7,23 @@ import morgan from "morgan";
 import { publicRouter, protectedRouter } from "./routes/index.js";
 import { generalRateLimiter } from "./middleware/rateLimit.middleware.js";
 import { helmetOptions } from "./config/helmet.config.js";
+import { resolveTrustProxy } from "./config/runtimeOptions.js";
 
 const app = express();
 
 /**
- * SEC-02b: Vercel menimpa X-Forwarded-For dengan IP klien, jadi hop=1 mengambil
- * entri paling kanan (yang ditulis Vercel) sebagai req.ip untuk rate limiter.
- * JANGAN pakai `true` (entri paling kiri bisa dipalsukan klien) dan jangan aktifkan
- * di luar Vercel. Tinjau ulang jumlah hop bila ada CDN/proxy lain di depan Vercel.
+ * DEPLOY-01 (FR-A3): Di belakang reverse proxy, req.ip (dipakai rate limiter dan
+ * lastLoginIp) baru berisi IP klien bila Express diberi tahu hop mana yang dipercaya.
+ * Nilai diambil dari TRUST_PROXY: jumlah hop, atau daftar subnet/preset seperti
+ * `loopback, linklocal, uniquelocal` (melewati semua hop ber-IP privat). Tanpa
+ * TRUST_PROXY, hop=1 hanya dipakai di Vercel (perilaku lama).
+ * JANGAN pakai `true`: entri X-Forwarded-For paling kiri bisa dipalsukan klien,
+ * sehingga rate limit per IP bisa dihindari. Tinjau ulang nilainya setiap kali
+ * topologi proxy di depan aplikasi berubah.
  */
-if (process.env.VERCEL) {
-  app.set("trust proxy", 1);
-}
+const trustProxy = resolveTrustProxy(process.env.TRUST_PROXY, Boolean(process.env.VERCEL));
+app.set("trust proxy", trustProxy);
+console.log(`[Proxy] trust proxy = ${String(trustProxy)}`);
 
 app.use(helmet(helmetOptions));
 

@@ -28,6 +28,34 @@ export function parseIntEnv(name: string, raw: string | undefined, defaultValue:
   return Number(value);
 }
 
+export type TrustProxySetting = false | number | string;
+
+/**
+ * Nilai untuk `app.set("trust proxy", …)` dari TRUST_PROXY.
+ * - tidak di-set → `1` bila berjalan di Vercel (perilaku lama), selain itu `false`
+ * - `false`      → `false` (eksplisit nonaktif)
+ * - integer >= 0 → jumlah hop proxy yang dipercaya
+ * - lainnya      → daftar subnet/preset apa adanya (mis. `loopback, linklocal, uniquelocal`);
+ *                  entri yang tidak valid akan ditolak Express saat startup
+ * - `true`       → ditolak: semua hop dipercaya sehingga req.ip = entri X-Forwarded-For
+ *                  paling kiri, yang bisa dipalsukan klien untuk menghindari rate limit
+ */
+export function resolveTrustProxy(raw: string | undefined, isVercel: boolean): TrustProxySetting {
+  if (isUnset(raw)) return isVercel ? 1 : false;
+
+  const value = raw.trim();
+  const lowered = value.toLowerCase();
+  if (lowered === "true") {
+    throw new Error(
+      "TRUST_PROXY=true ditolak karena membuat X-Forwarded-For bisa dipalsukan klien. " +
+        "Gunakan jumlah hop (mis. 1) atau daftar subnet (mis. loopback, linklocal, uniquelocal)."
+    );
+  }
+  if (lowered === "false") return false;
+  if (/^\d+$/.test(value)) return Number(value);
+  return value;
+}
+
 export function isDbSslMode(raw: string): raw is DbSslMode {
   return (DB_SSL_MODES as readonly string[]).includes(raw);
 }
