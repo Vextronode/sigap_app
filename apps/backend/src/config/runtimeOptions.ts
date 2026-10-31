@@ -10,6 +10,16 @@
 export const DB_SSL_MODES = ["disable", "require", "verify-full"] as const;
 export type DbSslMode = (typeof DB_SSL_MODES)[number];
 
+// Alasan penolakan, dipakai bersama oleh parser di bawah dan oleh env.ts
+// supaya aturan yang sama selalu menghasilkan pesan yang sama ("NAMA: alasan").
+export const DB_SSL_INVALID_REASON = `harus salah satu dari: ${DB_SSL_MODES.join(", ")}`;
+export const TRUST_PROXY_TRUE_REASON =
+  "`true` ditolak karena membuat X-Forwarded-For bisa dipalsukan klien; " +
+  "gunakan jumlah hop (mis. 1) atau daftar subnet (mis. loopback, linklocal, uniquelocal)";
+export const ALLOWED_ORIGINS_REQUIRED_REASON =
+  "wajib di-set saat NODE_ENV=production di luar Vercel (isi dengan origin aplikasi, " +
+  "mis. https://<hostname>); tanpa itu semua request tulis ditolak CORS";
+
 export type DbSslConfig = false | { rejectUnauthorized: boolean };
 
 function isUnset(raw: string | undefined): raw is undefined | "" {
@@ -23,7 +33,7 @@ export function parseIntEnv(name: string, raw: string | undefined, defaultValue:
   if (isUnset(raw)) return defaultValue;
   const value = raw.trim();
   if (!/^\d+$/.test(value) || Number(value) < min) {
-    throw new Error(`${name} harus berupa bilangan bulat >= ${min}.`);
+    throw new Error(`${name}: harus berupa bilangan bulat >= ${min}`);
   }
   return Number(value);
 }
@@ -45,10 +55,7 @@ export function parseAllowedOrigins(raw: string | undefined): string[] {
  */
 export function assertAllowedOriginsConfigured(origins: string[], isProduction: boolean, isVercel: boolean): void {
   if (isProduction && !isVercel && origins.length === 0) {
-    throw new Error(
-      "ALLOWED_ORIGINS wajib di-set saat NODE_ENV=production di luar Vercel " +
-        "(isi dengan origin aplikasi, mis. https://<hostname>); tanpa itu semua request tulis ditolak CORS."
-    );
+    throw new Error(`ALLOWED_ORIGINS: ${ALLOWED_ORIGINS_REQUIRED_REASON}`);
   }
 }
 
@@ -70,10 +77,7 @@ export function resolveTrustProxy(raw: string | undefined, isVercel: boolean): T
   const value = raw.trim();
   const lowered = value.toLowerCase();
   if (lowered === "true") {
-    throw new Error(
-      "TRUST_PROXY=true ditolak karena membuat X-Forwarded-For bisa dipalsukan klien. " +
-        "Gunakan jumlah hop (mis. 1) atau daftar subnet (mis. loopback, linklocal, uniquelocal)."
-    );
+    throw new Error(`TRUST_PROXY: ${TRUST_PROXY_TRUE_REASON}`);
   }
   if (lowered === "false") return false;
   if (/^\d+$/.test(value)) return Number(value);
@@ -99,7 +103,7 @@ export function resolveDbSsl(raw: string | undefined, databaseUrl: string): DbSs
 
   const mode = raw.trim();
   if (!isDbSslMode(mode)) {
-    throw new Error(`DB_SSL tidak valid. Nilai yang didukung: ${DB_SSL_MODES.join(", ")}.`);
+    throw new Error(`DB_SSL: ${DB_SSL_INVALID_REASON}`);
   }
 
   switch (mode) {

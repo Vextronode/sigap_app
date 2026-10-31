@@ -1,6 +1,11 @@
-import { isIP } from "node:net";
 import { z } from "zod";
-import { DB_SSL_MODES, parseAllowedOrigins } from "./runtimeOptions.js";
+import {
+  ALLOWED_ORIGINS_REQUIRED_REASON,
+  DB_SSL_INVALID_REASON,
+  DB_SSL_MODES,
+  TRUST_PROXY_TRUE_REASON,
+  parseAllowedOrigins,
+} from "./runtimeOptions.js";
 
 /**
  * DEPLOY-01 (FR-A8): Validasi environment saat startup (fail-fast).
@@ -14,8 +19,6 @@ interface EnvIssue {
   name: string;
   message: string;
 }
-
-const TRUST_PROXY_PRESETS = ["loopback", "linklocal", "uniquelocal"];
 
 // String kosong diperlakukan sama dengan tidak di-set.
 const blankToUndefined = (value: unknown) =>
@@ -56,7 +59,7 @@ const formatSchema = z.object({
   // Variabel baru DEPLOY-01: kosong = default.
   DB_SSL: z.preprocess(
     blankToUndefined,
-    z.enum(DB_SSL_MODES, `harus salah satu dari: ${DB_SSL_MODES.join(", ")}`).optional()
+    z.enum(DB_SSL_MODES, DB_SSL_INVALID_REASON).optional()
   ),
   DB_POOL_MAX: optionalInt(1, true),
   DB_POOL_IDLE_MS: optionalInt(0, true),
@@ -93,15 +96,6 @@ const REQUIRED_IN_PRODUCTION = [
   "JWT_AUDIENCE",
 ] as const;
 
-function isValidTrustProxyEntry(entry: string): boolean {
-  if (TRUST_PROXY_PRESETS.includes(entry)) return true;
-  const [address, prefix, ...rest] = entry.split("/");
-  const family = isIP(address);
-  if (family === 0 || rest.length > 0) return false;
-  if (prefix === undefined) return true;
-  return /^\d+$/.test(prefix) && Number(prefix) <= (family === 4 ? 32 : 128);
-}
-
 /**
  * Aturan keberadaan & kondisional. Dijalankan terpisah dari skema format supaya
  * semua masalah dilaporkan sekaligus (refinement zod dilewati bila ada error format).
@@ -123,31 +117,13 @@ function checkRules(env: NodeJS.ProcessEnv): EnvIssue[] {
       if (!value(name)) issues.push({ name, message: "wajib di-set saat NODE_ENV=production" });
     }
     if (!env.VERCEL && parseAllowedOrigins(env.ALLOWED_ORIGINS).length === 0) {
-      issues.push({
-        name: "ALLOWED_ORIGINS",
-        message: "wajib di-set saat NODE_ENV=production di luar Vercel (origin aplikasi, mis. https://<hostname>)",
-      });
+      issues.push({ name: "ALLOWED_ORIGINS", message: ALLOWED_ORIGINS_REQUIRED_REASON });
     }
   }
 
-  // TRUST_PROXY: `true` ditolak; selain angka/false, tiap entri harus preset atau IP/CIDR.
-  const trustProxy = value("TRUST_PROXY");
-  if (trustProxy) {
-    const lowered = trustProxy.toLowerCase();
-    if (lowered === "true") {
-      issues.push({
-        name: "TRUST_PROXY",
-        message: "`true` ditolak karena membuat X-Forwarded-For bisa dipalsukan; gunakan jumlah hop atau daftar subnet",
-      });
-    } else if (lowered !== "false" && !/^\d+$/.test(trustProxy)) {
-      const entries = trustProxy.split(",").map((entry) => entry.trim()).filter(Boolean);
-      if (entries.length === 0 || !entries.every(isValidTrustProxyEntry)) {
-        issues.push({
-          name: "TRUST_PROXY",
-          message: `harus jumlah hop, atau daftar ${TRUST_PROXY_PRESETS.join("/")}/IP/CIDR dipisah koma`,
-        });
-      }
-    }
+  // TRUST_PROXY: `true` ditolak. Entri subnet yang tidak valid ditolak Express saat startup.
+  if (value("TRUST_PROXY")?.toLowerCase() === "true") {
+    issues.push({ name: "TRUST_PROXY", message: TRUST_PROXY_TRUE_REASON });
   }
 
   return issues;
