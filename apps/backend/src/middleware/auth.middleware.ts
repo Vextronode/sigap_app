@@ -18,13 +18,20 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   try {
     const payload = verifyToken(token);
 
-    const revoked = await isTokenRevoked(payload.jti);
-    if (revoked) {
-      return res.status(401).json({
-        success: false,
-        message: "Token tidak valid atau kedaluwarsa.",
-        errors: ["Sesi ini sudah diakhiri, silahkan login kembali."],
-      });
+    // Cek apakah token masuk ke blocklist revoked_tokens
+    try {
+      const revoked = await isTokenRevoked(payload.jti);
+      if (revoked) {
+        return res.status(401).json({
+          success: false,
+          message: "Token tidak valid atau kedaluwarsa.",
+          errors: ["Sesi ini sudah diakhiri, silahkan login kembali."],
+        });
+      }
+    } catch (dbErr) {
+      // Jika terjadi transient network error / timeout ke database saat cek revoked,
+      // jangan langsung anggap token 401 Unauthorized (karena signature token sudah valid).
+      console.warn("[authMiddleware] Database query isTokenRevoked warning:", dbErr);
     }
 
     req.user = payload;
