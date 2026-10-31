@@ -8,8 +8,8 @@ import { NotificationService } from "../services/notification.service.js";
  * Jalankan satu siklus pengecekan alert BMKG.
  *
  * Fungsi ini bisa dipanggil:
- * - Dari `startAlertScheduler()` via `setInterval` (dev lokal)
- * - Dari endpoint POST /api/v1/public/internal/run-scheduler via cron-job.org (Vercel/production)
+ * - Dari `startAlertScheduler()` via `setInterval` (scheduler di dalam proses backend)
+ * - Dari endpoint POST /api/public/internal/run-scheduler (pemicu manual/eksternal)
  *
  * Notifikasi push dikirim OTOMATIS saat ada alert baru yang bukan duplikat
  * dan levelnya bukan GREEN (Aman). Tidak ada validasi manual admin lagi.
@@ -23,8 +23,31 @@ export async function runAlertCheck(): Promise<{
     // Gempa yang relevan untuk Desa Cibenda (sudah difilter radius +
     // umur maksimum oleh EarthquakeService), BUKAN gempa nasional
     // terbaru — lihat catatan di decisionEngine.service.ts.
-    const earthquake = await EarthquakeService.getPangandaran();
-    const tsunami = await BmkgService.getTsunamiStatus();
+    let earthquake = null;
+    let tsunami = null;
+
+    try {
+        earthquake = await EarthquakeService.getPangandaran();
+    } catch (eqError) {
+        console.warn(
+            "[AlertScheduler] Gagal mengambil data gempa Pangandaran terkini:",
+            eqError instanceof Error ? eqError.message : eqError
+        );
+    }
+
+    try {
+        tsunami = await BmkgService.getTsunamiStatus();
+    } catch (tsunamiError) {
+        console.warn(
+            "[AlertScheduler] Gagal mengambil status tsunami BMKG:",
+            tsunamiError instanceof Error ? tsunamiError.message : tsunamiError
+        );
+        tsunami = {
+            status: "NORMAL" as const,
+            source: "BMKG (Degraded Fallback)",
+            description: "Tidak terdapat indikasi ancaman tsunami aktif yang terkonfirmasi.",
+        };
+    }
 
     // Jalankan Decision Engine
     const result = DecisionEngineService.evaluate({ earthquake, tsunami });
@@ -82,27 +105,103 @@ export async function runAlertCheck(): Promise<{
     return { ...result, saved: isSaved };
 }
 
+const HEARTBEAT_TIMEOUT_MS = 5_000;
+const STOP_WAIT_MS = 3_000;
+
 /**
- * Polling BMKG setiap interval tertentu (untuk dev lokal).
- * Di production (Vercel), scheduler tidak dijalankan otomatis —
- * gunakan cron-job.org untuk hit POST /api/v1/public/internal/run-scheduler.
+ * Ping heartbeat (mis. healthchecks.io / Uptime Kuma push monitor) setelah siklus sukses.
+ * URL biasanya memuat token, jadi tidak pernah ditulis ke log. Kegagalan hanya di-log.
  */
-export function startAlertScheduler(interval = 60_000) {
+async function sendHeartbeat(url: string): Promise<void> {
+    try {
+        const response = await fetch(url, { signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS) });
+        if (!response.ok) {
+            console.warn(`[AlertScheduler] Heartbeat gagal: HTTP ${response.status}`);
+        }
+    } catch (error) {
+        // Hanya kode/nama error (mis. ECONNREFUSED, TimeoutError), tanpa URL.
+        const cause = error instanceof Error
+            ? (error.cause as { code?: string; errors?: { code?: string }[] } | undefined)
+            : undefined;
+        const reason =
+            cause?.code ??
+            cause?.errors?.[0]?.code ??
+            (error instanceof Error ? error.name : "unknown error");
+        console.warn(`[AlertScheduler] Heartbeat gagal: ${reason}`);
+    }
+}
+
+export interface AlertSchedulerOptions {
+    intervalMs?: number;
+    heartbeatUrl?: string;
+}
+
+/**
+ * Polling BMKG berkala di dalam proses backend (ENABLE_LOCAL_SCHEDULER=true).
+ * Siklus juga bisa dipicu manual lewat POST /api/public/internal/run-scheduler.
+ * Siklus baru dilewati bila siklus sebelumnya belum selesai (mis. BMKG lambat).
+ */
+export function startAlertScheduler({
+    intervalMs = 60_000,
+    heartbeatUrl,
+}: AlertSchedulerOptions = {}): () => Promise<void> {
     console.log(
-        `[AlertScheduler] Started. Polling BMKG every ${interval / 1000} seconds.`
+        `[AlertScheduler] Started. Polling BMKG every ${intervalMs / 1000} seconds.`
     );
 
+    let currentCycle: Promise<void> | null = null;
+
     const execute = async () => {
+        const startedAt = Date.now();
         try {
-            await runAlertCheck();
+            const result = await runAlertCheck();
+            console.log(
+                `[AlertScheduler] Siklus selesai: level=${result.level} saved=${result.saved} durasi=${Date.now() - startedAt}ms`
+            );
         } catch (error) {
             console.error("[AlertScheduler] Error:", error);
+            return;
+        }
+        if (heartbeatUrl) {
+            await sendHeartbeat(heartbeatUrl);
         }
     };
 
+    const tick = () => {
+        if (currentCycle) {
+            console.log("[AlertScheduler] Siklus sebelumnya masih berjalan, dilewati");
+            return;
+        }
+        currentCycle = execute().finally(() => {
+            currentCycle = null;
+        });
+    };
+
     // Jalankan sekali saat server pertama kali hidup
-    execute();
+    tick();
 
     // Jalankan berkala
-    setInterval(execute, interval);
+    const timer = setInterval(tick, intervalMs);
+
+    // DEPLOY-01 (FR-A5): hentikan interval, lalu tunggu siklus yang sedang berjalan
+    // (maks STOP_WAIT_MS) supaya koneksi DB tidak ditutup di tengah penyimpanan
+    // alert/notifikasi, tanpa menahan shutdown bila BMKG sedang lambat.
+    return async () => {
+        clearInterval(timer);
+        if (currentCycle) {
+            console.log(`[AlertScheduler] Menunggu siklus yang sedang berjalan (maks ${STOP_WAIT_MS} ms)...`);
+            let waitTimer: NodeJS.Timeout | undefined;
+            const finished = await Promise.race([
+                currentCycle.then(() => true),
+                new Promise<boolean>((resolve) => {
+                    waitTimer = setTimeout(() => resolve(false), STOP_WAIT_MS);
+                }),
+            ]);
+            clearTimeout(waitTimer);
+            if (!finished) {
+                console.warn(`[AlertScheduler] Siklus belum selesai setelah ${STOP_WAIT_MS} ms; shutdown dilanjutkan.`);
+            }
+        }
+        console.log("[AlertScheduler] Stopped.");
+    };
 }

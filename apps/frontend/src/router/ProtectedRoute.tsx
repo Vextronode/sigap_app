@@ -15,12 +15,13 @@ export const ProtectedRoute = () => {
     }
   }, [isExpired, validateSession]);
 
+  const isTokenSpecificallyExpired = Boolean(token && isTokenExpired(token));
   const wasSessionExpired =
     typeof window !== "undefined" &&
     sessionStorage.getItem("sigap_session_expired") === "true";
 
   if (!token || !isAdmin || isExpired) {
-    const targetUrl = wasSessionExpired ? "/admin/login?expired=true" : "/admin/login";
+    const targetUrl = wasSessionExpired || isTokenSpecificallyExpired ? "/admin/login?expired=true" : "/admin/login";
     return (
       <Navigate
         to={targetUrl}

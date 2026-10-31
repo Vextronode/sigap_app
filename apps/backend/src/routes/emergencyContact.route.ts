@@ -15,8 +15,6 @@ publicEmergencyContactRouter.get("/:id", EmergencyContactController.getById);
 // rute terproteksi kontak darurat untuk staf desa (admin & operator)
 export const protectedEmergencyContactRouter = Router();
 protectedEmergencyContactRouter.use(authMiddleware);
-protectedEmergencyContactRouter.get("/", EmergencyContactController.getAll);
-protectedEmergencyContactRouter.get("/:id", EmergencyContactController.getById);
 
 // SEC-05: Mutasi (create/update/delete) memerlukan permission 'content.manage' (Admin & Operator)
 protectedEmergencyContactRouter.post(

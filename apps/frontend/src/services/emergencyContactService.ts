@@ -16,7 +16,7 @@ export const emergencyContactService = {
 
   getById: async (id: string): Promise<EmergencyContactRecord> => {
     const response = await apiClient.get<ApiResponse<EmergencyContactRecord>>(
-      protectedPath(`/emergency-contacts/${id}`)
+      publicPath(`/emergency-contacts/${id}`)
     );
     return response.data.data;
   },

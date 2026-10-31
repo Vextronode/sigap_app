@@ -1,12 +1,13 @@
 import * as preparednessGuideRepo from "../repositories/preparednessGuide.repository.js";
+import {
+  NotFoundError,
+  BadRequestError,
+  ValidationError,
+} from "../errors/AppError.js";
 import type {
   CreatePreparednessGuideDto,
   UpdatePreparednessGuideDto,
 } from "../types/preparednessGuide.types.js";
-
-interface CustomHttpError extends Error {
-  statusCode?: number;
-}
 
 export class PreparednessGuideService {
   // ambil seluruh daftar panduan kesiapsiagaan
@@ -18,11 +19,7 @@ export class PreparednessGuideService {
   static async getById(id: string) {
     const guide = await preparednessGuideRepo.findById(id);
     if (!guide) {
-      const error: CustomHttpError = new Error(
-        "Panduan kesiapsiagaan tidak ditemukan."
-      );
-      error.statusCode = 404;
-      throw error;
+      throw new NotFoundError("Panduan kesiapsiagaan tidak ditemukan.");
     }
     return guide;
   }
@@ -31,11 +28,9 @@ export class PreparednessGuideService {
   static async create(data: CreatePreparednessGuideDto) {
     const totalCount = await preparednessGuideRepo.count();
     if (totalCount >= 5) {
-      const error: CustomHttpError = new Error(
+      throw new BadRequestError(
         "Kapasitas maksimal 5 panduan kesiapsiagaan telah tercapai. Hapus salah satu panduan untuk menambahkan yang baru."
       );
-      error.statusCode = 400;
-      throw error;
     }
 
     const hasContent = Boolean(data.content && data.content.trim() !== "");
@@ -45,11 +40,9 @@ export class PreparednessGuideService {
 
     // validasi batas minimal satu mode input harus terisi
     if (!hasContent && !hasExternalUrl) {
-      const error: CustomHttpError = new Error(
+      throw new ValidationError(
         "Minimal salah satu dari konten artikel atau tautan eksternal wajib diisi."
       );
-      error.statusCode = 422;
-      throw error;
     }
 
     return preparednessGuideRepo.create({
@@ -87,11 +80,9 @@ export class PreparednessGuideService {
 
     // validasi batas gabungan setelah pembaruan tidak boleh kosong dua duanya
     if (!nextContent && !nextExternalUrl) {
-      const error: CustomHttpError = new Error(
+      throw new ValidationError(
         "Minimal salah satu dari konten artikel atau tautan eksternal harus tetap terisi."
       );
-      error.statusCode = 422;
-      throw error;
     }
 
     return preparednessGuideRepo.update(id, {

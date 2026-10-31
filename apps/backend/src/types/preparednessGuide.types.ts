@@ -27,12 +27,4 @@ export interface CreatePreparednessGuideDto {
 }
 
 // dto pembaruan panduan kesiapsiagaan
-export interface UpdatePreparednessGuideDto {
-  title?: string;
-  content?: string | null;
-  externalUrl?: string | null;
-  imageUrl?: string | null;
-  sourceType?: GuideSourceType;
-  sourceLabel?: string | null;
-  publishedAt?: Date | string;
-}
+export type UpdatePreparednessGuideDto = Partial<CreatePreparednessGuideDto>;

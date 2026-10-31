@@ -5,7 +5,7 @@ export const useSystemHealth = () => {
   return useQuery({
     queryKey: ["admin", "system-health"],
     queryFn: () => systemHealthService.getHealth(),
-    refetchInterval: 15000, // polling tiap 15 detik
-    staleTime: 10000,
+    refetchInterval: 60000, // polling tiap 60 detik (menghemat kuota compute DB & bandwidth)
+    staleTime: 30000,
   });
 };

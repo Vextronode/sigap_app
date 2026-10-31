@@ -44,7 +44,7 @@ export const loginRateLimiter = rateLimit({
 
 /**
  * SEC-10: Rate limiter khusus endpoint system health untuk mencegah flooding DoS
- * terhadap pool koneksi database Neon dan pemblokiran IP oleh Open-Meteo/BMKG.
+ * terhadap pool koneksi database dan pemblokiran IP oleh Open-Meteo/BMKG.
  * - max: 60 request per 1 menit per IP.
  */
 export const healthRateLimiter = rateLimit({

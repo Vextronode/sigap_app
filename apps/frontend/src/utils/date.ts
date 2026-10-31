@@ -13,6 +13,28 @@ const weekdayFormatter = new Intl.DateTimeFormat("id-ID", {
   weekday: "short",
 });
 
+const shortDateFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "short",
+});
+
+export const formatShortDate = (value?: string) => {
+  if (!value) return "";
+  const parts = value.split("-");
+  if (parts.length === 3) {
+    const year = Number(parts[0]);
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+    const localDate = new Date(year, month, day);
+    if (!Number.isNaN(localDate.getTime())) {
+      return shortDateFormatter.format(localDate);
+    }
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return shortDateFormatter.format(date);
+};
+
 export const formatDate = (value?: string) => {
   if (!value) return "Belum tersedia";
   const date = new Date(value);

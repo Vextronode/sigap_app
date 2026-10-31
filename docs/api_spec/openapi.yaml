@@ -42,6 +42,7 @@ tags:
   - name: Emergency Contacts
   - name: AI Summary
   - name: Users
+  - name: Health
 
 security:
   - bearerAuth: []
@@ -161,3 +162,9 @@ paths:
     $ref: './paths/users.yaml#/user-by-id'
   /protected/users/{id}/reset-password:
     $ref: './paths/users.yaml#/user-reset-password'
+
+  # -- Health (orchestrator) -----------------------------------------------
+  /healthz:
+    $ref: './paths/health.yaml#/healthz'
+  /readyz:
+    $ref: './paths/health.yaml#/readyz'

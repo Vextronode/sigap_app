@@ -8,17 +8,13 @@ import type {
   UserStatisticsDTO,
 } from "../types/userManagement.types.js";
 
-export class ConflictError extends Error {
-  statusCode = 409;
-}
+import {
+  ConflictError,
+  NotFoundError,
+  BadRequestError as ValidationError,
+} from "../errors/AppError.js";
 
-export class NotFoundError extends Error {
-  statusCode = 404;
-}
-
-export class ValidationError extends Error {
-  statusCode = 400;
-}
+export { ConflictError, NotFoundError, ValidationError };
 
 function formatUserSummary(user: any): UserSummaryDTO {
   const roleName = user.userRoles?.[0]?.role?.name ?? "operator";

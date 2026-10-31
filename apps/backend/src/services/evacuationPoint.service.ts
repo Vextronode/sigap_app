@@ -1,4 +1,5 @@
 import * as evacuationPointRepo from "../repositories/evacuationPoint.repository.js";
+import { NotFoundError, BadRequestError } from "../errors/AppError.js";
 import type {
   CreateEvacuationPointDto,
   UpdateEvacuationPointDto,
@@ -14,9 +15,7 @@ export class EvacuationPointService {
   static async getById(id: string) {
     const point = await evacuationPointRepo.findById(id);
     if (!point) {
-      const error = new Error("Titik evakuasi tidak ditemukan.");
-      (error as Error & { statusCode?: number }).statusCode = 404;
-      throw error;
+      throw new NotFoundError("Titik evakuasi tidak ditemukan.");
     }
     return point;
   }
@@ -78,9 +77,9 @@ export class EvacuationPointService {
 
     // tolak penghapusan jika merupakan titik evakuasi inti strategis desa
     if (point.isCore) {
-      const error = new Error("Titik evakuasi utama/inti tidak dapat dihapus demi keselamatan desa.");
-      (error as Error & { statusCode?: number }).statusCode = 400;
-      throw error;
+      throw new BadRequestError(
+        "Titik evakuasi utama/inti tidak dapat dihapus demi keselamatan desa."
+      );
     }
 
     return evacuationPointRepo.deleteById(id);

@@ -15,8 +15,6 @@ publicEvacuationPointRouter.get("/:id", EvacuationPointController.getById);
 // rute terproteksi titik evakuasi untuk staf desa (admin & operator)
 export const protectedEvacuationPointRouter = Router();
 protectedEvacuationPointRouter.use(authMiddleware);
-protectedEvacuationPointRouter.get("/", EvacuationPointController.getAll);
-protectedEvacuationPointRouter.get("/:id", EvacuationPointController.getById);
 
 // SEC-05: Mutasi (create/update/delete) memerlukan permission 'content.manage' (Admin & Operator)
 protectedEvacuationPointRouter.post(

@@ -1,0 +1,80 @@
+# =====================================================================
+# paths/health.yaml — healthcheck untuk orchestrator container
+# (liveness/readiness). Tanpa rate limiter, tanpa autentikasi.
+# Berbeda dengan /public/system-health (memanggil API eksternal,
+# dibatasi rate limit, memakai cache 120 detik).
+# =====================================================================
+
+healthz:
+  get:
+    tags: [Health]
+    summary: Liveness - proses backend hidup
+    description: >
+      Selalu 200 selama proses dan event loop merespons. Tidak mengakses
+      database maupun API eksternal, dan tidak dikenai rate limiter.
+      Tidak membuka versi, hostname, maupun nama penyedia.
+    security: []
+    responses:
+      '200':
+        description: Proses hidup
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      required: [status]
+                      properties:
+                        status:
+                          type: string
+                          enum: [ok]
+            example:
+              success: true
+              message: "Service berjalan."
+              data:
+                status: ok
+
+readyz:
+  get:
+    tags: [Health]
+    summary: Readiness - backend siap menerima trafik
+    description: >
+      Menjalankan `SELECT 1` ke database dengan batas waktu 2 detik.
+      Penyebab kegagalan hanya ditulis ke log server, tidak ke response.
+      Tidak dikenai rate limiter.
+    security: []
+    responses:
+      '200':
+        description: Database menjawab dalam batas waktu
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      required: [status]
+                      properties:
+                        status:
+                          type: string
+                          enum: [ready]
+            example:
+              success: true
+              message: "Service siap menerima trafik."
+              data:
+                status: ready
+      '503':
+        description: Database tidak terjangkau atau tidak menjawab dalam 2 detik
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+            example:
+              success: false
+              message: "Service belum siap."
+              errors: ["Database tidak tersedia."]

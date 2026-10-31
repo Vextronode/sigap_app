@@ -27,7 +27,7 @@ interface HealthCacheEntry {
 }
 
 let healthCache: HealthCacheEntry | null = null;
-const HEALTH_CACHE_TTL_MS = 30 * 1000; // 30 detik
+const HEALTH_CACHE_TTL_MS = 120 * 1000; // 120 detik (2 menit) in-memory cache agar pengecekan berulang tidak membebani DB dan API eksternal
 
 export class SystemHealthController {
   static async getHealth(_req: Request, res: Response) {
@@ -90,12 +90,15 @@ export class SystemHealthController {
       }));
 
     const startDb = Date.now();
+    // DEPLOY-01 (FR-A10): label generik, tidak membuka penyedia DB di endpoint publik.
+    const dbProviderName = "PostgreSQL";
+
     const dbPromise = prisma.$queryRaw`SELECT 1`
       .then((): ServiceHealthItem => ({
         name: "PostgreSQL Cloud Database",
         category: "database",
         status: "ONLINE",
-        provider: "Neon PostgreSQL Cloud",
+        provider: dbProviderName,
         latencyMs: Date.now() - startDb,
         message: "Koneksi database stabil dan terenkripsi SSL.",
         lastChecked: timestamp,
@@ -104,7 +107,7 @@ export class SystemHealthController {
         name: "PostgreSQL Cloud Database",
         category: "database",
         status: "OFFLINE",
-        provider: "Neon PostgreSQL Cloud",
+        provider: dbProviderName,
         latencyMs: Date.now() - startDb,
         message: "Terjadi gangguan koneksi ke basis data.",
         lastChecked: timestamp,
