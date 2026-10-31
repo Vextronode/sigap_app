@@ -38,7 +38,8 @@ Rilis
                             --migrate  : wajib bila ada migrasi pending (backup DB lalu konfirmasi)
                             --no-build : pakai image <tag> yang sudah ada
                             Exit: 0 = OK, 1 = gagal & rollback berhasil, 2 = rollback juga gagal
-  up [--db local|external]  Jalankan stack dengan tag aktif (pertama kali: tag compose.env)
+  up [--db local|external]  Jalankan stack dengan tag aktif (pertama kali: tag compose.env);
+                            ditolak bila ada migrasi pending
   build                     Build image dengan tag aktif
 
 Operasi
@@ -46,7 +47,7 @@ Operasi
   restart [service]         Restart semua service atau satu service
   logs [service]            Ikuti log (200 baris terakhir)
   status                    Tag aktif/sebelumnya, status container, 10 baris deploy.log
-  migrate                   Tampilkan migrasi pending, konfirmasi, lalu jalankan
+  migrate                   Backup (mode local), tampilkan migrasi pending, konfirmasi, jalankan
   health                    Cek /api/healthz dan /api/readyz lewat port web
   smoke                     health + beberapa endpoint publik dan halaman SPA
   shell <service>           Buka shell (sh) di container service
@@ -295,12 +296,24 @@ has_pending_migrations() {
   echo "$out" | grep -q "not yet been applied" || die "Status migrasi tidak bisa dibaca (DB belum siap?). Lihat: logs db"
 }
 
+# Sebelum migrasi: mode local di-backup otomatis; mode external tidak bisa di-backup
+# dari sini, jadi operator wajib memastikan backup milik pengelola DB sudah ada.
+backup_before_migration() {
+  local label="$1"
+  if [[ "$DB_MODE" == "local" ]]; then
+    cmd_backup "$label"
+  else
+    warn "Mode DB external: backup TIDAK dibuat oleh skrip ini. Pastikan backup DB terbaru dari pengelola DB sudah ada sebelum melanjutkan."
+  fi
+}
+
 run_migrate() {
   ensure_db_up
   if ! has_pending_migrations; then
     info "Tidak ada migrasi pending."
     return 0
   fi
+  backup_before_migration "pre-migrate"
   confirm "ya" "Migrasi di atas akan dijalankan ke DB (tidak bisa dibatalkan otomatis)." || die "Migrasi dibatalkan."
   compose run --rm migrate
   log_event "MIGRATE tag=$SIGAP_IMAGE_TAG"
@@ -376,7 +389,7 @@ cmd_deploy() {
   ensure_db_up
   if has_pending_migrations; then
     (( migrate )) || die "Ada migrasi pending. Ulangi dengan --migrate (DB akan di-backup dulu)."
-    [[ "$DB_MODE" == "local" ]] && cmd_backup "pre-$tag"
+    backup_before_migration "pre-$tag"
     confirm "ya" "Migrasi di atas akan dijalankan dengan image $tag." || die "Deploy dibatalkan sebelum migrasi; stack lama tetap berjalan."
     compose run --rm migrate || die "Migrasi gagal; stack lama tetap berjalan."
     log_event "MIGRATE tag=$tag"
@@ -418,6 +431,12 @@ cmd_up() {
   fi
   use_tag
   preflight
+  # Service migrate selalu ikut `up`; tolak bila ada migrasi pending agar migrasi
+  # hanya berjalan lewat jalur yang membuat backup dan meminta konfirmasi.
+  ensure_db_up
+  if has_pending_migrations; then
+    die "Ada migrasi pending. Jalankan 'deploy <tag> --migrate' atau 'migrate' lebih dulu."
+  fi
   info "Menjalankan stack (mode DB: $DB_MODE, tag: $SIGAP_IMAGE_TAG)"
   start_stack
   state_set current_tag "$SIGAP_IMAGE_TAG"
