@@ -15,13 +15,27 @@ const server = app.listen(PORT, () => {
   console.log(`SIGAP backend running on port ${PORT}`);
 });
 
+// DEPLOY-01 (FR-A6): konfigurasi scheduler dari env; minimum interval 15 detik.
+const schedulerEnabled = process.env.ENABLE_LOCAL_SCHEDULER === "true";
+const schedulerIntervalMs = parseIntEnv(
+  "ALERT_SCHEDULER_INTERVAL_MS",
+  process.env.ALERT_SCHEDULER_INTERVAL_MS,
+  60_000,
+  15_000
+);
+const heartbeatUrl = process.env.SCHEDULER_HEARTBEAT_URL?.trim() || undefined;
+
+console.log(
+  `[AlertScheduler] enabled=${schedulerEnabled} intervalMs=${schedulerIntervalMs} heartbeat=${heartbeatUrl ? "on" : "off"}`
+);
+
 let stopScheduler: () => Promise<void> = async () => {};
 
-if (process.env.ENABLE_LOCAL_SCHEDULER === "true") {
-  stopScheduler = startAlertScheduler();
+if (schedulerEnabled) {
+  stopScheduler = startAlertScheduler({ intervalMs: schedulerIntervalMs, heartbeatUrl });
 } else {
   console.log(
-    "[AlertScheduler] Local background scheduler dinonaktifkan secara default untuk menghemat kuota compute Neon Cloud. Set ENABLE_LOCAL_SCHEDULER=true di .env jika ingin mengaktifkan pengujian berkala lokal."
+    "[AlertScheduler] Scheduler di dalam proses tidak aktif (ENABLE_LOCAL_SCHEDULER bukan \"true\"). Siklus hanya berjalan lewat pemicu manual POST /api/public/internal/run-scheduler."
   );
 }
 
