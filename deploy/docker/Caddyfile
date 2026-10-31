@@ -1,0 +1,44 @@
+# DEPLOY-01 (FR-B4): Caddy di container web. HTTP saja; TLS/HSTS diurus edge
+# milik pengelola server. Menyajikan SPA dan meneruskan /api/* ke backend.
+{
+	auto_https off
+	admin off
+	servers {
+		# X-Forwarded-For hanya dipercaya bila datang dari proxy ber-IP privat.
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode zstd gzip
+
+	header -Server
+
+	# API: header keamanan berasal dari helmet di backend, jangan ditimpa di sini.
+	handle /api/* {
+		reverse_proxy {$BACKEND_UPSTREAM:backend:3000}
+	}
+
+	handle {
+		# Header dipindahkan dari vercel.json (tanpa HSTS: keputusan pengelola di edge TLS).
+		header {
+			X-Frame-Options DENY
+			X-Content-Type-Options nosniff
+			Referrer-Policy strict-origin-when-cross-origin
+			Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=()"
+			X-DNS-Prefetch-Control on
+		}
+
+		# Hanya file ber-hash Vite (/assets/<nama>-<hash8>.js|css) yang immutable.
+		# Selain itu no-cache, termasuk sw.js, manifest, ikon, dan index.html yang
+		# disajikan untuk deep link lewat try_files (matcher dievaluasi pada path asli).
+		@hashed path_regexp ^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$
+		@notHashed not path_regexp ^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header @notHashed Cache-Control "no-cache"
+
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
