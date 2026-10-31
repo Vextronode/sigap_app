@@ -576,8 +576,26 @@ svg {
   justify-items: center;
   border-radius: 18px;
   color: #ffffff;
-  padding: 42px 28px;
+  padding: 24px 28px;
   text-align: center;
+}
+
+.status-banner__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-banner__header .status-banner__icon {
+  order: 1;
+}
+
+.status-banner__header h1 {
+  order: 2;
+  margin: 10px 0 4px;
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  line-height: 1.05;
 }
 
 .status-banner--safe {
@@ -612,25 +630,32 @@ svg {
 }
 
 .status-banner h1 {
-  margin: 18px 0 6px;
-  font-size: clamp(2rem, 4vw, 3rem);
+  margin: 10px 0 4px;
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
   line-height: 1.05;
 }
 
-.status-banner p {
-  max-width: 640px;
+.status-banner p,
+.status-banner__description {
+  max-width: 620px;
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .status-banner__updated {
-  margin-top: 22px;
+  margin-top: 10px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.16);
-  font-size: 0.875rem;
-  font-weight: 700;
-  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 14px;
+}
+
+.status-banner__source {
+  margin-top: 4px;
+  font-size: 0.725rem;
 }
 
 .ai-card {
@@ -1316,15 +1341,85 @@ svg {
   .status-banner {
     margin-inline: -10px;
     border-radius: 0;
-    padding: 34px 18px;
+    padding: 14px 10px;
+    width: calc(100% + 20px);
+    max-width: calc(100% + 20px);
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 
+  .status-banner__header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    margin: 4px 0 6px 0 !important;
+  }
+
+  /* 1. AMAN diperbesar di handphone */
+  .status-banner__header h1,
   .status-banner h1 {
-    font-size: 2rem;
+    order: 1 !important;
+    font-size: 2.15rem !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.04em !important;
   }
 
-  .status-banner p {
-    font-size: 0.95rem;
+  /* Ikon ceklis samping judul status */
+  .status-banner__header .status-banner__icon {
+    order: 2 !important;
+    width: 36px !important;
+    height: 36px !important;
+    background: transparent !important;
+  }
+
+  .status-banner__header .status-banner__icon-inner {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .status-banner__header .status-banner__check-mark {
+    width: 10px !important;
+    height: 16px !important;
+    border-right-width: 3px !important;
+    border-bottom-width: 3px !important;
+  }
+
+  .status-banner__header .status-banner__lucide-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .status-banner__header .status-banner__icon-bg::before {
+    display: none !important;
+  }
+
+  /* 2. kondisi lingkungan... diperkecil di handphone */
+  .status-banner p,
+  .status-banner__description {
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+    line-height: 1.35 !important;
+    margin: 0 0 5px 0 !important;
+    max-width: 92% !important;
+    opacity: 0.95 !important;
+  }
+
+  /* 3. terakhir diperbarui... diperkecil di handphone */
+  .status-banner__updated {
+    margin-top: 3px !important;
+    padding: 2.5px 10px !important;
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+  }
+
+  .status-banner__source {
+    font-size: 0.62rem !important;
+    margin-top: 3px !important;
+    opacity: 0.8 !important;
   }
 
   .card {
