@@ -106,6 +106,7 @@ export async function runAlertCheck(): Promise<{
 }
 
 const HEARTBEAT_TIMEOUT_MS = 5_000;
+const STOP_WAIT_MS = 3_000;
 
 /**
  * Ping heartbeat (mis. healthchecks.io / Uptime Kuma push monitor) setelah siklus sukses.
@@ -183,12 +184,23 @@ export function startAlertScheduler({
     const timer = setInterval(tick, intervalMs);
 
     // DEPLOY-01 (FR-A5): hentikan interval, lalu tunggu siklus yang sedang berjalan
-    // supaya koneksi DB tidak ditutup di tengah penyimpanan alert/notifikasi.
+    // (maks STOP_WAIT_MS) supaya koneksi DB tidak ditutup di tengah penyimpanan
+    // alert/notifikasi, tanpa menahan shutdown bila BMKG sedang lambat.
     return async () => {
         clearInterval(timer);
         if (currentCycle) {
-            console.log("[AlertScheduler] Menunggu siklus yang sedang berjalan selesai...");
-            await currentCycle;
+            console.log(`[AlertScheduler] Menunggu siklus yang sedang berjalan (maks ${STOP_WAIT_MS} ms)...`);
+            let waitTimer: NodeJS.Timeout | undefined;
+            const finished = await Promise.race([
+                currentCycle.then(() => true),
+                new Promise<boolean>((resolve) => {
+                    waitTimer = setTimeout(() => resolve(false), STOP_WAIT_MS);
+                }),
+            ]);
+            clearTimeout(waitTimer);
+            if (!finished) {
+                console.warn(`[AlertScheduler] Siklus belum selesai setelah ${STOP_WAIT_MS} ms; shutdown dilanjutkan.`);
+            }
         }
         console.log("[AlertScheduler] Stopped.");
     };
