@@ -5,6 +5,7 @@ import type { CorsOptions } from "cors";
 import morgan from "morgan";
 
 import { publicRouter, protectedRouter } from "./routes/index.js";
+import { healthRouter } from "./routes/health.route.js";
 import { generalRateLimiter } from "./middleware/rateLimit.middleware.js";
 import { helmetOptions } from "./config/helmet.config.js";
 import { resolveTrustProxy } from "./config/runtimeOptions.js";
@@ -101,6 +102,10 @@ app.use(morgan("dev"));
  */
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true, limit: "100kb" }));
+
+// DEPLOY-01 (FR-A4): /api/healthz & /api/readyz harus sebelum router /api yang
+// memakai rate limiter, agar healthcheck tidak terkena limit atau tertangkap router lain.
+app.use("/api", healthRouter);
 
 app.use("/api/public", generalRateLimiter, publicRouter);
 app.use("/api/protected", generalRateLimiter, protectedRouter);
