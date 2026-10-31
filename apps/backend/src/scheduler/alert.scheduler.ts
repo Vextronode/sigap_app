@@ -110,10 +110,12 @@ export async function runAlertCheck(): Promise<{
  * Di production (Vercel), scheduler tidak dijalankan otomatis —
  * gunakan cron-job.org untuk hit POST /api/v1/public/internal/run-scheduler.
  */
-export function startAlertScheduler(interval = 60_000) {
+export function startAlertScheduler(interval = 60_000): () => Promise<void> {
     console.log(
         `[AlertScheduler] Started. Polling BMKG every ${interval / 1000} seconds.`
     );
+
+    let currentCycle: Promise<void> | null = null;
 
     const execute = async () => {
         try {
@@ -123,9 +125,26 @@ export function startAlertScheduler(interval = 60_000) {
         }
     };
 
+    const tick = () => {
+        currentCycle = execute().finally(() => {
+            currentCycle = null;
+        });
+    };
+
     // Jalankan sekali saat server pertama kali hidup
-    execute();
+    tick();
 
     // Jalankan berkala
-    setInterval(execute, interval);
+    const timer = setInterval(tick, interval);
+
+    // DEPLOY-01 (FR-A5): hentikan interval, lalu tunggu siklus yang sedang berjalan
+    // supaya koneksi DB tidak ditutup di tengah penyimpanan alert/notifikasi.
+    return async () => {
+        clearInterval(timer);
+        if (currentCycle) {
+            console.log("[AlertScheduler] Menunggu siklus yang sedang berjalan selesai...");
+            await currentCycle;
+        }
+        console.log("[AlertScheduler] Stopped.");
+    };
 }
