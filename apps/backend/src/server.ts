@@ -1,12 +1,17 @@
 import "dotenv/config";
 import { setDefaultResultOrder } from "node:dns";
-import { startAlertScheduler } from "./scheduler/alert.scheduler.js";
-import { closeDatabase } from "./config/prisma.js";
+import { validateEnv } from "./config/env.js";
 import { parseIntEnv } from "./config/runtimeOptions.js";
+
+// DEPLOY-01 (FR-A8): validasi env sebelum modul yang membaca env di top-level
+// dimuat. Import statis ESM di-hoist, jadi modul runtime di-import dinamis di bawah.
+validateEnv();
 
 setDefaultResultOrder("ipv4first");
 
-import app from "./app.js";
+const { default: app } = await import("./app.js");
+const { startAlertScheduler } = await import("./scheduler/alert.scheduler.js");
+const { closeDatabase } = await import("./config/prisma.js");
 
 const PORT = process.env.PORT ?? 3000;
 const SHUTDOWN_TIMEOUT_MS = parseIntEnv("SHUTDOWN_TIMEOUT_MS", process.env.SHUTDOWN_TIMEOUT_MS, 10_000);
