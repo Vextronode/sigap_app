@@ -19,7 +19,7 @@ export async function login(email: string, password: string, ip?: string) {
     const errStr = dbError instanceof Error ? dbError.message : String(dbError);
     if (errStr.includes("53000") || errStr.includes("quota")) {
       const quotaErr = new Error(
-        "Layanan basis data cloud mencapai batas kuota (quota exceeded). Silahkan hubungi administrator sistem atau perbarui paket database Neon."
+        "Layanan basis data sedang tidak tersedia. Hubungi administrator sistem."
       );
       (quotaErr as Error & { statusCode?: number }).statusCode = 503;
       throw quotaErr;
