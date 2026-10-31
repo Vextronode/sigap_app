@@ -3,5 +3,8 @@ compose.env
 sigap.env
 sigap.external.env
 
-# State lokal deploy/sigap.sh (mode DB, tag aktif).
+# State lokal deploy/sigap.sh (mode DB, tag aktif/sebelumnya, deploy.log).
 .state/
+
+# Backup DB (berisi data asli). Salin ke luar server, jangan di-commit.
+backups/
