@@ -56,8 +56,6 @@ RUN --mount=type=cache,target=/root/.npm \
 FROM base AS runtime
 ENV NODE_ENV=production \
     PORT=3000
-# express 5, helmet 8, dll. ter-nest di apps/backend/node_modules karena root
-# package.json masih memakai versi lama (express 4) untuk jalur Vercel.
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=prod-deps /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=build /app/apps/backend/dist ./apps/backend/dist

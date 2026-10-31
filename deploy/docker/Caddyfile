@@ -20,7 +20,7 @@
 	}
 
 	handle {
-		# Header dipindahkan dari vercel.json (tanpa HSTS: keputusan pengelola di edge TLS).
+		# Header keamanan SPA (tanpa HSTS: keputusan pengelola di edge TLS).
 		header {
 			X-Frame-Options DENY
 			X-Content-Type-Options nosniff
