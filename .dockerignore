@@ -1,0 +1,32 @@
+# DEPLOY-01 (FR-B1): build context = root repo (npm workspaces + root lockfile).
+# Hanya source aplikasi dan manifest npm yang masuk ke context.
+
+# Dependency & hasil build (dibuat ulang di dalam image)
+**/node_modules
+**/dist
+apps/backend/generated
+
+# Environment & secret: tidak boleh masuk build context dalam bentuk apa pun
+**/.env*
+**/*.env
+deploy/.state
+
+# Hanya Caddyfile yang dibutuhkan dari deploy/ (untuk image frontend)
+deploy
+!deploy/docker/Caddyfile
+
+# Repo, tooling, dan dokumen yang tidak dibutuhkan image
+.git
+.github
+.claude
+.vercel
+.direnv
+docs
+AI
+assets/design
+SIGAP Desain Admin
+api
+vercel.json
+flake.*
+*.zip
+**/*.log

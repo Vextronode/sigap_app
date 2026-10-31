@@ -1,0 +1,118 @@
+# Contoh referensi. Bukan konfigurasi server. Pengelola server menyesuaikan network,
+# ingress, TLS, resource, dan penyimpanan secret.
+#
+# DEPLOY-01 (FR-B5). Jalankan lewat deploy/sigap.sh, yang mengisi:
+#   --env-file compose.env (interpolasi file ini), COMPOSE_PROFILES, SIGAP_DB_ENV_FILE.
+# Mode DB:
+#   local    : profil `localdb` aktif (service db); env runtime = sigap.env
+#   external : tanpa service db; env runtime = sigap.env lalu sigap.external.env (menimpa DB)
+# Tidak ada secret di file ini; semuanya lewat file env.
+
+name: ${SIGAP_PROJECT:-sigap}
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# Env runtime aplikasi. File kedua hanya dipakai di mode external (dipilih sigap.sh).
+x-app-env: &app-env
+  env_file:
+    - path: sigap.env
+      required: true
+    - path: ${SIGAP_DB_ENV_FILE:-.state/no-external-db.env}
+      required: false
+
+services:
+  db:
+    image: postgres:18.6-bookworm
+    profiles: [localdb]
+    # Hanya POSTGRES_* yang dipakai image postgres dari sigap.env.
+    env_file:
+      - path: sigap.env
+        required: true
+    volumes:
+      # PostgreSQL 18: volume di /var/lib/postgresql (PGDATA = /var/lib/postgresql/18/docker).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [internal]
+    restart: unless-stopped
+    logging: *default-logging
+
+  migrate:
+    image: sigap-migrate:${SIGAP_IMAGE_TAG:?SIGAP_IMAGE_TAG wajib di compose.env}
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: migrate
+    # prisma.config.ts memakai DIRECT_URL (koneksi langsung) untuk migrasi.
+    <<: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    networks: [internal, egress]
+    restart: "no"
+    logging: *default-logging
+
+  backend:
+    image: sigap-backend:${SIGAP_IMAGE_TAG:?SIGAP_IMAGE_TAG wajib di compose.env}
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: runtime
+    <<: *app-env
+    init: true
+    # Lebih lama dari SHUTDOWN_TIMEOUT_MS (default 10 s) agar graceful shutdown selesai
+    # sebelum Docker mengirim SIGKILL.
+    stop_grace_period: 15s
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+      migrate:
+        condition: service_completed_successfully
+    # internal: ke db; egress: keluar ke BMKG, Open-Meteo, layanan web push.
+    networks: [internal, egress]
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    restart: unless-stopped
+    logging: *default-logging
+
+  web:
+    image: sigap-web:${SIGAP_IMAGE_TAG:?SIGAP_IMAGE_TAG wajib di compose.env}
+    build:
+      context: ..
+      dockerfile: deploy/docker/frontend.Dockerfile
+    environment:
+      BACKEND_UPSTREAM: backend:3000
+    ports:
+      # Untuk uji lokal & proxy di host yang sama; pengelola menyesuaikan ingress.
+      - "${SIGAP_HTTP_BIND:-127.0.0.1}:${SIGAP_HTTP_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    # Port hanya bisa dipublish dari network non-internal; backend juga ada di egress.
+    networks: [egress]
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    restart: unless-stopped
+    logging: *default-logging
+
+volumes:
+  pgdata:
+
+networks:
+  internal:
+    internal: true
+  egress:
