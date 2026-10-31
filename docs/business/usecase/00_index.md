@@ -17,7 +17,8 @@ Diagram dipecah per modul, bukan digabung dalam satu file, karena SIGAP mencakup
 | Admin / Operator | Perangkat desa yang memiliki akses Dashboard Admin dan telah dilatih untuk menangani aktivasi sirine | Luar |
 | Sistem SIGAP | Platform inti (backend, rule engine, dashboard) | (subjek diagram) |
 | Sumber Eksternal | BMKG, USGS, OpenWeatherMap, AI API | Luar |
-| Perangkat IoT | Indikator level 3-warna dan tombol sirine yang terpasang di titik strategis desa | Luar |
+| Unit Utama | Indikator level (GREEN/YELLOW/ORANGE/RED, tampil 3 warna) + tombol pemicu, satu unit tunggal di Kantor Desa | Luar |
+| Sirine/Toa | Perangkat sirine (saat ini 1, arsitektur mendukung 1..N), menerima broadcast trigger dari Unit Utama via ESP-NOW | Luar |
 
 Sumber Eksternal dan Perangkat IoT digambarkan sebagai aktor, bukan bagian internal sistem, karena keduanya berada di luar kendali langsung SIGAP dan berkomunikasi melalui antarmuka (API/protokol) yang terpisah.
 
@@ -27,8 +28,8 @@ Sumber Eksternal dan Perangkat IoT digambarkan sebagai aktor, bukan bagian inter
 |---|---|---|---|
 | `uc_overview.puml` | Peta besar seluruh use case (tanpa detail relasi) | Seluruh aktor | light_green |
 | `uc_monitoring_lingkungan.puml` | Pemantauan cuaca, seismik, dan ringkasan AI | Warga, Sistem SIGAP, Sumber Eksternal | light_green |
-| `uc_admin_dashboard.puml` | Pengelolaan konten (pengumuman, kontak darurat, titik/jalur evakuasi) | Admin | light_green |
-| `uc_kesiapsiagaan_iot.puml` | Level kesiapsiagaan, indikator fisik, dan aktivasi sirine | Warga, Admin, Sistem SIGAP, Perangkat IoT | yellow |
+| `uc_admin_dashboard.puml` | Pengelolaan konten (kontak darurat, evakuasi, panduan), manajemen perangkat IoT, akun & role, dashboard ringkasan | Admin, Operator | yellow *(direvisi Tahap 2, lihat catatan)* |
+| `uc_kesiapsiagaan_iot.puml` | Level kesiapsiagaan, indikator fisik, dan aktivasi sirine | Warga, Admin, Sistem SIGAP, Unit Utama, Sirine | yellow *(sebagian terselesaikan, lihat catatan)* |
 
 Status `yellow` pada modul kesiapsiagaan-IoT bukan menandakan diagram belum selesai, melainkan menandai bahwa dua keputusan governance terkait jalur komunikasi tombol sirine dan kanal notifikasi operator masih terbuka (lihat PRD SIGAP v4.0, Bagian 7.1). Relasi yang bergantung pada keputusan tersebut ditandai eksplisit di dalam file `.puml` melalui catatan (`note`), bukan diasumsikan.
 

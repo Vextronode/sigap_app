@@ -1,4 +1,5 @@
 import { Menu, Moon, Sun } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { Badge } from "../components/ui/Badge";
 import { useUiStore } from "../stores/uiStore";
 import type { CurrentAlert } from "../types/dashboard";
@@ -15,6 +16,9 @@ export const TopNavbar = ({ alert, isLoading = false, isError = false }: TopNavb
   const theme = useUiStore((state) => state.theme);
   const meta = getAlertMeta(alert);
   const openSidebar = useUiStore((state) => state.openSidebar);
+  const location = useLocation();
+
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <header className="top-navbar">
@@ -24,22 +28,30 @@ export const TopNavbar = ({ alert, isLoading = false, isError = false }: TopNavb
         onClick={openSidebar} 
         aria-label="Buka menu"
       >        
-      <Menu size={22} />
+        <Menu size={22} />
       </button>
+
       <div className="top-navbar__title">
-        <strong>SIGAP Desa Cibenda</strong>
+        <strong>{isAdminRoute ? "ADMIN SIGAP" : "SIGAP Desa Cibenda"}</strong>
         <span>Sistem Informasi Gawat Darurat & Monitoring Cuaca</span>
       </div>
+
       <div className="top-navbar__actions">
-        <Badge tone={isError ? "neutral" : meta.tone}>
-          {isLoading
-            ? "Status: Memuat"
-            : isError
-              ? "Status: Tidak tersedia"
-              : !alert
-                ? "Status: Belum ada"
-                : `Status: ${meta.label}`}
-        </Badge>
+        {!isAdminRoute && (
+          <>
+            <Badge tone={isError ? "neutral" : meta.tone}>
+              {isLoading
+                ? "Status: Memuat"
+                : isError
+                  ? "Status: Tidak tersedia"
+                  : !alert
+                    ? "Status: Belum ada"
+                    : `Status: ${meta.label}`}
+            </Badge>
+            <span className="w-px h-6 bg-[color:var(--border)] mx-1" aria-hidden="true" />
+          </>
+        )}
+
         <button className="icon-button" type="button" onClick={toggleTheme} aria-label="Ganti tema">
           {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
         </button>

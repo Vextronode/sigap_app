@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { notificationService } from "../services/notificationService";
 
 type PermissionState = "unsupported" | "default" | "denied" | "granted";
@@ -51,6 +52,7 @@ export const usePushNotification = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const queryClient = useQueryClient();
   const needsIosInstall = isIos() && !isStandaloneDisplay();
 
   useEffect(() => {
@@ -91,6 +93,7 @@ export const usePushNotification = () => {
       });
 
       await notificationService.subscribe(subscription.toJSON() as PushSubscriptionJSON);
+      queryClient.invalidateQueries({ queryKey: ["admin", "subscribers-count"] });
       setIsSubscribed(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengaktifkan notifikasi.");
@@ -113,6 +116,7 @@ export const usePushNotification = () => {
         await notificationService.unsubscribe(subscription.endpoint);
         await subscription.unsubscribe();
       }
+      queryClient.invalidateQueries({ queryKey: ["admin", "subscribers-count"] });
       setIsSubscribed(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menonaktifkan notifikasi.");

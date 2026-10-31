@@ -9,7 +9,7 @@ type SectionHeaderProps = {
 
 export const SectionHeader = ({ id, title, icon, action }: SectionHeaderProps) => (
   <div className="section-header flex items-center justify-between mb-4 mt-6" id={id}>
-    <div className="section-header__title flex items-center gap-3">
+    <div className="section-header__title flex items-center gap-3 min-w-0">
       {icon && (
         <span className="text-[#0b46ad] flex items-center justify-center">
           {React.isValidElement(icon)

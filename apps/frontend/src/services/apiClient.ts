@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "../stores/authStore";
 
 const trimSlash = (value: string) => value.replace(/\/+$/, "");
 
@@ -22,6 +23,7 @@ export const apiClient = axios.create({
   },
 });
 
+// Interceptor request: menyertakan token JWT pada setiap panggilan jika tersedia
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("sigap_token");
 
@@ -31,6 +33,34 @@ apiClient.interceptors.request.use((config) => {
 
   return config;
 });
+
+// Interceptor response: menangani token kedaluwarsa atau penolakan 401 Unauthorized secara global
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const authState = useAuthStore.getState();
+      const hasStoredToken = Boolean(localStorage.getItem("sigap_token"));
+
+      const isPasswordChange = error.config?.url?.includes("/auth/change-password");
+      const isLoginRequest = error.config?.url?.includes("/auth/login");
+      // Hanya logout jika error 401 berasal dari request yang membutuhkan autentikasi
+      const isProtectedRequest = 
+        error.config?.url?.includes("/protected/") || 
+        error.config?.url?.includes("/auth/me");
+
+      if (!isPasswordChange && !isLoginRequest && isProtectedRequest && (hasStoredToken || authState.token)) {
+        authState.logout();
+
+        // Redirect to login if not already there
+        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+          window.location.href = "/admin/login?expired=true";
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const publicPath = (path: string) => `/public${path.startsWith("/") ? "" : "/"}${path}`;
 export const protectedPath = (path: string) => `/protected${path.startsWith("/") ? "" : "/"}${path}`;

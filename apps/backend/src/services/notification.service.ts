@@ -59,6 +59,17 @@ export class NotificationService {
   }
 
   /**
+   * Mengambil total subscriber aktif push notification warga desa.
+   */
+  static async getSubscriberCount(): Promise<number> {
+    try {
+      return await prisma.pushSubscription.count();
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
    * Ambil riwayat audit pengiriman notifikasi dari database.
    */
   static async getLogs(limit = 20) {

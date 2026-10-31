@@ -33,7 +33,7 @@ export class BmkgService {
     return requestWithRetry<BmkgApiResponse>(
       BMKG_BASE_URL,
       { params: { adm4: adm4Code } },
-      { retries: 3, retryDelayMs: 1000, backoffFactor: 2, timeoutMs: 8000 }
+      { retries: 1, retryDelayMs: 500, backoffFactor: 2, timeoutMs: 6000 }
     );
   }
 
@@ -123,25 +123,38 @@ export class BmkgService {
    * Dibatasi maksimal WASPADA, tidak pernah otomatis jadi SIAGA/AWAS.
    */
   private static async estimateTsunamiStatus(): Promise<TsunamiStatusInfo> {
-    const nearest = await EarthquakeService.getPangandaran();
+    try {
+      const nearest = await EarthquakeService.getPangandaran();
 
-    const isPotentiallyTsunamigenic =
-      nearest?.potential?.trim().toLowerCase() === "berpotensi tsunami";
+      const isPotentiallyTsunamigenic =
+        nearest?.potential?.trim().toLowerCase() === "berpotensi tsunami";
 
-    if (isPotentiallyTsunamigenic && nearest) {
+      if (isPotentiallyTsunamigenic && nearest) {
+        return {
+          status: "WASPADA",
+          source: "BMKG (estimasi dari data gempa)",
+          description: `Estimasi awal dari gempa M${nearest.magnitude} di ${nearest.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+        };
+      }
+
       return {
-        status: "WASPADA",
-        source: "BMKG (estimasi dari data gempa)",
-        description: `Estimasi awal dari gempa M${nearest.magnitude} di ${nearest.location}: berpotensi tsunami menurut data BMKG. Ini BUKAN peringatan resmi InaTEWS — SIGAP belum terhubung ke InaTEWS, tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+        status: "NORMAL",
+        source: "BMKG",
+        description:
+          "Tidak ada indikasi potensi tsunami dari data gempa terkini BMKG.",
+      };
+    } catch (error) {
+      console.warn(
+        "[BmkgService] Gagal estimasi status tsunami dari data gempa:",
+        error instanceof Error ? error.message : error
+      );
+      return {
+        status: "NORMAL",
+        source: "BMKG (Fallback)",
+        description:
+          "Layanan data gempa BMKG sedang tidak stabil. Tidak terdapat indikasi tsunami yang terkonfirmasi.",
       };
     }
-
-    return {
-      status: "NORMAL",
-      source: "BMKG",
-      description:
-        "Tidak ada indikasi potensi tsunami dari data gempa terkini BMKG. SIGAP belum terhubung ke status resmi InaTEWS.",
-    };
   }
 
   private static flatten(raw: BmkgApiResponse): BmkgCuacaItem[] {

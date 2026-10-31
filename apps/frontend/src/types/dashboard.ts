@@ -45,9 +45,22 @@ export type TsunamiStatus = {
 };
 
 export type CurrentAlert = {
+  id?: string;
   level: AlertLevel;
   source: string;
   description: string | null;
+  location?: string | null;
+  shakemap?: string | null;
+  reviewStatus?: string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  reviewer?: {
+    id: string;
+    name: string;
+    email: string;
+    roles?: string[];
+  } | null;
+  createdAt?: string;
   updatedAt: string;
 };
 
@@ -63,14 +76,10 @@ export type Announcement = {
   priority: PriorityLevel;
 };
 
-export type EmergencyContact = {
-  id?: string | number;
-  institution: string;
-  contactPerson?: string;
-  phone?: string;
-  phoneNumber?: string;
-  address?: string;
-};
+import type { EmergencyContactRecord } from "./emergencyContact";
+
+export type EmergencyContact = EmergencyContactRecord;
+
 
 export type GeoJsonLineString = {
   type: "LineString";
@@ -84,13 +93,18 @@ export type GeoJsonFeature = {
 };
 
 export type EvacuationPoint = {
-  id: string | number;
+  id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   latitude: number;
   longitude: number;
-  capacity?: number;
-  address?: string;
+  elevation?: number | null;
+  capacity?: number | null;
+  address?: string | null;
+  facilities?: string[];
+  isCore?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type EvacuationRoute = {
@@ -122,12 +136,16 @@ export type LoginPayload = {
   password: string;
 };
 
+// tipe data pengguna terautentikasi
 export type AuthUser = {
   id: string;
-  fullName: string;
+  name?: string;
+  fullName?: string;
   email: string;
-  role: string;
+  role?: string;
+  roles?: string[];
 };
+
 
 export type LoginResponse = {
   token: string;

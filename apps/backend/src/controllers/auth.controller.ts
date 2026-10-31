@@ -1,10 +1,17 @@
 import { Request, Response } from "express";
-import { login, AuthenticationError } from "../services/auth.service.js";
+import { login, AuthenticationError, AccountLockedError } from "../services/auth.service.js";
+import { revokeToken } from "../repositories/token.repository.js";
 
 export async function loginController(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
-    const result = await login(email, password);
+    // SEC-02b: sumber IP sama dengan rate limiter (req.ip mengikuti setting "trust proxy").
+    const rawIp = req.ip || req.socket.remoteAddress || "";
+    let cleanIp = rawIp.replace(/^::ffff:/, "");
+    if (cleanIp === "::1" || cleanIp === "127.0.0.1") {
+      cleanIp = "127.0.0.1 (Localhost)";
+    }
+    const result = await login(email, password, cleanIp || undefined);
 
     return res.status(200).json({
       success: true,
@@ -16,15 +23,27 @@ export async function loginController(req: Request, res: Response) {
       return res.status(401).json({
         success: false,
         message: error.message,
-        errors: {},
+        errors: ["Kredensial login tidak valid."],
       });
     }
 
+    if (error instanceof AccountLockedError) {
+      return res.status(403).json({
+        success: false,
+        message: error.message,
+        errors: [error.message],
+      });
+    }
+
+    const customErr = error as Error & { statusCode?: number };
+    const statusCode = customErr.statusCode || 500;
+    const message = customErr.message || "Terjadi kesalahan pada server.";
+
     console.error("Login error:", error);
-    return res.status(500).json({
+    return res.status(statusCode).json({
       success: false,
-      message: "Terjadi kesalahan pada server.",
-      errors: {},
+      message,
+      errors: [message],
     });
   }
 }
@@ -35,4 +54,80 @@ export async function meController(req: Request, res: Response) {
     message: "Profil berhasil diambil.",
     data: { user: req.user },
   });
+}
+
+export async function logoutController(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.user.jti) {
+      return res.status(400).json({
+        success: false,
+        message: "Identitas sesi tidak valid.",
+        errors: ["Token JWT tidak memuat jti yang valid."],
+      });
+    }
+
+    const { jti, sub, exp } = req.user;
+    const expiresAt = exp
+      ? new Date(exp * 1000)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await revokeToken(jti, sub, expiresAt);
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout berhasil.",
+      data: {},
+    });
+  } catch (error) {
+    console.error("[AuthController] Logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat mengakhiri sesi.",
+      errors: ["Gagal memproses logout pada server."],
+    });
+  }
+}
+
+export async function changePasswordController(req: Request, res: Response) {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Sesi autentikasi tidak valid.",
+        errors: ["Identitas pengguna tidak ditemukan."],
+      });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    const { changeSelfPassword, AuthenticationError } = await import("../services/auth.service.js");
+
+    const result = await changeSelfPassword(userId, currentPassword, newPassword);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message || "Password berhasil diubah.",
+      data: {},
+    });
+  } catch (error) {
+    const { AuthenticationError } = await import("../services/auth.service.js");
+    if (error instanceof AuthenticationError) {
+      return res.status(401).json({
+        success: false,
+        message: error.message,
+        errors: [error.message],
+      });
+    }
+
+    const customErr = error as Error & { statusCode?: number };
+    const statusCode = customErr.statusCode || 500;
+    const message = customErr.message || "Terjadi kesalahan saat mengubah password.";
+
+    console.error("[AuthController] Change password error:", error);
+    return res.status(statusCode).json({
+      success: false,
+      message,
+      errors: [message],
+    });
+  }
 }

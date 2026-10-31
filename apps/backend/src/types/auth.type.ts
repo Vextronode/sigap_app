@@ -1,8 +1,11 @@
 export interface JwtPayload {
   sub: string;
+  name?: string;
   email: string;
   roles: string[];
   permissions: string[];
+  jti: string;
+  exp?: number;
 }
 
 export interface LoginRequestBody {

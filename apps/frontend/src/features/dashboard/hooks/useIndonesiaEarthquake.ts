@@ -6,9 +6,6 @@ export const useIndonesiaEarthquake = () =>
     queryKey: ["earthquake", "indonesia"] as const,
     queryFn: earthquakeService.getIndonesia,
     options: {
-      staleTime: 0,
       refetchInterval: 60_000,
-      refetchIntervalInBackground: true,
-      refetchOnWindowFocus: true,
     },
   });

@@ -48,7 +48,7 @@ const handleTsunamiStatus = async (_req: Request, res: Response) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal mengambil status tsunami.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Layanan upstream sementara tidak tersedia."],
         };
 
         res.status(502).json(response);
