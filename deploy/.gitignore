@@ -1,0 +1,7 @@
+# Env asli berisi secret: jangan pernah di-commit. Yang di-commit hanya *.example.
+compose.env
+sigap.env
+sigap.external.env
+
+# State lokal deploy/sigap.sh (mode DB, tag aktif).
+.state/
