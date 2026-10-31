@@ -23,5 +23,9 @@ export const earthquakeService = {
     const response = await apiClient.get<ApiResponse<Earthquake | null>>(publicPath("/earthquakes/west-java/history"));
     return response.data.data;
   },
+  getMapPoints: async () => {
+    const response = await apiClient.get<ApiResponse<Earthquake[]>>(publicPath("/earthquakes/map"));
+    return response.data.data ?? [];
+  },
   getLatest: async () => earthquakeService.getIndonesia(),
 };

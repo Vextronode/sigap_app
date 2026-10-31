@@ -83,6 +83,21 @@ const getVillageCoordinates = () => {
  */
 const DESA_CIBENDA_COORDINATES = getVillageCoordinates();
 
+/**
+ * Validasi koordinat geografis wilayah Indonesia dan sekitarnya (termasuk zona subduksi & palung tektonik).
+ * Mencegah data anomali atau data feed rusak terplot di Samudra Hindia bagian selatan, kutub, atau Australia.
+ */
+function isValidIndonesianCoordinate(lat: number, lon: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    lat >= -15 &&
+    lat <= 10 &&
+    lon >= 90 &&
+    lon <= 145
+  );
+}
+
 export class EarthquakeService {
   static async getIndonesia(): Promise<EarthquakeInfo> {
     try {
@@ -189,6 +204,108 @@ export class EarthquakeService {
 
   static async getLatest(): Promise<EarthquakeInfo> {
     return this.getIndonesia();
+  }
+
+  /**
+   * Mengambil kumpulan titik-titik sebaran gempa terkini untuk Peta Gempa:
+   * 1. Gempa nasional terbaru (autogempa)
+   * 2. 15 gempa M 5.0+ terkini (gempaterkini)
+   * 3. 15 gempa dirasakan terkini (gempadirasakan)
+   * 4. Riwayat gempa Pangandaran ber-shakemap di database
+   *
+   * Di-cache in-memory dan ter-deduplikasi agar hemat kuota database.
+   */
+  static async getMapPoints(): Promise<EarthquakeInfo[]> {
+    const cacheKey = "MAP_EARTHQUAKE_POINTS";
+    const cached = earthquakeCache.get(cacheKey) as CacheEntry<EarthquakeInfo[]> | undefined;
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
+    try {
+      const [autoRaw, listItems, dbRecords] = await Promise.all([
+        this.fetchCached<BmkgAutogempaResponse>(BMKG_AUTOGEMPA_URL).catch(() => null),
+        this.fetchCombinedList().catch(() => []),
+        prisma.earthquakeRecord
+          .findMany({
+            orderBy: { eventTime: "desc" },
+            take: 15,
+          })
+          .catch(() => []),
+      ]);
+
+      const pointsMap = new Map<string, EarthquakeInfo>();
+
+      // A. Masukkan autogempa nasional terbaru jika ada
+      if (autoRaw?.Infogempa?.gempa) {
+        const autoInfo = this.parse(autoRaw.Infogempa.gempa);
+        if (
+          isValidIndonesianCoordinate(
+            autoInfo.coordinates.latitude,
+            autoInfo.coordinates.longitude,
+          )
+        ) {
+          pointsMap.set(autoInfo.updatedAt, autoInfo);
+        }
+      }
+
+      // B. Masukkan data dari feed gabungan terkini & dirasakan
+      for (const item of listItems) {
+        try {
+          const parsed = this.parse(item);
+          if (
+            isValidIndonesianCoordinate(
+              parsed.coordinates.latitude,
+              parsed.coordinates.longitude,
+            ) &&
+            !pointsMap.has(parsed.updatedAt)
+          ) {
+            pointsMap.set(parsed.updatedAt, parsed);
+          }
+        } catch {
+          // Lewati item yang gagal diparsing
+        }
+      }
+
+      // C. Masukkan riwayat gempa Pangandaran ber-shakemap dari database
+      for (const rec of dbRecords) {
+        if (!isValidIndonesianCoordinate(rec.latitude, rec.longitude)) {
+          continue;
+        }
+        const eventTime = rec.eventTime;
+        const existing = pointsMap.get(eventTime);
+        if (!existing) {
+          pointsMap.set(eventTime, {
+            magnitude: rec.magnitude,
+            depth: rec.depth,
+            location: rec.location,
+            coordinates: { latitude: rec.latitude, longitude: rec.longitude },
+            distanceToVillage: rec.distanceToVillage,
+            felt: rec.felt ?? "",
+            potential: rec.potential ?? "",
+            shakemap: rec.shakemap ?? "",
+            updatedAt: rec.eventTime,
+          });
+        } else if (!existing.shakemap && rec.shakemap) {
+          existing.shakemap = rec.shakemap;
+        }
+      }
+
+      // Urutkan dari waktu kejadian paling baru
+      const result = Array.from(pointsMap.values()).sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
+      earthquakeCache.set(cacheKey, {
+        data: result,
+        expiresAt: Date.now() + EARTHQUAKE_CACHE_TTL_MS,
+      });
+
+      return result;
+    } catch (error) {
+      console.error("[EarthquakeService] Error getting map points:", error);
+      return [];
+    }
   }
 
   static async getWestJava(): Promise<EarthquakeInfo | null> {
@@ -518,10 +635,32 @@ export class EarthquakeService {
     }
   }
 
+  private static parseCoordinates(raw: BmkgEarthquakeItem): { latitude: number; longitude: number } {
+    let latitude = NaN;
+    let longitude = NaN;
+
+    if (raw.Coordinates && raw.Coordinates.includes(",")) {
+      const [latStr, lonStr] = raw.Coordinates.split(",");
+      latitude = Number.parseFloat(latStr?.trim() ?? "");
+      longitude = Number.parseFloat(lonStr?.trim() ?? "");
+    }
+
+    // Fallback ekstra jika raw.Coordinates kosong/NaN tapi Lintang & Bujur ada
+    if ((Number.isNaN(latitude) || Number.isNaN(longitude)) && raw.Lintang && raw.Bujur) {
+      const latVal = Number.parseFloat(raw.Lintang.replace(/[^\d.-]/g, ""));
+      const isLS = /LS/i.test(raw.Lintang);
+      latitude = isLS ? -Math.abs(latVal) : Math.abs(latVal);
+
+      const lonVal = Number.parseFloat(raw.Bujur.replace(/[^\d.-]/g, ""));
+      const isBB = /BB/i.test(raw.Bujur);
+      longitude = isBB ? -Math.abs(lonVal) : Math.abs(lonVal);
+    }
+
+    return { latitude, longitude };
+  }
+
   private static parse(raw: BmkgEarthquakeItem): EarthquakeInfo {
-    const [latStr, lonStr] = raw.Coordinates.split(",");
-    const latitude = Number.parseFloat(latStr?.trim() ?? "");
-    const longitude = Number.parseFloat(lonStr?.trim() ?? "");
+    const { latitude, longitude } = this.parseCoordinates(raw);
     const updatedAt = this.toIso(raw.DateTime);
 
     return {
