@@ -65,10 +65,11 @@ jobs:
 
       # ----------------------------------------------------------------
       # GUARD — cegah regresi upgrade tidak sengaja ke TypeScript 7.
-      # @vercel/node (dan kemungkinan tooling lain) belum kompatibel
-      # dengan compiler API baru TS7 per Agustus 2026. Kalau versi ini
-      # naik ke 7.x tanpa sadar (mis. lewat `npm update`), CI gagal di
-      # sini dengan pesan jelas — bukan error samar di tahap deploy.
+      # Berlaku sampai WP-E (DEPLOY-01): selama deployment Vercel masih
+      # dipakai, @vercel/node belum kompatibel dengan compiler API baru TS7.
+      # Kalau versi ini naik ke 7.x tanpa sadar (mis. lewat `npm update`),
+      # CI gagal di sini dengan pesan jelas — bukan error samar di tahap deploy.
+      # Evaluasi ulang guard ini setelah Vercel di-decommission (WP-E/E8).
       # ----------------------------------------------------------------
       - name: Guard - TypeScript must stay on 6.x
         run: |
@@ -161,6 +162,58 @@ jobs:
         run: npm run build --workspace=apps/backend
 
   # ==========================================================
+  # DOCKER — guard: image staging (DEPLOY-01) tetap bisa di-build
+  # ==========================================================
+  docker:
+    name: Docker images (build only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Variabel backend di deploy/sigap.env.example harus sama dengan
+      # apps/backend/.env.example (POSTGRES_* hanya untuk container db).
+      - name: Guard - env example names in sync
+        run: |
+          names() { grep -oE '^#? ?[A-Z][A-Z0-9_]+=' "$1" | sed -E 's/^# ?//; s/=$//' | sort -u; }
+          if ! diff <(names apps/backend/.env.example) <(names deploy/sigap.env.example | grep -vE '^POSTGRES_'); then
+            echo "::error::Daftar variabel apps/backend/.env.example dan deploy/sigap.env.example tidak sama (lihat diff di atas)."
+            exit 1
+          fi
+          echo "OK — daftar variabel env sinkron"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend (runtime)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/backend.Dockerfile
+          target: runtime
+          push: false
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Build backend (migrate)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/backend.Dockerfile
+          target: migrate
+          push: false
+          cache-from: type=gha,scope=backend
+
+      - name: Build frontend (web)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/frontend.Dockerfile
+          push: false
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+  # ==========================================================
   # SUMMARY — satu job status gabungan untuk branch protection rule
   # (supaya required check di GitHub cukup satu nama, tidak perlu
   # update tiap kali ada job baru ditambah/dihapus)
@@ -168,12 +221,12 @@ jobs:
   ci-success:
     name: CI Success
     if: always()
-    needs: [frontend, backend]
+    needs: [frontend, backend, docker]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs passed
         run: |
-          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ]; then
+          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.docker.result }}" != "success" ]; then
             echo "::error::Salah satu job CI gagal."
             exit 1
           fi
