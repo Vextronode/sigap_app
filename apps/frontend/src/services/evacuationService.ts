@@ -2,13 +2,16 @@ import { apiClient, protectedPath, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 import type { EvacuationPoint, EvacuationRoute } from "../types/dashboard";
 
-type EvacuationPointPayload = {
+export type EvacuationPointPayload = {
   name: string;
-  description?: string;
+  description?: string | null;
   latitude: number;
   longitude: number;
-  capacity?: number;
-  address?: string;
+  elevation?: number | null;
+  capacity?: number | null;
+  address?: string | null;
+  facilities?: string[];
+  isCore?: boolean;
 };
 
 type EvacuationRoutePayload = {
@@ -24,8 +27,12 @@ export const evacuationService = {
     return response.data.data;
   },
   getRoutes: async () => {
-    const response = await apiClient.get<ApiResponse<EvacuationRoute[]>>(publicPath("/evacuation-routes"));
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<EvacuationRoute[]>>(publicPath("/evacuation-routes"));
+      return response.data.data ?? [];
+    } catch {
+      return [];
+    }
   },
   createPoint: async (payload: EvacuationPointPayload) => {
     const response = await apiClient.post<ApiResponse<EvacuationPoint>>(protectedPath("/evacuation-points"), payload);

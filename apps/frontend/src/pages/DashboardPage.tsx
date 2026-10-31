@@ -1,6 +1,7 @@
 import { Announcements } from "../features/dashboard/components/Announcements";
 import { CurrentAlertCard } from "../features/dashboard/components/CurrentAlertCard";
 import { NotificationPrompt } from "../features/dashboard/components/NotificationPrompt";
+import { EarthquakeDistributionMap } from "../features/dashboard/components/EarthquakeDistributionMap";
 import { EarthquakeCard } from "../features/dashboard/components/EarthquakeCard";
 import { SectionHeader } from "../components/common/SectionHeader";
 import { EmergencyContacts } from "../features/dashboard/components/EmergencyContacts";
@@ -8,35 +9,47 @@ import { EvacuationRoutes } from "../features/dashboard/components/EvacuationRou
 import { PreparednessGuide } from "../features/dashboard/components/PreparednessGuide";
 import { TsunamiCard } from "../features/dashboard/components/TsunamiCard";
 import { WeatherSection } from "../features/dashboard/components/WeatherSection";
-import { useAnnouncements } from "../features/dashboard/hooks/useAnnouncements";
+import { dummyAnnouncements } from "../features/dashboard/data/dummyData";
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { useIndonesiaEarthquake } from "../features/dashboard/hooks/useIndonesiaEarthquake";
 import { useEmergencyContacts } from "../features/dashboard/hooks/useEmergencyContacts";
 import { useEvacuation } from "../features/dashboard/hooks/useEvacuation";
-import { useEvacuationRoutes } from "../features/dashboard/hooks/useEvacuationRoutes";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
+import { usePangandaranHistory } from "../features/dashboard/hooks/usePangandaranHistory";
 import { useWestJavaEarthquake } from "../features/dashboard/hooks/useWestJavaEarthquake";
 import { useTsunamiStatus } from "../features/dashboard/hooks/useTsunamiStatus";
 import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
-import { Siren, TriangleAlert, } from "lucide-react";
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
+import { TriangleAlert, Siren } from "lucide-react";
 
 export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isAdmin = useAuthStore((state) => state.isAdmin);
+  const isExplicitCitizenView = searchParams.get("view") === "warga";
+
+  useEffect(() => {
+    if (isAdmin && !isExplicitCitizenView) {
+      navigate("/admin/dashboard", { replace: true });
+    }
+  }, [isAdmin, isExplicitCitizenView, navigate]);
 
   const weatherQuery = useWeather();
   const forecastQuery = useForecast();
   const indonesiaEarthquakeQuery = useIndonesiaEarthquake();
   const westJavaEarthquakeQuery = useWestJavaEarthquake();
   const pangandaranEarthquakeQuery = usePangandaranEarthquake();
+  const pangandaranHistoryQuery = usePangandaranHistory();
   const tsunamiQuery = useTsunamiStatus();
   const alertQuery = useCurrentAlert();
-  const announcementsQuery = useAnnouncements();
   const contactsQuery = useEmergencyContacts();
   const evacuationQuery = useEvacuation();
-  const evacuationRoutesQuery = useEvacuationRoutes();
 
   /**
    * Global loading indicator hanya aktif ketika data pertama kali dimuat.
@@ -53,11 +66,9 @@ export default function DashboardPage() {
     pangandaranEarthquakeQuery,
     tsunamiQuery,
     alertQuery,
-    announcementsQuery,
     contactsQuery,
     evacuationQuery,
-    evacuationRoutesQuery,
-  ].some((query) => query.isLoading);
+  ].some((query) => query.isLoading && !query.isError);
 
   return (
     <div className="dashboard-page">
@@ -74,6 +85,7 @@ export default function DashboardPage() {
           isError={alertQuery.isError}
         />
         <NotificationPrompt />
+        <EarthquakeDistributionMap />
         {/* Fitur Ringkasan AI dinonaktifkan sementara:
         <AISummaryCard
           summary={summaryQuery.data ?? null}
@@ -101,6 +113,7 @@ export default function DashboardPage() {
               earthquake={pangandaranEarthquakeQuery.data ?? null}
               isLoading={pangandaranEarthquakeQuery.isLoading}
               isError={pangandaranEarthquakeQuery.isError}
+              historicalEarthquake={pangandaranHistoryQuery.data ?? null}
             />
             <div className="dashboard-grid dashboard-grid--two">
               <EarthquakeCard
@@ -132,11 +145,8 @@ export default function DashboardPage() {
         </section>
         <EvacuationRoutes
           points={evacuationQuery.data ?? []}
-          routes={evacuationRoutesQuery.data ?? []}
           isPointsLoading={evacuationQuery.isLoading}
           isPointsError={evacuationQuery.isError}
-          isRoutesLoading={evacuationRoutesQuery.isLoading}
-          isRoutesError={evacuationRoutesQuery.isError}
         />
         <EmergencyContacts
           contacts={contactsQuery.data ?? []}
@@ -145,9 +155,7 @@ export default function DashboardPage() {
         />
         <PreparednessGuide />
         <Announcements
-          announcements={announcementsQuery.data ?? []}
-          isLoading={announcementsQuery.isLoading}
-          isError={announcementsQuery.isError}
+          announcements={dummyAnnouncements}
         />
       </div>
     </div>

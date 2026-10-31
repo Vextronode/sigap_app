@@ -1,4 +1,4 @@
-import { apiClient, publicPath } from "./apiClient";
+import { apiClient, protectedPath, publicPath } from "./apiClient";
 import type { ApiResponse } from "../types/api";
 
 export type NotificationPayload = {
@@ -34,4 +34,16 @@ export const notificationService = {
   unsubscribe: async (endpoint: string) => {
     await apiClient.post(publicPath("/notifications/unsubscribe"), { endpoint });
   },
+
+  getSubscriberCount: async (): Promise<number> => {
+    try {
+      const response = await apiClient.get<ApiResponse<{ total: number }>>(
+        protectedPath("/notifications/subscribers/count")
+      );
+      return response.data.data?.total ?? 0;
+    } catch {
+      return 0;
+    }
+  },
 };
+

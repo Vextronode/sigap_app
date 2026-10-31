@@ -1,17 +1,44 @@
-import { Map } from "lucide-react";
+import { ExternalLink, History, Map } from "lucide-react";
+import { IoIosArrowRoundBack, IoIosArrowRoundForward } from "react-icons/io";
 import { useState, type ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
 import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import type { Earthquake } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
-import { formatDateTime } from "../../../utils/date";
+import { formatDateTime, getDaysAgoInfo, type DaysAgoTone } from "../../../utils/date";
+
+const getDaysAgoBadgeClass = (tone: DaysAgoTone) => {
+  switch (tone) {
+    case "today":
+      return "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50";
+    case "recent":
+      return "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50";
+    case "past":
+    default:
+      return "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700/50";
+  }
+};
 
 type EarthquakeCardProps = {
   title: string;
   earthquake: Earthquake | null;
   isLoading?: boolean;
   isError?: boolean;
+  historicalEarthquake?: Earthquake | null;
+  showSourceLink?: boolean;
+};
+
+const PANGANDARAN_FALLBACK_HISTORY: Earthquake = {
+  magnitude: 4.2,
+  depth: "19 km",
+  location: "Pusat gempa berada di laut 75 km barat daya Kab.Pangandaran",
+  coordinates: { latitude: -8.04, longitude: 107.9 },
+  distanceToVillage: 83,
+  felt: "II Pangandaran",
+  potential: "Tidak berpotensi tsunami",
+  shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260826204343.mmi.jpg",
+  updatedAt: "2026-08-26T13:43:43.000Z",
 };
 
 type EarthquakeVariant = "indonesia" | "west-java" | "pangandaran";
@@ -66,8 +93,8 @@ const variantConfig: Record<
     badgeTone: "safe",
     badgeClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     titleClassName: "text-foreground",
-    valueClassName: "text-blue-600 dark:text-blue-400",
-    noteClassName: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
+    valueClassName: "text-emerald-600 dark:text-emerald-400",
+    noteClassName: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
     emptyTitle: "Data Belum Tersedia",
     emptyMessage: "Informasi gempa Indonesia belum dapat ditampilkan saat ini.",
   },
@@ -88,8 +115,8 @@ const variantConfig: Record<
     badgeTone: "safe",
     badgeClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     titleClassName: "text-foreground",
-    valueClassName: "text-emerald-600 dark:text-emerald-400",
-    noteClassName: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    valueClassName: "text-red-600 dark:text-red-400",
+    noteClassName: "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400",
     emptyTitle: "Data Belum Tersedia",
     emptyMessage:
       "Tidak ada gempa yang berdampak ke wilayah sekitar Desa Cibenda pada data saat ini dari BMKG.",
@@ -124,7 +151,7 @@ const ShakemapImage = ({ url, alt }: ShakemapImageProps) => {
         src={url}
         alt={alt}
         className={cn(
-          "h-full w-full object-contain transition-opacity duration-300",
+          "h-full w-full object-contain p-2 transition-opacity duration-300",
           status === "loaded" ? "opacity-100" : "opacity-0"
         )}
         onLoad={() => setStatus("loaded")}
@@ -152,14 +179,29 @@ export const EarthquakeCard = ({
   earthquake,
   isLoading = false,
   isError = false,
+  historicalEarthquake,
+  showSourceLink = false,
 }: EarthquakeCardProps) => {
-  const displayEarthquake = isError ? null : earthquake;
-  const shakemapUrl = displayEarthquake?.shakemap;
+  const [showHistory, setShowHistory] = useState(false);
 
-  if (isLoading) return <CardSkeleton />;
+  if (isLoading && !isError) return <CardSkeleton />;
 
   const variant = getVariant(title);
   const config = variantConfig[variant];
+
+  // Mode riwayat interaktif eksklusif hanya untuk gempa Pangandaran
+  const resolvedHistory =
+    variant === "pangandaran"
+      ? (historicalEarthquake ?? PANGANDARAN_FALLBACK_HISTORY)
+      : null;
+  const isHistoryActive =
+    variant === "pangandaran" && showHistory && !!resolvedHistory;
+  const displayEarthquake = isHistoryActive
+    ? resolvedHistory
+    : isError
+    ? null
+    : earthquake;
+  const shakemapUrl = displayEarthquake?.shakemap;
   const tsunamiBadge =
     variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.potential);
   const isDanger = tsunamiBadge?.tone === "danger";
@@ -172,6 +214,9 @@ export const EarthquakeCard = ({
 
   const regionLabel = title.replace(/^Info Gempa\s*/i, "");
 
+  const referenceEarthquake = displayEarthquake ?? resolvedHistory ?? earthquake;
+  const daysAgoInfo = getDaysAgoInfo(referenceEarthquake?.updatedAt);
+
   if (!displayEarthquake) {
     return (
       <Card
@@ -181,18 +226,31 @@ export const EarthquakeCard = ({
         )}
       >
         <div className="flex h-full min-h-[420px] flex-col justify-between">
-          <div className="flex items-center gap-3 border-b border-[color:var(--border)] px-5 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-              {config.renderCustomIcon()}
+          <div className="flex items-center justify-between gap-3 border-b border-[color:var(--border)] px-5 py-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                {config.renderCustomIcon()}
+              </div>
+              <div className="min-w-0">
+                <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
+                  Info Gempa
+                </p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {regionLabel}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
-                Info Gempa
-              </p>
-              <p className="text-xs font-medium text-muted-foreground">
-                {regionLabel}
-              </p>
-            </div>
+
+            {daysAgoInfo && (
+              <span
+                className={cn(
+                  "shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs",
+                  getDaysAgoBadgeClass(daysAgoInfo.tone)
+                )}
+              >
+                {daysAgoInfo.text}
+              </span>
+            )}
           </div>
 
           <div className="flex flex-1 items-center justify-center px-6 py-8 text-center">
@@ -201,16 +259,48 @@ export const EarthquakeCard = ({
                 {config.renderCustomIcon()}
               </div>
               <h3 className="text-base font-semibold text-foreground">
-                {config.emptyTitle}
+                {isError ? "Data Belum Tersambung" : config.emptyTitle}
               </h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {config.emptyMessage}
+                {isError
+                  ? `Terjadi gangguan koneksi data saat memuat informasi gempa ${regionLabel}.`
+                  : config.emptyMessage}
               </p>
             </div>
           </div>
 
-          <div className="border-t border-[color:var(--border)] px-5 py-3 text-center text-[11px] italic text-muted-foreground">
-            Menunggu data gempa dari BMKG untuk sinkronisasi otomatis...
+          <div className={cn("border-t border-[color:var(--border)] px-4 py-3 text-center sm:px-5", showSourceLink ? "flex items-center justify-between gap-2" : "")}>
+            {variant === "pangandaran" && resolvedHistory ? (
+              <button
+                type="button"
+                onClick={() => setShowHistory(true)}
+                className="group inline-flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md py-1 px-1.5 touch-manipulation cursor-pointer dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <span>Lihat Gempa {regionLabel} Terakhir</span>
+                <IoIosArrowRoundForward
+                  size={20}
+                  className="text-blue-600 transition-transform group-hover:translate-x-1 dark:text-blue-400"
+                  aria-hidden="true"
+                />
+              </button>
+            ) : (
+              <span className="text-[11px] italic text-muted-foreground">
+                Menunggu data BMKG untuk sinkronisasi otomatis...
+              </span>
+            )}
+            {showSourceLink && (
+              <a
+                href="https://www.bmkg.go.id/gempabumi/gempabumi-realtime"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-bold text-[color:var(--primary)] hover:underline transition-colors shrink-0"
+                style={{ color: "var(--primary)" }}
+                title="Buka Data Gempa Real-time di Situs Resmi BMKG"
+              >
+                <span style={{ color: "var(--primary)" }}>Web BMKG</span>
+                <ExternalLink size={13} className="shrink-0" style={{ color: "var(--primary)" }} aria-hidden="true" />
+              </a>
+            )}
           </div>
         </div>
       </Card>
@@ -227,8 +317,18 @@ export const EarthquakeCard = ({
       )}
     >
       <div className="flex h-full min-h-[420px] flex-col justify-between">
+        {/* Banner informasi jika sedang menampilkan mode riwayat */}
+        {isHistoryActive && (
+          <div className="flex items-center justify-between gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs font-semibold text-amber-800 dark:text-amber-300 sm:px-5 sm:text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <History size={16} className="shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+              <span className="truncate">Menampilkan riwayat gempa {regionLabel} terakhir</span>
+            </div>
+            <span className="shrink-0 text-xs font-bold uppercase tracking-wider opacity-85">BMKG</span>
+          </div>
+        )}
         {variant === "pangandaran" && (
-          <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden border-b border-[color:var(--border)] bg-muted sm:aspect-video">
+          <div className="relative h-[400px] sm:h-[460px] md:h-[500px] w-full shrink-0 overflow-hidden border-b border-[color:var(--border)] bg-muted/20 flex items-center justify-center">
             {shakemapUrl ? (
               <ShakemapImage
                 key={shakemapUrl}
@@ -249,19 +349,32 @@ export const EarthquakeCard = ({
         )}
 
         <div className="border-b border-[color:var(--border)] px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-              {config.renderCustomIcon()}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                {config.renderCustomIcon()}
+              </div>
+
+              <div className="min-w-0">
+                <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
+                  Info Gempa
+                </p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {regionLabel}
+                </p>
+              </div>
             </div>
 
-            <div className="min-w-0">
-              <p className={cn("text-base font-bold leading-tight", config.titleClassName)}>
-                Info Gempa
-              </p>
-              <p className="text-xs font-medium text-muted-foreground">
-                {regionLabel}
-              </p>
-            </div>
+            {daysAgoInfo && (
+              <span
+                className={cn(
+                  "shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs",
+                  getDaysAgoBadgeClass(daysAgoInfo.tone)
+                )}
+              >
+                {daysAgoInfo.text}
+              </span>
+            )}
           </div>
 
           {tsunamiBadge && (
@@ -328,14 +441,26 @@ export const EarthquakeCard = ({
             </div>
           </div>
 
-          <div className="my-5 border-t border-[color:var(--border)]" />
-
-          <div className="mt-auto grid grid-cols-2 gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="mt-6 grid grid-cols-2 gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             <div>
               <div className="text-[color:var(--text-muted)]">Sumber Data</div>
-              <div className="mt-1 text-sm font-semibold uppercase tracking-normal text-foreground">
-                BMKG
-              </div>
+              {showSourceLink ? (
+                <a
+                  href="https://www.bmkg.go.id/gempabumi/gempabumi-realtime"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-[color:var(--primary)] hover:underline transition-colors"
+                  style={{ color: "var(--primary)" }}
+                  title="Buka Data Gempa Real-time di Situs Resmi BMKG"
+                >
+                  <span style={{ color: "var(--primary)" }}>BMKG Real-time</span>
+                  <ExternalLink size={13} className="shrink-0" style={{ color: "var(--primary)" }} aria-hidden="true" />
+                </a>
+              ) : (
+                <div className="mt-1 text-sm font-semibold uppercase tracking-normal text-foreground">
+                  BMKG
+                </div>
+              )}
             </div>
             <div className="text-right">
               <div className="text-[color:var(--text-muted)]">Terjadi</div>
@@ -350,6 +475,56 @@ export const EarthquakeCard = ({
             </div>
           </div>
         </div>
+
+        {/* Footer info & link sumber / mode riwayat */}
+        {showSourceLink ? (
+          <div className="border-t border-[color:var(--border)] px-4 py-2.5 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between text-xs sm:px-5">
+            {isHistoryActive ? (
+              <button
+                type="button"
+                onClick={() => setShowHistory(false)}
+                className="group inline-flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md py-1 px-1.5 touch-manipulation cursor-pointer dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <IoIosArrowRoundBack
+                  size={20}
+                  className="text-blue-600 transition-transform group-hover:-translate-x-1 dark:text-blue-400"
+                  aria-hidden="true"
+                />
+                <span>Lihat Data Gempa Saat Ini</span>
+              </button>
+            ) : (
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Sinkronisasi BMKG
+              </span>
+            )}
+            <a
+              href="https://www.bmkg.go.id/gempabumi/gempabumi-realtime"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[color:var(--primary)] hover:underline transition-colors shrink-0"
+              style={{ color: "var(--primary)" }}
+              title="Lihat Data Gempa Real-time di Situs Resmi BMKG"
+            >
+              <span style={{ color: "var(--primary)" }}>Web BMKG</span>
+              <ExternalLink size={13} className="shrink-0" style={{ color: "var(--primary)" }} aria-hidden="true" />
+            </a>
+          </div>
+        ) : isHistoryActive ? (
+          <div className="border-t border-[color:var(--border)] px-4 py-3 text-center sm:px-5">
+            <button
+              type="button"
+              onClick={() => setShowHistory(false)}
+              className="group inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md py-1.5 px-2 touch-manipulation cursor-pointer dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              <IoIosArrowRoundBack
+                size={24}
+                className="text-blue-600 transition-transform group-hover:-translate-x-1 dark:text-blue-400"
+                aria-hidden="true"
+              />
+              <span>Lihat Data Gempa Saat Ini</span>
+            </button>
+          </div>
+        ) : null}
       </div>
     </Card>
   );

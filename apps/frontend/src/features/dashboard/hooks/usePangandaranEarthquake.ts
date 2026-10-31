@@ -6,9 +6,6 @@ export const usePangandaranEarthquake = () =>
     queryKey: ["earthquake", "pangandaran"] as const,
     queryFn: earthquakeService.getPangandaran,
     options: {
-      staleTime: 0,
       refetchInterval: 60_000,
-      refetchIntervalInBackground: true,
-      refetchOnWindowFocus: true,
     },
   });

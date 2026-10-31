@@ -1,0 +1,3 @@
+# Script dijalankan dengan bash (Linux/WSL/Git Bash). Paksa LF agar checkout Windows
+# (core.autocrlf=true) tidak menyisipkan CR ("$'\r': command not found").
+* text=auto eol=lf

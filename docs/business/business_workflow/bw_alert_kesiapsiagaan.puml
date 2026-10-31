@@ -32,48 +32,54 @@ partition "AS-IS" {
 partition "TO-BE" {
 
     partition "Sistem SIGAP" {
-
         start
 
         :Evaluasi data lingkungan\nterhadap threshold;
-        :Tetapkan level kesiapsiagaan\n(Hijau/Kuning/Merah);
-        :Kirim level ke Dashboard;
-        :Kirim level ke Perangkat IoT;
+        :Tetapkan level kesiapsiagaan\n(GREEN/YELLOW/ORANGE/RED);
     }
 
-    partition "Perangkat IoT" {
-
-        :Tampilkan indikator level;
+    partition "Unit Utama" {
+        :Polling level dari backend\n(REST Polling, ADR-013);
+        :Tampilkan indikator\n(3 warna: GREEN+YELLOW digabung,\nORANGE, RED tampil terpisah);
     }
 
-    if (Level = Kuning atau Merah?) then (Ya)
+    if (Level = ORANGE atau RED?) then (Ya)
 
         partition "Operator" {
 
             :Terima notifikasi perubahan level;
 
             note right
-            Kanal notifikasi masih TBD
-            (PRD SIGAP v4.0 §7.1)
+            Web Push langsung SUDAH LIVE.
+            Integrasi SID sebagai kanal
+            tambahan masih menunggu
+            sign-off Tim SID.
             end note
 
             :Verifikasi kondisi lapangan;
 
             if (Aktivasi sirine?) then (Ya)
-                :Tekan tombol sirine;
+                :Tekan tombol sirine\n(fisik di Unit Utama,\natau digital via dashboard);
+                note right
+                Level RED wajib konfirmasi
+                2-langkah. Cooldown 60 detik
+                berlaku pasca-trigger,
+                dipotong otomatis jika
+                eskalasi ke RED (FS-09).
+                end note
             else (Tidak)
                 :Tidak ada tindakan lanjutan;
             endif
         }
 
-        partition "Perangkat IoT" {
-            :Bunyikan sirine\nsesuai level;
+        partition "Sirine/Toa (1..N)" {
+            :Bunyikan sirine\n(broadcast ke seluruh Sirine\nterdaftar, bukan pilih satu);
         }
 
-    else (Hijau)
+    else (GREEN/YELLOW)
 
-        partition "Perangkat IoT" {
-            :Sirine tidak dapat diaktifkan\n(safeguard by design);
+        partition "Unit Utama" {
+            :Tombol sirine nonaktif\n(safeguard by design);
         }
 
     endif

@@ -5,7 +5,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [dev, main]
+    branches: [dev, staging, main]
 
 # Batalkan run lama kalau ada push baru ke PR yang sama — hemat waktu CI.
 concurrency:
@@ -43,39 +43,18 @@ jobs:
         run: npm ci
 
       # ----------------------------------------------------------------
-      # WORKAROUND WAJIB — npm bug cli#4828 (optional dependencies lintas
-      # platform tidak selalu ter-resolve dengan benar di lockfile kalau
-      # digenerate di OS berbeda dari runner CI). Ini persis masalah yang
-      # bikin build Vercel gagal berkali-kali. Runner GitHub Actions =
-      # Linux x64 glibc, sama seperti Vercel — fix yang sama berlaku di sini.
-      #
-      # Kalau di masa depan lockfile sudah terbukti selalu lengkap tanpa
-      # workaround ini (misal setelah pindah ke pnpm), baris ini boleh
-      # dihapus — tapi JANGAN dihapus tanpa verifikasi build tetap hijau.
-      # ----------------------------------------------------------------
-      - name: Fix cross-platform native binaries (npm/cli#4828 workaround)
-        run: |
-          npm install \
-            @rolldown/binding-linux-x64-gnu \
-            @rollup/rollup-linux-x64-gnu \
-            @tailwindcss/oxide-linux-x64-gnu \
-            lightningcss-linux-x64-gnu \
-            @img/sharp-linux-x64 \
-            --no-save
-
-      # ----------------------------------------------------------------
-      # GUARD — cegah regresi upgrade tidak sengaja ke TypeScript 7.
-      # @vercel/node (dan kemungkinan tooling lain) belum kompatibel
-      # dengan compiler API baru TS7 per Agustus 2026. Kalau versi ini
-      # naik ke 7.x tanpa sadar (mis. lewat `npm update`), CI gagal di
-      # sini dengan pesan jelas — bukan error samar di tahap deploy.
+      # GUARD — cegah upgrade tidak sengaja ke TypeScript 7.
+      # Alasan awalnya (@vercel/node) sudah tidak berlaku sejak Vercel
+      # dinonaktifkan. Guard dipertahankan sampai upgrade ke TS7 dievaluasi
+      # sebagai story terpisah (DEPLOY-01 E8). Kalau versi naik ke 7.x tanpa
+      # sadar (mis. lewat `npm update`), CI gagal di sini dengan pesan jelas.
       # ----------------------------------------------------------------
       - name: Guard - TypeScript must stay on 6.x
         run: |
           cd apps/frontend
           VERSION=$(npx tsc --version | grep -oE '[0-9]+' | head -1)
           if [ "$VERSION" -ge 7 ]; then
-            echo "::error::TypeScript versi $VERSION terdeteksi di frontend. Project ini WAJIB tetap di v6.x — @vercel/node belum kompatibel dengan TS7 native compiler. Lihat riwayat debugging di PR terkait migrasi Vercel."
+            echo "::error::TypeScript versi $VERSION terdeteksi di frontend. Project ini masih WAJIB di v6.x sampai upgrade TS7 dievaluasi (DEPLOY-01 E8)."
             exit 1
           fi
           echo "OK — TypeScript versi $VERSION"
@@ -120,7 +99,7 @@ jobs:
           cd apps/backend
           VERSION=$(npx tsc --version | grep -oE '[0-9]+' | head -1)
           if [ "$VERSION" -ge 7 ]; then
-            echo "::error::TypeScript versi $VERSION terdeteksi di backend. Project ini WAJIB tetap di v6.x untuk kompatibilitas Vercel function build."
+            echo "::error::TypeScript versi $VERSION terdeteksi di backend. Project ini masih WAJIB di v6.x sampai upgrade TS7 dievaluasi (DEPLOY-01 E8)."
             exit 1
           fi
           echo "OK — TypeScript versi $VERSION"
@@ -161,6 +140,82 @@ jobs:
         run: npm run build --workspace=apps/backend
 
   # ==========================================================
+  # DOCKER — guard: image staging (DEPLOY-01) tetap bisa di-build
+  # ==========================================================
+  docker:
+    name: Docker images (build only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Variabel backend di deploy/sigap.env.example harus sama dengan
+      # apps/backend/.env.example (POSTGRES_* hanya untuk container db).
+      - name: Guard - env example names in sync
+        run: |
+          names() { grep -oE '^#? ?[A-Z][A-Z0-9_]+=' "$1" | sed -E 's/^# ?//; s/=$//' | sort -u; }
+          if ! diff <(names apps/backend/.env.example) <(names deploy/sigap.env.example | grep -vE '^POSTGRES_'); then
+            echo "::error::Daftar variabel apps/backend/.env.example dan deploy/sigap.env.example tidak sama (lihat diff di atas)."
+            exit 1
+          fi
+          echo "OK — daftar variabel env sinkron"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend (runtime)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/backend.Dockerfile
+          target: runtime
+          push: false
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Build backend (migrate)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/backend.Dockerfile
+          target: migrate
+          push: false
+          cache-from: type=gha,scope=backend
+
+      - name: Build frontend (web)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/frontend.Dockerfile
+          push: false
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+  # ==========================================================
+  # RELEASE GUARD — path di .release-exclude tidak boleh masuk main.
+  # Rilis ke main dibuat lewat scripts/release.sh (PR release/vX.Y.Z -> main),
+  # bukan PR langsung dari dev.
+  # ==========================================================
+  release-guard:
+    name: Release guard (main)
+    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard - no .release-exclude paths on main
+        run: |
+          mapfile -t paths < <(sed -e 's/\r$//' -e 's/[[:space:]]*$//' .release-exclude | grep -vE '^(#|$)')
+          found="$(git ls-files -- "${paths[@]}")"
+          if [ -n "$found" ]; then
+            echo "::error::Path yang terdaftar di .release-exclude masuk ke main. Buat rilis dengan scripts/release.sh, bukan PR langsung dari dev."
+            echo "$found"
+            exit 1
+          fi
+          echo "OK — tidak ada path .release-exclude (${#paths[@]} pola dicek)"
+
+  # ==========================================================
   # SUMMARY — satu job status gabungan untuk branch protection rule
   # (supaya required check di GitHub cukup satu nama, tidak perlu
   # update tiap kali ada job baru ditambah/dihapus)
@@ -168,13 +223,18 @@ jobs:
   ci-success:
     name: CI Success
     if: always()
-    needs: [frontend, backend]
+    needs: [frontend, backend, docker, release-guard]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs passed
         run: |
-          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ]; then
+          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.docker.result }}" != "success" ]; then
             echo "::error::Salah satu job CI gagal."
+            exit 1
+          fi
+          # Release guard hanya berjalan untuk main; di branch lain statusnya "skipped".
+          if [ "${{ needs.release-guard.result }}" != "success" ] && [ "${{ needs.release-guard.result }}" != "skipped" ]; then
+            echo "::error::Release guard gagal."
             exit 1
           fi
           echo "Semua job CI lolos."

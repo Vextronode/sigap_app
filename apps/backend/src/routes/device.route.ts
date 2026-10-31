@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { DeviceService } from "../services/device.service.js";
 import { AlertService } from "../services/alert.service.js";
+import { deviceAuthMiddleware } from "../middleware/deviceAuth.middleware.js";
 import type {
     ApiErrorResponse,
     ApiSuccessResponse,
@@ -34,18 +35,17 @@ publicDeviceRouter.get("/status", async (_req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal mengambil status perangkat.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Terjadi kesalahan pada server."],
         };
-
         res.status(500).json(response);
     }
 });
 
 /**
  * POST /api/device/register
- * Mendaftarkan perangkat baru atau mengambil perangkat jika sudah terdaftar
+ * SEC-07: Wajib menyertakan header x-device-token dari perangkat ESP32.
  */
-publicDeviceRouter.post("/register", async (req, res) => {
+publicDeviceRouter.post("/register", deviceAuthMiddleware, async (req, res) => {
     try {
         const { deviceCode, name } = req.body;
 
@@ -53,9 +53,11 @@ publicDeviceRouter.post("/register", async (req, res) => {
             const response: ApiErrorResponse = {
                 success: false,
                 message: "deviceCode dan name wajib diisi.",
-                errors: ["deviceCode and name are required"],
+                errors: [
+                    ...(!deviceCode ? ["deviceCode: wajib diisi."] : []),
+                    ...(!name ? ["name: wajib diisi."] : []),
+                ],
             };
-
             res.status(400).json(response);
             return;
         }
@@ -75,18 +77,17 @@ publicDeviceRouter.post("/register", async (req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal meregistrasi perangkat.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Terjadi kesalahan pada server."],
         };
-
         res.status(500).json(response);
     }
 });
 
 /**
  * POST /api/device/heartbeat
- * Dipanggil oleh ESP32 secara berkala
+ * SEC-07: Wajib menyertakan header x-device-token dari perangkat ESP32.
  */
-publicDeviceRouter.post("/heartbeat", async (req, res) => {
+publicDeviceRouter.post("/heartbeat", deviceAuthMiddleware, async (req, res) => {
     try {
         const { deviceCode } = req.body;
 
@@ -94,7 +95,7 @@ publicDeviceRouter.post("/heartbeat", async (req, res) => {
             const response: ApiErrorResponse = {
                 success: false,
                 message: "deviceCode wajib diisi.",
-                errors: ["deviceCode is required"],
+                errors: ["deviceCode: wajib diisi."],
             };
 
             res.status(400).json(response);
@@ -116,7 +117,7 @@ publicDeviceRouter.post("/heartbeat", async (req, res) => {
         const response: ApiErrorResponse = {
             success: false,
             message: "Gagal memperbarui heartbeat perangkat.",
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: ["Terjadi kesalahan pada server."],
         };
 
         res.status(500).json(response);
