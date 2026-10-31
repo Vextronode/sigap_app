@@ -21,43 +21,52 @@ const TRUST_PROXY_PRESETS = ["loopback", "linklocal", "uniquelocal"];
 const blankToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
-const optionalInt = (min = 0) =>
-  z.preprocess(
-    blankToUndefined,
-    z
-      .string()
-      .trim()
-      .regex(/^\d+$/, "harus berupa bilangan bulat")
-      .refine((value) => Number(value) >= min, `harus >= ${min}`)
-      .optional()
-  );
+const BLANK_NOT_ALLOWED = "tidak boleh kosong (hapus variabelnya untuk memakai default, atau isi nilainya)";
 
-const optionalNumber = z.preprocess(
-  blankToUndefined,
-  z
+/**
+ * `blankAsDefault`:
+ * - true  → kosong = tidak di-set (parser DEPLOY-01 di runtimeOptions memakai default).
+ * - false → kosong ditolak. Modul lama membaca env dengan `Number(x ?? default)`,
+ *           sehingga string kosong menjadi 0/NaN alih-alih default.
+ */
+const optionalInt = (min = 0, blankAsDefault = false) => {
+  const schema = z
     .string()
     .trim()
-    .refine((value) => Number.isFinite(Number(value)), "harus berupa angka")
-    .optional()
-);
+    .min(1, BLANK_NOT_ALLOWED)
+    .regex(/^\d+$/, "harus berupa bilangan bulat")
+    .refine((value) => Number(value) >= min, `harus >= ${min}`)
+    .optional();
+  return blankAsDefault ? z.preprocess(blankToUndefined, schema) : schema;
+};
+
+const optionalNumber = z
+  .string()
+  .trim()
+  .min(1, BLANK_NOT_ALLOWED)
+  .refine((value) => Number.isFinite(Number(value)), "harus berupa angka")
+  .optional();
+
+const optionalNonBlank = z.string().trim().min(1, BLANK_NOT_ALLOWED).optional();
 
 /**
  * Format variabel opsional (hanya dicek bila di-set).
  */
 const formatSchema = z.object({
+  // Variabel baru DEPLOY-01: kosong = default.
   DB_SSL: z.preprocess(
     blankToUndefined,
     z.enum(DB_SSL_MODES, `harus salah satu dari: ${DB_SSL_MODES.join(", ")}`).optional()
   ),
-  DB_POOL_MAX: optionalInt(1),
-  DB_POOL_IDLE_MS: optionalInt(),
+  DB_POOL_MAX: optionalInt(1, true),
+  DB_POOL_IDLE_MS: optionalInt(0, true),
+  ALERT_SCHEDULER_INTERVAL_MS: optionalInt(15_000, true),
+  SHUTDOWN_TIMEOUT_MS: optionalInt(0, true),
 
+  // Dibaca modul lama dengan `?? default`: kosong ditolak.
+  PORT: optionalInt(),
   VILLAGE_LAT: optionalNumber,
   VILLAGE_LON: optionalNumber,
-
-  PORT: optionalInt(),
-  ALERT_SCHEDULER_INTERVAL_MS: optionalInt(15_000),
-  SHUTDOWN_TIMEOUT_MS: optionalInt(),
   EARTHQUAKE_CACHE_TTL_MS: optionalInt(),
   HTTP_TIMEOUT_MS: optionalInt(),
   HTTP_RETRY_DELAY_MS: optionalInt(),
@@ -66,6 +75,11 @@ const formatSchema = z.object({
   WEST_JAVA_RADIUS_KM: optionalInt(),
   PANGANDARAN_MAX_AGE_DAYS: optionalInt(),
   WEST_JAVA_MAX_AGE_DAYS: optionalInt(),
+  BMKG_ADM4_CODE: optionalNonBlank,
+  JWT_EXPIRES_IN: optionalNonBlank,
+  JWT_ISSUER: optionalNonBlank,
+  JWT_AUDIENCE: optionalNonBlank,
+  VAPID_SUBJECT: optionalNonBlank,
 });
 
 const REQUIRED_ALWAYS = ["DATABASE_URL", "JWT_SECRET", "CRON_SECRET"] as const;
@@ -146,8 +160,13 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): void {
 
   const format = formatSchema.safeParse(env);
   if (!format.success) {
+    // Satu pesan per variabel (pesan pertama paling relevan).
+    const reported = new Set(issues.map((issue) => issue.name));
     for (const issue of format.error.issues) {
-      issues.push({ name: issue.path.join("."), message: issue.message });
+      const name = issue.path.join(".");
+      if (reported.has(name)) continue;
+      reported.add(name);
+      issues.push({ name, message: issue.message });
     }
   }
 
