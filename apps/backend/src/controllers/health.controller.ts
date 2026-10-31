@@ -1,7 +1,8 @@
 import type { Request, Response } from "express";
-import { prisma } from "../config/prisma.js";
+import { HealthService } from "../services/health.service.js";
+import type { ApiErrorResponse, ApiSuccessResponse } from "../types/weather.types.js";
 
-const READINESS_DB_TIMEOUT_MS = 2_000;
+type HealthData = { status: "ok" | "ready" };
 
 /**
  * DEPLOY-01 (FR-A4): Healthcheck ringan untuk orchestrator container.
@@ -13,34 +14,33 @@ export class HealthController {
    * Liveness: proses hidup dan event loop merespons. Tanpa DB/panggilan eksternal.
    */
   static liveness(_req: Request, res: Response) {
-    res.status(200).json({ status: "ok" });
+    const response: ApiSuccessResponse<HealthData> = {
+      success: true,
+      message: "Service berjalan.",
+      data: { status: "ok" },
+    };
+    res.status(200).json(response);
   }
 
   /**
-   * Readiness: DB bisa menjawab `SELECT 1` dalam batas waktu.
-   * Detail error hanya ke log, tidak ke response.
+   * Readiness: DB bisa menjawab dalam batas waktu. Detail kegagalan hanya ada di log.
    */
   static async readiness(_req: Request, res: Response) {
-    let timer: NodeJS.Timeout | undefined;
-    try {
-      await Promise.race([
-        prisma.$queryRaw`SELECT 1`,
-        new Promise((_, reject) => {
-          timer = setTimeout(
-            () => reject(new Error(`DB tidak merespons dalam ${READINESS_DB_TIMEOUT_MS} ms`)),
-            READINESS_DB_TIMEOUT_MS
-          );
-        }),
-      ]);
-      res.status(200).json({ status: "ready" });
-    } catch (error) {
-      // Pesan Prisma bersifat multi-baris; baris terakhir memuat penyebabnya.
-      const message = error instanceof Error ? error.message : String(error);
-      const cause = message.split("\n").map((line) => line.trim()).filter(Boolean).pop();
-      console.error("[Readiness] DB check gagal:", cause ?? "unknown error");
-      res.status(503).json({ status: "not_ready" });
-    } finally {
-      clearTimeout(timer);
+    if (await HealthService.isDatabaseReady()) {
+      const response: ApiSuccessResponse<HealthData> = {
+        success: true,
+        message: "Service siap menerima trafik.",
+        data: { status: "ready" },
+      };
+      res.status(200).json(response);
+      return;
     }
+
+    const response: ApiErrorResponse = {
+      success: false,
+      message: "Service belum siap.",
+      errors: ["Database tidak tersedia."],
+    };
+    res.status(503).json(response);
   }
 }
