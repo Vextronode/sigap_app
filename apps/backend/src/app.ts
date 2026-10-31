@@ -100,7 +100,9 @@ const corsOptions: CorsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(morgan("dev"));
+// DEPLOY-01 (FR-A11): format log akses dari LOG_FORMAT; default `combined` di production
+// (tanpa warna, cocok untuk log container), `dev` di luar production.
+app.use(morgan(process.env.LOG_FORMAT ?? (isProduction ? "combined" : "dev")));
 
 /**
  * SEC-03: Batasi ukuran body JSON/URL-encoded agar tidak bisa di-abuse
@@ -134,13 +136,20 @@ app.use(
     res: Response,
     next: NextFunction
   ) => {
-    console.error("[ServerError]", err);
-
     const errorObj = err as Error & {
       statusCode?: number;
       status?: number;
       errors?: string[];
+      type?: string;
     };
+
+    // DEPLOY-01 (FR-A11): body-parser menempelkan raw request body di `err.body`, dan
+    // pesan SyntaxError bisa memuat potongan input; keduanya bisa berisi password.
+    if (errorObj instanceof SyntaxError && "body" in errorObj) {
+      console.error(`[ServerError] Payload JSON tidak valid (${errorObj.type ?? "parse error"}); isi body tidak di-log.`);
+    } else {
+      console.error("[ServerError]", err);
+    }
     const statusCode = errorObj.statusCode || errorObj.status || 500;
 
     // Khusus penolakan CORS

@@ -80,6 +80,7 @@ const formatSchema = z.object({
   JWT_ISSUER: optionalNonBlank,
   JWT_AUDIENCE: optionalNonBlank,
   VAPID_SUBJECT: optionalNonBlank,
+  LOG_FORMAT: optionalNonBlank,
 });
 
 const REQUIRED_ALWAYS = ["DATABASE_URL", "JWT_SECRET", "CRON_SECRET"] as const;
