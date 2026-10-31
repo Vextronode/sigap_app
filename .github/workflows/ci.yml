@@ -192,6 +192,30 @@ jobs:
           cache-to: type=gha,scope=frontend,mode=max
 
   # ==========================================================
+  # RELEASE GUARD — path di .release-exclude tidak boleh masuk main.
+  # Rilis ke main dibuat lewat scripts/release.sh (PR release/vX.Y.Z -> main),
+  # bukan PR langsung dari dev.
+  # ==========================================================
+  release-guard:
+    name: Release guard (main)
+    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard - no .release-exclude paths on main
+        run: |
+          mapfile -t paths < <(sed -e 's/\r$//' -e 's/[[:space:]]*$//' .release-exclude | grep -vE '^(#|$)')
+          found="$(git ls-files -- "${paths[@]}")"
+          if [ -n "$found" ]; then
+            echo "::error::Path yang terdaftar di .release-exclude masuk ke main. Buat rilis dengan scripts/release.sh, bukan PR langsung dari dev."
+            echo "$found"
+            exit 1
+          fi
+          echo "OK — tidak ada path .release-exclude (${#paths[@]} pola dicek)"
+
+  # ==========================================================
   # SUMMARY — satu job status gabungan untuk branch protection rule
   # (supaya required check di GitHub cukup satu nama, tidak perlu
   # update tiap kali ada job baru ditambah/dihapus)
@@ -199,13 +223,18 @@ jobs:
   ci-success:
     name: CI Success
     if: always()
-    needs: [frontend, backend, docker]
+    needs: [frontend, backend, docker, release-guard]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs passed
         run: |
           if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.docker.result }}" != "success" ]; then
             echo "::error::Salah satu job CI gagal."
+            exit 1
+          fi
+          # Release guard hanya berjalan untuk main; di branch lain statusnya "skipped".
+          if [ "${{ needs.release-guard.result }}" != "success" ] && [ "${{ needs.release-guard.result }}" != "skipped" ]; then
+            echo "::error::Release guard gagal."
             exit 1
           fi
           echo "Semua job CI lolos."

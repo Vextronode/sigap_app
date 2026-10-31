@@ -1,0 +1,27 @@
+# Path yang TIDAK ikut ke branch main dan tag rilis: dokumen kerja tim, prompt AI,
+# aset desain, dan rencana yang belum dibangun. Tetap ada di dev.
+#
+# Dibaca oleh scripts/release.sh dan job CI "Release guard". Satu path per baris
+# (pathspec git, relatif terhadap root repo; akhiri folder dengan /).
+# Baris kosong dan baris yang diawali # diabaikan.
+
+# Prompt dan panduan untuk AI agent
+AI/
+
+# Aset dan mockup desain
+assets/
+SIGAP Desain Admin/
+
+# Spesifikasi desain dan pedoman kerja tim
+docs/DESIGN.md
+docs/DESIGN_ADMIN.md
+docs/PANDUAN_DEVELOPMENT_ADMIN_SIGAP.md
+docs/GIT_WORKFLOW.md
+docs/Team Development Workflow.md
+docs/Environment Standardization.md
+
+# Spesifikasi fitur dan roadmap tahap 2 (sebagian besar belum dibangun)
+docs/sigap-phase-2/
+
+# Rencana migrasi SQL manual lama; skema yang berlaku ada di apps/backend/prisma
+docs/architecture_data_and_schema/schemas/
