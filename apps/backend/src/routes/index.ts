@@ -74,7 +74,7 @@ publicRouter.use("/notifications", publicNotificationRouter);
 publicRouter.use("/system-health", systemHealthRouter);
 publicRouter.use("/system/health", systemHealthRouter);
 
-// Internal — trigger untuk cron-job.org (Vercel production)
+// Internal — pemicu manual scheduler (butuh CRON_SECRET)
 publicRouter.use("/internal", internalRouter);
 
 export const protectedRouter = Router();

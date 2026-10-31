@@ -116,7 +116,7 @@ function checkRules(env: NodeJS.ProcessEnv): EnvIssue[] {
     for (const name of REQUIRED_IN_PRODUCTION) {
       if (!value(name)) issues.push({ name, message: "wajib di-set saat NODE_ENV=production" });
     }
-    if (!env.VERCEL && parseAllowedOrigins(env.ALLOWED_ORIGINS).length === 0) {
+    if (parseAllowedOrigins(env.ALLOWED_ORIGINS).length === 0) {
       issues.push({ name: "ALLOWED_ORIGINS", message: ALLOWED_ORIGINS_REQUIRED_REASON });
     }
   }

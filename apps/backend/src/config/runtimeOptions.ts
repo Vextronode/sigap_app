@@ -17,7 +17,7 @@ export const TRUST_PROXY_TRUE_REASON =
   "`true` ditolak karena membuat X-Forwarded-For bisa dipalsukan klien; " +
   "gunakan jumlah hop (mis. 1) atau daftar subnet (mis. loopback, linklocal, uniquelocal)";
 export const ALLOWED_ORIGINS_REQUIRED_REASON =
-  "wajib di-set saat NODE_ENV=production di luar Vercel (isi dengan origin aplikasi, " +
+  "wajib di-set saat NODE_ENV=production (isi dengan origin aplikasi, " +
   "mis. https://<hostname>); tanpa itu semua request tulis ditolak CORS";
 
 export type DbSslConfig = false | { rejectUnauthorized: boolean };
@@ -50,11 +50,11 @@ export function parseAllowedOrigins(raw: string | undefined): string[] {
 }
 
 /**
- * Di production non-Vercel, origin aplikasi WAJIB ada di ALLOWED_ORIGINS: browser
+ * Di production, origin aplikasi WAJIB ada di ALLOWED_ORIGINS: browser
  * tetap mengirim header Origin pada request tulis meskipun same-origin.
  */
-export function assertAllowedOriginsConfigured(origins: string[], isProduction: boolean, isVercel: boolean): void {
-  if (isProduction && !isVercel && origins.length === 0) {
+export function assertAllowedOriginsConfigured(origins: string[], isProduction: boolean): void {
+  if (isProduction && origins.length === 0) {
     throw new Error(`ALLOWED_ORIGINS: ${ALLOWED_ORIGINS_REQUIRED_REASON}`);
   }
 }
@@ -63,7 +63,7 @@ export type TrustProxySetting = false | number | string;
 
 /**
  * Nilai untuk `app.set("trust proxy", …)` dari TRUST_PROXY.
- * - tidak di-set → `1` bila berjalan di Vercel (perilaku lama), selain itu `false`
+ * - tidak di-set → `false` (tidak ada proxy yang dipercaya)
  * - `false`      → `false` (eksplisit nonaktif)
  * - integer >= 0 → jumlah hop proxy yang dipercaya
  * - lainnya      → daftar subnet/preset apa adanya (mis. `loopback, linklocal, uniquelocal`);
@@ -71,8 +71,8 @@ export type TrustProxySetting = false | number | string;
  * - `true`       → ditolak: semua hop dipercaya sehingga req.ip = entri X-Forwarded-For
  *                  paling kiri, yang bisa dipalsukan klien untuk menghindari rate limit
  */
-export function resolveTrustProxy(raw: string | undefined, isVercel: boolean): TrustProxySetting {
-  if (isUnset(raw)) return isVercel ? 1 : false;
+export function resolveTrustProxy(raw: string | undefined): TrustProxySetting {
+  if (isUnset(raw)) return false;
 
   const value = raw.trim();
   const lowered = value.toLowerCase();
