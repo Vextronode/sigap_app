@@ -2,7 +2,9 @@
 
 ## 8.1 Topologi
 
-Sesuai arah deployment program (Context Program): **Production** di-hosting di server desa, **Staging** di-hosting di kampus. **Kondisi interim saat ini** (belum sesuai target): deployment dev/preview berjalan di Vercel Preview (branch `dev`), dipicu cron eksternal (cron-job.org) untuk scheduler alert.
+Sesuai arah deployment program (Context Program): **Production** di-hosting di server desa, **Staging** di-hosting di kampus. **Kondisi interim** (belum sesuai target): deployment dev/preview berjalan di Vercel Preview (branch `dev`), dipicu cron eksternal (cron-job.org) untuk scheduler alert.
+
+> **Pembaruan 2026-11-01 (DEPLOY-01):** deployment Vercel sudah **dinonaktifkan** dan file khusus Vercel dihapus dari repo. Subgraph "Interim" di diagram bawah tinggal catatan riwayat. Staging akan berjalan sebagai container Docker (`deploy/`, scheduler di dalam proses backend, tanpa cron-job.org). Topologi staging yang baru didokumentasikan di `docs/deployment/` (DEPLOY-01 WP-D).
 
 ```mermaid
 flowchart TB
@@ -18,7 +20,7 @@ flowchart TB
         StgBE --> StgDB
     end
 
-    subgraph Interim[Interim Saat Ini - Vercel Preview]
+    subgraph Interim[Interim - Vercel Preview, DINONAKTIFKAN]
         VercelBE[Backend SIGAP
         Vercel Preview]
         VercelDB[(PostgreSQL
@@ -53,7 +55,7 @@ flowchart TB
 |---|---|---|
 | Production | TBD, menunggu konfirmasi Tim DevOps | Arah program: hosting desa (lihat PRD §4) |
 | Staging | TBD, menunggu konfirmasi Tim DevOps | Arah program: hosting kampus |
-| Interim (dev) | **Aktif** | Vercel Preview branch `dev`, scheduler dipicu cron-job.org eksternal setiap 1 menit |
+| Interim (dev) | **Dinonaktifkan** (2026-11-01) | Dulu Vercel Preview branch `dev`, scheduler dipicu cron-job.org eksternal setiap 1 menit. Diganti staging Docker (DEPLOY-01) |
 
 ## 8.3 Urutan Migrasi Database
 
