@@ -1,0 +1,4 @@
+# Script, Dockerfile, Caddyfile, dan file env dijalankan/dibaca di Linux (container
+# atau WSL). Paksa LF agar checkout Windows (core.autocrlf=true) tidak menyisipkan CR,
+# yang membuat bash gagal ("$'\r': command not found") dan menempel di nilai env.
+* text=auto eol=lf
