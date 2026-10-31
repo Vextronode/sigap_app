@@ -43,40 +43,18 @@ jobs:
         run: npm ci
 
       # ----------------------------------------------------------------
-      # WORKAROUND WAJIB — npm bug cli#4828 (optional dependencies lintas
-      # platform tidak selalu ter-resolve dengan benar di lockfile kalau
-      # digenerate di OS berbeda dari runner CI). Ini persis masalah yang
-      # bikin build Vercel gagal berkali-kali. Runner GitHub Actions =
-      # Linux x64 glibc, sama seperti Vercel — fix yang sama berlaku di sini.
-      #
-      # Kalau di masa depan lockfile sudah terbukti selalu lengkap tanpa
-      # workaround ini (misal setelah pindah ke pnpm), baris ini boleh
-      # dihapus — tapi JANGAN dihapus tanpa verifikasi build tetap hijau.
-      # ----------------------------------------------------------------
-      - name: Fix cross-platform native binaries (npm/cli#4828 workaround)
-        run: |
-          npm install \
-            @rolldown/binding-linux-x64-gnu \
-            @rollup/rollup-linux-x64-gnu \
-            @tailwindcss/oxide-linux-x64-gnu \
-            lightningcss-linux-x64-gnu \
-            @img/sharp-linux-x64 \
-            --no-save
-
-      # ----------------------------------------------------------------
-      # GUARD — cegah regresi upgrade tidak sengaja ke TypeScript 7.
-      # Berlaku sampai WP-E (DEPLOY-01): selama deployment Vercel masih
-      # dipakai, @vercel/node belum kompatibel dengan compiler API baru TS7.
-      # Kalau versi ini naik ke 7.x tanpa sadar (mis. lewat `npm update`),
-      # CI gagal di sini dengan pesan jelas — bukan error samar di tahap deploy.
-      # Evaluasi ulang guard ini setelah Vercel di-decommission (WP-E/E8).
+      # GUARD — cegah upgrade tidak sengaja ke TypeScript 7.
+      # Alasan awalnya (@vercel/node) sudah tidak berlaku sejak Vercel
+      # dinonaktifkan. Guard dipertahankan sampai upgrade ke TS7 dievaluasi
+      # sebagai story terpisah (DEPLOY-01 E8). Kalau versi naik ke 7.x tanpa
+      # sadar (mis. lewat `npm update`), CI gagal di sini dengan pesan jelas.
       # ----------------------------------------------------------------
       - name: Guard - TypeScript must stay on 6.x
         run: |
           cd apps/frontend
           VERSION=$(npx tsc --version | grep -oE '[0-9]+' | head -1)
           if [ "$VERSION" -ge 7 ]; then
-            echo "::error::TypeScript versi $VERSION terdeteksi di frontend. Project ini WAJIB tetap di v6.x — @vercel/node belum kompatibel dengan TS7 native compiler. Lihat riwayat debugging di PR terkait migrasi Vercel."
+            echo "::error::TypeScript versi $VERSION terdeteksi di frontend. Project ini masih WAJIB di v6.x sampai upgrade TS7 dievaluasi (DEPLOY-01 E8)."
             exit 1
           fi
           echo "OK — TypeScript versi $VERSION"
@@ -121,7 +99,7 @@ jobs:
           cd apps/backend
           VERSION=$(npx tsc --version | grep -oE '[0-9]+' | head -1)
           if [ "$VERSION" -ge 7 ]; then
-            echo "::error::TypeScript versi $VERSION terdeteksi di backend. Project ini WAJIB tetap di v6.x untuk kompatibilitas Vercel function build."
+            echo "::error::TypeScript versi $VERSION terdeteksi di backend. Project ini masih WAJIB di v6.x sampai upgrade TS7 dievaluasi (DEPLOY-01 E8)."
             exit 1
           fi
           echo "OK — TypeScript versi $VERSION"
