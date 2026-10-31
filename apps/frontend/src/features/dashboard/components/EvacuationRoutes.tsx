@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Map, AlertTriangle, Navigation, Loader2 } from "lucide-react";
+import { AlertTriangle, Navigation, Loader2 } from "lucide-react";
 import { MdShareLocation } from "react-icons/md";
+import { GrMapLocation } from "react-icons/gr";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import { Card } from "../../../components/ui/Card";
 import { CardSkeleton } from "../../../components/ui/Skeleton";
@@ -41,7 +42,7 @@ export const EvacuationRoutes: React.FC<EvacuationRoutesProps> = ({
       <SectionHeader
         id="evacuation"
         title="Jalur & Titik Evakuasi Bencana"
-        icon={<Map size={22} />}
+        icon={<GrMapLocation size={22} />}
       />
 
       {isPointsLoading ? (
@@ -55,7 +56,7 @@ export const EvacuationRoutes: React.FC<EvacuationRoutesProps> = ({
       ) : isPointsError && points.length === 0 ? (
         <Card className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs">
           <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center mx-auto mb-3">
-            <Map size={24} />
+            <GrMapLocation size={24} />
           </div>
           <h3 className="font-bold text-slate-900 dark:text-white text-base">
             Gagal Memuat Titik Evakuasi
@@ -67,7 +68,7 @@ export const EvacuationRoutes: React.FC<EvacuationRoutesProps> = ({
       ) : isEmpty ? (
         <Card className="p-8 text-center bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-2xl">
           <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
-            <Map size={24} />
+            <GrMapLocation size={24} />
           </div>
           <h3 className="font-bold text-slate-900 dark:text-white text-base">
             Belum Ada Titik Evakuasi Terdaftar

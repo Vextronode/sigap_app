@@ -1,6 +1,7 @@
 import { Announcements } from "../features/dashboard/components/Announcements";
 import { CurrentAlertCard } from "../features/dashboard/components/CurrentAlertCard";
 import { NotificationPrompt } from "../features/dashboard/components/NotificationPrompt";
+import { EarthquakeDistributionMap } from "../features/dashboard/components/EarthquakeDistributionMap";
 import { EarthquakeCard } from "../features/dashboard/components/EarthquakeCard";
 import { SectionHeader } from "../components/common/SectionHeader";
 import { EmergencyContacts } from "../features/dashboard/components/EmergencyContacts";
@@ -24,7 +25,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
-import { Siren, TriangleAlert } from "lucide-react";
+import { TriangleAlert, Siren } from "lucide-react";
 
 export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
@@ -84,6 +85,7 @@ export default function DashboardPage() {
           isError={alertQuery.isError}
         />
         <NotificationPrompt />
+        <EarthquakeDistributionMap />
         {/* Fitur Ringkasan AI dinonaktifkan sementara:
         <AISummaryCard
           summary={summaryQuery.data ?? null}

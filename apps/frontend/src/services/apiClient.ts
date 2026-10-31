@@ -42,10 +42,14 @@ apiClient.interceptors.response.use(
       const authState = useAuthStore.getState();
       const hasStoredToken = Boolean(localStorage.getItem("sigap_token"));
 
-      // Determine if error originates from password change endpoint
       const isPasswordChange = error.config?.url?.includes("/auth/change-password");
-      // Only logout for token expiration or invalid session, not for password errors
-      if (!isPasswordChange && (hasStoredToken || authState.token)) {
+      const isLoginRequest = error.config?.url?.includes("/auth/login");
+      // Hanya logout jika error 401 berasal dari request yang membutuhkan autentikasi
+      const isProtectedRequest = 
+        error.config?.url?.includes("/protected/") || 
+        error.config?.url?.includes("/auth/me");
+
+      if (!isPasswordChange && !isLoginRequest && isProtectedRequest && (hasStoredToken || authState.token)) {
         authState.logout();
 
         // Redirect to login if not already there

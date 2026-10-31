@@ -86,6 +86,7 @@ export default function AdminDashboardPage() {
       alertQuery.refetch(),
       deviceStatusQuery.refetch(),
       alertStatsQuery.refetch(),
+      subscribersQuery.refetch(),
       latestAlertsQuery.refetch(),
     ]);
   };

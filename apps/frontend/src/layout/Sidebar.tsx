@@ -7,16 +7,15 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
-  Map,
-  Megaphone,
+  // Megaphone,
   Radio,
   Settings,
   ShieldCheck,
   X,
 } from "lucide-react";
-import { BiBarChartAlt } from "react-icons/bi";
+import { BiBarChartAlt, BiCurrentLocation } from "react-icons/bi";
 import { FaSearchLocation } from "react-icons/fa";
-import { GrUserAdmin } from "react-icons/gr";
+import { GrMapLocation, GrUserAdmin } from "react-icons/gr";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { LuBookOpenCheck, LuSiren } from "react-icons/lu";
 import { MdContactPhone, MdOutlineManageAccounts } from "react-icons/md";
@@ -29,12 +28,13 @@ import { ProfileModal } from "./components/ProfileModal";
 
 // daftar tautan publik warga desa
 const sectionLinks = [
+  { label: "Peta Gempa", href: "#earthquake-map", icon: BiCurrentLocation },
   { label: "Cuaca", href: "#weather", icon: Cloud },
   { label: "Gempa / Tsunami", href: "#earthquake", icon: Radio },
-  { label: "Jalur Evakuasi", href: "#evacuation", icon: Map },
+  { label: "Jalur Evakuasi", href: "#evacuation", icon: GrMapLocation },
   { label: "Kontak Darurat", href: "#contacts", icon: Contact },
   { label: "Panduan", href: "#preparedness", icon: BookOpen },
-  { label: "Pengumuman", href: "#announcements", icon: Megaphone },
+  // { label: "Pengumuman", href: "#announcements", icon: Megaphone }, // Dinonaktifkan sementara
 ];
 
 // daftar tautan utilitas khusus admin dalam bahasa indonesia
@@ -286,16 +286,22 @@ export const Sidebar = () => {
                 {sectionLinks.map((item) => {
                   const Icon = item.icon;
                   const isMenuLinkActive = isCitizenPage && activeHash === item.href;
-                  const targetHref = isCitizenPage ? item.href : `/?view=warga${item.href}`;
+                  const targetHref = `/?view=warga${item.href}`;
                   
                   return (
                     <a 
                       href={targetHref} 
                       key={item.label} 
-                      onClick={() => {
+                      onClick={(e) => {
                         closeSidebar();
                         if (isCitizenPage) {
+                          e.preventDefault();
                           setActiveHash(item.href);
+                          const targetEl = document.querySelector(item.href);
+                          if (targetEl) {
+                            targetEl.scrollIntoView({ behavior: "smooth" });
+                          }
+                          window.history.replaceState(null, "", targetHref);
                         }
                       }}
                       className={isMenuLinkActive ? "active" : undefined}

@@ -77,6 +77,31 @@ const handlePangandaranEarthquake = async (
   );
 };
 
+const handleMapEarthquakes = async (_req: Request, res: Response) => {
+  try {
+    const data = await EarthquakeService.getMapPoints();
+    const response: ApiSuccessResponse<EarthquakeInfo[]> = {
+      success: true,
+      message: "Earthquake map points retrieved successfully.",
+      data,
+    };
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error("[GET /earthquakes/map] error:", error);
+    const response: ApiErrorResponse = {
+      success: false,
+      message: "Gagal mengambil data sebaran titik gempa BMKG",
+      errors: [
+        "Layanan data sebaran titik gempa BMKG sementara tidak dapat diakses. Silakan coba beberapa saat lagi.",
+      ],
+    };
+    return res.status(502).json(response);
+  }
+};
+
+/** GET /api/public/earthquakes/map */
+publicEarthquakesRouter.get("/map", handleMapEarthquakes);
+
 /** GET /api/public/earthquakes/indonesia */
 publicEarthquakesRouter.get("/indonesia", handleIndonesiaEarthquake);
 
