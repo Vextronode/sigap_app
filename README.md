@@ -27,7 +27,7 @@ Dibangun sebagai monorepo npm workspaces: frontend PWA React 19 (TypeScript, Vit
 
 ## Alokasi Port Server
 
-Stack SIGAP hanya membuka **satu port**, dan hanya di loopback: container `web` di `127.0.0.1:8080`. HTTPS, domain, dan firewall ditangani reverse proxy di server (Nginx/Caddy milik pengelola), yang meneruskan seluruh path (termasuk `/api`) ke port tersebut.
+Stack SIGAP hanya membuka **satu port**, dan hanya di loopback: container `web` di `127.0.0.1:8200`. HTTPS, domain, dan firewall ditangani reverse proxy di server (Nginx/Caddy milik pengelola), yang meneruskan seluruh path (termasuk `/api`) ke port tersebut.
 
 ### 1. Port Publik (Firewall / Inbound Server)
 Port yang dibuka pada firewall server (dikelola pengelola server, bukan oleh stack SIGAP):
@@ -43,13 +43,13 @@ Port yang hanya diakses reverse proxy di server dan tidak diekspos ke publik:
 
 | Service Container | Port Host | Port Container | Fungsi |
 |---|---|---|---|
-| web | 127.0.0.1:8080 | 80 | Caddy: frontend PWA + reverse proxy `/api/*` ke backend |
+| web | 127.0.0.1:8200 | 80 | Caddy: frontend PWA + reverse proxy `/api/*` ke backend |
 | backend | - | 3000 | REST API Express + scheduler peringatan dini BMKG |
 | db | - | 5432 | PostgreSQL 18 (network internal, tanpa akses internet) |
 | migrate | - | - | Job sekali jalan `prisma migrate deploy` sebelum backend start |
 
 Catatan:
-- Port host diatur lewat `SIGAP_HTTP_BIND` dan `SIGAP_HTTP_PORT` di `deploy/compose.env`. **Ubah `SIGAP_HTTP_PORT` bila bentrok** dengan aplikasi lain di server yang sama.
+- Port host diatur lewat `SIGAP_HTTP_BIND` dan `SIGAP_HTTP_PORT` di `deploy/compose.env` (default `8200`). Port harus unik per sistem di server bersama: **hindari 8000, 8080 (CibendaMart) dan 8100 (SID)**.
 - Backend butuh akses keluar (HTTPS) ke `api.bmkg.go.id`, `data.bmkg.go.id`, `api.open-meteo.com`, dan layanan push browser (mis. `fcm.googleapis.com`, `updates.push.services.mozilla.com`).
 - Backend hanya boleh berjalan **1 replika**: scheduler, rate limiter, dan cache masih in-memory.
 
@@ -117,7 +117,13 @@ Prasyarat: Docker Engine dengan Docker Compose ≥ 2.20, git, dan curl.
    ```bash
    bash deploy/sigap.sh deploy <tag-rilis> --migrate
    ```
-4. Cek status dan kesehatan:
+4. Seed data awal (sekali, pada database baru): role, permission, akun admin, kontak darurat, titik evakuasi, panduan, dan data contoh:
+   ```bash
+   bash deploy/sigap.sh seed
+   ```
+   - Password admin acak ditampilkan **sekali** di terminal (tidak disimpan di file atau log). Catat, lalu ganti setelah login pertama di `/admin/login`.
+   - Opsi lewat environment shell: `SEED_ADMIN_EMAIL` (default `admin@cibenda.desa.id`), `SEED_ADMIN_PASSWORD` (8–128 karakter; bila akun sudah ada, password-nya di-reset ke nilai ini), dan `SEED_SAMPLE_DATA=false` untuk melewati data contoh (10 record gempa dan 10 alert gempa bertanggal tetap) agar tidak dikira kejadian nyata oleh penguji. Contoh: `SEED_SAMPLE_DATA=false bash deploy/sigap.sh seed`.
+5. Cek status dan kesehatan:
    ```bash
    bash deploy/sigap.sh status
    bash deploy/sigap.sh smoke
@@ -132,6 +138,7 @@ Prasyarat: Docker Engine dengan Docker Compose ≥ 2.20, git, dan curl.
 | `down` / `restart [service]` | Hentikan (volume data tetap) / restart stack |
 | `logs [service]` / `status` | Ikuti log / lihat tag aktif, status container, dan riwayat deploy |
 | `migrate` | Backup DB, tampilkan migrasi pending, konfirmasi, lalu jalankan |
+| `seed` | Isi data awal (role, permission, akun admin, data contoh); opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_SAMPLE_DATA` |
 | `health` / `smoke` | Cek `/api/healthz` dan `/api/readyz` / smoke test endpoint publik dan halaman SPA |
 | `backup [label]` / `restore <file.dump>` | `pg_dump` ke `deploy/backups/` (+ checksum) / restore dengan verifikasi checksum |
 | `shell <service>` / `reset` | Shell ke container / hapus stack beserta volume DB (dengan konfirmasi) |
@@ -146,7 +153,7 @@ server {
     # ssl_certificate / ssl_certificate_key: sertifikat Let's Encrypt (Certbot)
 
     location / {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:8200;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -187,7 +194,7 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    npm run seed
    cd ../..
    ```
-   Kredensial admin placeholder ditampilkan di output seed. Segera ganti di luar lingkungan lokal.
+   Kredensial admin placeholder ditampilkan di output seed. Segera ganti di luar lingkungan lokal. Opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, dan `SEED_SAMPLE_DATA` juga berlaku di sini.
 4. Jalankan layanan development (terminal terpisah):
    - Backend: `npm run dev --workspace=apps/backend` (Port 3000)
    - Frontend: `npm run dev --workspace=apps/frontend` (Port 5173)
