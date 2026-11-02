@@ -1,6 +1,46 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import { prisma } from "../src/config/prisma.js";
 import bcrypt from "bcrypt";
+
+/**
+ * Opsi seed (hanya dibaca script ini, tidak oleh aplikasi):
+ * - SEED_ADMIN_EMAIL    : email akun admin awal. Default: admin@cibenda.desa.id.
+ * - SEED_ADMIN_PASSWORD : password admin (8-128 karakter). Bila akun sudah ada, password-nya
+ *                         di-reset ke nilai ini. Bila kosong: NODE_ENV=production → password
+ *                         acak yang hanya ditampilkan sekali di output; selain itu ChangeMe123!.
+ * - SEED_SAMPLE_DATA    : true|false (default true). false = lewati data contoh bertanggal tetap
+ *                         (10 record gempa dan 10 alert gempa) agar tidak dikira kejadian nyata.
+ */
+const DEFAULT_ADMIN_EMAIL = "admin@cibenda.desa.id";
+const DEV_ADMIN_PASSWORD = "ChangeMe123!";
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function readSeedOptions() {
+  const email = process.env.SEED_ADMIN_EMAIL?.trim() || DEFAULT_ADMIN_EMAIL;
+  if (!EMAIL_REGEX.test(email)) {
+    throw new Error("SEED_ADMIN_EMAIL: format email tidak valid");
+  }
+
+  // Password tidak di-trim: spasi di awal/akhir bisa jadi bagian password.
+  const rawPassword = process.env.SEED_ADMIN_PASSWORD;
+  const password = rawPassword && rawPassword.trim() ? rawPassword : undefined;
+  if (password && (password.length < 8 || password.length > 128)) {
+    throw new Error("SEED_ADMIN_PASSWORD: panjang harus 8-128 karakter");
+  }
+
+  const sampleRaw = process.env.SEED_SAMPLE_DATA?.trim().toLowerCase();
+  if (sampleRaw && sampleRaw !== "true" && sampleRaw !== "false") {
+    throw new Error("SEED_SAMPLE_DATA: harus true atau false");
+  }
+
+  return {
+    email,
+    password,
+    sampleData: sampleRaw !== "false",
+    isProduction: process.env.NODE_ENV === "production",
+  };
+}
 
 const PERMISSIONS = [
   { code: "content.manage", description: "Mengelola pengumuman, kontak darurat, titik & jalur evakuasi" },
@@ -18,6 +58,8 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
 };
 
 async function main() {
+  const options = readSeedOptions();
+
   for (const permission of PERMISSIONS) {
     await prisma.permission.upsert({
       where: { code: permission.code },
@@ -43,21 +85,46 @@ async function main() {
     }
   }
 
-  const placeholderEmail = "admin@cibenda.desa.id";
-  const placeholderPassword = "ChangeMe123!";
-  const hashedPassword = await bcrypt.hash(placeholderPassword, 10);
+  // Akun admin awal. Akun yang sudah ada tidak disentuh password-nya kecuali
+  // SEED_ADMIN_PASSWORD diisi, supaya seed ulang tidak mencetak password baru yang tidak berlaku.
+  const existingAdmin = await prisma.user.findUnique({ where: { email: options.email } });
+  let adminUser;
+  let adminSummary: string;
+  let generatedPassword: string | null = null;
 
-  const adminUser = await prisma.user.upsert({
-    where: { email: placeholderEmail },
-    update: {
-      name: "Administrator",
-    },
-    create: {
-      name: "Administrator",
-      email: placeholderEmail,
-      password: hashedPassword,
-    },
-  });
+  if (!existingAdmin) {
+    const password =
+      options.password ?? (options.isProduction ? randomBytes(15).toString("base64url") : DEV_ADMIN_PASSWORD);
+    adminUser = await prisma.user.create({
+      data: {
+        name: "Administrator",
+        email: options.email,
+        password: await bcrypt.hash(password, 10),
+      },
+    });
+    if (options.password) {
+      adminSummary = `Akun admin ${options.email} dibuat dengan password dari SEED_ADMIN_PASSWORD.`;
+    } else {
+      generatedPassword = password;
+      adminSummary = `Akun admin ${options.email} dibuat.`;
+    }
+  } else if (options.password) {
+    adminUser = await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: {
+        password: await bcrypt.hash(options.password, 10),
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
+    });
+    adminSummary = `Akun admin ${options.email} sudah ada; password di-reset ke SEED_ADMIN_PASSWORD dan lockout dibuka.`;
+  } else {
+    adminUser = await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: { name: "Administrator" },
+    });
+    adminSummary = `Akun admin ${options.email} sudah ada; password tidak diubah (isi SEED_ADMIN_PASSWORD untuk me-reset).`;
+  }
 
   const adminRole = await prisma.role.findUniqueOrThrow({ where: { name: "admin" } });
   await prisma.userRole.upsert({
@@ -144,6 +211,119 @@ async function main() {
     }
   }
 
+  if (options.sampleData) {
+    await seedSampleEarthquakes(adminUser.id);
+  } else {
+    console.log("SEED_SAMPLE_DATA=false: data contoh gempa & alert gempa dilewati.");
+  }
+
+  // 7. Seeding Titik Evakuasi Strategis Desa Cibenda & Sekitarnya (Sesuai Peta Resmi)
+  const strategicEvacuationPoints = [
+    {
+      name: "SDN 1 Cibenda (Titik Kumpul Utama)",
+      address: "Jl. Raya Parigi - Cijulang (Lintas Selatan), Desa Cibenda, Kec. Parigi, Kab. Pangandaran",
+      latitude: -7.67812,
+      longitude: 108.54483,
+      elevation: 14,
+      capacity: 800,
+      description:
+        "Sekolah ini terletak tepat di pinggir jalan raya utama akses Lintas Selatan Jawa Barat wilayah Parigi. Menjadi titik kumpul dan pusat edukasi/simulasi penyelamatan mandiri warga di sekitar zona pemukiman awal sebelum diarahkan lebih lanjut.",
+      facilities: ["Area Terbuka", "Air Bersih", "Akses Jalan Utama", "Posko Darurat"],
+      isCore: true,
+    },
+    {
+      name: "Kantor Desa Cibenda / Pusat Informasi Posyandu",
+      address: "Jl. Raya Cijulang, Desa Cibenda, Kec. Parigi, Kab. Pangandaran",
+      latitude: -7.6747,
+      longitude: 108.5544,
+      elevation: 16,
+      capacity: 500,
+      description:
+        "Area pusat administrasi tempat peta kerentanan dipasang, posisinya berada sedikit masuk ke utara (daratan tinggi). Lokasi ini menjadi titik pusat penyebaran informasi di mana Peta Kerentanan Tsunami Desa Cibenda resmi dipasang dan diresmikan bagi warga. Warga diimbau berkumpul atau merujuk ke pos ini untuk melihat peta visual zonasi bahaya terdekat.",
+      facilities: ["Air Bersih", "Listrik/Genset", "Akses Ambulans", "Posko Informasi"],
+      isCore: true,
+    },
+    {
+      name: "Dusun Parapat (Zona Dataran Tinggi)",
+      address: "Area Perbukitan Utara, Jalur Evakuasi Paralel Desa Cibenda - Bojong, Kec. Parigi",
+      latitude: -7.6495,
+      longitude: 108.5482,
+      elevation: 36,
+      capacity: 1200,
+      description:
+        "Warga yang berada di kawasan pesisir (seperti RT/RW 04/07 Dusun Parapat) diarahkan melalui jalur evakuasi paralel ke arah utara menjauhi Samudra Hindia, menuju titik kumpul darurat di perbatasan Desa Bojong atau Desa Cintaratu yang memiliki topografi lebih tinggi dan aman dari jangkauan gelombang tsunami.",
+      facilities: ["Dataran Tinggi Anti-Tsunami", "Air Bersih", "Tenda Darurat", "Posko Darurat"],
+      isCore: true,
+    },
+    {
+      name: "Gedung Evakuasi Vertikal (TES) PUPR & BNPB",
+      address: "Kawasan Pesisir Pangandaran, Kab. Pangandaran",
+      latitude: -7.6913299,
+      longitude: 108.6453014,
+      elevation: 22,
+      capacity: 3000,
+      description:
+        "Gedung shelter vertikal Tempat Evakuasi Sementara (TES) bertingkat konstruksi tahan gempa megathrust dan gelombang tsunami yang dibangun resmi oleh Kementerian PUPR dan BNPB Pangandaran.",
+      facilities: ["Konstruksi Tahan Gempa", "Rooftop Anti-Tsunami", "Tenaga Medis", "Genset Darurat", "Air Bersih", "Sistem Sirine Tsunami"],
+      isCore: true,
+    },
+  ];
+
+  for (const point of strategicEvacuationPoints) {
+    const existing = await prisma.evacuationPoint.findFirst({
+      where: { name: point.name },
+    });
+
+    if (!existing) {
+      await prisma.evacuationPoint.create({
+        data: point,
+      });
+      console.log(`Titik evakuasi "${point.name}" berhasil di-seed.`);
+    } else {
+      await prisma.evacuationPoint.update({
+        where: { id: existing.id },
+        data: point,
+      });
+      console.log(`Titik evakuasi "${point.name}" diperbarui.`);
+    }
+  }
+
+  // Perangkat Hardware Sirine IoT (ESP32)
+  await prisma.device.upsert({
+    where: { deviceCode: "ESP32-01" },
+    update: {},
+    create: {
+      deviceCode: "ESP32-01",
+      name: "Sirine Balai Desa Cibenda",
+      status: "OFFLINE",
+      lastSeen: null,
+    },
+  });
+  console.log('Perangkat IoT baseline "ESP32-01" berhasil di-seed.');
+
+  console.log("Seed selesai.");
+  console.log(adminSummary);
+
+  // Password hanya dicetak ke stdout (terminal), tidak pernah ditulis ke file atau log aplikasi.
+  if (generatedPassword && options.isProduction) {
+    console.log("");
+    console.log("==================== KREDENSIAL ADMIN AWAL ====================");
+    console.log(`Email    : ${options.email}`);
+    console.log(`Password : ${generatedPassword}`);
+    console.log("Password acak ini HANYA ditampilkan sekali dan tidak disimpan di mana pun.");
+    console.log("Catat sekarang, lalu ganti setelah login pertama.");
+    console.log("===============================================================");
+  } else if (generatedPassword) {
+    console.log(`Placeholder admin (development) -> email: ${options.email} | password: ${generatedPassword}`);
+    console.log("WAJIB diganti di luar lingkungan development.");
+  }
+}
+
+/**
+ * Data contoh bertanggal tetap (SEED_SAMPLE_DATA): 10 record gempa Pangandaran dengan shakemap
+ * BMKG dan 10 alert gempa dengan berbagai status verifikasi, untuk mengisi tampilan admin.
+ */
+async function seedSampleEarthquakes(adminUserId: string) {
   // 6. Seeding 10 record gempa Pangandaran dengan Shakemap BMKG
   const pangandaranEarthquakes = [
     {
@@ -289,7 +469,7 @@ async function main() {
       source: "BMKG",
       description: "Gempa M4.2 dirasakan di wilayah Pangandaran (intensitas III MMI). Harap waspada potensi gempa susulan dan pantau jalur evakuasi.",
       reviewStatus: "DIKONFIRMASI" as const,
-      reviewedBy: adminUser.id,
+      reviewedBy: adminUserId,
       reviewedAt: new Date("2026-08-20T15:00:00.000Z"),
       createdAt: new Date("2026-08-20T14:31:33.000Z"),
       updatedAt: new Date("2026-08-20T15:00:00.000Z"),
@@ -299,7 +479,7 @@ async function main() {
       source: "BMKG",
       description: "Gempa M3.8 terdeteksi di laut 64 km Barat Daya Kab. Pangandaran. Getaran dirasakan warga di wilayah pesisir Parigi.",
       reviewStatus: "DITINDAKLANJUTI" as const,
-      reviewedBy: adminUser.id,
+      reviewedBy: adminUserId,
       reviewedAt: new Date("2026-09-03T08:30:00.000Z"),
       createdAt: new Date("2026-09-03T08:14:10.000Z"),
       updatedAt: new Date("2026-09-03T08:30:00.000Z"),
@@ -309,7 +489,7 @@ async function main() {
       source: "BMKG",
       description: "Gempa M3.5 terdeteksi di laut 42 km Tenggara Kab. Pangandaran, kedalaman 19 km.",
       reviewStatus: "DIKONFIRMASI" as const,
-      reviewedBy: adminUser.id,
+      reviewedBy: adminUserId,
       reviewedAt: new Date("2026-09-06T05:00:00.000Z"),
       createdAt: new Date("2026-09-06T04:22:05.000Z"),
       updatedAt: new Date("2026-09-06T05:00:00.000Z"),
@@ -319,7 +499,7 @@ async function main() {
       source: "BMKG",
       description: "Gempa M4.0 dirasakan di wilayah pesisir selatan Kab. Pangandaran skala III MMI.",
       reviewStatus: "DITINDAKLANJUTI" as const,
-      reviewedBy: adminUser.id,
+      reviewedBy: adminUserId,
       reviewedAt: new Date("2026-09-08T22:00:00.000Z"),
       createdAt: new Date("2026-09-08T21:18:44.000Z"),
       updatedAt: new Date("2026-09-08T22:00:00.000Z"),
@@ -339,7 +519,7 @@ async function main() {
       source: "BMKG",
       description: "Gempa M2.9 terdeteksi di darat 8 km Barat Daya Parigi Pangandaran. Belum terverifikasi warga (False Alarm / Getaran Mikro).",
       reviewStatus: "DITOLAK" as const,
-      reviewedBy: adminUser.id,
+      reviewedBy: adminUserId,
       reviewedAt: new Date("2026-09-13T20:15:00.000Z"),
       createdAt: new Date("2026-09-13T19:40:15.000Z"),
       updatedAt: new Date("2026-09-13T20:15:00.000Z"),
@@ -349,7 +529,7 @@ async function main() {
       source: "BMKG",
       description: "Gempa M4.5 dirasakan di Pangandaran dan Parigi skala III MMI. Posko siaga telah diaktifkan.",
       reviewStatus: "DIKONFIRMASI" as const,
-      reviewedBy: adminUser.id,
+      reviewedBy: adminUserId,
       reviewedAt: new Date("2026-09-16T08:30:00.000Z"),
       createdAt: new Date("2026-09-16T07:55:02.000Z"),
       updatedAt: new Date("2026-09-16T08:30:00.000Z"),
@@ -369,7 +549,7 @@ async function main() {
       source: "BMKG",
       description: "Gempa M3.7 terdeteksi di laut 58 km Barat Daya Kab. Pangandaran, getaran dirasakan di pesisir.",
       reviewStatus: "DIKONFIRMASI" as const,
-      reviewedBy: adminUser.id,
+      reviewedBy: adminUserId,
       reviewedAt: new Date("2026-09-18T10:00:00.000Z"),
       createdAt: new Date("2026-09-18T09:30:19.000Z"),
       updatedAt: new Date("2026-09-18T10:00:00.000Z"),
@@ -400,96 +580,6 @@ async function main() {
       console.log(`Alert baseline (${alertData.level} - ${alertData.description.slice(0, 25)}...) berhasil ditambahkan.`);
     }
   }
-
-  // 7. Seeding Titik Evakuasi Strategis Desa Cibenda & Sekitarnya (Sesuai Peta Resmi)
-  const strategicEvacuationPoints = [
-    {
-      name: "SDN 1 Cibenda (Titik Kumpul Utama)",
-      address: "Jl. Raya Parigi - Cijulang (Lintas Selatan), Desa Cibenda, Kec. Parigi, Kab. Pangandaran",
-      latitude: -7.67812,
-      longitude: 108.54483,
-      elevation: 14,
-      capacity: 800,
-      description:
-        "Sekolah ini terletak tepat di pinggir jalan raya utama akses Lintas Selatan Jawa Barat wilayah Parigi. Menjadi titik kumpul dan pusat edukasi/simulasi penyelamatan mandiri warga di sekitar zona pemukiman awal sebelum diarahkan lebih lanjut.",
-      facilities: ["Area Terbuka", "Air Bersih", "Akses Jalan Utama", "Posko Darurat"],
-      isCore: true,
-    },
-    {
-      name: "Kantor Desa Cibenda / Pusat Informasi Posyandu",
-      address: "Jl. Raya Cijulang, Desa Cibenda, Kec. Parigi, Kab. Pangandaran",
-      latitude: -7.6747,
-      longitude: 108.5544,
-      elevation: 16,
-      capacity: 500,
-      description:
-        "Area pusat administrasi tempat peta kerentanan dipasang, posisinya berada sedikit masuk ke utara (daratan tinggi). Lokasi ini menjadi titik pusat penyebaran informasi di mana Peta Kerentanan Tsunami Desa Cibenda resmi dipasang dan diresmikan bagi warga. Warga diimbau berkumpul atau merujuk ke pos ini untuk melihat peta visual zonasi bahaya terdekat.",
-      facilities: ["Air Bersih", "Listrik/Genset", "Akses Ambulans", "Posko Informasi"],
-      isCore: true,
-    },
-    {
-      name: "Dusun Parapat (Zona Dataran Tinggi)",
-      address: "Area Perbukitan Utara, Jalur Evakuasi Paralel Desa Cibenda - Bojong, Kec. Parigi",
-      latitude: -7.6495,
-      longitude: 108.5482,
-      elevation: 36,
-      capacity: 1200,
-      description:
-        "Warga yang berada di kawasan pesisir (seperti RT/RW 04/07 Dusun Parapat) diarahkan melalui jalur evakuasi paralel ke arah utara menjauhi Samudra Hindia, menuju titik kumpul darurat di perbatasan Desa Bojong atau Desa Cintaratu yang memiliki topografi lebih tinggi dan aman dari jangkauan gelombang tsunami.",
-      facilities: ["Dataran Tinggi Anti-Tsunami", "Air Bersih", "Tenda Darurat", "Posko Darurat"],
-      isCore: true,
-    },
-    {
-      name: "Gedung Evakuasi Vertikal (TES) PUPR & BNPB",
-      address: "Kawasan Pesisir Pangandaran, Kab. Pangandaran",
-      latitude: -7.6913299,
-      longitude: 108.6453014,
-      elevation: 22,
-      capacity: 3000,
-      description:
-        "Gedung shelter vertikal Tempat Evakuasi Sementara (TES) bertingkat konstruksi tahan gempa megathrust dan gelombang tsunami yang dibangun resmi oleh Kementerian PUPR dan BNPB Pangandaran.",
-      facilities: ["Konstruksi Tahan Gempa", "Rooftop Anti-Tsunami", "Tenaga Medis", "Genset Darurat", "Air Bersih", "Sistem Sirine Tsunami"],
-      isCore: true,
-    },
-  ];
-
-  for (const point of strategicEvacuationPoints) {
-    const existing = await prisma.evacuationPoint.findFirst({
-      where: { name: point.name },
-    });
-
-    if (!existing) {
-      await prisma.evacuationPoint.create({
-        data: point,
-      });
-      console.log(`Titik evakuasi "${point.name}" berhasil di-seed.`);
-    } else {
-      await prisma.evacuationPoint.update({
-        where: { id: existing.id },
-        data: point,
-      });
-      console.log(`Titik evakuasi "${point.name}" diperbarui.`);
-    }
-  }
-
-  // Perangkat Hardware Sirine IoT (ESP32)
-  await prisma.device.upsert({
-    where: { deviceCode: "ESP32-01" },
-    update: {},
-    create: {
-      deviceCode: "ESP32-01",
-      name: "Sirine Balai Desa Cibenda",
-      status: "OFFLINE",
-      lastSeen: null,
-    },
-  });
-  console.log('Perangkat IoT baseline "ESP32-01" berhasil di-seed.');
-
-  console.log("Seed selesai.");
-
-
-  console.log(`Placeholder admin -> email: ${placeholderEmail} | password: ${placeholderPassword}`);
-  console.log("WAJIB diganti sebelum deployment.");
 }
 
 main()

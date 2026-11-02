@@ -96,7 +96,7 @@ services:
       BACKEND_UPSTREAM: backend:3000
     ports:
       # Untuk uji lokal & proxy di host yang sama; pengelola menyesuaikan ingress.
-      - "${SIGAP_HTTP_BIND:-127.0.0.1}:${SIGAP_HTTP_PORT:-8080}:80"
+      - "${SIGAP_HTTP_BIND:-127.0.0.1}:${SIGAP_HTTP_PORT:-8200}:80"
     depends_on:
       backend:
         condition: service_healthy

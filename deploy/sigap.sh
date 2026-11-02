@@ -48,7 +48,10 @@ Operasi
   logs [service]            Ikuti log (200 baris terakhir)
   status                    Tag aktif/sebelumnya, status container, 10 baris deploy.log
   migrate                   Backup (mode local), tampilkan migrasi pending, konfirmasi, jalankan
-  health                    Cek /api/healthz dan /api/readyz lewat port web
+  seed                      Isi data awal: role, permission, akun admin, data contoh (perlu konfirmasi).
+                            Opsi env: SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD (kosong = password acak
+                            ditampilkan sekali), SEED_SAMPLE_DATA=true|false (default true)
+  health                   Cek /api/healthz dan /api/readyz lewat port web
   smoke                     health + beberapa endpoint publik dan halaman SPA
   shell <service>           Buka shell (sh) di container service
 
@@ -233,7 +236,7 @@ base_url() {
   local bind port
   bind="$(env_get "$COMPOSE_ENV" SIGAP_HTTP_BIND)"; port="$(env_get "$COMPOSE_ENV" SIGAP_HTTP_PORT)"
   [[ -z "$bind" || "$bind" == "0.0.0.0" ]] && bind="127.0.0.1"
-  echo "http://${bind}:${port:-8080}"
+  echo "http://${bind}:${port:-8200}"
 }
 
 # Cetak "OK|FAIL <kode> <path>"; kembalikan 1 bila kode bukan yang diharapkan.
@@ -317,6 +320,22 @@ run_migrate() {
   confirm "ya" "Migrasi di atas akan dijalankan ke DB (tidak bisa dibatalkan otomatis)." || die "Migrasi dibatalkan."
   compose run --rm migrate
   log_event "MIGRATE tag=$SIGAP_IMAGE_TAG"
+}
+
+# Seed data awal memakai image migrate (sudah berisi tsx dan prisma/seed.ts).
+# SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD, SEED_SAMPLE_DATA diteruskan dari shell bila di-set.
+# Output seed tidak ditulis ke deploy.log karena bisa memuat password admin.
+cmd_seed() {
+  ensure_db_up
+  if has_pending_migrations; then
+    die "Ada migrasi pending. Jalankan 'migrate' atau 'deploy <tag> --migrate' lebih dulu."
+  fi
+  confirm "ya" "Seed akan membuat role, permission, akun admin, dan data contoh." || die "Dibatalkan."
+  # Notifikasi update npm dimatikan agar tidak menutupi kotak kredensial di akhir output.
+  compose run --rm --no-deps -e NPM_CONFIG_UPDATE_NOTIFIER=false \
+    -e SEED_ADMIN_EMAIL -e SEED_ADMIN_PASSWORD -e SEED_SAMPLE_DATA \
+    migrate npx tsx prisma/seed.ts
+  log_event "SEED tag=$SIGAP_IMAGE_TAG sample_data=${SEED_SAMPLE_DATA:-true}"
 }
 
 cmd_backup() {
@@ -477,6 +496,7 @@ main() {
     logs)    use_tag; preflight build; compose logs -f --tail=200 "$@" ;;
     status)  use_tag; preflight build; cmd_status ;;
     migrate) use_tag; preflight; run_migrate ;;
+    seed)    use_tag; preflight; cmd_seed ;;
     health)  require_file "$COMPOSE_ENV"; cmd_health ;;
     smoke)   require_file "$COMPOSE_ENV"; cmd_smoke ;;
     shell)
