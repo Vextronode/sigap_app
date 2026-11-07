@@ -1,6 +1,7 @@
 import SwaggerParser from "@apidevtools/swagger-parser";
 import express from "express";
 import { fileURLToPath } from "node:url";
+import webpush from "web-push";
 
 /**
  * Memvalidasi docs/api_spec/openapi.yaml dan mencocokkan isinya dengan rute Express.
@@ -8,7 +9,11 @@ import { fileURLToPath } from "node:url";
  */
 // Nilai pengisi agar modul backend dapat dimuat tanpa berkas .env.
 process.env.JWT_SECRET ??= "placeholder-only-for-route-listing-000000";
+process.env.CRON_SECRET ??= "placeholder-only-for-route-listing";
 process.env.DATABASE_URL ??= "postgresql://check:check@localhost:5432/check";
+const vapidKeys = webpush.generateVAPIDKeys();
+process.env.VAPID_PUBLIC_KEY ??= vapidKeys.publicKey;
+process.env.VAPID_PRIVATE_KEY ??= vapidKeys.privateKey;
 
 const SPEC_PATH = fileURLToPath(new URL("../../../docs/api_spec/openapi.yaml", import.meta.url));
 const HTTP_METHODS = ["get", "post", "put", "patch", "delete"];
