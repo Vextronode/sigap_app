@@ -25,7 +25,7 @@ ADR dikelompokkan per domain dalam satu file. Nomor ADR sekuensial lintas file d
 | `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029 |
 | `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 |
 | `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025 |
-| `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038 |
+| `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038, 040, 041, 042 |
 
 Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID serta Architecture Working Group.
 
@@ -68,10 +68,13 @@ Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID ser
 | ADR-033 | Data Historis dan Alert Cuaca Dipindahkan ke Roadmap | Berlaku | - |
 | ADR-034 | Web Push Langsung ke Seluruh Subscriber | Berlaku | - |
 | ADR-035 | Filter Relevansi 100 km dan 7 Hari, Masa Aktif Alert 24 Jam | Berlaku | - |
-| ADR-036 | Review Ditolak Tidak Menurunkan Status Tsunami Resmi | Disetujui, menunggu implementasi | - |
+| ADR-036 | Review Ditolak Tidak Menurunkan Status Tsunami Resmi | Digantikan | ADR-041 |
 | ADR-037 | Status UNKNOWN Saat Data Tidak Tersedia | Disetujui, menunggu implementasi | - |
 | ADR-038 | Hosting Staging di Server Organisasi | Berlaku | - |
 | ADR-039 | Rate Limiting Sesuai Implementasi | Berlaku | - |
+| ADR-040 | Level Akhir Mengambil yang Tertinggi antara Tsunami dan Gempa | Berlaku | - |
+| ADR-041 | Review Alert Sebagai Catatan Pasca-Kejadian | Berlaku | - |
+| ADR-042 | Estimasi Tsunami Mengikuti Masa Aktif Alert 24 Jam | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 

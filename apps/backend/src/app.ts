@@ -97,7 +97,7 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     message: "Endpoint tidak ditemukan.",
-    errors: {},
+    errors: ["Endpoint tidak ditemukan."],
   });
 });
 

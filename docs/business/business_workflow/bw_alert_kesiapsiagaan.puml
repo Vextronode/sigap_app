@@ -26,8 +26,8 @@ endif
 :Kirim heartbeat;
 
 |Admin / Operator|
-:Tinjau daftar alert;
-:Klasifikasikan: Dikonfirmasi,\nDitolak, atau Ditindaklanjuti;
+:Buka Riwayat Alert;
+:Catat tinjauan untuk arsip: Dikonfirmasi,\nDitolak, atau Ditindaklanjuti;
 stop
 
 @enduml

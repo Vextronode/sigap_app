@@ -1,5 +1,4 @@
 import { prisma } from "../config/prisma.js";
-import { randomUUID } from "crypto";
 
 const USER_INCLUDE = {
   userRoles: {
@@ -110,13 +109,19 @@ export async function updateUserWithRole(
     name?: string;
     isActive?: boolean;
     roleId?: string;
+    revokeSessions?: boolean;
   }
 ) {
   return prisma.$transaction(async (tx) => {
     // 1. Update data User
-    const updateData: { name?: string; isActive?: boolean } = {};
+    const updateData: {
+      name?: string;
+      isActive?: boolean;
+      tokenVersion?: { increment: number };
+    } = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.revokeSessions) updateData.tokenVersion = { increment: 1 };
 
     if (Object.keys(updateData).length > 0) {
       await tx.user.update({
@@ -146,6 +151,7 @@ export async function updateUserWithRole(
   });
 }
 
+// reset password sekaligus menggugurkan seluruh sesi aktif akun (AC5)
 export async function resetUserPassword(userId: string, hashedPassword: string) {
   return prisma.user.update({
     where: { id: userId },
@@ -154,6 +160,7 @@ export async function resetUserPassword(userId: string, hashedPassword: string) 
       failedLoginCount: 0,
       lastFailedLoginAt: null,
       lockedUntil: null,
+      tokenVersion: { increment: 1 },
     },
     include: USER_INCLUDE,
   });
@@ -168,19 +175,5 @@ export async function unlockUserAccount(userId: string) {
       lockedUntil: null,
     },
     include: USER_INCLUDE,
-  });
-}
-
-/**
- * Menginvalidasi sesi aktif user dengan menambahkan revoked token dummy jangka panjang
- */
-export async function revokeActiveSessionsForUser(userId: string) {
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 hari
-  return prisma.revokedToken.create({
-    data: {
-      jti: `revoke-all-user-${userId}-${Date.now()}-${randomUUID()}`,
-      userId,
-      expiresAt,
-    },
   });
 }

@@ -43,7 +43,7 @@ export function validateReviewAlert(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 
@@ -121,7 +121,7 @@ export function validateAlertFilterQuery(
     return res.status(422).json({
       success: false,
       message: "Validasi parameter filter gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 

@@ -13,6 +13,11 @@ export const authService = {
     return response.data.data;
   },
 
+  // batas waktu pendek agar logout tidak tertahan saat jaringan lambat
+  logout: async () => {
+    await apiClient.post(protectedPath("/auth/logout"), undefined, { timeout: 3000 });
+  },
+
   changePassword: async (payload: ChangePasswordPayload) => {
     const response = await apiClient.post<ApiResponse<Record<string, never>>>(
       protectedPath("/auth/change-password"),

@@ -385,7 +385,7 @@ export class EarthquakeService {
   static async getPangandaran(ignoreAgeLimit = false): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
-    // Saring gempa khusus Pangandaran: menyebut nama Pangandaran ATAU berjarak <= 100 km dari Desa Cibenda
+    // Saring gempa khusus Pangandaran: menyebut nama Pangandaran ATAU berada dalam PANGANDARAN_RADIUS_KM dari Desa Cibenda
     const pangandaranItems = rawItems.filter((item) => {
       const locationLower = item.Wilayah?.toLowerCase() ?? "";
       const feltLower = item.Dirasakan?.toLowerCase() ?? "";
@@ -395,7 +395,7 @@ export class EarthquakeService {
       const parsed = this.parse(item);
       const isClose =
         Number.isFinite(parsed.distanceToVillage) &&
-        parsed.distanceToVillage <= 100;
+        parsed.distanceToVillage <= PANGANDARAN_RADIUS_KM;
 
       return isPangandaranName || isClose;
     });
@@ -436,7 +436,7 @@ export class EarthquakeService {
             OR: [
               { location: { contains: "Pangandaran", mode: "insensitive" } },
               { felt: { contains: "Pangandaran", mode: "insensitive" } },
-              { distanceToVillage: { lte: 100 } },
+              { distanceToVillage: { lte: PANGANDARAN_RADIUS_KM } },
             ],
           },
           orderBy: { eventTime: "desc" },
@@ -481,7 +481,7 @@ export class EarthquakeService {
           OR: [
             { location: { contains: "Pangandaran", mode: "insensitive" } },
             { felt: { contains: "Pangandaran", mode: "insensitive" } },
-            { distanceToVillage: { lte: 100 } },
+            { distanceToVillage: { lte: PANGANDARAN_RADIUS_KM } },
           ],
         },
         orderBy: { eventTime: "desc" },

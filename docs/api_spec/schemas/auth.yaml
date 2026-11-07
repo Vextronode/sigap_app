@@ -58,6 +58,8 @@ TokenClaims:
         type: string
     jti:
       type: string
+    tokenVersion:
+      type: integer
     exp:
       type: integer
 

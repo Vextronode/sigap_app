@@ -14,6 +14,7 @@
 | is_active | BOOLEAN, default true | Status aktif akun |
 | last_login_at | TIMESTAMP, NULLABLE | Waktu login terakhir |
 | last_login_ip | TEXT, NULLABLE | IP login terakhir |
+| token_version | INTEGER, default 0 | Versi sesi; dinaikkan saat akun dinonaktifkan, role berubah, atau password direset admin |
 | createdAt | TIMESTAMP | Waktu dibuat |
 | updatedAt | TIMESTAMP | Waktu diperbarui |
 

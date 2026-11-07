@@ -41,7 +41,7 @@ export function validateCreateEmergencyContact(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 
@@ -60,9 +60,7 @@ export function validateUpdateEmergencyContact(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors: {
-        body: "Minimal salah satu data institusi, nomor telepon, atau icon harus diisi.",
-      },
+      errors: ["Minimal salah satu data institusi, nomor telepon, atau icon harus diisi."],
     });
   }
 
@@ -72,7 +70,7 @@ export function validateUpdateEmergencyContact(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 

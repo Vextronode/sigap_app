@@ -125,8 +125,8 @@ export class SystemHealthController {
       category: "sid",
       status: "STANDBY",
       provider: "SIGAP Notification Gateway",
-      latencyMs: 18,
-      message: "Protokol webhook POST /api/integrations/sigap siap menerima dispatch.",
+      latencyMs: 0,
+      message: "Integrasi SID belum tersedia.",
       lastChecked: timestamp,
     };
 

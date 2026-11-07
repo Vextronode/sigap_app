@@ -22,6 +22,7 @@ import { MdContactPhone, MdOutlineManageAccounts } from "react-icons/md";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
+import { authService } from "../services/authService";
 import { useDeviceStatus } from "../features/dashboard/hooks/useDeviceStatus";
 import { Badge } from "../components/ui/Badge";
 import { ProfileModal } from "./components/ProfileModal";
@@ -40,7 +41,7 @@ const sectionLinks = [
 // daftar tautan utilitas khusus admin dalam bahasa indonesia
 const adminLinks = [
   { label: "Dashboard Admin", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Verifikasi Gempa", href: "/admin/alerts", icon: BiBarChartAlt },
+  { label: "Riwayat Alert", href: "/admin/alerts", icon: BiBarChartAlt },
   { label: "Kontak Darurat", href: "/admin/kontak-darurat", icon: MdContactPhone },
   { label: "Kelola Titik Evakuasi", href: "/admin/titik-evakuasi", icon: FaSearchLocation },
   { label: "Panduan Kesiapsiagaan", href: "/admin/panduan-kesiapsiagaan", icon: LuBookOpenCheck },
@@ -94,7 +95,13 @@ export const Sidebar = () => {
   // tampilkan menu admin jika role admin atau sedang di rute /admin/*
   const showAdminNav = isAdmin || location.pathname.startsWith("/admin");
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // cabut token di server; sesi lokal tetap dibersihkan bila server tidak terjangkau
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.warn("[Sidebar] Gagal mencabut token di server:", error);
+    }
     logout();
     closeSidebar();
     navigate("/admin/login");

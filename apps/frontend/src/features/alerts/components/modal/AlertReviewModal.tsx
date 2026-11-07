@@ -32,7 +32,7 @@ const REVIEW_OPTIONS: AlertReviewOptionData[] = [
     id: "Dikonfirmasi",
     title: "Konfirmasi Alert",
     description:
-      "Validasi alert ini sebagai data resmi terkonfirmasi untuk arsip kebencanaan desa.",
+      "Catat alert ini sebagai kejadian yang terkonfirmasi untuk arsip desa.",
     icon: ShieldCheck,
     tone: "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-100",
   },
@@ -40,15 +40,15 @@ const REVIEW_OPTIONS: AlertReviewOptionData[] = [
     id: "Ditolak",
     title: "Tolak / False Alarm",
     description:
-      "Tandai sebagai anomali data atau laporan palsu. Tidak memblokir tampilan realtime warga.",
+      "Catat alert ini sebagai tidak relevan untuk arsip desa.",
     icon: ShieldAlert,
     tone: "border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-100",
   },
   {
     id: "Ditindaklanjuti",
-    title: "Ditindaklanjuti (Eskalasi)",
+    title: "Ditindaklanjuti",
     description:
-      "Teruskan ke tim lapangan atau instansi BPBD untuk verifikasi visual dan penanganan fisik.",
+      "Catat bahwa alert ini sudah ditindaklanjuti tim lapangan atau BPBD.",
     icon: AlertTriangle,
     tone: "border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100",
   },
@@ -114,7 +114,7 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
               id="review-modal-title"
               className="text-base font-bold text-[color:var(--text)]"
             >
-              Detail Verifikasi Alert
+              Catatan Tinjauan Alert
             </h2>
             <p className="text-xs font-mono text-[color:var(--text-muted)] mt-0.5">
               ID: #{alert.id}
@@ -139,7 +139,7 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
 
           <div className="space-y-2.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-[color:var(--text-muted)]">
-              Tindakan Klasifikasi Admin / Operator
+              Catatan Admin / Operator
             </label>
 
             <div className="space-y-2">
@@ -160,8 +160,8 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
               className="text-[color:var(--text-muted)] shrink-0 mt-0.5"
             />
             <p>
-              <strong className="text-[color:var(--text)]">Catatan Teknis:</strong> Klasifikasi ini murni
-              administratif untuk pencatatan dan arsip desa.
+              Catatan ini hanya untuk arsip desa. Level, notifikasi, dan perangkat
+              tidak berubah.
             </p>
           </div>
 
@@ -192,7 +192,7 @@ export const AlertReviewModal: React.FC<AlertReviewModalProps> = ({
                   <span>Menyimpan...</span>
                 </>
               ) : (
-                <span>Eksekusi Keputusan</span>
+                <span>Simpan Catatan</span>
               )}
             </button>
           </div>

@@ -79,6 +79,7 @@ export async function login(email: string, password: string, ip?: string) {
     roles,
     permissions,
     jti,
+    tokenVersion: user.tokenVersion,
   });
 
   return {

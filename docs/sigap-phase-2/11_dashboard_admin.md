@@ -15,13 +15,12 @@ Halaman pertama admin setelah login, berisi kondisi alert, data lingkungan, dan 
 
 ## 3. Struktur Halaman
 
-- **Insiden aktif:** alert yang berlaku beserta akses ke verifikasi.
-- **Metrik operasional:** level, jumlah subscriber Web Push, dan status perangkat.
+- **Insiden aktif:** alert yang berlaku.
+- **Metrik operasional:** level, jumlah subscriber Web Push, jumlah riwayat alert, dan status perangkat.
 - **Gempa dan tsunami:** kartu yang sama dengan dashboard warga.
 - **Konektivitas sistem:** status BMKG, Open-Meteo, Web Push, SID, dan database.
 - **Aksi cepat:** tautan ke halaman pengelolaan; Manajemen Akun hanya untuk role `admin`.
 - **Cuaca:** bagian yang sama dengan dashboard warga.
-- **Verifikasi:** modal konfirmasi untuk klasifikasi alert.
 
 ## 4. Functional Requirements
 

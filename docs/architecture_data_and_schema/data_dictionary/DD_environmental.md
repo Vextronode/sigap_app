@@ -8,7 +8,7 @@
 | level | ENUM `AlertLevel` | Level kesiapsiagaan | `YELLOW` |
 | source | TEXT | Asal data | `BMKG (estimasi dari data gempa)` |
 | description | TEXT, NULLABLE | Pesan alert | - |
-| review_status | ENUM `alert_review_status`, default `Belum Ditinjau` | Klasifikasi peninjauan | `Dikonfirmasi` |
+| review_status | ENUM `alert_review_status`, default `Belum Ditinjau` | Catatan tinjauan pasca-kejadian; tidak memengaruhi level | `Dikonfirmasi` |
 | reviewed_by | TEXT, NULLABLE, FK ke `users.id`, set null | Peninjau terakhir | - |
 | reviewed_at | TIMESTAMP, NULLABLE | Waktu peninjauan terakhir | - |
 | createdAt / updatedAt | TIMESTAMP | Waktu dibuat dan diperbarui | - |

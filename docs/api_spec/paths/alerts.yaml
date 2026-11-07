@@ -136,7 +136,7 @@ alert-protected-by-id:
 alert-review:
   patch:
     tags: [Alerts]
-    summary: Klasifikasi alert oleh pengguna terautentikasi
+    summary: Catat tinjauan alert; tidak mengubah level. Permission alert.validate
     parameters:
       - $ref: '../schemas/shared.yaml#/IdParam'
     requestBody:
@@ -159,6 +159,8 @@ alert-review:
                       $ref: '../schemas/alerts.yaml#/Alert'
       '401':
         $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
       '404':
         $ref: './shared.yaml#/NotFound'
       '422':

@@ -81,7 +81,7 @@ export function validateCreateEvacuationPoint(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 
@@ -105,7 +105,7 @@ export function validateUpdateEvacuationPoint(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 

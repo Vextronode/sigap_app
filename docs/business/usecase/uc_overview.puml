@@ -25,7 +25,7 @@ rectangle "Sistem SIGAP" {
     usecase "Kelola Kontak Darurat" as UC6
     usecase "Kelola Titik Evakuasi" as UC7
     usecase "Kelola Panduan Kesiapsiagaan" as UC8
-    usecase "Klasifikasi Alert" as UC9
+    usecase "Catat Tinjauan Alert" as UC9
     usecase "Lihat Dashboard Admin" as UC10
   }
 

@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import { NotFoundError, ValidationError } from "../errors/AppError.js";
-import { AlertLevel, AlertReviewStatus } from "../../generated/prisma/enums.js";
+import { AlertLevel } from "../../generated/prisma/enums.js";
+import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
 import {
   AlertRepository,
   LABEL_TO_REVIEW_STATUS,
@@ -14,7 +15,6 @@ import type {
   ReviewAlertPayload,
 } from "../types/alert.types.js";
 
-const ALERT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 jam (1 hari)
 const ALERT_CACHE_TTL_MS = 60_000; // 60 detik TTL in-memory cache (menghemat compute DB)
 
 let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
@@ -70,11 +70,11 @@ export class AlertService {
         const mapped = mapAlertToRecord(latest);
 
         // Cek umur alert dari waktu bencana (createdAt), BUKAN kapan admin klik verifikasi (updatedAt).
-        // Jika > 24 jam (1 hari) ATAU statusnya "Ditolak" (False Alarm), status alert otomatis kembali ke GREEN (Aman).
+        // Jika > 24 jam (1 hari), status alert otomatis kembali ke GREEN (Aman).
+        // Status review adalah catatan pasca-kejadian dan tidak memengaruhi level (ADR-041).
         const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-        const isRejected = latest.reviewStatus === AlertReviewStatus.DITOLAK;
 
-        if ((ageMs > ALERT_MAX_AGE_MS || isRejected) && latest.level !== AlertLevel.GREEN) {
+        if (ageMs > ALERT_ACTIVE_MAX_AGE_MS && latest.level !== AlertLevel.GREEN) {
           alertResult = {
             ...mapped,
             level: AlertLevel.GREEN,

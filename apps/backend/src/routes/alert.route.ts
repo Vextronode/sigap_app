@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { AlertController } from "../controllers/alert.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/rbac.middleware.js";
 import {
   validateAlertFilterQuery,
   validateReviewAlert,
@@ -56,10 +57,11 @@ protectedAlertsRouter.get("/:id", AlertController.getById);
 
 /**
  * PATCH /api/protected/alerts/:id/review
- * Melakukan klasifikasi review status alert oleh admin atau operator.
+ * Mencatat tinjauan alert oleh admin atau operator. Tidak mengubah level.
  */
 protectedAlertsRouter.patch(
   "/:id/review",
+  requirePermission("alert.validate"),
   validateReviewAlert,
   AlertController.review
 );

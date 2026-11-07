@@ -23,7 +23,7 @@ export const AlertTableHeader: React.FC = () => {
           Lokasi Gempa
         </th>
         <th scope="col" className="py-3.5 px-4 font-semibold">
-          Status Verifikasi
+          Status Tinjauan
         </th>
         <th scope="col" className="py-3.5 px-4 sm:px-6 font-semibold text-right">
           Aksi

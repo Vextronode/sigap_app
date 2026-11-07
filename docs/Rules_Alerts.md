@@ -37,8 +37,8 @@ Open-Meteo hanya dipakai untuk informasi cuaca dan tidak memengaruhi level kesia
 
 Gempa dianggap relevan untuk Desa Cibenda bila memenuhi seluruh syarat berikut:
 
-1. Wilayah atau field `Dirasakan` menyebut Pangandaran, atau jaraknya paling jauh 100 km dari desa.
-2. Lolos radius `PANGANDARAN_RADIUS_KM` (default 100 km).
+1. Wilayah atau field `Dirasakan` menyebut Pangandaran, atau jaraknya berada dalam `PANGANDARAN_RADIUS_KM` (default 100 km).
+2. Lolos radius `PANGANDARAN_RADIUS_KM`.
 3. Umurnya paling lama `PANGANDARAN_MAX_AGE_DAYS` (default 7 hari).
 
 Radius adalah filter relevansi, bukan penentu tingkat bahaya. Jarak dihitung dengan rumus Haversine dari koordinat `VILLAGE_LAT` dan `VILLAGE_LON` (default `-7.6838`, `108.5610`) ke episentrum.
@@ -48,23 +48,25 @@ Radius adalah filter relevansi, bukan penentu tingkat bahaya. Jarak dihitung den
 | Kondisi | Status | Sumber yang dicatat |
 |---|---|---|
 | `BMKG_TSUNAMI_STATUS` terisi | Nilai variabel: `NORMAL`, `WASPADA`, `SIAGA`, atau `AWAS` | `BMKG InaTEWS` |
-| Variabel kosong dan gempa relevan berpotensi tsunami | `WASPADA` | `BMKG (estimasi dari data gempa)` |
-| Variabel kosong dan tidak ada potensi | `NORMAL` | `BMKG` |
+| Variabel kosong dan gempa relevan berumur paling lama 24 jam berpotensi tsunami | `WASPADA` | `BMKG (estimasi dari data gempa)` |
+| Variabel kosong selain kondisi di atas | `NORMAL` | `BMKG` |
 
 Estimasi otomatis dibatasi sampai `WASPADA`. Status `SIAGA` dan `AWAS` hanya berasal dari `BMKG_TSUNAMI_STATUS`.
 
 # 6. Penentuan Level
 
-Evaluasi berjalan dengan urutan berikut dan berhenti pada kondisi pertama yang terpenuhi:
+Level tsunami dan level gempa dievaluasi terpisah, lalu level akhir adalah yang tertinggi di antara keduanya.
 
-| Urutan | Kondisi | Level |
+| Sumber | Kondisi | Level |
 |---|---|---|
-| 1 | Status tsunami `AWAS` | `RED` |
-| 2 | Status tsunami `SIAGA` | `ORANGE` |
-| 3 | Status tsunami `WASPADA` | `YELLOW` |
-| 4 | Gempa relevan berumur paling lama 24 jam dan `Dirasakan` menyebut Cibenda, Parigi, atau Pangandaran | `ORANGE` |
-| 5 | Gempa relevan berumur paling lama 24 jam | `YELLOW` |
-| 6 | Selain itu | `GREEN` |
+| Tsunami | Status `AWAS` | `RED` |
+| Tsunami | Status `SIAGA` | `ORANGE` |
+| Tsunami | Status `WASPADA` | `YELLOW` |
+| Gempa | Relevan, berumur paling lama 24 jam, dan `Dirasakan` menyebut Cibenda, Parigi, atau Pangandaran | `ORANGE` |
+| Gempa | Relevan dan berumur paling lama 24 jam | `YELLOW` |
+| - | Tidak ada kondisi di atas | `GREEN` |
+
+Bila level keduanya sama, alert memakai sumber dan deskripsi tsunami. Bila level gempa lebih tinggi, alert memakai sumber gempa dan deskripsinya menyertakan deskripsi tsunami.
 
 Magnitudo ditampilkan pada deskripsi alert dan tidak dipakai sebagai ambang batas.
 
@@ -82,7 +84,6 @@ Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan 
 | Kondisi | Hasil |
 |---|---|
 | Rekaman berumur lebih dari 24 jam | Ditampilkan sebagai `GREEN` |
-| Rekaman berstatus review `Ditolak` | Ditampilkan sebagai `GREEN` |
 | Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
 | Database dan BMKG gagal | Ditampilkan sebagai `GREEN` |
 
@@ -90,7 +91,9 @@ Hasil disimpan dalam cache memori selama 60 detik.
 
 # 9. Review Alert
 
-Pengguna yang sudah login dapat mengklasifikasikan alert menjadi `Dikonfirmasi`, `Ditolak`, atau `Ditindaklanjuti`. Nilai awalnya adalah `Belum Ditinjau`, yang ditampilkan sebagai `Belum Diverifikasi`. Sistem mencatat peninjau dan waktu peninjauan terakhir.
+Pengguna dengan permission `alert.validate` dapat mencatat tinjauan alert sebagai `Dikonfirmasi`, `Ditolak`, atau `Ditindaklanjuti`. Nilai awalnya adalah `Belum Ditinjau`, yang ditampilkan sebagai `Belum Diverifikasi`. Sistem mencatat peninjau dan waktu peninjauan terakhir.
+
+Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifikasi, maupun perangkat.
 
 # 10. Distribusi Notifikasi
 
