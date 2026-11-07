@@ -1,7 +1,11 @@
 import { prisma } from "../config/prisma.js";
 import { NotFoundError, ValidationError } from "../errors/AppError.js";
 import { AlertLevel } from "../../generated/prisma/enums.js";
-import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
+import {
+  ALERT_ACTIVE_MAX_AGE_MS,
+  ALERT_RULES,
+  OFFICIAL_TSUNAMI_SOURCE,
+} from "../config/alertRules.js";
 import {
   AlertRepository,
   LABEL_TO_REVIEW_STATUS,
@@ -19,6 +23,13 @@ const PUBLIC_HISTORY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 hari
 const ALERT_CACHE_TTL_MS = 60_000; // 60 detik TTL in-memory cache (menghemat compute DB)
 
 let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
+
+/** Alert status tsunami resmi berlaku selama BMKG_TSUNAMI_STATUS sama dengan levelnya (ADR-045). */
+const isOfficialStatusActive = (level: AlertLevel): boolean => {
+  const configured = process.env.BMKG_TSUNAMI_STATUS?.toUpperCase();
+  const tsunamiLevels: Record<string, string> = ALERT_RULES.tsunami;
+  return configured !== undefined && tsunamiLevels[configured] === level;
+};
 
 /** Id hasil evaluasi langsung dari BMKG yang tidak berasal dari tabel alerts. */
 export const LIVE_FALLBACK_ALERT_ID = "live-fallback";
@@ -91,10 +102,15 @@ export class AlertService {
         const mapped = mapAlertToRecord(latest);
 
         // Cek umur alert dari waktu bencana (createdAt), BUKAN kapan admin klik verifikasi (updatedAt).
-        // Jika > 24 jam (1 hari), status alert otomatis kembali ke GREEN (Aman).
+        // Alert gempa berakhir setelah > 24 jam (1 hari). Alert status tsunami resmi
+        // berakhir saat BMKG_TSUNAMI_STATUS berubah (ADR-045).
         // Status review adalah catatan pasca-kejadian dan tidak memengaruhi level (ADR-041).
         const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-        const isExpired = ageMs > ALERT_ACTIVE_MAX_AGE_MS && latest.level !== AlertLevel.GREEN;
+        const hasEnded =
+          latest.source === OFFICIAL_TSUNAMI_SOURCE
+            ? !isOfficialStatusActive(latest.level)
+            : ageMs > ALERT_ACTIVE_MAX_AGE_MS;
+        const isExpired = hasEnded && latest.level !== AlertLevel.GREEN;
         const isActive = !isExpired && latest.level !== AlertLevel.GREEN;
 
         // Tanpa alert aktif, GREEN hanya berlaku bila data BMKG terbaca (ADR-043).

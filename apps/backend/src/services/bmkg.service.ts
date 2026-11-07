@@ -24,7 +24,7 @@ import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 import type { TsunamiStatus, TsunamiStatusInfo } from "../types/alert.types.js";
 import { EarthquakeService } from "./earthquake.service.js";
-import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
+import { ALERT_ACTIVE_MAX_AGE_MS, OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
@@ -93,7 +93,7 @@ export class BmkgService {
     ) {
       return {
         status: configured,
-        source: "BMKG InaTEWS",
+        source: OFFICIAL_TSUNAMI_SOURCE,
         description: this.buildOfficialTsunamiDescription(configured),
       };
     }

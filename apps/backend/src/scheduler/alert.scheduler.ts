@@ -3,6 +3,7 @@ import { DecisionEngineService } from "../services/decisionEngine.service.js";
 import { AlertService, LIVE_FALLBACK_ALERT_ID } from "../services/alert.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
 import { NotificationService } from "../services/notification.service.js";
+import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
 
 /**
  * Jalankan satu siklus pengecekan alert BMKG.
@@ -61,8 +62,12 @@ export async function runAlertCheck(): Promise<{
 
     const latestAlert = await AlertService.getCurrentAlert();
     // Hasil evaluasi langsung tidak berasal dari tabel alerts, jadi bukan duplikat.
+    // Rekaman berumur > 24 jam juga bukan duplikat: status tsunami resmi yang masih
+    // berlaku diterbitkan ulang sebagai pengingat harian (ADR-045).
     const isDuplicate =
         latestAlert?.id !== LIVE_FALLBACK_ALERT_ID &&
+        latestAlert !== null &&
+        Date.now() - new Date(latestAlert.createdAt).getTime() <= ALERT_ACTIVE_MAX_AGE_MS &&
         latestAlert?.level === result.level &&
         latestAlert?.source === result.source &&
         latestAlert?.description === result.description;

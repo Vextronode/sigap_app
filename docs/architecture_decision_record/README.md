@@ -25,7 +25,7 @@ ADR dikelompokkan per domain dalam satu file. Nomor ADR sekuensial lintas file d
 | `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029 |
 | `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 |
 | `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025 |
-| `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038, 040, 041, 042, 043, 044 |
+| `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038, 040, 041, 042, 043, 044, 045 |
 
 Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID serta Architecture Working Group.
 
@@ -77,6 +77,7 @@ Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID ser
 | ADR-042 | Estimasi Tsunami Mengikuti Masa Aktif Alert 24 Jam | Berlaku | - |
 | ADR-043 | Status UNKNOWN Saat BMKG Tidak Dapat Dijangkau | Berlaku | - |
 | ADR-044 | Respons Alert Publik Tanpa Data Peninjau dan Riwayat 30 Hari | Berlaku | - |
+| ADR-045 | Masa Berlaku Alert Status Tsunami Resmi Mengikuti BMKG_TSUNAMI_STATUS | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 
