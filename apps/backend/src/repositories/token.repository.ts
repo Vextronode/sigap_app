@@ -23,6 +23,7 @@ export async function findSessionState(userId: string) {
 /**
  * Mencatat token ke dalam tabel blocklist revoked_tokens.
  * Menggunakan upsert agar bersifat idempoten jika terjadi retry request / double-click logout.
+ * Baris yang sudah kedaluwarsa ikut dihapus karena token-nya sudah ditolak oleh verifikasi JWT.
  */
 export async function revokeToken(
   jti: string,
@@ -38,4 +39,11 @@ export async function revokeToken(
       expiresAt,
     },
   });
+
+  // Logout tetap berhasil walau pembersihan gagal.
+  try {
+    await prisma.revokedToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+  } catch (error) {
+    console.warn("[TokenRepository] Gagal menghapus token kedaluwarsa:", error);
+  }
 }

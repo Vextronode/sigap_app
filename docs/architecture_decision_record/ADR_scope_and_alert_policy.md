@@ -231,3 +231,48 @@ Satu kejadian tidak boleh menghasilkan notifikasi berulang. Masa aktif yang sama
 
 ### Dampak Terhadap Sistem
 `GET /api/public/tsunami/status` mengembalikan `NORMAL` setelah 24 jam. Status dari `BMKG_TSUNAMI_STATUS` tidak terpengaruh. Data gempa tetap tampil pada kartu gempa sampai batas umur 7 hari.
+
+---
+
+## ADR-043: Status UNKNOWN Saat BMKG Tidak Dapat Dijangkau
+
+Memperluas ADR-037.
+
+### Latar Belakang Keputusan
+ADR-037 mencakup kondisi saat database dan BMKG sama-sama gagal. Bila hanya BMKG yang gagal dan database tetap hidup, sistem menampilkan rekaman terakhir, atau `GREEN` setelah rekaman berumur lebih dari 24 jam, sehingga dapat menyatakan aman tanpa data baru.
+
+### Alternatif yang Dipertimbangkan
+1. Mempertahankan `GREEN`.
+2. Menampilkan `UNKNOWN` setiap kali BMKG gagal, termasuk saat ada alert aktif.
+3. Menampilkan `UNKNOWN` hanya saat tidak ada alert aktif.
+
+### Keputusan yang Dipilih
+Opsi 3. Alert aktif yang berumur paling lama 24 jam tetap ditampilkan. Tanpa alert aktif, `GREEN` hanya berlaku bila minimal satu daftar gempa BMKG berhasil diambil.
+
+### Alasan Pemilihan
+Ketiadaan data bukan bukti kondisi aman. Sebaliknya, peringatan yang sudah tercatat tetap valid dan tidak boleh hilang karena gangguan pada sumber data.
+
+### Dampak Terhadap Sistem
+- `AlertService.getCurrentAlert` memeriksa ketersediaan BMKG saat tidak ada alert aktif, dengan hasil disimpan dalam cache 60 detik.
+- Saat BMKG tidak merespons, permintaan yang memicu pemeriksaan dapat tertahan sekitar 12 detik, sesuai timeout dan retry pada `EarthquakeService`.
+- Status dari `BMKG_TSUNAMI_STATUS` tetap menghasilkan alert aktif karena tidak bergantung pada BMKG.
+
+---
+
+## ADR-044: Respons Alert Publik Tanpa Data Peninjau dan Riwayat 30 Hari
+
+### Latar Belakang Keputusan
+Endpoint alert publik mengirim nama, email, id, dan role staf yang meninjau alert. Warga tidak memerlukan data tersebut. `GET /api/public/alerts/history` juga mengembalikan seluruh riwayat tanpa batas.
+
+### Alternatif yang Dipertimbangkan
+1. Memindahkan data peninjau ke query terpisah pada repository.
+2. Menghapus data peninjau pada lapisan respons publik.
+
+### Keputusan yang Dipilih
+Opsi 2. Respons publik tidak memuat `reviewer` dan `reviewedBy`. Riwayat publik dibatasi 30 hari terakhir.
+
+### Alasan Pemilihan
+Data peninjau tetap diperlukan pada endpoint Protected, sehingga pemisahan pada lapisan respons cukup dan tidak mengubah repository. Batas 30 hari mengikuti kebutuhan warga melihat kejadian terkini.
+
+### Dampak Terhadap Sistem
+Riwayat lebih lama tetap tersedia melalui `GET /api/protected/alerts`.

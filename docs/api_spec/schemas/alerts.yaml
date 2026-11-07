@@ -2,8 +2,9 @@
 # schemas/alerts.yaml - schema domain Alert
 # =====================================================================
 
-Alert:
+PublicAlert:
   type: object
+  description: Alert untuk endpoint Public, tanpa identitas peninjau.
   properties:
     id:
       type: string
@@ -25,32 +26,43 @@ Alert:
     reviewStatus:
       type: string
       enum: ["Belum Diverifikasi", Dikonfirmasi, Ditolak, Ditindaklanjuti]
-    reviewedBy:
-      type: string
-      format: uuid
-      nullable: true
     reviewedAt:
       type: string
       format: date-time
       nullable: true
-    reviewer:
-      type: object
-      nullable: true
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        email:
-          type: string
-          format: email
     createdAt:
       type: string
       format: date-time
     updatedAt:
       type: string
       format: date-time
+
+Alert:
+  description: Alert untuk endpoint Protected, dengan identitas peninjau.
+  allOf:
+    - $ref: './alerts.yaml#/PublicAlert'
+    - type: object
+      properties:
+        reviewedBy:
+          type: string
+          format: uuid
+          nullable: true
+        reviewer:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+            roles:
+              type: array
+              items:
+                type: string
 
 AlertReviewRequest:
   type: object

@@ -25,16 +25,16 @@ Frontend login + route guard berbasis permission (bukan role tunggal - lihat FS-
 ## 4. Functional Requirements
 
 - FR1: Frontend mengikuti kontrak response login pada `api_spec/`.
-- FR2: Route guard dan menu mengikuti `permissions` pada token.
+- FR2: Route guard memeriksa sesi login. Menu admin mengikuti role pada token, dan backend menegakkan permission.
 - FR3: Frontend memanggil endpoint logout saat pengguna logout.
 - FR4: Frontend menampilkan pesan saat request ditolak karena rate limit atau akun terkunci.
 
 ## 5. Acceptance Criteria
 
-- AC1: Kredensial benar mengarahkan ke dashboard, dan menu mengikuti `permissions` pada token.
+- AC1: Kredensial benar mengarahkan ke dashboard, dan menu mengikuti role pada token.
 - AC2: Kredensial salah menghasilkan pesan generik yang tidak membedakan email atau password.
 - AC3: Request Protected tanpa token atau dengan token tidak valid menghasilkan 401 dan pengalihan ke login.
-- AC4: Pengguna tanpa `user.manage` tidak dapat mengakses Manajemen Akun.
+- AC4: Menu Manajemen Akun hanya tampil untuk role `admin`, dan backend menolak pengguna tanpa `user.manage` dengan 403.
 - AC5: Logout mencabut token di server.
 
 ## 6. Edge Case dan Error Handling

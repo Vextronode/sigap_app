@@ -15,6 +15,7 @@ import type {
   ReviewAlertPayload,
 } from "../types/alert.types.js";
 
+const PUBLIC_HISTORY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 hari
 const ALERT_CACHE_TTL_MS = 60_000; // 60 detik TTL in-memory cache (menghemat compute DB)
 
 let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
@@ -93,8 +94,14 @@ export class AlertService {
         // Jika > 24 jam (1 hari), status alert otomatis kembali ke GREEN (Aman).
         // Status review adalah catatan pasca-kejadian dan tidak memengaruhi level (ADR-041).
         const ageMs = Date.now() - new Date(latest.createdAt).getTime();
+        const isExpired = ageMs > ALERT_ACTIVE_MAX_AGE_MS && latest.level !== AlertLevel.GREEN;
+        const isActive = !isExpired && latest.level !== AlertLevel.GREEN;
 
-        if (ageMs > ALERT_ACTIVE_MAX_AGE_MS && latest.level !== AlertLevel.GREEN) {
+        // Tanpa alert aktif, GREEN hanya berlaku bila data BMKG terbaca (ADR-043).
+        const { EarthquakeService } = await import("./earthquake.service.js");
+        if (!isActive && !(await EarthquakeService.isLiveDataAvailable())) {
+          alertResult = buildUnavailableAlert("data-unavailable");
+        } else if (isExpired) {
           alertResult = {
             ...mapped,
             level: AlertLevel.GREEN,
@@ -159,26 +166,20 @@ export class AlertService {
   }
 
   /**
-   * Mengambil seluruh riwayat alert (legacy)
+   * Mengambil riwayat alert 30 hari terakhir untuk portal warga
    */
   static async getAllAlerts(): Promise<AlertRecord[]> {
     try {
       const alerts = await prisma.alert.findMany({
-        include: {
-          reviewer: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+        where: {
+          createdAt: { gte: new Date(Date.now() - PUBLIC_HISTORY_MAX_AGE_MS) },
         },
         orderBy: {
           createdAt: "desc",
         },
       });
 
-      return alerts.map((a) => mapAlertToRecord(a));
+      return alerts.map((a) => mapAlertToRecord({ ...a, reviewer: null }));
     } catch (dbError) {
       console.warn("[AlertService] Gagal mengambil seluruh riwayat alert dari DB:", dbError);
       return [];

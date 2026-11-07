@@ -86,9 +86,10 @@ Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan 
 
 | Kondisi | Hasil |
 |---|---|
-| Rekaman berumur lebih dari 24 jam | Ditampilkan sebagai `GREEN` |
+| Rekaman berumur paling lama 24 jam dengan level selain `GREEN` (alert aktif) | Ditampilkan apa adanya |
+| Rekaman berumur lebih dari 24 jam dan data BMKG terbaca | Ditampilkan sebagai `GREEN` |
 | Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
-| Tidak ada rekaman yang dapat dibaca dan data BMKG gagal diambil | `UNKNOWN` |
+| Tidak ada alert aktif dan data BMKG gagal diambil | `UNKNOWN` |
 
 Hasil disimpan dalam cache memori selama 60 detik.
 
@@ -109,6 +110,7 @@ Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifik
 - Isi notifikasi berasal dari alert yang berlaku dan data gempa Pangandaran terkait.
 - Subscription yang dibalas 404 atau 410 oleh layanan push dihapus.
 - Setiap pengiriman dicatat pada tabel `notification_logs`.
+- Selama `BMKG_TSUNAMI_STATUS` terisi selain `NORMAL`, alert baru dan notifikasi terbit setiap 24 jam mengikuti masa aktif alert.
 
 # 11. Parameter Konfigurasi
 

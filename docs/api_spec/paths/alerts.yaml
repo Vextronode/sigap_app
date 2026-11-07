@@ -18,12 +18,12 @@ alert-current:
                 - type: object
                   properties:
                     data:
-                      $ref: '../schemas/alerts.yaml#/Alert'
+                      $ref: '../schemas/alerts.yaml#/PublicAlert'
 
 alert-history:
   get:
     tags: [Alerts]
-    summary: Seluruh riwayat alert
+    summary: Riwayat alert 30 hari terakhir
     security: []
     responses:
       '200':
@@ -38,7 +38,7 @@ alert-history:
                     data:
                       type: array
                       items:
-                        $ref: '../schemas/alerts.yaml#/Alert'
+                        $ref: '../schemas/alerts.yaml#/PublicAlert'
 
 alert-public-by-id:
   get:
@@ -58,7 +58,7 @@ alert-public-by-id:
                 - type: object
                   properties:
                     data:
-                      $ref: '../schemas/alerts.yaml#/Alert'
+                      $ref: '../schemas/alerts.yaml#/PublicAlert'
       '404':
         $ref: './shared.yaml#/NotFound'
 

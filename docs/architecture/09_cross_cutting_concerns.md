@@ -7,7 +7,7 @@
 | Data gempa | Memakai rekaman `earthquake_records` saat data BMKG tidak tersedia |
 | Cuaca | Menggabungkan BMKG dan Open-Meteo dengan cadangan antarsumber |
 | Permintaan eksternal | Timeout dan retry dapat dikonfigurasi |
-| Alert yang berlaku | Dihitung langsung dari BMKG saat tabel `alerts` kosong atau gagal dibaca |
+| Alert yang berlaku | Dihitung langsung dari BMKG saat tabel `alerts` kosong atau gagal dibaca; bernilai `UNKNOWN` bila tidak ada alert aktif dan data BMKG gagal diambil |
 | Scheduler | Siklus baru dilewati bila siklus sebelumnya belum selesai |
 | Shutdown | Menghentikan scheduler, menunggu request berjalan, lalu menutup database |
 
