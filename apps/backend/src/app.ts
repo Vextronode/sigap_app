@@ -107,7 +107,7 @@ app.use(
     err: unknown,
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
   ) => {
     const errorObj = err as Error & {
       statusCode?: number;

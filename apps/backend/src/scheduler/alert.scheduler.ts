@@ -4,6 +4,7 @@ import { AlertService, LIVE_FALLBACK_ALERT_ID } from "../services/alert.service.
 import { BmkgService } from "../services/bmkg.service.js";
 import { NotificationService } from "../services/notification.service.js";
 import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
+import type { TsunamiStatusInfo } from "../types/alert.types.js";
 
 /**
  * Jalankan satu siklus pengecekan alert BMKG.
@@ -25,7 +26,7 @@ export async function runAlertCheck(): Promise<{
     // umur maksimum oleh EarthquakeService), BUKAN gempa nasional
     // terbaru — lihat catatan di decisionEngine.service.ts.
     let earthquake = null;
-    let tsunami = null;
+    let tsunami: TsunamiStatusInfo;
 
     try {
         earthquake = await EarthquakeService.getPangandaran();

@@ -29,6 +29,15 @@ import { useAlertStats } from "../features/alerts/hooks/useAlertVerification";
 import { useAuthStore } from "../stores/authStore";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { cn } from "../utils/cn";
+import { getAlertMeta } from "../utils/status";
+
+const STATUS_TONE_CLASSES = {
+  safe: { dot: "bg-emerald-500", ping: "bg-emerald-400", text: "text-emerald-700 dark:text-emerald-400" },
+  warning: { dot: "bg-yellow-500", ping: "bg-yellow-400", text: "text-yellow-700 dark:text-yellow-400" },
+  orange: { dot: "bg-orange-500", ping: "bg-orange-400", text: "text-orange-700 dark:text-orange-400" },
+  danger: { dot: "bg-red-500", ping: "bg-red-400", text: "text-red-700 dark:text-red-400" },
+  neutral: { dot: "bg-slate-500", ping: "bg-slate-400", text: "text-slate-600 dark:text-slate-400" },
+};
 
 export default function AdminDashboardPage() {
   useDocumentTitle("Command Center - SIGAP Desa Cibenda");
@@ -81,6 +90,10 @@ export default function AdminDashboardPage() {
     alertStatsQuery.isFetching,
   ].some(Boolean);
 
+  // Sumber dan aturan sama dengan banner warga: saat gagal memuat, level terakhir tidak dipakai.
+  const statusMeta = getAlertMeta(alertQuery.isError ? null : alertQuery.data);
+  const statusTone = STATUS_TONE_CLASSES[statusMeta.tone];
+
   const formattedTimeWib = currentTime.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
@@ -101,13 +114,21 @@ export default function AdminDashboardPage() {
         <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500" />
-              </span>
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                Posko Bencana Standby
-              </span>
+              {alertQuery.isLoading ? (
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[color:var(--text-muted)]">
+                  Memuat status...
+                </span>
+              ) : (
+                <>
+                  <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
+                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", statusTone.ping)} />
+                    <span className={cn("relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5", statusTone.dot)} />
+                  </span>
+                  <span className={cn("text-[10px] sm:text-[11px] font-bold uppercase tracking-wider", statusTone.text)}>
+                    Status: {statusMeta.label}
+                  </span>
+                </>
+              )}
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
               <span className="text-[10px] sm:text-[11px] font-mono font-medium text-[color:var(--text-muted)]">
                 Desa Cibenda, Kab. Pangandaran

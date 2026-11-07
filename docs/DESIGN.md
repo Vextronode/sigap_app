@@ -76,12 +76,12 @@ The UI shown below is the official user interface design reference for SIGAP.
 
 ## Desktop Dashboard
 
-![Desktop Dashboard](./assets/design/desktop-dashboard.png)
+![Desktop Dashboard](../assets/design/desktop-dashboard.png)
 
 ## Mobile Dashboard
 
-![Mobile Dashboard](./assets/design/mobile-dashboard.png)
+![Mobile Dashboard](../assets/design/mobile-dashboard.png)
 
 ## Design System
 
-![Design System](./assets/design/design-system.png)
+![Design System](../assets/design/design-system.png)

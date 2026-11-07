@@ -100,7 +100,7 @@ export async function changePasswordController(req: Request, res: Response) {
     }
 
     const { currentPassword, newPassword } = req.body;
-    const { changeSelfPassword, AuthenticationError } = await import("../services/auth.service.js");
+    const { changeSelfPassword } = await import("../services/auth.service.js");
 
     const result = await changeSelfPassword(userId, currentPassword, newPassword);
 

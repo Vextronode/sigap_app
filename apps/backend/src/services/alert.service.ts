@@ -80,7 +80,7 @@ export class AlertService {
       return cachedAlertState.data;
     }
 
-    let alertResult: AlertRecord | null = null;
+    let alertResult: AlertRecord;
 
     try {
       const latest = await prisma.alert.findFirst({

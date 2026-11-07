@@ -126,18 +126,35 @@ jobs:
           npx prisma validate
 
       - name: Lint
-        # Backend belum punya script "lint" terdaftar di package.json saat
-        # ini (eslint ada di devDependencies, tapi belum di-wire). Step ini
-        # sengaja continue-on-error supaya CI tidak merah karena gap
-        # konfigurasi — TAPI ini harus difollow-up, bukan dibiarkan diam-diam.
-        # Tambahkan script "lint": "eslint ." ke apps/backend/package.json,
-        # lalu hapus continue-on-error di baris ini.
-        working-directory: apps/backend
-        run: npm run lint --if-present
-        continue-on-error: true
+        run: npm run lint --workspace=apps/backend
 
       - name: Typecheck & build
         run: npm run build --workspace=apps/backend
+
+      # Memakai repository tiruan, tanpa koneksi database dan BMKG.
+      - name: Test
+        run: npm test --workspace=apps/backend
+
+      - name: OpenAPI valid dan cocok dengan rute backend
+        run: npm run check:api-spec --workspace=apps/backend
+
+  # ==========================================================
+  # DOCS — tautan relatif pada berkas Markdown
+  # ==========================================================
+  docs:
+    name: Docs (tautan)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Periksa tautan relatif
+        run: node scripts/check-doc-links.mjs
 
   # ==========================================================
   # DOCKER — guard: image staging (DEPLOY-01) tetap bisa di-build
@@ -223,12 +240,12 @@ jobs:
   ci-success:
     name: CI Success
     if: always()
-    needs: [frontend, backend, docker, release-guard]
+    needs: [frontend, backend, docs, docker, release-guard]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs passed
         run: |
-          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.docker.result }}" != "success" ]; then
+          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.docs.result }}" != "success" ] || [ "${{ needs.docker.result }}" != "success" ]; then
             echo "::error::Salah satu job CI gagal."
             exit 1
           fi

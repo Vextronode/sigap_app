@@ -27,7 +27,7 @@ earthquake-indonesia:
 earthquake-west-java:
   get:
     tags: [Earthquakes]
-    summary: Gempa relevan Jawa Barat (radius dan umur difilter)
+    summary: Gempa terbaru Jawa Barat (difilter radius, tanpa batas umur)
     security: []
     responses:
       '200':

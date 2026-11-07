@@ -1,17 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
-import { AlertLevel } from "../../generated/prisma/enums.js";
 import {
   LABEL_TO_REVIEW_STATUS,
   LABEL_TO_SEVERITY,
 } from "../repositories/alert.repository.js";
 
 const VALID_REVIEW_ACTIONS = ["Dikonfirmasi", "Ditolak", "Ditindaklanjuti"];
-const VALID_SEVERITIES = [
-  AlertLevel.GREEN,
-  AlertLevel.YELLOW,
-  AlertLevel.ORANGE,
-  AlertLevel.RED,
-];
 
 // validasi payload body untuk endpoint PATCH /api/protected/alerts/:id/review
 export function validateReviewAlert(
