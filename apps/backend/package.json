@@ -13,7 +13,10 @@
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
     "simulate:alert": "tsx scripts/simulate-alert.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --import tsx --experimental-test-module-mocks --test --test-force-exit \"test/**/*.test.ts\"",
+    "check:api-spec": "tsx scripts/check-api-spec.ts"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +41,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "^13.1.0",
+    "@eslint/js": "^10.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -46,10 +51,12 @@
     "@types/node": "^26.1.1",
     "@types/web-push": "^3.6.4",
     "eslint": "^10.7.0",
+    "globals": "^17.14.0",
     "prettier": "^3.9.5",
     "prisma": "^7.10.1",
     "tsx": "^4.23.1",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.72.1"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

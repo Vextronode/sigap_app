@@ -16,7 +16,7 @@
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
-import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
+import type { ForecastItem } from "../types/weather.types.js";
 
 // ---------------------------------------------------------------------------
 // Koordinat & URL

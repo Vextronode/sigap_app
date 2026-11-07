@@ -2,15 +2,8 @@ import type { Request, Response } from "express";
 import { AlertService, buildUnavailableAlert } from "../services/alert.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { UnauthorizedError } from "../errors/AppError.js";
-import type {
-  ApiErrorResponse,
-  ApiSuccessResponse,
-} from "../types/weather.types.js";
-import type {
-  AlertFilterQuery,
-  AlertListPagination,
-  AlertRecord,
-} from "../types/alert.types.js";
+import type { ApiSuccessResponse } from "../types/weather.types.js";
+import type { AlertFilterQuery, AlertRecord } from "../types/alert.types.js";
 
 // respons publik tidak memuat identitas staf peninjau (ADR-044)
 const toPublicAlert = ({ reviewer, reviewedBy, ...alert }: AlertRecord) => alert;
