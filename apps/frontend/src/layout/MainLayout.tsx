@@ -3,6 +3,7 @@ import { Sidebar } from "./Sidebar";
 import { TopNavbar } from "./TopNavbar";
 import { Footer } from "./Footer";
 import { LoginSuccessToast } from "../components/common/LoginSuccessToast";
+import { OfflineNotice } from "../components/common/OfflineNotice";
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { useSessionGuard } from "../hooks/useSessionGuard";
 
@@ -21,6 +22,7 @@ export const MainLayout = () => {
           isLoading={alertQuery.isLoading}
           isError={alertQuery.isError}
         />
+        <OfflineNotice lastUpdatedAt={alertQuery.data?.updatedAt} />
         <LoginSuccessToast />
         <main className={`main-content ${isAdminRoute ? "main-content--admin" : ""}`}>
           <Outlet />
