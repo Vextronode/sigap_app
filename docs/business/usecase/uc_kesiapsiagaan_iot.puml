@@ -1,55 +1,32 @@
 @startuml uc_kesiapsiagaan_iot
 left to right direction
-title SIGAP — Use Case: Kesiapsiagaan & IoT (Unit Utama + Sirine)
+title SIGAP - Use Case: Kesiapsiagaan dan Perangkat
 
 actor "Warga Desa" as Warga
-actor "Admin / Operator" as AdminOp
 actor "Unit Utama" as UU
-actor "Sirine/Toa" as Si
+actor "Google Maps" as GM
 
 rectangle "Sistem SIGAP" {
-  usecase "Lihat Info Kesiapsiagaan" as UC3
+  usecase "Lihat Info Kesiapsiagaan" as UC1
+  usecase "Buka Navigasi Titik Evakuasi" as UC2
+  usecase "Berlangganan Notifikasi" as UC3
   usecase "Terima Notifikasi Level Alert" as UC4
-  usecase "Evaluasi Rule Threshold" as UC_rule
-  usecase "Sediakan Level untuk Polling" as UC11
-  usecase "Verifikasi Level & Putuskan Tindakan" as UC8
-  usecase "Trigger Sirine" as UC9
-  usecase "Notifikasi Operator" as UC_notif
+  usecase "Evaluasi Aturan Alert" as UC5
+  usecase "Registrasi Perangkat" as UC6
+  usecase "Baca Level" as UC7
+  usecase "Kirim Heartbeat" as UC8
 }
 
+Warga --> UC1
+Warga --> UC2
 Warga --> UC3
 Warga --> UC4
 
-UC_rule .> UC11 : <<include>>
-UU --> UC11 : polling setiap 15 detik\n(REST Polling, ADR-013 - FINAL)
+UC2 --> GM
+UC5 .> UC4 : <<include>>
 
-UU --> UC8 : Unit Utama menampilkan level
-UC8 .> UC_notif : <<include>>
-AdminOp --> UC8
-
-UC9 .> UC8 : <<extend>>
-note right of UC9
-  Extension point: hanya aktif jika
-  level = ORANGE atau RED (bukan
-  Kuning/Merah 3-tier - sudah final
-  4-tier, ADR-030). Level GREEN/YELLOW
-  tidak membuka opsi ini (safeguard
-  by design, ADR-011).
-  Cooldown 60 detik pasca-trigger,
-  dipotong otomatis saat eskalasi RED.
-  Broadcast ke SELURUH Sirine terdaftar,
-  tidak ada pemilihan perangkat (FS-09).
-end note
-AdminOp --> UC9
-UC9 --> Si : bunyikan sirine (broadcast)
-Si --> UU : laporkan ack via siklus\npoll berikutnya
-
-note right of UC_notif
-  Web Push langsung ke warga SUDAH
-  LIVE (VAPID). Integrasi SID sebagai
-  kanal tambahan (dual-channel) masih
-  menunggu sign-off Tim SID - lihat
-  Roadmap Tahap 2 §2.1 #5.
-end note
+UU --> UC6
+UU --> UC7
+UU --> UC8
 
 @enduml

@@ -48,7 +48,7 @@ Port yang hanya diakses reverse proxy di server dan tidak diekspos ke publik:
 | db | - | 5432 | PostgreSQL 18 (network internal, tanpa akses internet) |
 | migrate | - | - | Job sekali jalan `prisma migrate deploy` sebelum backend start |
 
-Catatan:
+Ketentuan:
 - Port host diatur lewat `SIGAP_HTTP_BIND` dan `SIGAP_HTTP_PORT` di `deploy/compose.env` (default `8200`). Port harus unik per sistem di server bersama: **hindari 8000, 8080 (CibendaMart) dan 8100 (SID)**.
 - Backend butuh akses keluar (HTTPS) ke `api.bmkg.go.id`, `data.bmkg.go.id`, `api.open-meteo.com`, dan layanan push browser (mis. `fcm.googleapis.com`, `updates.push.services.mozilla.com`).
 - Backend hanya boleh berjalan **1 replika**: scheduler, rate limiter, dan cache masih in-memory.
@@ -61,7 +61,7 @@ Catatan:
   - Status kesiapsiagaan desa (Aman/Waspada/Siaga/Awas) yang diperbarui otomatis dari data BMKG.
   - Peta sebaran gempa BMKG dan info gempa terkini (Pangandaran, Jawa Barat, Indonesia).
   - Status potensi tsunami dan cuaca terkini serta prakiraan cuaca desa.
-  - Peta titik dan jalur evakuasi beserta navigasi rute.
+  - Peta titik evakuasi beserta navigasi rute melalui Google Maps.
   - Kontak darurat dan panduan kesiapsiagaan bencana.
   - Notifikasi gempa via web push, serta dapat dipasang sebagai aplikasi (PWA).
 - **Admin & Operator (Dashboard Admin)**:
@@ -82,7 +82,7 @@ Catatan:
 
 ## Deployment Server (Staging)
 
-Deployment dijalankan dengan **Docker Compose** lewat satu script operasional, `deploy/sigap.sh`. Image di-build langsung di server dari git tag rilis. HTTPS ditangani reverse proxy di server.
+Staging berjalan di server organisasi (Akademik Kampus). Deployment dijalankan dengan **Docker Compose** lewat satu script operasional, `deploy/sigap.sh`. Image di-build langsung di server dari git tag rilis. HTTPS ditangani reverse proxy di server.
 
 ### Isi Folder `deploy/`
 
@@ -205,7 +205,9 @@ Perintah lain: `npm run lint --workspace=apps/frontend`, `npm run typecheck --wo
 
 ## Dokumentasi Terkait
 
+- [`docs/README.md`](./docs/README.md) — jenis dokumen dan urutan acuan
 - [`docs/PRD.md`](./docs/PRD.md) — Product Requirement Document
+- [`docs/Rules_Alerts.md`](./docs/Rules_Alerts.md) — aturan level dan notifikasi
 - [`docs/architecture/`](./docs/architecture/) — dokumen arsitektur (termasuk [arsitektur IoT](./docs/architecture/05_iot_architecture.md) dan [deployment view](./docs/architecture/08_deployment_view.md))
 - [`docs/api_spec/`](./docs/api_spec/) — spesifikasi API (OpenAPI)
 - [`docs/architecture_data_and_schema/`](./docs/architecture_data_and_schema/) — data dictionary dan skema

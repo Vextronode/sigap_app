@@ -8,7 +8,7 @@
 | **Version** | 1.0 |
 | **Date** | 20 July 2026 |
 | **Author** | Tech Lead, SIGAP |
-| **Applies To** | `api/openapi.yaml`, `api/paths/`, `api/components/` |
+| **Applies To** | `docs/api_spec/` |
 
 ---
 

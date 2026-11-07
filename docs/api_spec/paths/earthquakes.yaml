@@ -1,0 +1,115 @@
+# =====================================================================
+# paths/earthquakes.yaml - path domain Gempa dan Tsunami
+# =====================================================================
+
+earthquake-indonesia:
+  get:
+    tags: [Earthquakes]
+    summary: Gempa terbaru nasional (autogempa BMKG)
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/UpstreamError'
+
+earthquake-west-java:
+  get:
+    tags: [Earthquakes]
+    summary: Gempa relevan Jawa Barat (radius dan umur difilter)
+    security: []
+    responses:
+      '200':
+        description: OK. Data bernilai null bila tidak ada gempa yang lolos filter.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/UpstreamError'
+
+earthquake-pangandaran:
+  get:
+    tags: [Earthquakes]
+    summary: Gempa relevan Pangandaran (radius dan umur difilter)
+    security: []
+    responses:
+      '200':
+        description: OK. Data bernilai null bila tidak ada gempa yang lolos filter.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/UpstreamError'
+
+earthquake-map:
+  get:
+    tags: [Earthquakes]
+    summary: Titik sebaran gempa untuk peta
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/weather.yaml#/EarthquakeInfo'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/UpstreamError'
+
+tsunami-status:
+  get:
+    tags: [Tsunami]
+    summary: Status tsunami; field source menunjukkan asal status
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/weather.yaml#/TsunamiStatus'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '502':
+        $ref: './shared.yaml#/UpstreamError'

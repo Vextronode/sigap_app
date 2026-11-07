@@ -1,65 +1,51 @@
 -- =====================================================================
 -- 006_rbac.sql
--- SIGAP - Domain: RBAC (Role-Based Access Control)
--- Bergantung pada: 002_users.sql (FK user_roles.user_id)
---
--- Ditambahkan sebagai hasil keputusan Tech Lead (Full RBAC) untuk
--- menggantikan kolom users.role (VARCHAR tunggal) yang sebelumnya ada.
--- Diposisikan nomor 006 (bukan 003) karena satu-satunya dependency-nya
--- adalah users - bisa dijalankan kapan pun setelah 002_users.sql.
+-- SIGAP - RBAC
+-- Sumber: apps/backend/prisma/schema.prisma
 -- =====================================================================
 
-CREATE TABLE roles (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name         VARCHAR(50) NOT NULL UNIQUE,
-  description  TEXT
+CREATE TABLE "roles" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "roles_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE permissions (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code         VARCHAR(100) NOT NULL UNIQUE, -- mis. 'content.manage', 'alert.validate'
-  description  TEXT
+CREATE TABLE "permissions" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "permissions_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE role_permissions (
-  "roleId"        UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-  "permissionId"  UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-  PRIMARY KEY ("roleId", "permissionId")
+CREATE TABLE "role_permissions" (
+    "roleId" TEXT NOT NULL,
+    "permissionId" TEXT NOT NULL,
+
+    CONSTRAINT "role_permissions_pkey" PRIMARY KEY ("roleId","permissionId")
 );
 
-CREATE TABLE user_roles (
-  "userId"  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  "roleId"  UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-  PRIMARY KEY ("userId", "roleId")
+CREATE TABLE "user_roles" (
+    "userId" TEXT NOT NULL,
+    "roleId" TEXT NOT NULL,
+
+    CONSTRAINT "user_roles_pkey" PRIMARY KEY ("userId","roleId")
 );
 
--- ---------------------------------------------------------------------
--- Seed data awal - 2 role dasar sesuai kebutuhan tim saat ini:
--- admin (kelola konten & user) dan operator (verifikasi level & sirine).
--- Granularitas lebih lanjut bisa ditambah tanpa migrasi ulang struktur.
--- ---------------------------------------------------------------------
+CREATE UNIQUE INDEX "roles_name_key" ON "roles"("name");
 
-INSERT INTO roles (name, description) VALUES
-  ('admin', 'Mengelola konten desa (pengumuman, evakuasi, kontak darurat) dan user'),
-  ('operator', 'Memverifikasi level kesiapsiagaan dan mengelola aktivasi sirine');
+CREATE INDEX "roles_name_idx" ON "roles"("name");
 
-INSERT INTO permissions (code, description) VALUES
-  ('content.manage', 'Kelola pengumuman, titik/jalur evakuasi, kontak darurat'),
-  ('alert.validate', 'Validasi alert yang masuk'),
-  ('device.view', 'Lihat detail lengkap perangkat IoT & log status'),
-  ('device.manage', 'Kelola (tambah/ubah/hapus) perangkat IoT'),
-  ('siren.view', 'Lihat log aktivasi sirine'),
-  ('siren.trigger', 'Memicu sirine - desain protokol final (FS-09), implementasi route dijadwalkan Sprint 3 Tahap 2'),
-  ('user.manage', 'Kelola akun user dan penugasan role');
+CREATE UNIQUE INDEX "permissions_code_key" ON "permissions"("code");
 
--- admin: semua permission kecuali siren.trigger (yang tetap human-triggered fisik, bukan lewat panel admin)
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.name = 'admin' AND p.code IN
-  ('content.manage', 'alert.validate', 'device.view', 'device.manage', 'siren.view', 'user.manage');
+CREATE INDEX "permissions_code_idx" ON "permissions"("code");
 
--- operator: verifikasi level, sirine, DAN kelola konten (kontak darurat, evakuasi, panduan) - diputuskan setara admin untuk domain konten (FS-03/04/05)
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.name = 'operator' AND p.code IN
-  ('content.manage', 'alert.validate', 'device.view', 'siren.view', 'siren.trigger');
+ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "roles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "permissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "roles"("id") ON DELETE CASCADE ON UPDATE CASCADE;

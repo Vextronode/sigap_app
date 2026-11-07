@@ -47,7 +47,7 @@ HTTP Client
 Maps
 
 - Leaflet
-- OpenStreetMap
+- Google Maps tiles
 
 Icons
 
@@ -284,7 +284,7 @@ One card should communicate one primary piece of information.
 
 Disaster status should always use the official SIGAP alert levels.
 
-🟢 Normal
+Aman
 
 Display when:
 
@@ -293,7 +293,7 @@ Display when:
 
 ---
 
-🟡 Waspada
+Waspada
 
 Display when:
 
@@ -302,7 +302,7 @@ Display when:
 
 ---
 
-🟠 Siaga
+Siaga
 
 Display when:
 
@@ -311,7 +311,7 @@ Display when:
 
 ---
 
-🔴 Awas
+Awas
 
 Display when:
 
@@ -582,7 +582,7 @@ One card should communicate one primary piece of information.
 
 Disaster status should always use the official SIGAP alert levels.
 
-🟢 Normal
+Aman
 
 Display when:
 
@@ -591,7 +591,7 @@ Display when:
 
 ---
 
-🟡 Waspada
+Waspada
 
 Display when:
 
@@ -600,7 +600,7 @@ Display when:
 
 ---
 
-🟠 Siaga
+Siaga
 
 Display when:
 
@@ -609,7 +609,7 @@ Display when:
 
 ---
 
-🔴 Awas
+Awas
 
 Display when:
 

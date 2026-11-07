@@ -9,8 +9,7 @@ ai-summary:
       Ringkasan bahasa sederhana. Satu endpoint untuk 3 kebutuhan
       (Smart Weather Summary, Ringkasan Gempa, Daily Safety
       Recommendation - lihat PRD §3.1 Decision Support) dibedakan lewat
-      param type, bukan 3 endpoint terpisah untuk fitur yang masih
-      🚧/bonus.
+      param type.
     security: []
     parameters:
       - name: type
@@ -26,10 +25,10 @@ ai-summary:
           application/json:
             schema:
               allOf:
-                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - $ref: '../../../api_spec/schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       $ref: '../schemas/ai-summary.yaml#/AiSummaryResponse'
       '429':
-        $ref: './shared.yaml#/RateLimited'
+        $ref: '../../../api_spec/paths/shared.yaml#/RateLimited'

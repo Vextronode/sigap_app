@@ -8,7 +8,7 @@
 | **Version** | 1.0 |
 | **Date** | 20 July 2026 |
 | **Author** | Tech Lead, SIGAP |
-| **Applies To** | `integration/SID_INTEGRATION_PROPOSAL.md` |
+| **Applies To** | `docs/architecture/07_integration_architecture.md` |
 
 ---
 

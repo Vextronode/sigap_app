@@ -2,46 +2,32 @@ openapi: 3.0.3
 info:
   title: SIGAP API
   description: >
-    Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda.
-    Kontrak resmi antara Backend dan Frontend, disusun berdasarkan
-    Route/Access Category Design dan Data Dictionary SIGAP.
-
-    Envelope response: setiap response sukses mengikuti struktur
-    {success: true, message, data}; setiap response error mengikuti
-    struktur {success: false, message, errors} dengan errors berupa
-    array of string. Pengecualian: 204 No Content tidak memiliki body
-    sama sekali, sesuai konvensi HTTP.
-
-    Spesifikasi ini disegmentasi per domain (lihat folder paths/ dan
-    schemas/) agar mudah dibaca — bukan satu file besar.
-
-    CATATAN MIGRASI (v1.2.0): envelope ini SELARAS dengan implementasi
-    realita saat ini (API_SPEC.md v3.1 §4-5) — bukan breaking change.
-    Satu penyesuaian yang tetap perlu masuk backlog: standardisasi
-    field `errors` agar SELALU array (bukan kadang objek kosong {} di
-    sebagian handler global, per catatan API_SPEC.md v3.1 §5).
-  version: "1.2.0"
+    Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda. Spesifikasi ini
+    mencatat endpoint yang berjalan di backend. Response sukses memakai struktur
+    {success: true, message, data}; response error memakai struktur
+    {success: false, message, errors}. Seluruh path /public juga dapat diakses
+    tanpa segmen /public, misalnya /api/weather/current.
+  version: "2.0.0"
   contact:
     name: Tech Lead SIGAP
 servers:
-  - url: https://api.sigap.cibenda.id/api
-    description: Production (placeholder — menunggu konfirmasi hosting, lihat PRD §4)
-  - url: https://staging-api.sigap.cibenda.id/api
-    description: Staging
+  - url: /api
+    description: Relatif terhadap origin aplikasi
 
 tags:
   - name: Auth
   - name: Weather
-  - name: Dashboard
-  - name: Environmental Data
+  - name: Earthquakes
+  - name: Tsunami
   - name: Alerts
-  - name: Devices
   - name: Device Gateway
+  - name: Notifications
   - name: Announcements
   - name: Evacuation
   - name: Emergency Contacts
-  - name: AI Summary
+  - name: Preparedness Guides
   - name: Users
+  - name: System
   - name: Health
 
 security:
@@ -53,14 +39,16 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    deviceApiKey:
+    deviceToken:
       type: apiKey
       in: header
-      name: X-Device-Key
-      description: >
-        Autentikasi M2M untuk Device Gateway - key per-perangkat,
-        diprovisioning ke firmware saat setup, terpisah total dari
-        bearerAuth pengguna.
+      name: x-device-token
+      description: Autentikasi perangkat dengan nilai DEVICE_SHARED_KEY.
+    cronSecret:
+      type: apiKey
+      in: header
+      name: x-cron-secret
+      description: Nilai CRON_SECRET. Dapat juga dikirim lewat Authorization Bearer.
 
 paths:
   # -- Auth --------------------------------------------------------------
@@ -70,100 +58,136 @@ paths:
     $ref: './paths/auth.yaml#/me'
   /protected/auth/logout:
     $ref: './paths/auth.yaml#/logout'
+  /protected/auth/change-password:
+    $ref: './paths/auth.yaml#/change-password'
 
-  # -- Weather / Dashboard -------------------------------------------------
+  # -- Cuaca --------------------------------------------------------------
   /public/weather/current:
     $ref: './paths/weather.yaml#/weather-current'
   /public/weather/forecast:
     $ref: './paths/weather.yaml#/weather-forecast'
-  /public/earthquakes/indonesia:
-    $ref: './paths/weather.yaml#/earthquake-indonesia'
+
+  # -- Gempa dan Tsunami --------------------------------------------------
+  /public/earthquakes:
+    $ref: './paths/earthquakes.yaml#/earthquake-indonesia'
   /public/earthquakes/latest:
-    $ref: './paths/weather.yaml#/earthquake-indonesia'
+    $ref: './paths/earthquakes.yaml#/earthquake-indonesia'
+  /public/earthquakes/indonesia:
+    $ref: './paths/earthquakes.yaml#/earthquake-indonesia'
+  /public/earthquakes/map:
+    $ref: './paths/earthquakes.yaml#/earthquake-map'
   /public/earthquakes/west-java:
-    $ref: './paths/weather.yaml#/earthquake-west-java'
+    $ref: './paths/earthquakes.yaml#/earthquake-west-java'
+  /public/earthquakes/west-java/history:
+    $ref: './paths/earthquakes.yaml#/earthquake-west-java'
   /public/earthquakes/pangandaran:
-    $ref: './paths/weather.yaml#/earthquake-pangandaran'
+    $ref: './paths/earthquakes.yaml#/earthquake-pangandaran'
+  /public/earthquakes/pangandaran/history:
+    $ref: './paths/earthquakes.yaml#/earthquake-pangandaran'
+  /public/tsunami:
+    $ref: './paths/earthquakes.yaml#/tsunami-status'
   /public/tsunami/status:
-    $ref: './paths/weather.yaml#/tsunami-status'
-  /public/dashboard:
-    $ref: './paths/weather.yaml#/dashboard'
-  /protected/admin/dashboard:
-    $ref: './paths/weather.yaml#/admin-dashboard'
+    $ref: './paths/earthquakes.yaml#/tsunami-status'
+  /public/tsunamis:
+    $ref: './paths/earthquakes.yaml#/tsunami-status'
+  /public/tsunamis/status:
+    $ref: './paths/earthquakes.yaml#/tsunami-status'
 
-  # -- Environmental Data & Alerts (historis) -----------------------------
-  /public/environmental-data:
-    $ref: './paths/environmental.yaml#/environmental-data'
+  # -- Alert --------------------------------------------------------------
   /public/alerts:
-    $ref: './paths/environmental.yaml#/alerts'
+    $ref: './paths/alerts.yaml#/alert-current'
   /public/alerts/current:
-    $ref: './paths/environmental.yaml#/alert-current'
+    $ref: './paths/alerts.yaml#/alert-current'
+  /public/alerts/history:
+    $ref: './paths/alerts.yaml#/alert-history'
   /public/alerts/{id}:
-    $ref: './paths/environmental.yaml#/alert-by-id'
+    $ref: './paths/alerts.yaml#/alert-public-by-id'
+  /protected/alerts:
+    $ref: './paths/alerts.yaml#/alerts-protected'
+  /protected/alerts/{id}:
+    $ref: './paths/alerts.yaml#/alert-protected-by-id'
   /protected/alerts/{id}/review:
-    $ref: './paths/environmental.yaml#/alert-review'
+    $ref: './paths/alerts.yaml#/alert-review'
 
-  # -- Devices (IoT Kesiapsiagaan - sisi admin/konsumsi) ------------------
-  /public/devices:
-    $ref: './paths/iot-kesiapsiagaan.yaml#/devices-public'
-  /protected/devices:
-    $ref: './paths/iot-kesiapsiagaan.yaml#/devices-protected'
-  /protected/devices/{id}:
-    $ref: './paths/iot-kesiapsiagaan.yaml#/device-by-id'
-  /protected/devices/{id}/status-log:
-    $ref: './paths/iot-kesiapsiagaan.yaml#/device-status-log'
-  /protected/devices/{id}/siren-log:
-    $ref: './paths/iot-kesiapsiagaan.yaml#/device-siren-log'
-  /protected/devices/{id}/trigger-siren:
-    $ref: './paths/iot-kesiapsiagaan.yaml#/device-trigger-siren'
+  # -- Device Gateway -----------------------------------------------------
+  /public/device/status:
+    $ref: './paths/device.yaml#/device-status'
+  /public/device/register:
+    $ref: './paths/device.yaml#/device-register'
+  /public/device/heartbeat:
+    $ref: './paths/device.yaml#/device-heartbeat'
 
-  # -- Device Gateway (M2M — perangkat IoT langsung ke backend) -----------
-  /device/{id}/level:
-    $ref: './paths/device-gateway.yaml#/device-poll-level'
-  /device/{id}/heartbeat:
-    $ref: './paths/device-gateway.yaml#/device-heartbeat'
-  /device/{id}/siren-events:
-    $ref: './paths/device-gateway.yaml#/device-siren-events'
+  # -- Notifikasi ---------------------------------------------------------
+  /public/notifications/vapid-public-key:
+    $ref: './paths/notifications.yaml#/vapid-key'
+  /public/notifications/subscribe:
+    $ref: './paths/notifications.yaml#/subscribe'
+  /public/notifications/unsubscribe:
+    $ref: './paths/notifications.yaml#/unsubscribe'
+  /public/notifications/latest:
+    $ref: './paths/notifications.yaml#/latest'
+  /protected/notifications/dispatch:
+    $ref: './paths/notifications.yaml#/dispatch'
+  /protected/notifications/logs:
+    $ref: './paths/notifications.yaml#/logs'
+  /protected/notifications/subscribers/count:
+    $ref: './paths/notifications.yaml#/subscribers-count'
 
-  # -- Content Admin: Pengumuman (proxy SID), Evakuasi, Kontak Darurat ----
+  # -- Konten -------------------------------------------------------------
   /public/announcements:
     $ref: './paths/content-admin.yaml#/announcements-public'
-  /protected/announcements:
-    $ref: './paths/content-admin.yaml#/announcements-protected'
-  /protected/announcements/{id}:
-    $ref: './paths/content-admin.yaml#/announcement-by-id'
+  /public/evacuation-routes:
+    $ref: './paths/content-admin.yaml#/evacuation-routes-public'
   /public/evacuation-points:
     $ref: './paths/content-admin.yaml#/evacuation-points-public'
+  /public/evacuation-points/{id}:
+    $ref: './paths/content-admin.yaml#/evacuation-points-public-by-id'
   /protected/evacuation-points:
     $ref: './paths/content-admin.yaml#/evacuation-points-protected'
   /protected/evacuation-points/{id}:
-    $ref: './paths/content-admin.yaml#/evacuation-point-by-id'
-  /public/evacuation-routes:
-    $ref: './paths/content-admin.yaml#/evacuation-routes-public'
-  /protected/evacuation-routes:
-    $ref: './paths/content-admin.yaml#/evacuation-routes-protected'
-  /protected/evacuation-routes/{id}:
-    $ref: './paths/content-admin.yaml#/evacuation-route-by-id'
+    $ref: './paths/content-admin.yaml#/evacuation-points-protected-by-id'
   /public/emergency-contacts:
     $ref: './paths/content-admin.yaml#/emergency-contacts-public'
+  /public/emergency-contacts/{id}:
+    $ref: './paths/content-admin.yaml#/emergency-contacts-public-by-id'
   /protected/emergency-contacts:
     $ref: './paths/content-admin.yaml#/emergency-contacts-protected'
   /protected/emergency-contacts/{id}:
-    $ref: './paths/content-admin.yaml#/emergency-contact-by-id'
+    $ref: './paths/content-admin.yaml#/emergency-contacts-protected-by-id'
+  /public/preparedness-guides:
+    $ref: './paths/content-admin.yaml#/preparedness-guides-public'
+  /public/preparedness-guides/{id}:
+    $ref: './paths/content-admin.yaml#/preparedness-guides-public-by-id'
+  /protected/preparedness-guides:
+    $ref: './paths/content-admin.yaml#/preparedness-guides-protected'
+  /protected/preparedness-guides/{id}:
+    $ref: './paths/content-admin.yaml#/preparedness-guides-protected-by-id'
 
-  # -- AI Summary ----------------------------------------------------------
-  /public/ai-summary:
-    $ref: './paths/ai-summary.yaml#/ai-summary'
-
-  # -- Users -----------------------------------------------------------------
+  # -- Pengguna -----------------------------------------------------------
   /protected/users:
     $ref: './paths/users.yaml#/users'
+  /protected/users/stats:
+    $ref: './paths/users.yaml#/user-stats'
+  /protected/users/roles:
+    $ref: './paths/users.yaml#/user-roles'
   /protected/users/{id}:
     $ref: './paths/users.yaml#/user-by-id'
   /protected/users/{id}/reset-password:
     $ref: './paths/users.yaml#/user-reset-password'
+  /protected/users/{id}/unlock:
+    $ref: './paths/users.yaml#/user-unlock'
 
-  # -- Health (orchestrator) -----------------------------------------------
+  # -- Sistem -------------------------------------------------------------
+  /public/system-health:
+    $ref: './paths/system.yaml#/system-health'
+  /public/system/health:
+    $ref: './paths/system.yaml#/system-health'
+  /protected/system-health:
+    $ref: './paths/system.yaml#/system-health'
+  /public/internal/run-scheduler:
+    $ref: './paths/system.yaml#/run-scheduler'
+
+  # -- Health untuk orchestrator ------------------------------------------
   /healthz:
     $ref: './paths/health.yaml#/healthz'
   /readyz:

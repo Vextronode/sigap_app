@@ -1,0 +1,69 @@
+# =====================================================================
+# paths/system.yaml - path domain Kesehatan Sistem dan pemicu scheduler
+# =====================================================================
+
+system-health:
+  get:
+    tags: [System]
+    summary: Status layanan eksternal, Web Push, dan database
+    description: >
+      Hasil disimpan dalam cache 120 detik. Dibatasi 60 request per menit per IP.
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/system.yaml#/SystemHealth'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+
+run-scheduler:
+  post:
+    tags: [System]
+    summary: Menjalankan satu siklus evaluasi alert
+    description: >
+      Dilindungi CRON_SECRET melalui header Authorization Bearer atau x-cron-secret.
+    security:
+      - cronSecret: []
+    responses:
+      '200':
+        description: Siklus selesai
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/system.yaml#/SchedulerResult'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+  get:
+    tags: [System]
+    summary: Menjalankan satu siklus evaluasi alert
+    description: >
+      Dilindungi CRON_SECRET melalui header Authorization Bearer atau x-cron-secret.
+    security:
+      - cronSecret: []
+    responses:
+      '200':
+        description: Siklus selesai
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/system.yaml#/SchedulerResult'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'

@@ -1,0 +1,61 @@
+# =====================================================================
+# schemas/alerts.yaml - schema domain Alert
+# =====================================================================
+
+Alert:
+  type: object
+  properties:
+    id:
+      type: string
+      description: UUID, atau id sintetis untuk hasil evaluasi langsung yang tidak tersimpan
+    level:
+      $ref: './shared.yaml#/StatusLevel'
+    source:
+      type: string
+      example: "BMKG (estimasi dari data gempa)"
+    description:
+      type: string
+      nullable: true
+    location:
+      type: string
+      nullable: true
+    shakemap:
+      type: string
+      nullable: true
+    reviewStatus:
+      type: string
+      enum: ["Belum Diverifikasi", Dikonfirmasi, Ditolak, Ditindaklanjuti]
+    reviewedBy:
+      type: string
+      format: uuid
+      nullable: true
+    reviewedAt:
+      type: string
+      format: date-time
+      nullable: true
+    reviewer:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+AlertReviewRequest:
+  type: object
+  required: [reviewStatus]
+  properties:
+    reviewStatus:
+      type: string
+      enum: [Dikonfirmasi, Ditolak, Ditindaklanjuti]

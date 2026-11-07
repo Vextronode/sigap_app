@@ -1,11 +1,13 @@
 # =====================================================================
-# paths/auth.yaml — path domain Auth
+# paths/auth.yaml - path domain Auth
 # =====================================================================
 
 login:
   post:
     tags: [Auth]
     summary: Login admin/operator
+    description: >
+      Dibatasi 15 percobaan gagal per 15 menit per IP. Akun terkunci 15 menit setelah 5 kali gagal, dengan respons 403.
     security: []
     requestBody:
       required: true
@@ -27,27 +29,17 @@ login:
                       $ref: '../schemas/auth.yaml#/LoginResponse'
       '401':
         $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '422':
+        $ref: './shared.yaml#/ValidationFailed'
       '429':
         $ref: './shared.yaml#/RateLimited'
-
-logout:
-  post:
-    tags: [Auth]
-    summary: Logout - invalidasi sesi di server (bukan hanya hapus token di klien)
-    responses:
-      '200':
-        description: Logout berhasil
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
-      '401':
-        $ref: './shared.yaml#/Unauthorized'
 
 me:
   get:
     tags: [Auth]
-    summary: Profil pengguna yang sedang login
+    summary: Profil pengguna dari klaim token
     responses:
       '200':
         description: OK
@@ -59,6 +51,47 @@ me:
                 - type: object
                   properties:
                     data:
-                      $ref: '../schemas/auth.yaml#/UserProfile'
+                      type: object
+                      properties:
+                        user:
+                          $ref: '../schemas/auth.yaml#/TokenClaims'
       '401':
         $ref: './shared.yaml#/Unauthorized'
+
+logout:
+  post:
+    tags: [Auth]
+    summary: Logout dan mencabut jti token yang dipakai
+    responses:
+      '200':
+        description: Logout berhasil
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '400':
+        $ref: './shared.yaml#/BadRequest'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+
+change-password:
+  post:
+    tags: [Auth]
+    summary: Ganti password akun sendiri
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/ChangePasswordRequest'
+    responses:
+      '200':
+        description: Password berhasil diubah
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '422':
+        $ref: './shared.yaml#/ValidationFailed'

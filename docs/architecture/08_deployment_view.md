@@ -2,87 +2,80 @@
 
 ## 8.1 Topologi
 
-Sesuai arah deployment program (Context Program): **Production** di-hosting di server desa, **Staging** di-hosting di kampus. **Kondisi interim** (belum sesuai target): deployment dev/preview berjalan di Vercel Preview (branch `dev`), dipicu cron eksternal (cron-job.org) untuk scheduler alert.
-
-> **Pembaruan 2026-11-01 (DEPLOY-01):** deployment Vercel sudah **dinonaktifkan** dan file khusus Vercel dihapus dari repo. Subgraph "Interim" di diagram bawah tinggal catatan riwayat. Staging akan berjalan sebagai container Docker (`deploy/`, scheduler di dalam proses backend, tanpa cron-job.org). Topologi staging yang baru didokumentasikan di `docs/deployment/` (DEPLOY-01 WP-D).
+Staging berjalan di server organisasi (Akademik Kampus) sebagai stack Docker Compose (ADR-038). HTTPS dan domain ditangani reverse proxy milik pengelola server, yang meneruskan seluruh path ke `127.0.0.1:8200`.
 
 ```mermaid
 flowchart TB
-    subgraph Prod[Production - Hosting Desa, TBD]
-        ProdBE[Backend SIGAP]
-        ProdDB[(PostgreSQL)]
-        ProdBE --> ProdDB
-    end
-
-    subgraph Staging[Staging - Hosting Kampus, TBD]
-        StgBE[Backend SIGAP]
-        StgDB[(PostgreSQL)]
-        StgBE --> StgDB
-    end
-
-    subgraph Interim[Interim - Vercel Preview, DINONAKTIFKAN]
-        VercelBE[Backend SIGAP
-        Vercel Preview]
-        VercelDB[(PostgreSQL
-        mis. Supabase/Neon)]
-        Cron[cron-job.org
-        trigger /internal/run-scheduler]
-        VercelBE --> VercelDB
-        Cron -->|POST + CRON_SECRET| VercelBE
-    end
-
-    subgraph Lapangan[Lapangan Desa Cibenda]
-        UnitUtama[Unit Utama
-        Indikator + Kontrol]
-        Sirine[Sirine/Toa]
-        UnitUtama -.ESP-NOW.-> Sirine
-    end
-
     Browser[Browser Warga/Admin]
+    UU[Unit Utama]
+    Proxy[Reverse Proxy Server
+    HTTPS]
 
-    Browser -->|HTTPS| VercelBE
-    UnitUtama -->|HTTP Polling,
-    Heartbeat - TANPA AUTH| VercelBE
+    subgraph Stack[Docker Compose SIGAP]
+        Web[web - Caddy
+        SPA + proxy /api]
+        BE[backend - Express
+        scheduler di dalam proses]
+        Migrate[migrate
+        prisma migrate deploy]
+        DB[(db - PostgreSQL 18)]
+    end
 
-    VercelBE -->|HTTPS| ExtAPI[BMKG/USGS/OWM/AI]
-    VercelBE -->|Web Push VAPID
-    LIVE| Browser
+    Ext[BMKG, Open-Meteo, layanan push]
+
+    Browser --> Proxy
+    UU --> Proxy
+    Proxy -->|127.0.0.1:8200| Web
+    Web -->|/api| BE
+    BE --> DB
+    Migrate --> DB
+    BE --> Ext
 ```
 
-## 8.2 Status Hosting
+## 8.2 Layanan
 
-| Environment | Status | Catatan |
+| Service | Port | Jaringan | Fungsi |
+|---|---|---|---|
+| `web` | `127.0.0.1:8200` ke 80 | `egress` | Menyajikan SPA dan meneruskan `/api` |
+| `backend` | 3000 (internal) | `internal`, `egress` | REST API dan scheduler |
+| `db` | 5432 (internal) | `internal` | PostgreSQL 18 |
+| `migrate` | - | `internal`, `egress` | Menjalankan migrasi lalu berhenti |
+
+Backend berjalan satu replika.
+
+## 8.3 Operasional
+
+Seluruh operasi dijalankan lewat `deploy/sigap.sh`: deploy per tag dengan rollback otomatis bila smoke test gagal, migrasi, seed, backup dan restore, log, serta status. Rincian perintah berada di `README.md`.
+
+## 8.4 Alur Rilis
+
+| Branch | Fungsi |
+|---|---|
+| `dev` | Integrasi pengembangan |
+| `release/<versi>` | Dibuat `scripts/release.sh` dari isi `dev` tanpa path pada `.release-exclude` |
+| `main` | Isi rilis; versi ditandai dengan tag |
+
+Image di-build di server dari tag rilis.
+
+## 8.5 Migrasi Database
+
+Skema dikelola Prisma Migrate di `apps/backend/prisma/migrations/`. `deploy/sigap.sh` mencadangkan database sebelum migrasi pada mode database lokal.
+
+## 8.6 Environment Variables
+
+Daftar lengkap berada di `apps/backend/.env.example` dan `deploy/sigap.env.example`. CI memeriksa kedua daftar tetap sinkron.
+
+| Variabel | Fungsi | Wajib |
 |---|---|---|
-| Production | TBD, menunggu konfirmasi Tim DevOps | Arah program: hosting desa (lihat PRD §4) |
-| Staging | TBD, menunggu konfirmasi Tim DevOps | Arah program: hosting kampus |
-| Interim (dev) | **Dinonaktifkan** (2026-11-01) | Dulu Vercel Preview branch `dev`, scheduler dipicu cron-job.org eksternal setiap 1 menit. Diganti staging Docker (DEPLOY-01) |
+| `DATABASE_URL`, `DIRECT_URL` | Koneksi PostgreSQL | `DATABASE_URL` selalu |
+| `JWT_SECRET` | Penandatanganan token, minimal 32 karakter | Selalu |
+| `CRON_SECRET` | Proteksi pemicu scheduler | Selalu |
+| `JWT_ISSUER`, `JWT_AUDIENCE` | Klaim token | Production |
+| `DEVICE_SHARED_KEY` | Autentikasi perangkat | Production |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push | Production |
+| `ALLOWED_ORIGINS` | Whitelist CORS | Production |
+| `TRUST_PROXY` | Hop proxy yang dipercaya | Sesuai topologi |
+| `ENABLE_LOCAL_SCHEDULER` | Mengaktifkan scheduler | Staging: `true` |
+| `SCHEDULER_HEARTBEAT_URL` | Heartbeat ke monitoring eksternal | Opsional |
 
-## 8.3 Urutan Migrasi Database
-
-> **Gap penting, perlu diklarifikasi:** urutan file bernomor di bawah adalah **rencana migrasi manual**, ditulis sebelum implementasi. Database live nyata dikonfirmasi dikelola lewat **Prisma** (`schema.prisma`), yang sudah memuat tabel tidak tercakup dalam 6 file ini (`PushSubscription`, `NotificationLog`, `EarthquakeRecord`) dan struktur berbeda untuk tabel yang tumpang tindih (mis. `Alert`, lihat `004_environmental.sql` revisi). **Belum jelas** apakah 6 file SQL ini masih dipakai sebagai referensi desain saja, atau pernah/akan dijalankan langsung terpisah dari `prisma migrate` - perlu dipastikan ke tim backend, karena kalau keduanya berjalan independen, risiko schema drift nyata (persis kasus casing RBAC yang sudah terjadi).
-- 001_core_types.sql (extension, ENUM, trigger function)
-- 002_users.sql (tidak bergantung tabel lain) - LIVE, lihat revisi
-- 003_content_admin.sql (bergantung: users) - SEBAGIAN LIVE, lihat revisi
-- 004_environmental.sql (bergantung: 001) - SEBAGIAN LIVE, struktur direvisi total
-- 005_iot_kesiapsiagaan.sql (bergantung: 001, 002) - BELUM LIVE sama sekali
-- 006_rbac.sql (bergantung: 002) - LIVE, casing kolom sudah diverifikasi & diperbaiki
-
-## 8.4 Environment Variables
-
-> Diperbarui berdasarkan audit langsung terhadap kode dan file `.env*` yang ditemukan - bukan lagi murni kerangka rencana.
-
-| Variable | Deskripsi | Status |
-|---|---|---|
-| `DATABASE_URL`, `DIRECT_URL` | Connection string PostgreSQL | Live |
-| `JWT_SECRET` | Kunci penandatanganan token pengguna | Live |
-| `JWT_EXPIRES_IN` | Masa berlaku token, default `"1d"` | Live |
-| `CRON_SECRET` | Proteksi endpoint `/internal/run-scheduler` - **saat ini opsional** (endpoint terbuka kalau tidak di-set), target: wajib (Story SEC-8) | Live, perlu hardening |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Kredensial Web Push | Live |
-| `BMKG_ADM4_CODE` | Kode wilayah BMKG untuk cuaca (default `32.18.01.2008`) | Live |
-| `VILLAGE_LAT`, `VILLAGE_LON` | Koordinat desa untuk hitung `distanceToVillage` | Live |
-| `X-Device-Secret` (nama env var final belum ditentukan) | Autentikasi Device Gateway | Belum ada (Story SEC-7) |
-| `SID_API_KEY` | Kunci autentikasi ke SID (interim, ADR-024) | Belum relevan - integrasi SID belum dibangun |
-| `USGS_API_*`, `OWM_API_KEY` | Kredensial sumber data eksternal lain | Belum terverifikasi ada di `.env` manapun yang ditemukan audit |
-| `AI_API_KEY` | Kredensial layanan AI Summary | Belum terverifikasi - fitur AI Summary sendiri belum live |
-
-**Catatan:** `.env.example` **tidak ditemukan** di repo (temuan audit) - Story SEC-11 menutup gap ini.
+Variabel frontend: `VITE_API_BASE_URL`, `VITE_API_URL`, `VITE_ALERT_REFETCH_INTERVAL_MS`, dan `VITE_PWA_DEV`.

@@ -1,30 +1,40 @@
 # =====================================================================
-# paths/shared.yaml — response reusable lintas domain (401/403/404/
-# 409/429/502), seluruhnya mereferensikan ErrorEnvelope tunggal di
-# schemas/shared.yaml.
+# paths/shared.yaml - response error lintas domain, seluruhnya
+# mereferensikan ErrorEnvelope di schemas/shared.yaml
 # =====================================================================
 
-Unauthorized:
-  description: Token tidak ada atau tidak valid
+BadRequest:
+  description: Permintaan tidak valid
   content:
     application/json:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
         success: false
-        message: "Token tidak valid atau sudah kedaluwarsa"
-        errors: ["Unauthorized"]
+        message: "deviceCode wajib diisi."
+        errors: ["deviceCode: wajib diisi."]
+
+Unauthorized:
+  description: Kredensial tidak ada atau tidak valid
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "Token tidak valid atau kedaluwarsa."
+        errors: ["Token tidak valid atau kedaluwarsa."]
 
 Forbidden:
-  description: Token valid, tetapi tidak memiliki permission yang dibutuhkan
+  description: Permission atau role tidak mencukupi, atau akun terkunci pada login
   content:
     application/json:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
         success: false
-        message: "Anda tidak memiliki izin untuk mengakses resource ini"
-        errors: ["Forbidden"]
+        message: "Akses ditolak."
+        errors: ["Akun Anda tidak memiliki hak akses 'content.manage' untuk fitur ini."]
 
 NotFound:
   description: Resource tidak ditemukan
@@ -34,38 +44,60 @@ NotFound:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
         success: false
-        message: "Resource tidak ditemukan"
-        errors: ["Not Found"]
+        message: "Alert tidak ditemukan."
+        errors: ["Alert tidak ditemukan."]
 
 Conflict:
-  description: Permintaan bertentangan dengan aturan bisnis saat ini
+  description: Permintaan bertentangan dengan aturan bisnis
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+
+ValidationFailed:
+  description: Validasi input gagal
   content:
     application/json:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
         success: false
-        message: "Tidak dapat menonaktifkan admin terakhir yang aktif"
-        errors: ["Conflict"]
+        message: "Validasi gagal."
+        errors:
+          institution: "Nama institusi wajib diisi."
 
 RateLimited:
-  description: Melebihi batas percobaan (rate limit umum, atau lockout login FS-01)
+  description: Melebihi batas permintaan
   content:
     application/json:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
         success: false
-        message: "Terlalu banyak percobaan gagal. Coba lagi dalam 15 menit."
-        errors: ["Rate limit exceeded"]
+        message: "Terlalu banyak permintaan."
+        errors: ["Anda telah melebihi batas permintaan. Silakan coba lagi nanti."]
 
-BmkgUpstreamError:
-  description: Gagal mengambil data dari upstream BMKG (502, bukan 500 - API_SPEC.md v3.1 §6)
+InternalError:
+  description: Kesalahan pada server
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+
+UpstreamError:
+  description: Gagal mengambil data dari sumber eksternal
   content:
     application/json:
       schema:
         $ref: '../schemas/shared.yaml#/ErrorEnvelope'
       example:
         success: false
-        message: "Gagal mengambil data dari BMKG, coba lagi nanti"
-        errors: ["Bad Gateway"]
+        message: "Gagal mengambil data gempa BMKG"
+        errors: ["Layanan data gempa BMKG sementara tidak dapat diakses. Silakan coba beberapa saat lagi."]
+
+ServiceUnavailable:
+  description: Konfigurasi autentikasi perangkat belum tersedia
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'

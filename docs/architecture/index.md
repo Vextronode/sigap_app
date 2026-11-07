@@ -1,33 +1,20 @@
 # Architecture Document - SIGAP
-## Panduan Folder
 
----
+## 1. Tujuan
 
-### 1. Tujuan Dokumen
+Dokumen ini mencatat bentuk sistem SIGAP yang berjalan saat ini: building block, data, keamanan, IoT, API, integrasi, dan deployment. Alasan dan alternatif setiap keputusan berada di `architecture_decision_record/`. Kerangka dokumen mengadaptasi pola arc42 dan C4 Model.
 
-Architecture Document menjelaskan **bentuk sistem SIGAP saat ini** secara utuh - building blocks, arsitektur data, keamanan, IoT, API, integrasi, dan deployment. Dokumen ini **tidak menduplikasi** isi Architecture Decision Record (ADR) di folder `architecture_decision_record/` - setiap bagian merujuk nomor ADR terkait untuk alasan dan alternatif yang dipertimbangkan. Bila ada perbedaan antara narasi di sini dengan ADR, ADR adalah rujukan yang berlaku (ADR bersifat historical record, dokumen ini adalah snapshot kondisi terkini yang mengikuti ADR).
-
-Kerangka yang dipakai mengadaptasi pola **arc42/C4 Model** - standar umum untuk dokumentasi arsitektur perangkat lunak - disesuaikan dengan kebutuhan program (bukan diikuti kaku seluruh templatenya).
-
-### 2. Struktur File
+## 2. Struktur File
 
 | File | Isi | ADR Terkait |
 |---|---|---|
-| `01_introduction_and_scope.md` | Tujuan sistem, stakeholder, System Context Diagram, batasan program | - |
-| `02_building_block_view.md` | Component diagram internal, deskripsi tiap building block | ADR-005, ADR-021, ADR-028 *(referensi sebelumnya ke ADR-016/021 tidak relevan topik - dikoreksi)* |
-| `03_data_architecture.md` | Ringkasan entity, ER diagram | ADR-001 - ADR-004, ADR-030 |
-| `04_security_architecture.md` | Kategorisasi akses, RBAC, rate limiting | ADR-005 - ADR-010, ADR-026, ADR-028 |
-| `05_iot_architecture.md` | Arsitektur hybrid sirine, sequence diagram, Device Gateway | ADR-011 - ADR-015, ADR-029 |
-| `06_api_architecture.md` | Prinsip desain API, envelope, segmentasi | ADR-016 - ADR-021, ADR-027, ADR-028 |
-| `07_integration_architecture.md` | Integrasi SIGAP↔SID | ADR-022 - ADR-025 |
-| `08_deployment_view.md` | Topologi deployment (production/staging/perangkat lapangan) | - |
-| `09_cross_cutting_concerns.md` | NFR lintas domain: fail-safe, performa, aksesibilitas | ADR-004, ADR-025 |
-| `10_risks_and_open_issues.md` | Konsolidasi seluruh isu terbuka lintas dokumen | Seluruh domain |
-
-### 3. Cara Membaca
-
-Urutan file (01 → 10) mengikuti alur logis: mulai dari konteks besar (siapa pengguna, apa batasannya), turun ke building blocks, lalu ke tiap domain teknis (data, security, IoT, API, integrasi), lalu ke deployment, dan ditutup dengan cross-cutting concerns serta risiko. Tidak wajib dibaca berurutan - tiap file cukup mandiri untuk domain yang relevan.
-
-### 4. Status
-
-Dokumen ini mengikuti status ADR yang mendasarinya. Bagian yang merujuk ADR berstatus `yellow` (Integrasi SIGAP↔SID) ikut membawa catatan yang sama: bagian tersebut menggambarkan desain yang **diusulkan dari sisi SIGAP**, belum final lintas program.
+| `01_introduction_and_scope.md` | Tujuan sistem, stakeholder, konteks sistem, batasan | ADR-031 |
+| `02_building_block_view.md` | Komponen internal dan tanggung jawabnya | ADR-005, ADR-028 |
+| `03_data_architecture.md` | Ringkasan entity dan ER diagram | ADR-001, ADR-002, ADR-003, ADR-030 |
+| `04_security_architecture.md` | Kategori akses, RBAC, rate limiting, sesi | ADR-005, ADR-006, ADR-007, ADR-026, ADR-039 |
+| `05_iot_architecture.md` | Device Gateway dan komunikasi perangkat | ADR-013, ADR-028 |
+| `06_api_architecture.md` | Prinsip API dan pembagian domain | ADR-016, ADR-019, ADR-021, ADR-027 |
+| `07_integration_architecture.md` | Integrasi eksternal | ADR-022, ADR-031, ADR-034 |
+| `08_deployment_view.md` | Topologi deployment dan konfigurasi | ADR-038 |
+| `09_cross_cutting_concerns.md` | Perilaku lintas domain | ADR-034, ADR-035 |
+| `10_risks_and_open_issues.md` | Risiko dan isu terbuka | Seluruh domain |

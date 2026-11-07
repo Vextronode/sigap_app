@@ -13,7 +13,7 @@ device-poll-level:
     security:
       - deviceApiKey: []
     parameters:
-      - $ref: '../schemas/shared.yaml#/IdParam'
+      - $ref: '../../../api_spec/schemas/shared.yaml#/IdParam'
     responses:
       '200':
         description: OK
@@ -21,15 +21,15 @@ device-poll-level:
           application/json:
             schema:
               allOf:
-                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - $ref: '../../../api_spec/schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       $ref: '../schemas/device-gateway.yaml#/DeviceLevelResponse'
       '401':
-        $ref: './shared.yaml#/Unauthorized'
+        $ref: '../../../api_spec/paths/shared.yaml#/Unauthorized'
       '404':
-        $ref: './shared.yaml#/NotFound'
+        $ref: '../../../api_spec/paths/shared.yaml#/NotFound'
 
 device-heartbeat:
   post:
@@ -40,7 +40,7 @@ device-heartbeat:
     security:
       - deviceApiKey: []
     parameters:
-      - $ref: '../schemas/shared.yaml#/IdParam'
+      - $ref: '../../../api_spec/schemas/shared.yaml#/IdParam'
     requestBody:
       required: false
       content:
@@ -51,9 +51,9 @@ device-heartbeat:
       '204':
         description: Heartbeat diterima (No Content)
       '401':
-        $ref: './shared.yaml#/Unauthorized'
+        $ref: '../../../api_spec/paths/shared.yaml#/Unauthorized'
       '404':
-        $ref: './shared.yaml#/NotFound'
+        $ref: '../../../api_spec/paths/shared.yaml#/NotFound'
 
 device-siren-events:
   post:
@@ -65,7 +65,7 @@ device-siren-events:
     security:
       - deviceApiKey: []
     parameters:
-      - $ref: '../schemas/shared.yaml#/IdParam'
+      - $ref: '../../../api_spec/schemas/shared.yaml#/IdParam'
     requestBody:
       required: true
       content:
@@ -79,18 +79,18 @@ device-siren-events:
           application/json:
             schema:
               allOf:
-                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - $ref: '../../../api_spec/schemas/shared.yaml#/SuccessEnvelope'
                 - type: object
                   properties:
                     data:
                       $ref: '../schemas/iot-kesiapsiagaan.yaml#/SirenActionLog'
       '401':
-        $ref: './shared.yaml#/Unauthorized'
+        $ref: '../../../api_spec/paths/shared.yaml#/Unauthorized'
       '404':
-        $ref: './shared.yaml#/NotFound'
+        $ref: '../../../api_spec/paths/shared.yaml#/NotFound'
       '409':
         description: levelAtTrigger bukan ORANGE/RED - safeguard by design
         content:
           application/json:
             schema:
-              $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+              $ref: '../../../api_spec/schemas/shared.yaml#/ErrorEnvelope'

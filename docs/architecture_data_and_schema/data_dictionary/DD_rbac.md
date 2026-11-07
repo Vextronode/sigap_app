@@ -4,38 +4,43 @@
 
 | Field | Tipe Data | Deskripsi | Contoh Nilai |
 |---|---|---|---|
-| id | UUID | Primary key | - |
-| name | VARCHAR(50) UNIQUE | Nama role | `"admin"`, `"operator"` |
-| description | TEXT | Deskripsi singkat role | `"Mengelola konten desa"` |
+| id | TEXT | Primary key | - |
+| name | TEXT, UNIQUE | Nama role | `admin`, `operator` |
+| description | TEXT, NULLABLE | Deskripsi role | - |
 
 ## Entity: `permissions`
 
 | Field | Tipe Data | Deskripsi | Contoh Nilai |
 |---|---|---|---|
-| id | UUID | Primary key | - |
-| code | VARCHAR(100) UNIQUE | Kode permission, dipakai middleware | `"content.manage"`, `"alert.validate"` |
-| description | TEXT | Deskripsi | `"Validasi alert yang masuk"` |
+| id | TEXT | Primary key | - |
+| code | TEXT, UNIQUE | Kode permission | `content.manage` |
+| description | TEXT, NULLABLE | Deskripsi | - |
 
-## Entity: `role_permissions` (junction table)
-
-| Field | Tipe Data | Deskripsi |
-|---|---|---|
-| role_id | UUID (FK → roles.id) | - |
-| permission_id | UUID (FK → permissions.id) | - |
-
-## Entity: `user_roles` (junction table)
+## Entity: `role_permissions`
 
 | Field | Tipe Data | Deskripsi |
 |---|---|---|
-| user_id | UUID (FK → users.id) | - |
-| role_id | UUID (FK → roles.id) | - |
+| roleId | TEXT, FK ke `roles.id`, cascade | Bagian composite primary key |
+| permissionId | TEXT, FK ke `permissions.id`, cascade | Bagian composite primary key |
 
-## Seed Data Awal
+## Entity: `user_roles`
+
+| Field | Tipe Data | Deskripsi |
+|---|---|---|
+| userId | TEXT, FK ke `users.id`, cascade | Bagian composite primary key |
+| roleId | TEXT, FK ke `roles.id`, cascade | Bagian composite primary key |
+
+## Seed Data
 
 | Role | Permission |
 |---|---|
-| admin | content.manage, alert.validate, device.view, device.manage, siren.view, user.manage |
-| operator | content.manage, alert.validate, device.view, siren.view, siren.trigger |
+| admin | `content.manage`, `alert.validate`, `device.view`, `device.manage`, `siren.view`, `user.manage` |
+| operator | `content.manage`, `alert.validate`, `device.view`, `siren.view`, `siren.trigger` |
 
-Permission `siren.trigger` saat penulisan dokumen ini masih *reserved* (route belum ada di kode). Protokol dan desain route-nya **sudah final** sejak sesi desain keamanan sirine (lihat FS-09, backlog Story `SIGAP-T2-E2-S9`) - cooldown 60 detik, eskalasi RED memotong cooldown, konfirmasi 2-langkah untuk level RED. Satu bagian yang masih terbuka murni di level firmware: mekanisme konfirmasi RED untuk tombol *fisik* (diusulkan tekan-tahan 2 detik, menunggu konfirmasi Tim IoT terhadap kelayakan firmware yang sudah tahap finishing).
-Permission ini disiapkan supaya begitu keputusan closed, tinggal dipasang ke route, tanpa perlu migrasi skema tambahan.
+## Pemakaian Permission
+
+| Permission | Dipakai Route |
+|---|---|
+| `content.manage` | Mutasi kontak darurat, titik evakuasi, panduan |
+| `user.manage` | Seluruh route manajemen akun |
+| `alert.validate`, `device.view`, `device.manage`, `siren.view`, `siren.trigger` | Belum dipakai route |

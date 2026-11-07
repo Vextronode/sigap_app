@@ -1,21 +1,13 @@
 # =====================================================================
-# schemas/content-admin.yaml — schema domain Pengumuman (proxy SID),
-# Evakuasi (FS-04), Kontak Darurat (FS-03)
+# schemas/content-admin.yaml - schema domain Pengumuman, Titik Evakuasi,
+# Kontak Darurat, Panduan Kesiapsiagaan
 # =====================================================================
 
-# --- Announcements: proxy read-only dari SID, lihat Roadmap Tahap 2 §2.1 #3-4.
-# CRUD lokal DEPRECATED — dipertahankan di paths sebagai deprecated:true,
-# tidak dihapus, mengikuti keputusan yang sama dengan tabel `announcements`
-# di database (dipertahankan, tidak dipakai aktif).
-AnnouncementProxy:
+Announcement:
   type: object
-  description: >
-    Hasil proxy dari SID, difilter hanya yang berstatus public di SID
-    (Roadmap Tahap 2 §2.1 #3). id merujuk ID di sistem SID, bukan SIGAP.
   properties:
     id:
       type: string
-      description: ID dari sistem SID (bukan UUID lokal SIGAP)
     title:
       type: string
     description:
@@ -32,13 +24,28 @@ EvacuationPoint:
       format: uuid
     name:
       type: string
+    address:
+      type: string
+      nullable: true
     latitude:
       type: number
     longitude:
       type: number
+    elevation:
+      type: number
+      nullable: true
+    capacity:
+      type: integer
+      nullable: true
     description:
       type: string
       nullable: true
+    facilities:
+      type: array
+      items:
+        type: string
+    isCore:
+      type: boolean
     createdAt:
       type: string
       format: date-time
@@ -49,62 +56,41 @@ EvacuationPoint:
 EvacuationPointWriteRequest:
   type: object
   required: [name, latitude, longitude]
+  description: Field isCore pada request diabaikan.
   properties:
     name:
       type: string
+      minLength: 3
+      maxLength: 150
+    address:
+      type: string
+      maxLength: 255
+      nullable: true
     latitude:
       type: number
       minimum: -90
       maximum: 90
-      description: Validasi rentang koordinat (FS-04 FR4)
     longitude:
       type: number
       minimum: -180
       maximum: 180
+    elevation:
+      type: number
+      nullable: true
+    capacity:
+      type: integer
+      minimum: 0
+      nullable: true
     description:
       type: string
-
-EvacuationRoute:
-  type: object
-  properties:
-    id:
-      type: string
-      format: uuid
-    routeName:
-      type: string
-    geometry:
+      maxLength: 1000
+      nullable: true
+    facilities:
       type: array
-      minItems: 2
+      maxItems: 20
       items:
-        type: object
-        properties:
-          lat:
-            type: number
-          lng:
-            type: number
-    createdAt:
-      type: string
-      format: date-time
-    updatedAt:
-      type: string
-      format: date-time
-
-EvacuationRouteWriteRequest:
-  type: object
-  required: [routeName, geometry]
-  properties:
-    routeName:
-      type: string
-    geometry:
-      type: array
-      minItems: 2
-      items:
-        type: object
-        properties:
-          lat:
-            type: number
-          lng:
-            type: number
+        type: string
+        maxLength: 100
 
 EmergencyContact:
   type: object
@@ -118,10 +104,10 @@ EmergencyContact:
       type: string
     isCore:
       type: boolean
-      description: >
-        true untuk 6 kontak inti (Ambulans, Damkar, Polisi, Puskesmas,
-        BPBD, Kantor Desa Cibenda) — di-seed saat setup, tidak dapat
-        dihapus lewat API manapun (FS-03).
+      description: Kontak inti diisi saat seed dan tidak dapat dihapus lewat API.
+    icon:
+      type: string
+      nullable: true
     createdAt:
       type: string
       format: date-time
@@ -132,11 +118,74 @@ EmergencyContact:
 EmergencyContactWriteRequest:
   type: object
   required: [institution, phoneNumber]
+  description: Pada pembaruan, minimal satu field wajib dikirim.
   properties:
     institution:
       type: string
+      maxLength: 150
     phoneNumber:
       type: string
-  description: >
-    isCore SENGAJA tidak ada di sini — field itu hanya di-set lewat
-    seed awal, tidak dapat diubah lewat create/update manapun.
+      pattern: '^[+0-9\s-]{6,25}$'
+    icon:
+      type: string
+      maxLength: 50
+
+PreparednessGuide:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    title:
+      type: string
+    content:
+      type: string
+      nullable: true
+    externalUrl:
+      type: string
+      nullable: true
+    imageUrl:
+      type: string
+      nullable: true
+    sourceType:
+      type: string
+      enum: [RESMI, MITRA]
+    sourceLabel:
+      type: string
+      nullable: true
+    publishedAt:
+      type: string
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+PreparednessGuideWriteRequest:
+  type: object
+  required: [title, imageUrl]
+  description: Minimal salah satu dari content atau externalUrl wajib terisi.
+  properties:
+    title:
+      type: string
+      maxLength: 150
+    content:
+      type: string
+      nullable: true
+    externalUrl:
+      type: string
+      nullable: true
+    imageUrl:
+      type: string
+    sourceType:
+      type: string
+      enum: [RESMI, MITRA]
+      default: RESMI
+    sourceLabel:
+      type: string
+      nullable: true
+    publishedAt:
+      type: string
+      format: date-time

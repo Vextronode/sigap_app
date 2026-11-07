@@ -10,13 +10,13 @@
 
 You are developing **SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda)**.
 
-SIGAP is a Decision Support Dashboard that integrates official disaster and weather information from BMKG and other trusted sources into a simple web platform for the people and local government of Desa Cibenda, Pangandaran.
+SIGAP is a Decision Support Dashboard that integrates official disaster and weather information from BMKG and weather data from Open-Meteo into a simple web platform for the people and local government of Desa Cibenda, Pangandaran.
 
 SIGAP IS NOT:
 
 - An Early Warning System (EWS)
 - A Disaster Prediction System
-- An IoT Monitoring System
+- A sensor-based IoT Monitoring System
 - A Machine Learning Project
 
 Always respect this business scope.
@@ -29,16 +29,18 @@ Before writing any code, always understand the project through the following doc
 
 Read them in this order:
 
-1. docs/PRD.md
-2. docs/DatabaseDesign.md
-3. AI/SKILLS.md
-4. AI/CodingConvention.md
-5. AI/BackendGuide.md
-6. docs/API-Spec.md
+1. docs/README.md
+2. docs/PRD.md
+3. docs/Rules_Alerts.md
+4. docs/architecture_data_and_schema/data_dictionary/
+5. docs/api_spec/openapi.yaml
+6. AI/SKILLS.md
+7. AI/BackendGuide.md
+8. AI/FrontendGuide.md
 
 Never ignore these documents.
 
-If generated code conflicts with documentation, documentation always wins.
+Code records what is running. docs/PRD.md and docs/Rules_Alerts.md record what is required. If generated code conflicts with them, state the conflict and ask for clarification.
 
 ---
 
@@ -62,12 +64,12 @@ Frontend
 Map
 
 - Leaflet
-- OpenStreetMap
+- Google Maps tiles
 
 External APIs
 
 - BMKG
-- OpenStreetMap
+- Open-Meteo
 - AI API (optional)
 
 ---
@@ -143,7 +145,7 @@ Never:
 - Put business logic inside Route
 - Put business logic inside Repository
 - Hardcode BMKG threshold
-- Create database tables outside DatabaseDesign.md
+- Create database tables outside apps/backend/prisma/schema.prisma
 - Modify business rules without approval
 
 ---
@@ -162,7 +164,7 @@ Always:
 
 # Database Rules
 
-Always follow DatabaseDesign.md.
+Always follow apps/backend/prisma/schema.prisma and the Data Dictionary.
 
 Never:
 
@@ -189,9 +191,7 @@ Every endpoint must:
 
 # UI Rules
 
-UI follows Google Stitch output.
-
-Google Stitch is the source of truth for UI implementation.
+UI follows docs/DESIGN.md and docs/DESIGN_ADMIN.md. Google Stitch output is a layout reference.
 
 Do not redesign UI unless explicitly requested.
 
@@ -227,17 +227,11 @@ Public User
 
 No authentication required.
 
-Admin
+Admin and Operator
 
 Authentication required.
 
-Only admin can:
-
-- Manage announcement
-- Manage evacuation routes
-- Manage evacuation points
-- Manage emergency contacts
-- Validate disaster broadcast
+Permissions follow docs/security_and_access_control/ROUTE_ACCESS_DESIGN.md.
 
 ---
 
@@ -248,7 +242,6 @@ SIGAP only receives official disaster data.
 Source:
 
 - BMKG
-- Other trusted government services
 
 Never generate disaster prediction.
 
@@ -258,9 +251,7 @@ Never estimate tsunami risk manually.
 
 # Broadcast Rules
 
-Broadcast follows business rules defined in PRD.
-
-AI must never bypass validation workflow.
+Broadcast follows docs/Rules_Alerts.md.
 
 General flow:
 
@@ -268,15 +259,15 @@ BMKG
 
 ↓
 
-SIGAP
+SIGAP Decision Engine
 
 ↓
 
-Admin Validation
+Web Push to all subscribers
 
 ↓
 
-Broadcast to Citizens
+Admin Review
 
 ---
 

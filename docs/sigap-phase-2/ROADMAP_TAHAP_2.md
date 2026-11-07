@@ -3,166 +3,103 @@
 | | |
 |---|---|
 | **Document Type** | Development Roadmap |
-| **Status** | Draft - Aktif |
-| **Version** | 1.0 |
-| **Date** | 27 Juli 2026 |
+| **Status** | Aktif |
+| **Version** | 2.0 |
+| **Date** | 7 November 2026 |
 | **Author** | Tech Lead, SIGAP |
-| **Dokumen Terkait** | PRD SIGAP v4.0, ADR-001 s.d. ADR-025, `architecture/`, `api/openapi.yaml` |
+| **Dokumen Terkait** | `PRD.md`, `architecture_decision_record/`, `planned_data_model.md`, `planned_api/` |
 
----
+## 1. Status Area
 
-## 1. Latar Belakang
-
-Tahap 2 dipicu oleh peninjauan implementasi client-side yang sudah berjalan (Tahap 1) terhadap kontrak arsitektur yang sudah disepakati (ADR, schema, API spec). Peninjauan ini menemukan sejumlah penyesuaian yang perlu dilakukan pada data contract, satu reversal arsitektur (sumber data Announcements), dan kebutuhan baru (PreparednessGuide, refresh strategy). Dokumen ini merangkum seluruh temuan menjadi satu rencana kerja terstruktur.
-
----
-
-## 2. Ringkasan Perubahan dari Tahap 1
-
-### 2.1 Berubah
-
-| # | Item | Dari → Jadi |
+| Area | Cakupan | Status |
 |---|---|---|
-| 1 | `WeatherForecastItem` | Field `date` → `local_datetime` (timestamp lengkap dengan jam, bukan cuma tanggal) |
-| 2 | Endpoint gempa | `GET /public/earthquakes/latest` → `GET /public/earthquakes?scope=pangandaran\|jawa_barat\|indonesia`; `data` boleh `null` bila tidak ada gempa yang lolos filter radius/umur |
-| 3 | Sumber data `GET /public/announcements` | Tabel SIGAP sendiri → proxy dari API SID (backend-to-backend, difilter: header/deskripsi/waktu, hanya yang berstatus public di SID) |
-| 4 | Tabel `announcements` + endpoint Protected CRUD SIGAP | Aktif → **deprecated** (dipertahankan di schema, tidak dihapus fisik, tidak dipakai aktif) |
-| 5 | Kanal notifikasi (ADR-022) | SID sebagai satu-satunya kanal → **dual-channel**: SID + Web Push milik SIGAP sendiri (redundansi, prinsip fail-safe yang sama dengan ADR-004/025) |
-| 6 | Threshold Rule Engine | Diklarifikasi: **bukan** threshold yang dihitung SIGAP dari data mentah - level (Waspada/Siaga/Awas, dst) diambil langsung dari klasifikasi resmi BMKG per sumber, SIGAP hanya melakukan mapping ke `status_level`. Fitur konfigurasi threshold di admin panel **tidak diperlukan**. |
+| Area 1 - Data Contract | Forecast, gempa per wilayah, `preparedness_guides` | Selesai |
+| Area 2 - Otomasi Notifikasi | Web Push otomatis dari scheduler | Selesai untuk Web Push (ADR-034) |
+| Area 3 - Peta Evakuasi | Peta Leaflet, titik dari API, urutan terdekat, navigasi Google Maps | Selesai (ADR-032) |
+| Area 4 - Integrasi SID | Notifikasi SIGAP ke SID dan pengumuman SID ke SIGAP | Belum dimulai; menunggu kontrak API SID |
+| Area 5 - Admin-Side | Fitur pada Bagian 2 | Sebagian selesai |
+| Area 6 - Data Historis dan Alert Cuaca | Bagian 3 | Belum dimulai |
+| Area 7 - Perangkat dan Sirine | Manajemen perangkat, riwayat, trigger sirine | Belum dimulai; menunggu ketetapan kontrak perangkat |
+| Area 8 - Ringkasan AI | Ringkasan cuaca dan gempa, rekomendasi aktivitas | Belum dimulai; kontrak di `planned_api/` |
+| Area 9 - Pembaruan Real-Time | Bagian 4 | Belum dimulai |
 
-### 2.2 Baru
+## 2. Fitur Admin-Side
 
-| # | Item | Keterangan |
+| ID | Fitur | Status | Area |
+|---|---|---|---|
+| FS-01 | Login dan Sesi | Berjalan | 5 |
+| FS-02 | Verifikasi Alert | Berjalan | 5 |
+| FS-03 | Kelola Kontak Darurat | Berjalan | 5 |
+| FS-04 | Kelola Titik Evakuasi | Berjalan | 5 |
+| FS-05 | Kelola Panduan Kesiapsiagaan | Berjalan | 5 |
+| FS-06 | Manajemen Perangkat IoT | Belum | 7 |
+| FS-07 | Riwayat Status Device | Belum | 7 |
+| FS-08 | Riwayat Aktivasi Sirine | Belum | 7 |
+| FS-09 | Trigger Sirine Remote | Belum | 7 |
+| FS-10 | Manajemen Akun dan Role | Berjalan | 5 |
+| FS-11 | Dashboard Admin | Berjalan; bagian perangkat per unit menunggu FS-06 | 5, 7 |
+| FS-12 | Monitoring Integrasi SID | Belum | 4 |
+| FS-13 | Peta Evakuasi Interaktif | Berjalan | 3 |
+
+## 3. Area 6 - Data Historis dan Alert Cuaca
+
+Area ini dipindahkan dari cakupan MVP (ADR-033).
+
+### 3.1 Kondisi Awal
+
+| Kebutuhan | Yang Sudah Ada | Yang Belum Ada |
 |---|---|---|
-| 1 | Entity `preparedness_guides` | Hybrid: field `content` (nullable) dan `external_url` (nullable), constraint minimal satu terisi; `source_type` (resmi/mitra); `published_at` |
-| 2 | Endpoint PreparednessGuide | Public GET (list/detail) + Protected CRUD admin |
-| 3 | ADR baru - Integrasi SID→SIGAP (Announcements) | Arah kedua integrasi lintas sistem, kebalikan ADR-022 (yang arahnya SIGAP→SID) |
-| 4 | ADR baru - Dual-channel notification | SIGAP Web Push + SID berjalan bersamaan, bukan saling menggantikan |
-| 5 | NFR - Interval refresh frontend | Dipisahkan eksplisit dari interval polling IoT (15 detik, ADR-013) - lihat Bagian 4 |
-| 6 | Tabel mapping klasifikasi BMKG → `status_level` | Per sumber data (cuaca, gempa, tsunami masing-masing punya taksonomi sendiri) - dicatat sebagai pekerjaan rumah Area 1/2, belum dikerjakan pada dokumen ini |
+| Riwayat gempa | Tabel `earthquake_records`, endpoint riwayat Pangandaran dan Jawa Barat | Grafik dan filter waktu |
+| Riwayat alert | Tabel `alerts`, filter dan paginasi pada panel admin | Tampilan publik dengan filter waktu |
+| Riwayat cuaca | Cuaca terkini dan prakiraan tanpa penyimpanan | Tabel, proses pengambilan berkala, endpoint, grafik |
+| Alert cuaca | Decision Engine hanya mengevaluasi gempa dan tsunami | Sumber klasifikasi resmi dan aturan level |
 
----
+### 3.2 Rancangan
 
-## 3. Area Pengembangan Tahap 2
+1. **Penyimpanan cuaca.** Tabel `environmental_data` pada `planned_data_model.md`, diisi berkala dari BMKG dan Open-Meteo. Data seismik tetap memakai `earthquake_records`.
+2. **Endpoint riwayat.** `GET /api/public/environmental-data` dengan filter jenis data, rentang waktu, dan paginasi.
+3. **Tampilan.** Grafik riwayat cuaca dan gempa pada dashboard warga.
+4. **Alert cuaca ekstrem, banjir, dan kekeringan.** Level diambil dari klasifikasi resmi BMKG, tanpa ambang yang dihitung SIGAP. Sumber klasifikasi per jenis bahaya ditetapkan sebelum pengerjaan dimulai. Open-Meteo tidak dipakai sebagai dasar level.
+5. **Retensi.** Masa simpan data ditetapkan bersama pengelola server, mengikuti kapasitas database staging.
 
-| Area | Cakupan | Bergantung Pada |
+### 3.3 Urutan
+
+| Tahap | Pekerjaan | Prasyarat |
 |---|---|---|
-| **Area 1 - Data Contract** | Seluruh item Bagian 2.1 & 2.2 yang menyentuh schema/API | - (fondasi, dikerjakan lebih dulu) |
-| **Area 2 - Otomasi Status & Notifikasi** | Rule Engine mem-publish event internal setelah menulis `alert_log`/`iot_devices.current_level`, dikonsumsi oleh kanal notifikasi (dual-channel) | Area 1, Area 4 |
-| **Area 3 - Peta Evakuasi Interaktif** | Migrasi dari hardcode ke Leaflet + API `evacuation_points`/`evacuation_routes`, fitur arahkan-ke-titik-terdekat via GPS | Area 1 |
-| **Area 4 - Integrasi Notifikasi dengan SID** | Finalisasi kontrak API, autentikasi resmi (menggantikan API Key interim ADR-024), implementasi kedua arah (SIGAP→SID notifikasi, SID→SIGAP announcements) | Area 1 |
-| **Area 5 - Admin-Side** | Lihat Bagian 5 untuk daftar fitur lengkap | Area 1 (fondasi), sebagian bergantung Area 3 (data model evakuasi) |
+| 1 | Penyimpanan cuaca dan endpoint riwayat | - |
+| 2 | Grafik riwayat | Tahap 1 |
+| 3 | Penetapan sumber klasifikasi alert cuaca | - |
+| 4 | Aturan alert cuaca pada Decision Engine dan `Rules_Alerts.md` | Tahap 3 |
 
-Area 3, Area 4, dan Area 5 berjalan **paralel** setelah Area 1 selesai. Area 2 menyusul setelah Area 4 selesai (butuh kanal notifikasi siap sebelum otomasi dibangun di atasnya).
+## 4. Area 9 - Pembaruan Real-Time
 
----
+Dashboard saat ini memakai polling (`architecture/09_cross_cutting_concerns.md`). Server-Sent Events direncanakan untuk komunikasi backend ke dashboard karena kebutuhannya satu arah.
 
-## 4. Strategi Refresh Data - Menuju Server-Sent Events (SSE)
-
-### 4.1 Konteks
-
-Kecepatan tampilan data di dashboard dibentuk oleh tiga mata rantai berbeda, masing-masing punya batas kecepatan sendiri:
-
-```
-BMKG/USGS/OWM  →  Backend SIGAP  →  Frontend Dashboard
-                        │
-                        └──────────→  Perangkat IoT (final: polling 15 detik, ADR-013)
-```
-
-### 4.2 Keputusan
-
-SSE dipilih menggantikan polling tetap (8 detik) - pertimbangan: kebutuhan komunikasinya satu arah (backend → dashboard), butuh cepat saat kondisi kritis namun hemat saat kondisi normal. WebSocket dipertimbangkan namun tidak dipilih karena menyelesaikan masalah yang sama dengan overhead dua-arah yang tidak diperlukan.
-
-### 4.3 Risiko
-
-| Risiko | Penjelasan |
+| Prasyarat | Keterangan |
 |---|---|
-| Konfigurasi reverse proxy | Perlu `proxy_buffering off` dan timeout disesuaikan - default proxy membuffer response, menghilangkan sifat real-time SSE |
-| Koneksi idle diputus infra | Perlu heartbeat berkala agar tidak dianggap mati oleh jaringan/proxy |
-| Auth terbatas di `EventSource` native | Tidak mendukung custom header - tidak masalah untuk dashboard Public, jadi batasan bila admin-side kelak juga butuh SSE dengan JWT |
-| Event hilang saat reconnect | Perlu mekanisme resync eksplisit, tidak otomatis "mengejar ketinggalan" |
-| Beban koneksi bersamaan | Perlu batas NFR eksplisit, jangan ditemukan tanpa sengaja saat live |
-| Fallback saat SSE gagal | Sebagian jaringan/proxy memblokir koneksi long-lived - perlu jalur mundur ke polling |
+| Reverse proxy | `proxy_buffering off` dan penyesuaian timeout pada server staging |
+| Event internal | Scheduler menerbitkan event setelah menyimpan alert |
+| Heartbeat | Mencegah koneksi idle diputus infrastruktur |
+| Resync | Mengambil ulang data saat koneksi tersambung kembali |
+| Fallback | Kembali ke polling saat koneksi SSE gagal |
+| Batas koneksi | Jumlah koneksi bersamaan ditetapkan sebagai NFR |
 
-### 4.4 Prasyarat (Urutan Blocking)
+## 5. Urutan Pengerjaan
 
-1. **Hosting mendukung koneksi long-lived** - terkait langsung isu terbuka di `architecture/10_risks_and_open_issues.md` (hosting production/staging masih TBD)
-2. **Pola event internal di backend** - Rule Engine mem-publish event (mis. via `EventEmitter`) setelah menulis ke database; titik yang sama dipakai ulang oleh Area 2 (notifikasi)
-3. Heartbeat berkala
-4. Strategi resync (fetch ulang `/public/dashboard` saat reconnect)
-5. Fallback otomatis ke polling saat `EventSource` gagal established
-6. Batas jumlah koneksi bersamaan
+| Urutan | Pekerjaan |
+|---|---|
+| 1 | Implementasi ADR-036 dan ADR-037 |
+| 2 | Area 4 - Integrasi SID |
+| 3 | Area 7 - Perangkat dan Sirine, setelah kontrak perangkat ditetapkan |
+| 4 | Area 8 - Ringkasan AI |
+| 5 | Area 6 - Data Historis dan Alert Cuaca |
+| 6 | Area 9 - Pembaruan Real-Time |
 
-Poin 1–2 bersifat blocking terhadap seluruh implementasi SSE. Poin 3–6 dapat dirancang paralel.
+## 6. Isu Terbuka
 
----
-
-## 5. Fitur Admin-Side
-
-### A. Operasional Harian
-1. Login & Sesi (JWT, role admin/operator)
-2. Verifikasi & Validasi Alert
-3. ~~Kelola Pengumuman~~ - **dihapus dari cakupan**, sumber data pindah ke SID (lihat Bagian 2.1 #3-4)
-4. Kelola Kontak Darurat
-5. Kelola Titik & Jalur Evakuasi (menyusul Area 3)
-6. Kelola Panduan Kesiapsiagaan (baru - dua mode input: artikel langsung atau link eksternal)
-
-### B. Manajemen Perangkat & Keselamatan
-7. Manajemen Perangkat IoT
-8. Riwayat Status Device (`device_status_log`)
-9. Riwayat Aktivasi Sirine (`siren_action_log`)
-10. Trigger Sirine Remote - kontrak API sudah ada, fungsional menyusul setelah jalur remote diimplementasikan (ADR-012)
-
-### C. Manajemen Pengguna & Monitoring Sistem
-11. Manajemen Akun & Role
-12. Dashboard Admin (ringkasan statistik)
-13. Monitoring Integrasi SID (baru) - log status pengiriman notifikasi (berhasil/gagal/retry), agar kegagalan kanal notifikasi terlihat oleh admin, bukan hanya "diam-diam tetap berjalan" di backend
-
----
-
-## 6. Timeline
-
-1. **Area 1 - Data Contract** (fondasi)
-2. **Paralel setelah Area 1:**
-   - Area 3 - Peta Evakuasi Interaktif
-   - Area 4 - Integrasi SID (kontrak final, autentikasi resmi)
-   - Area 5 - Admin Tools
-   - Prasyarat SSE #1 & #2 (hosting, pola event internal) - mulai paralel, tidak menunggu area lain
-3. **Setelah Area 4 selesai:**
-   - Area 2 - Otomasi Notifikasi
-4. **Setelah prasyarat SSE lengkap:**
-   - Implementasi SSE menggantikan polling - memakai titik publish event yang sama dari Area 2
-
-```mermaid
-   gantt
-      title Roadmap Tahap 2 - SIGAP
-      dateFormat  YYYY-MM-DD
-      axisFormat  Week %W
-
-      section Fondasi
-      Area 1 - Data Contract                          :a1, 2026-01-05, 1w
-
-      section Client-Side
-      Area 3 - Peta Evakuasi Interaktif               :a3, after a1, 2w
-
-      section Backend/Integrasi
-      Area 4 - Integrasi SID                          :a4, after a1, 2w
-      Prasyarat SSE (hosting + pola event internal)   :sse1, after a1, 2w
-
-      section Admin-Side
-      Area 5 - Admin Tools                            :a5, after a1, 2w
-
-      section Otomasi & Real-Time
-      Area 2 - Otomasi Notifikasi                     :a2, after a4, 1w
-      Implementasi SSE                                :sse2, after sse1, 1w
-```
----
-
-## 7. Isu Terbuka yang Perlu Dipantau
-
-| Isu | Terkait | Status |
+| Isu | Area | Pemilik |
 |---|---|---|
-| Hosting production/staging | Prasyarat SSE #1 | TBD (lihat `architecture/10_risks_and_open_issues.md`) |
-| Tabel mapping klasifikasi BMKG → `status_level` per sumber | Area 1/2 | Belum dikerjakan |
-| Kontrak API SID (kedua arah: notifikasi & announcements) | Area 4 | Menunggu sign-off Tim SID |
-| Nasib fisik tabel `announcements` SIGAP yang deprecated | Area 1 | Dipertahankan dulu, keputusan hapus permanen ditunda |
+| Kontrak perangkat: autentikasi, endpoint, interval | 7 | Tech Lead |
+| Kontrak API SID | 4 | Tech Lead SIGAP dan SID |
+| Sumber klasifikasi alert cuaca | 6 | Tech Lead |
+| Hosting production | 9 | Tim DevOps |

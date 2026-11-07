@@ -2,7 +2,7 @@ Dokumen ini menjelaskan standar penggunaan environment variable, secrets, dan lo
 
 ---
 
-# 🎯 Tujuan
+# Tujuan
 
 Environment Standardization bertujuan untuk:
 
@@ -13,7 +13,7 @@ Environment Standardization bertujuan untuk:
 
 ---
 
-# 📁 Environment Variables
+# Environment Variables
 
 Setiap project **wajib** menggunakan file environment.
 
@@ -36,7 +36,7 @@ Contoh:
 
 ---
 
-# 🔐 Secrets Management
+# Secrets Management
 
 Data sensitif **tidak boleh** disimpan di repository.
 
@@ -62,7 +62,7 @@ Untuk deployment dan CI/CD nantinya, seluruh credential production akan disimpan
 
 ---
 
-# 💻 Local Development
+# Local Development
 
 Seluruh developer diharapkan menggunakan environment lokal masing-masing.
 
@@ -79,7 +79,7 @@ Karena setiap project memiliki stack yang berbeda, detail instalasi akan dijelas
 
 ---
 
-# 🌿 Environment
+# Environment
 
 Secara umum project dapat menggunakan beberapa environment.
 
@@ -93,7 +93,7 @@ Konfigurasi setiap environment dapat berbeda sesuai kebutuhan project.
 
 ---
 
-# 📦 Versioning Environment
+# Versioning Environment
 
 Apabila terdapat environment variable baru:
 
@@ -103,7 +103,7 @@ Apabila terdapat environment variable baru:
 
 ---
 
-# 🚫 Larangan
+# Larangan
 
 Hal-hal berikut **tidak diperbolehkan**:
 
@@ -117,7 +117,7 @@ Hal-hal berikut **tidak diperbolehkan**:
 
 ---
 
-# 📌 Catatan
+# Cakupan
 
 Dokumen ini merupakan standar umum organisasi.
 

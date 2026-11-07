@@ -1,7 +1,5 @@
 # =====================================================================
 # schemas/iot-kesiapsiagaan.yaml — schema domain Perangkat IoT
-# (Unit Utama + Sirine — terminologi final di-handle Tech Lead terpisah,
-# field di bawah tetap generik "device")
 # =====================================================================
 
 DevicePublic:
@@ -17,16 +15,11 @@ DevicePublic:
     longitude:
       type: number
     currentLevel:
-      $ref: './shared.yaml#/StatusLevel'
+      $ref: '../../../api_spec/schemas/shared.yaml#/StatusLevel'
     status:
       type: string
       enum: [online, offline]
-      description: >
-        Hanya 2 nilai sesuai FS-06 (biner, dari ambang waktu lastSeenAt).
-        Nilai "degraded" pada draft sebelumnya DIBUANG — tidak pernah
-        diputuskan di FS manapun. Kalau ada rencana status granular
-        (kualitas sinyal, status daya, dst. — sempat dibahas untuk
-        Sirine), itu perlu field terpisah, bukan overload di sini.
+      description: Status koneksi dari ambang waktu lastSeenAt.
 
 DeviceFull:
   allOf:
@@ -88,7 +81,7 @@ DeviceStatusLog:
       type: string
       format: uuid
     levelSent:
-      $ref: './shared.yaml#/StatusLevel'
+      $ref: '../../../api_spec/schemas/shared.yaml#/StatusLevel'
     sentAt:
       type: string
       format: date-time
@@ -108,7 +101,7 @@ SirenActionLog:
       format: uuid
       description: Referensi Sirine yang menerima broadcast
     levelAtTrigger:
-      $ref: './shared.yaml#/StatusLevel'
+      $ref: '../../../api_spec/schemas/shared.yaml#/StatusLevel'
       description: >
         Business rule (server-enforced, bukan constraint schema):
         hanya ORANGE/RED yang seharusnya pernah muncul di sini.

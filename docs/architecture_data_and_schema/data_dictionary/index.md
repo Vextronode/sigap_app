@@ -1,55 +1,40 @@
 # Data Dictionary - SIGAP
-## Panduan Membaca & Struktur Folder
 
----
+## 1. Cakupan
 
-### 1. Status Dokumen
+Data Dictionary mencatat tabel yang ada di database. Sumber skema adalah `apps/backend/prisma/schema.prisma`, dengan DDL per domain di `architecture_data_and_schema/schemas/`.
 
-**INTERIM - 7 Hari.** Dokumen ini dibuat untuk kebutuhan mendesak kontrak data bagi FE dalam jangka waktu 7 hari, bukan deliverable G3 (Architecture Document) final. Setelah G3 resmi berjalan, dokumen ini menjadi titik awal, bukan keputusan yang sudah terkunci.
+## 2. Struktur Folder
 
-### 2. Struktur Folder
-
-| File | Domain | Status |
+| Data Dictionary | Domain | Skema SQL |
 |---|---|---|
-| `DD_core_users.md` | Users & autentikasi | light_green |
-| `DD_content_admin.md` | Pengumuman, titik/jalur evakuasi, kontak darurat | light_green |
-| `DD_environmental.md` | Data lingkungan & alert log | light_green |
-| `DD_iot_kesiapsiagaan.md` | Perangkat IoT, indikator, sirine | yellow |
+| - | Tipe enum | `001_core_types.sql` |
+| `DD_core_users.md` | Pengguna dan sesi | `002_users.sql` |
+| `DD_content_admin.md` | Kontak darurat, panduan, titik evakuasi | `003_content_admin.sql` |
+| `DD_environmental.md` | Alert, gempa, notifikasi | `004_environmental.sql` |
+| `DD_iot_kesiapsiagaan.md` | Perangkat | `005_iot_kesiapsiagaan.sql` |
+| `DD_rbac.md` | Role dan permission | `006_rbac.sql` |
 
-Status `yellow` pada domain IoT Kesiapsiagaan menandai bahwa dua keputusan governance (jalur tombol sirine, protokol komunikasi platform↔device) masih terbuka - lihat PRD SIGAP v4.0 7.1. Field yang bergantung pada keputusan tersebut ditandai eksplisit di masing-masing tabel, bukan diasumsikan.
+## 3. Konvensi
 
-Penomoran file mengikuti urutan dependency foreign key yang sama dengan `db/schema/` - `users` harus ada lebih dulu karena beberapa tabel domain lain mereferensikannya.
+- Primary key `id` bertipe `TEXT`, berisi UUID yang dibuat oleh Prisma.
+- Timestamp bertipe `TIMESTAMP(3)`.
+- Nama kolom mengikuti pemetaan Prisma. Kolom tanpa `@map` memakai `camelCase`, misalnya `createdAt` pada `users` dan `roleId` pada tabel junction.
 
-### 3. Konvensi Penamaan
+## 4. Enum
 
-Standar penamaan lintas sistem program belum tersedia. Konvensi berikut dipakai sebagai standar sementara untuk SIGAP, konsisten dan mudah diperbarui:
-
-- Tabel dan kolom: `snake_case`
-- Primary key: `id` (UUID)
-- Foreign key: `<nama_tabel_singular>_id`
-- Timestamp: `created_at`, `updated_at` (TIMESTAMPTZ), `*_at` untuk waktu kejadian spesifik
-- Enum status: nilai dalam Bahasa Indonesia huruf kecil (`hijau`, `kuning`, `oranye`, `merah`) agar konsisten dengan istilah yang dipakai warga dan operator di lapangan
-
-### 4. Status Kesiapsiagaan (Referensi Silang)
-
-Dipakai di `alert_log.severity`, `iot_devices.current_level`, `device_status_log.level_sent`, `siren_action_log.level_at_trigger` - satu ENUM (`status_level`) dipakai di seluruh domain, bukan didefinisikan ulang per tabel.
-
-| Nilai Enum | Nama Status | Dapat Memicu Sirine? |
-|---|---|---|
-| `hijau` | Aman | Tidak |
-| `kuning` | Waspada | Tidak |
-| `oranye` | Siaga | Ya |
-| `merah` | Awas | Ya |
-
-### 5. Referensi Silang ke Schema SQL
-
-Setiap entity pada dokumen ini punya definisi DDL 1:1 di `db/schema/`, dengan penomoran file yang sama:
-
-| Data Dictionary | Schema SQL |
+| Enum | Nilai |
 |---|---|
-| `DD_core_users.md` | `002_users.sql` |
-| `DD_content_admin.md` | `003_content_admin.sql` |
-| `DD_environmental.md` | `004_environmental.sql` |
-| `DD_iot_kesiapsiagaan.md` | `005_iot_kesiapsiagaan.sql` |
+| `AlertLevel` | `GREEN`, `YELLOW`, `ORANGE`, `RED` |
+| `DeviceStatus` | `ONLINE`, `OFFLINE` |
+| `alert_review_status` | `Belum Ditinjau`, `Dikonfirmasi`, `Ditolak`, `Ditindaklanjuti` |
+| `GuideSourceType` | `RESMI`, `MITRA` |
 
-ENUM types (`status_level`, `device_connectivity`) didefinisikan satu kali di `001_core_types.sql` dan dirujuk lintas domain.
+Pemetaan label `AlertLevel`:
+
+| Nilai | Label |
+|---|---|
+| `GREEN` | Aman |
+| `YELLOW` | Waspada |
+| `ORANGE` | Siaga |
+| `RED` | Awas |

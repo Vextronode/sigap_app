@@ -1,0 +1,68 @@
+# =====================================================================
+# schemas/device.yaml - schema domain Device Gateway
+# =====================================================================
+
+DeviceSystemStatus:
+  type: object
+  properties:
+    level:
+      $ref: './shared.yaml#/StatusLevel'
+    status:
+      type: string
+      enum: [ONLINE, OFFLINE]
+      description: ONLINE bila minimal satu perangkat melapor dalam 20 detik terakhir
+    tone:
+      type: string
+      enum: [safe, danger]
+    label:
+      type: string
+    description:
+      type: string
+    totalDevices:
+      type: integer
+    activeDevices:
+      type: integer
+    lastSeen:
+      type: string
+      format: date-time
+      nullable: true
+
+Device:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    deviceCode:
+      type: string
+    name:
+      type: string
+    status:
+      type: string
+      enum: [ONLINE, OFFLINE]
+    lastSeen:
+      type: string
+      format: date-time
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+DeviceRegisterRequest:
+  type: object
+  required: [deviceCode, name]
+  properties:
+    deviceCode:
+      type: string
+    name:
+      type: string
+
+DeviceHeartbeatRequest:
+  type: object
+  required: [deviceCode]
+  properties:
+    deviceCode:
+      type: string

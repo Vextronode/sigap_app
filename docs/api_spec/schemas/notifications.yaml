@@ -1,0 +1,98 @@
+# =====================================================================
+# schemas/notifications.yaml - schema domain Notifikasi Web Push
+# =====================================================================
+
+PushSubscriptionRequest:
+  type: object
+  required: [endpoint, keys]
+  properties:
+    endpoint:
+      type: string
+      format: uri
+    keys:
+      type: object
+      required: [p256dh, auth]
+      properties:
+        p256dh:
+          type: string
+        auth:
+          type: string
+
+UnsubscribeRequest:
+  type: object
+  required: [endpoint]
+  properties:
+    endpoint:
+      type: string
+      format: uri
+
+NotificationPayload:
+  type: object
+  nullable: true
+  properties:
+    alertId:
+      type: string
+    level:
+      $ref: './shared.yaml#/StatusLevel'
+    title:
+      type: string
+    body:
+      type: string
+    icon:
+      type: string
+    image:
+      type: string
+    url:
+      type: string
+    updatedAt:
+      type: string
+      format: date-time
+    vibrate:
+      type: array
+      items:
+        type: integer
+    requireInteraction:
+      type: boolean
+
+DispatchResult:
+  type: object
+  nullable: true
+  properties:
+    total:
+      type: integer
+    sent:
+      type: integer
+    failed:
+      type: integer
+
+NotificationLog:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    alertId:
+      type: string
+      format: uuid
+      nullable: true
+    level:
+      $ref: './shared.yaml#/StatusLevel'
+    title:
+      type: string
+    body:
+      type: string
+    triggeredBy:
+      type: string
+      example: "CRON_SCHEDULER"
+    totalSubscribers:
+      type: integer
+    sentCount:
+      type: integer
+    failedCount:
+      type: integer
+    errorDetails:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time

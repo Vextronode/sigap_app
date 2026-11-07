@@ -23,5 +23,5 @@ docs/Environment Standardization.md
 # Spesifikasi fitur dan roadmap tahap 2 (sebagian besar belum dibangun)
 docs/sigap-phase-2/
 
-# Rencana migrasi SQL manual lama; skema yang berlaku ada di apps/backend/prisma
-docs/architecture_data_and_schema/schemas/
+# Ringkasan audit internal
+docs/security_and_access_control/AUDIT_SUMMARY_2026-10.md

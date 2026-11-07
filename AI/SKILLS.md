@@ -310,11 +310,11 @@ Decision Engine
 
 ↓
 
-Admin Validation
+Citizen Information
 
 ↓
 
-Citizen Information
+Admin Review
 
 ---
 
@@ -437,7 +437,7 @@ SIGAP follows official BMKG terminology.
 
 Internal alert levels are:
 
-🟢 Normal
+Aman
 
 Normal condition.
 
@@ -447,7 +447,7 @@ Citizens continue daily activities.
 
 ---
 
-🟡 Waspada
+Waspada
 
 Minor disaster event.
 
@@ -457,7 +457,7 @@ No evacuation required.
 
 ---
 
-🟠 Siaga
+Siaga
 
 Potentially dangerous situation.
 
@@ -467,7 +467,7 @@ Citizens should prepare for possible evacuation.
 
 ---
 
-🔴 Awas
+Awas
 
 Highest disaster level.
 
@@ -530,7 +530,7 @@ External data obtained from BMKG should generally not be stored permanently unle
 
 The database should remain normalized while keeping the schema easy to understand.
 
-All schema changes must first be reflected in DatabaseDesign.md before implementation.
+All schema changes are made through `apps/backend/prisma/schema.prisma` and reflected in the Data Dictionary in the same change.
 
 ---
 
@@ -695,7 +695,8 @@ SIGAP consumes several external services.
 Examples include:
 
 - BMKG
-- OpenStreetMap
+- Open-Meteo
+- Google Maps
 - AI API (optional)
 
 External APIs are considered unreliable by nature.
@@ -1179,7 +1180,7 @@ Code Quality
 
 Database
 
-- Schema follows DatabaseDesign.md.
+- Schema follows `apps/backend/prisma/schema.prisma`.
 - Migration completed when required.
 
 API

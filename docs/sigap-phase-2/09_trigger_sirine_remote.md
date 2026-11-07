@@ -4,8 +4,6 @@
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
 | Bergantung Pada | ADR-012, FS-08 (Riwayat Aktivasi Sirine) |
-| Status | Final (skema) - fungsional menyusul implementasi jalur remote di firmware |
-| Referensi | PRD.md S3.1, S5.5, Dokumentasi_Sistem_IoT_SIGAP.md |
 
 ## 1. Ringkasan
 
@@ -51,7 +49,7 @@ Tombol tunggal di dashboard admin untuk memicu Sirine (toa) dari jarak jauh. Kar
 
 Menulis ke `siren_action_log` (FS-08); membaca `current_level` milik Unit Utama (bukan lagi per-`device_id`, karena tidak ada pemilihan perangkat).
 
-## 8. Dependency & Catatan Terbuka
+## 8. Dependency
 
-- **Perlu Klarifikasi (firmware, di luar cakupan admin panel):** mekanisme konfirmasi tambahan untuk tombol **fisik** di level RED - saya usulkan tekan-tahan 2 detik, tapi feasibility-nya wajib dikonfirmasi Tim IoT (firmware sudah tahap finishing). Jika tidak feasible, fisik tetap single-press untuk semua level aktif, mitigasi human-factor didorong lewat SOP operator.
-- Fungsional penuh menunggu jalur remote Unit Utama↔backend selesai diimplementasikan (kontrak API sudah ada, ADR-012).
+- Mekanisme konfirmasi tambahan untuk tombol fisik pada level RED bergantung pada firmware Tim IoT.
+- Fungsi penuh menunggu jalur remote Unit Utama dan backend (ADR-012).

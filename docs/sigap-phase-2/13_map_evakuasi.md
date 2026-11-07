@@ -3,13 +3,12 @@
 | | |
 |---|---|
 | Kategori Akses | Public |
-| Bergantung Pada | FS-04 (Kelola Titik & Jalur Evakuasi - sumber data), Area 3 Roadmap Tahap 2 |
-| Status | Final |
-| Referensi | PRD.md S2.1 (Success Metrics), S3.1 (Kesiapsiagaan Bencana), S5.3 (Aksesibilitas), S5.4 (Offline Capability), Roadmap Tahap 2 S3 (Area 3) |
+| Bergantung Pada | FS-04 (sumber data) |
+| Keputusan Terkait | ADR-032 |
 
 ## 1. Ringkasan
 
-Peta interaktif berbasis Leaflet + OpenStreetMap yang menampilkan titik evakuasi di wilayah Desa Cibenda. Warga dapat menekan "Arahkan ke sini" pada titik pilihan untuk dialihkan ke Google Maps, yang menghitung rute dari lokasi mereka menggunakan GPS perangkat sendiri - SIGAP tidak membangun routing/navigasi sendiri. Dilengkapi pengurutan titik terdekat berbasis lokasi browser sebagai bantuan tambahan, dan daftar teks alternatif untuk aksesibilitas.
+Peta interaktif berbasis Leaflet dengan tile Google Maps yang menampilkan titik evakuasi di wilayah Desa Cibenda. Warga dapat menekan "Arahkan ke sini" pada titik pilihan untuk dialihkan ke Google Maps, yang menghitung rute dari lokasi mereka menggunakan GPS perangkat sendiri - SIGAP tidak membangun routing/navigasi sendiri. Dilengkapi pengurutan titik terdekat berbasis lokasi browser sebagai bantuan tambahan, dan daftar teks alternatif untuk aksesibilitas.
 
 ## 2. Actor & Akses
 
@@ -26,12 +25,12 @@ Seluruh pengunjung publik (warga, wisatawan) - tidak memerlukan login (kategori 
 
 ## 4. Functional Requirements
 
-- FR1: Menampilkan peta wilayah desa (Leaflet + tile OpenStreetMap) dengan marker untuk setiap titik evakuasi aktif.
+- FR1: Menampilkan peta wilayah desa (Leaflet dengan tile Google Maps) dengan marker untuk setiap titik evakuasi aktif.
 - FR2: Menyediakan daftar teks alternatif seluruh titik evakuasi (nama, deskripsi) di luar peta, agar informasi tidak bergantung sepenuhnya pada interaksi peta (selaras NFR 5.3 - informasi kritis tidak boleh bergantung hanya pada satu modalitas).
 - FR3: Setiap titik (di peta maupun daftar) memiliki tombol/aksi "Arahkan ke sini" yang membuka Google Maps dengan koordinat titik sebagai tujuan (`https://www.google.com/maps/dir/?api=1&destination={lat},{lng}`), tanpa memaksa asal (origin) - origin ditentukan Google Maps sendiri dari GPS pengguna.
 - FR4: Jika browser mengizinkan akses lokasi, sistem menghitung jarak lurus (Haversine) dari posisi pengguna ke setiap titik, mengurutkan daftar dari terdekat, dan menandai titik terdekat secara visual di peta.
 - FR5: Permintaan izin lokasi untuk FR4 bersifat opsional dan tidak memblokir fungsi lain - penolakan izin tidak menampilkan error yang mengganggu, cukup daftar tetap tampil dengan urutan default (mis. alfabetis atau urutan input admin).
-- FR6: Data titik evakuasi ditarik dari endpoint publik `evacuation_points` (dan `evacuation_routes` jika jalur turut ditampilkan) - sumber tunggal yang sama dengan yang dikelola admin di FS-04.
+- FR6: Data titik evakuasi berasal dari endpoint publik `evacuation-points`, yang dikelola melalui FS-04.
 
 ## 5. Acceptance Criteria
 
@@ -52,11 +51,8 @@ Seluruh pengunjung publik (warga, wisatawan) - tidak memerlukan login (kategori 
 
 ## 7. Data Terkait
 
-Baca-saja dari `evacuation_points (id, name, latitude, longitude, description)` dan `evacuation_routes (id, route_name, geometry)` - dikelola sepenuhnya lewat FS-04, tidak ada tabel baru untuk fitur ini.
+`evacuation_points`, lihat `DD_content_admin.md`.
 
-## 8. Dependency & Catatan Terbuka
+## 8. Dependency
 
-- **Extends** `SIGAP-E5-S59` (Peta Jalur Evakuasi) dan `SIGAP-E5-S60` (Titik Evakuasi) di backlog v1 - fitur ini bukan pembangunan dari nol, melainkan penambahan interaksi (redirect Google Maps + sort jarak) di atas fondasi yang sudah direncanakan.
-- Komponen Leaflet di halaman ini di-reuse dari implementasi yang sama dengan panel admin FS-04 (pin-drop) - sebaiknya dikerjakan berurutan (FS-04 lebih dulu) agar komponen peta tidak dibangun dua kali secara terpisah.
-- **Batasan yang disadari:** akurasi navigasi sepenuhnya bergantung pada Google Maps dan konektivitas data pengguna di lapangan - di luar jaminan offline capability SIGAP, yang hanya berlaku untuk menampilkan informasi titik evakuasi di dalam situs, bukan untuk proses navigasi setelah warga berpindah ke Google Maps.
-- Sort jarak berbasis Geolocation (FR4) adalah penambahan Tech Lead untuk memenuhi target sukses PRD S2.1 ("menemukan jalur evakuasi terdekat... dalam < 2 menit") - bukan permintaan eksplisit dari diagram awal PM.
+Akurasi navigasi bergantung pada Google Maps dan konektivitas data pengguna. Offline capability SIGAP berlaku untuk informasi titik evakuasi di dalam aplikasi.

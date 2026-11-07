@@ -1,0 +1,50 @@
+# =====================================================================
+# schemas/system.yaml - schema domain Kesehatan Sistem dan scheduler
+# =====================================================================
+
+SystemHealth:
+  type: object
+  properties:
+    services:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          category:
+            type: string
+            enum: [weather, earthquake, sid, push, database]
+          status:
+            type: string
+            enum: [ONLINE, STANDBY, OFFLINE]
+          provider:
+            type: string
+          latencyMs:
+            type: integer
+          message:
+            type: string
+          lastChecked:
+            type: string
+            format: date-time
+    overallStatus:
+      type: string
+      enum: [HEALTHY, DEGRADED]
+    checkedAt:
+      type: string
+      format: date-time
+
+SchedulerResult:
+  type: object
+  properties:
+    level:
+      $ref: './shared.yaml#/StatusLevel'
+    source:
+      type: string
+    description:
+      type: string
+    saved:
+      type: boolean
+    error:
+      type: string
+      description: Terisi bila siklus berakhir dengan kegagalan

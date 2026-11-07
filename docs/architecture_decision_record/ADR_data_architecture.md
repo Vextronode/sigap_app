@@ -8,7 +8,7 @@
 | **Version** | 1.0 |
 | **Date** | 20 July 2026 |
 | **Author** | Tech Lead, SIGAP |
-| **Applies To** | `db/schema/`, `db/data-dictionary/` |
+| **Applies To** | `apps/backend/prisma/`, `docs/architecture_data_and_schema/` |
 
 ---
 

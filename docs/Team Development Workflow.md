@@ -2,7 +2,7 @@ Dokumen ini menjelaskan alur kerja pengembangan yang digunakan oleh seluruh angg
 
 ---
 
-# 🎯 Tujuan
+# Tujuan
 
 Workflow ini dibuat untuk:
 
@@ -14,7 +14,7 @@ Workflow ini dibuat untuk:
 
 ---
 
-# 📋 Alur Development
+# Alur Development
 
 ```text
 Task
@@ -53,7 +53,7 @@ Production
 
 ---
 
-# 👨‍💻 Developer Workflow
+# Developer Workflow
 
 Setiap developer wajib mengikuti alur berikut:
 
@@ -134,20 +134,20 @@ Branch feature yang telah selesai dapat dihapus.
 
 ---
 
-# 🚀 Release Workflow
+# Release Workflow
 
 Setelah seluruh task pada sprint selesai:
 
 - Branch `dev` diuji kembali.
 - Dilakukan pengecekan akhir.
-- Dibuat Pull Request dari `dev` menuju `main`.
+- Dibuat branch `release/<versi>` dengan `scripts/release.sh`, lalu Pull Request menuju `main`.
 - Setelah disetujui, perubahan di-merge ke `main`.
 
 Branch `main` dianggap sebagai branch production/stable.
 
 ---
 
-# 📌 Aturan Tim
+# Aturan Tim
 
 Seluruh anggota tim wajib mengikuti aturan berikut:
 
@@ -162,7 +162,7 @@ Seluruh anggota tim wajib mengikuti aturan berikut:
 
 ---
 
-# 📣 Code Review
+# Code Review
 
 Reviewer bertanggung jawab memastikan:
 
@@ -174,7 +174,7 @@ Reviewer bertanggung jawab memastikan:
 
 ---
 
-# 📦 Release
+# Release
 
 Sebelum merge ke `main`, pastikan:
 
@@ -185,7 +185,7 @@ Sebelum merge ke `main`, pastikan:
 
 ---
 
-# 🤝 Kolaborasi Tim
+# Kolaborasi Tim
 
 Jika terjadi konflik atau kendala:
 
@@ -195,7 +195,7 @@ Jika terjadi konflik atau kendala:
 
 ---
 
-# 📈 Tujuan Workflow
+# Tujuan Workflow
 
 Dengan workflow ini diharapkan:
 

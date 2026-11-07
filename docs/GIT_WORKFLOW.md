@@ -4,19 +4,19 @@ Dokumen ini menjelaskan alur kerja Git yang digunakan tim dalam pengembangan pro
 
 ---
 
-# 🌳 Struktur Branch
+# Struktur Branch
 
 | Branch                | Fungsi                                                            | Protected |
 | --------------------- | ----------------------------------------------------------------- | :-------: |
-| `main`                | Production-ready code                                             |     ✅     |
-| `dev`                 | Integration branch tempat seluruh fitur digabungkan sebelum rilis |     ✅     |
-| `feature/nama-fitur`  | Branch untuk pengembangan fitur baru                              |     ❌     |
-| `fix/nama-bug`        | Branch untuk perbaikan bug                                        |     ❌     |
-| `hotfix/nama-masalah` | Perbaikan darurat langsung dari `main`                            |     ❌     |
+| `main`                | Production-ready code                                             | Ya |
+| `dev`                 | Integration branch tempat seluruh fitur digabungkan sebelum rilis | Ya |
+| `feature/nama-fitur`  | Branch untuk pengembangan fitur baru                              | Tidak |
+| `fix/nama-bug`        | Branch untuk perbaikan bug                                        | Tidak |
+| `hotfix/nama-masalah` | Perbaikan darurat langsung dari `main`                            | Tidak |
 
 ---
 
-# 📝 Penamaan Branch
+# Penamaan Branch
 
 Gunakan format:
 
@@ -35,13 +35,13 @@ hotfix/payment-gateway-down
 
 ---
 
-# 🚀 Development Flow
+# Development Flow
 
 ## 1. Update branch `dev`
 
 ```bash
 git checkout dev
-git pull org dev
+git pull origin dev
 ```
 
 ---
@@ -94,7 +94,7 @@ dev
 
 Gunakan:
 
-> ✅ **Squash and Merge**
+> **Squash and Merge**
 
 Agar history repository tetap bersih.
 
@@ -118,7 +118,7 @@ git push org --delete feature/nama-fitur
 
 ---
 
-# 💬 Commit Message
+# Commit Message
 
 Gunakan format **Conventional Commits**
 
@@ -149,7 +149,7 @@ chore: update eslint configuration
 
 ---
 
-# 🔀 Pull Request Rules
+# Pull Request Rules
 
 - PR **wajib** menuju `dev`
 - Hotfix darurat boleh menuju `main`
@@ -164,29 +164,29 @@ chore: update eslint configuration
 
 ---
 
-# 🚢 Release Flow
+# Release Flow
 
-Hanya branch `dev` yang boleh di-merge ke `main`.
+Rilis ke `main` dibuat dari isi `dev` melalui `scripts/release.sh`, tanpa path yang terdaftar pada `.release-exclude`. Perubahan wajib masuk lewat `dev`, karena isi `main` diganti oleh isi rilis.
 
 Alurnya:
 
 ```text
 feature/*
-      │
-      ▼
+      |
+      v
 dev
-      │
-      ▼
-Pull Request
-      │
-      ▼
-main
-      │
-      ▼
+      |
+      v
+release/<versi> (scripts/release.sh)
+      |
+      v
+Pull Request ke main
+      |
+      v
 Release Tag
 ```
 
-Setelah merge ke `main`, disarankan membuat **Git Tag** untuk versi rilis.
+Setiap rilis ditandai dengan Git Tag.
 
 Contoh:
 
@@ -198,12 +198,12 @@ v2.0.0
 
 ---
 
-# ⚠️ Conflict Resolution
+# Conflict Resolution
 
 ## Update branch menggunakan rebase
 
 ```bash
-git pull org dev --rebase
+git pull origin dev --rebase
 ```
 
 ---
@@ -257,18 +257,18 @@ git push org feature/nama-fitur --force-with-lease
 
 ---
 
-# 🚫 Larangan
+# Larangan
 
-- ❌ Push langsung ke `main`
-- ❌ Push langsung ke `dev`
-- ❌ Force push ke branch bersama (`main` / `dev`)
-- ❌ Merge Pull Request tanpa review
-- ❌ Merge Pull Request yang masih conflict
-- ❌ Commit file sensitif (`.env`, credential, secret key)
+- Push langsung ke `main`
+- Push langsung ke `dev`
+- Force push ke branch bersama (`main` / `dev`)
+- Merge Pull Request tanpa review
+- Merge Pull Request yang masih conflict
+- Commit file sensitif (`.env`, credential, secret key)
 
 ---
 
-# 📌 Ringkasan Workflow
+# Ringkasan Workflow
 
 ```text
 Update dev

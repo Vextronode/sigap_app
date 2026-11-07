@@ -4,12 +4,10 @@
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
 | Bergantung Pada | Area 1 (Data Contract), FS-06 (Manajemen Perangkat IoT) |
-| Status | Draft |
-| Referensi | PRD.md §7 (`device_status_log`), §7 catatan v4.0 |
 
 ## 1. Ringkasan
 
-Log riwayat setiap kali platform mengirim level indikator ke suatu perangkat (protokol REST Polling — Final, lihat PRD §7.1), termasuk status acknowledgment dari perangkat. Read-only bagi admin.
+Log riwayat setiap kali platform mengirim level indikator ke suatu perangkat (REST polling, ADR-013), termasuk status acknowledgment dari perangkat. Read-only bagi admin.
 
 ## 2. Actor & Akses
 
@@ -40,8 +38,8 @@ Log riwayat setiap kali platform mengirim level indikator ke suatu perangkat (pr
 
 ## 7. Data Terkait
 
-`device_status_log (id, device_id, level_sent, sent_at, ack_status)`
+`device_status_log`, lihat `planned_data_model.md`.
 
-## 8. Dependency & Catatan Terbuka
+## 8. Dependency
 
 Fitur ini murni read-only atas data yang dihasilkan proses backend REST Polling (di luar scope admin panel itu sendiri) — tidak ada aksi tulis dari fitur ini.

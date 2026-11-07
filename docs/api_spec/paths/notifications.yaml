@@ -1,0 +1,169 @@
+# =====================================================================
+# paths/notifications.yaml - path domain Notifikasi Web Push
+# =====================================================================
+
+vapid-key:
+  get:
+    tags: [Notifications]
+    summary: VAPID public key untuk subscribe di browser
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        publicKey:
+                          type: string
+
+subscribe:
+  post:
+    tags: [Notifications]
+    summary: Mendaftarkan push subscription browser
+    description: >
+      Endpoint harus HTTPS dan berada pada host push gateway yang diizinkan.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/notifications.yaml#/PushSubscriptionRequest'
+    responses:
+      '201':
+        description: Berhasil berlangganan
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '400':
+        $ref: './shared.yaml#/BadRequest'
+      '500':
+        $ref: './shared.yaml#/InternalError'
+
+unsubscribe:
+  post:
+    tags: [Notifications]
+    summary: Membatalkan push subscription
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/notifications.yaml#/UnsubscribeRequest'
+    responses:
+      '200':
+        description: Berhasil berhenti berlangganan
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '400':
+        $ref: './shared.yaml#/BadRequest'
+
+latest:
+  get:
+    tags: [Notifications]
+    summary: Konten notifikasi terkini dari alert yang berlaku
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/notifications.yaml#/NotificationPayload'
+      '502':
+        $ref: './shared.yaml#/UpstreamError'
+
+dispatch:
+  post:
+    tags: [Notifications]
+    summary: Kirim notifikasi manual; khusus role admin
+    responses:
+      '200':
+        description: Notifikasi dikirim, atau dilewati bila level GREEN
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/notifications.yaml#/DispatchResult'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+      '500':
+        $ref: './shared.yaml#/InternalError'
+
+logs:
+  get:
+    tags: [Notifications]
+    summary: Riwayat pengiriman notifikasi
+    parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+          maximum: 100
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/notifications.yaml#/NotificationLog'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '500':
+        $ref: './shared.yaml#/InternalError'
+
+subscribers-count:
+  get:
+    tags: [Notifications]
+    summary: Jumlah subscriber Web Push
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        total:
+                          type: integer
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '500':
+        $ref: './shared.yaml#/InternalError'

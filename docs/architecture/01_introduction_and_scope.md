@@ -2,65 +2,48 @@
 
 ## 1.1 Tujuan Sistem
 
-SIGAP adalah platform monitoring lingkungan dan kesiapsiagaan bencana untuk Desa Cibenda, Kabupaten Pangandaran - mengolah data resmi (BMKG, USGS, OpenWeatherMap) menjadi informasi actionable, dilengkapi lapisan kesiapsiagaan fisik (indikator level dan sirine di titik strategis desa). Detail lengkap tujuan produk dan metrik keberhasilan ada di `PRD_SIGAP_v4.md`; dokumen ini fokus pada bentuk arsitekturnya.
+SIGAP adalah platform monitoring lingkungan dan kesiapsiagaan bencana untuk Desa Cibenda, Kabupaten Pangandaran. SIGAP mengolah data BMKG dan Open-Meteo menjadi informasi yang mudah ditindaklanjuti, serta menyediakan gateway bagi perangkat indikator fisik. Tujuan produk dan metrik keberhasilan berada di `PRD.md`.
 
 ## 1.2 Stakeholder
 
-| Stakeholder | Kepentingan Terhadap Arsitektur |
+| Stakeholder | Kepentingan |
 |---|---|
-| Warga Desa | Konsumen data publik (cuaca, alert, evakuasi) dan penerima Web Push notification langsung - tidak berinteraksi dengan kompleksitas arsitektur secara langsung |
-| Admin/Operator | Pengguna Protected API - kelola konten, klasifikasi alert, kelola perangkat, trigger sirine |
-| Tech Lead SIGAP | Pemilik keputusan arsitektur, penulis ADR |
-| Tim IoT | Implementasi firmware perangkat, pihak yang menentukan kelayakan teknis keputusan hardware |
-| Tech Lead SID | Pihak eksternal pada integrasi lintas sistem (Bagian 7) - **belum aktif**, lihat catatan status |
-| QA/DevOps Coordinator | Konsumen dokumen ini untuk validasi dan deployment |
+| Warga Desa | Konsumen data publik dan penerima Web Push |
+| Admin dan Operator | Pengguna API Protected untuk mengelola konten dan mengklasifikasikan alert |
+| Tech Lead SIGAP | Pemilik keputusan arsitektur |
+| Tim IoT | Pengelola firmware perangkat |
+| Tim DevOps | Pengelola server dan deployment |
 
 ## 1.3 System Context Diagram
-
-> **Catatan status:** jalur SID di bawah adalah desain yang **belum live** (lihat Bagian 7). Jalur Web Push langsung ke warga **sudah live** dan ditambahkan ke diagram - sebelumnya tidak tergambar sama sekali.
 
 ```mermaid
 flowchart TB
     Warga([Warga Desa])
     Admin([Admin / Operator])
-    UnitUtama[Unit Utama
-    Indikator + Kontrol]
+    UnitUtama[Unit Utama]
 
     subgraph SIGAP[Sistem SIGAP]
-        direction TB
         Core((Platform SIGAP))
     end
 
     BMKG[(BMKG)]
-    USGS[(USGS)]
-    OWM[(OpenWeatherMap)]
-    AI[(AI API)]
-    SID[(SID - PWA
-    Belum Live)]
+    OpenMeteo[(Open-Meteo)]
+    Push[(Layanan Push Browser)]
+    GMaps[(Google Maps)]
 
-    Warga -- browse dashboard,
-    subscribe Web Push --> Core
-    Core -- Web Push langsung
-    saat alert berubah --> Warga
-    Admin -- login, kelola konten,
-    klasifikasi, trigger sirine --> Core
+    Warga -- dashboard, subscribe Web Push --> Core
+    Core -- Web Push --> Push
+    Push -- notifikasi --> Warga
+    Admin -- login, kelola konten, klasifikasi alert --> Core
     Core -- tarik data --> BMKG
-    Core -- tarik data --> USGS
-    Core -- tarik data --> OWM
-    Core -- request ringkasan --> AI
-    UnitUtama -- polling level,
-    heartbeat --> Core
-    Core -- rencana: kirim event
-    (belum live) --> SID
-    SID -.rencana: push,
-    deep-link (belum live).-> Admin
+    Core -- tarik data --> OpenMeteo
+    Warga -- tile peta, navigasi --> GMaps
+    UnitUtama -- baca level, heartbeat --> Core
 ```
 
-## 1.4 Batasan Arsitektur (Constraints)
+## 1.4 Batasan Arsitektur
 
-Diwarisi dari governance program (Konteks Umum Program - Tech Lead), berlaku mengikat untuk SIGAP:
-
-- **Independent domain** - SIGAP tidak berbagi database dengan SID maupun sistem lain dalam program (lihat ADR-022, Bagian 7 - integrasi ini sendiri belum aktif, prinsip independent domain tetap berlaku terlepas dari itu).
-- **Tidak boleh deep microservices/tight coupling** - integrasi lintas sistem (SID) dibatasi pada API-based communication, bukan akses langsung ke internal masing-masing sistem.
-- **Standardisasi lintas sistem** - identifier convention (UUID, ADR-001), auth pattern, dan naming convention mengikuti kesepakatan program, bukan preferensi SIGAP sendiri semata.
-- **Delivery > Complexity** - tercermin di beberapa ADR (mis. ADR-013, ADR-027 - memilih mempertahankan implementasi yang sudah berjalan alih-alih migrasi ke solusi yang "lebih elegan" di atas kertas).
+- **Independent domain:** SIGAP memiliki database sendiri dan tidak berbagi database dengan sistem lain dalam program.
+- **Integrasi berbasis API:** integrasi lintas sistem hanya melalui API.
+- **Satu replika backend:** scheduler, rate limiter, dan cache berada di memori proses.
+- **Delivery di atas kompleksitas:** implementasi yang sudah berfungsi dipertahankan selama memenuhi kebutuhan (ADR-013, ADR-027).

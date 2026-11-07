@@ -3,13 +3,11 @@
 | | |
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
-| Bergantung Pada | Area 4 (Integrasi Notifikasi dengan SID) |
-| Status | Draft — menunggu kontrak API SID final |
-| Referensi | Roadmap §2.1 #5, §5.C item 13, §7 (Isu Terbuka: Kontrak API SID) |
+| Bergantung Pada | Area 4 (Integrasi SID) |
 
 ## 1. Ringkasan
 
-Log status pengiriman notifikasi dari SIGAP ke SID (kanal dual-channel: SID + Web Push, lihat Roadmap §2.1 #5) agar kegagalan kanal notifikasi terlihat oleh admin — bukan diam-diam gagal di backend.
+Log status pengiriman notifikasi dari SIGAP ke SID (kanal tambahan di samping Web Push) agar kegagalan kanal notifikasi terlihat oleh admin — bukan diam-diam gagal di backend.
 
 ## 2. Actor & Akses
 
@@ -35,12 +33,12 @@ Log status pengiriman notifikasi dari SIGAP ke SID (kanal dual-channel: SID + We
 
 ## 6. Edge Case & Error Handling
 
-- SID API down berkepanjangan (bukan gangguan sesaat) — log menumpuk entri gagal; perlu ambang/alert khusus untuk kondisi ini — **Perlu Klarifikasi**, belum ditentukan di dokumen sumber.
+- SID API down berkepanjangan (bukan gangguan sesaat) — log menumpuk entri gagal; perlu ambang/alert khusus untuk kondisi ini . Ambang kondisi ini ditetapkan bersama kontrak API SID.
 
 ## 7. Data Terkait
 
-Entitas log pengiriman notifikasi SID — struktur field belum tercantum eksplisit di PRD §7 (Data Model saat ini fokus ke IoT), perlu ditambahkan di Data Dictionary (G2) bersamaan dengan finalisasi kontrak API SID (Area 4).
+Tabel log pengiriman ke SID ditetapkan bersama kontrak API SID.
 
-## 8. Dependency & Catatan Terbuka
+## 8. Dependency
 
-**Blocking:** fitur ini baru bisa fungsional penuh setelah Area 4 (kontrak API SID final + autentikasi resmi, menggantikan API Key interim ADR-024) selesai — lihat Roadmap §7 (Isu Terbuka: "Kontrak API SID... menunggu sign-off Tim SID").
+Area 4 pada `ROADMAP_TAHAP_2.md`.

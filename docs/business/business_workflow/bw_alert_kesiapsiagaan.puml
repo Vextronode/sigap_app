@@ -1,90 +1,33 @@
 @startuml bw_alert_kesiapsiagaan
-title Proses 2 — Penyampaian Alert & Level Kesiapsiagaan
+title Proses 2 - Penyampaian Alert dan Level Kesiapsiagaan
 
-' ============================
-' AS-IS
-' ============================
+|Sistem SIGAP|
+start
+:Tarik data gempa BMKG;
+:Tentukan status tsunami;
+:Evaluasi level sesuai Rules_Alerts;
 
-partition "AS-IS" {
-
-    partition "Warga / Perangkat Desa" {
-        start
-
-        :Mengamati kondisi lingkungan secara langsung;
-        :Menerima informasi dari sumber tidak terstandar\n(radio, media sosial, kabar antarwarga);
-
-        if (Dianggap berbahaya?) then (Ya)
-            :Menyampaikan peringatan\nsecara verbal/manual;
-            :Membunyikan kentongan/toa\nsecara mandiri;
-        else (Tidak)
-            :Tidak ada tindakan\nterstandar;
-        endif
-
-        stop
-    }
-
-}
-
-' ============================
-' TO-BE
-' ============================
-
-partition "TO-BE" {
-
-    partition "Sistem SIGAP" {
-        start
-
-        :Evaluasi data lingkungan\nterhadap threshold;
-        :Tetapkan level kesiapsiagaan\n(GREEN/YELLOW/ORANGE/RED);
-    }
-
-    partition "Unit Utama" {
-        :Polling level dari backend\n(REST Polling, ADR-013);
-        :Tampilkan indikator\n(3 warna: GREEN+YELLOW digabung,\nORANGE, RED tampil terpisah);
-    }
-
-    if (Level = ORANGE atau RED?) then (Ya)
-
-        partition "Operator" {
-
-            :Terima notifikasi perubahan level;
-
-            note right
-            Web Push langsung SUDAH LIVE.
-            Integrasi SID sebagai kanal
-            tambahan masih menunggu
-            sign-off Tim SID.
-            end note
-
-            :Verifikasi kondisi lapangan;
-
-            if (Aktivasi sirine?) then (Ya)
-                :Tekan tombol sirine\n(fisik di Unit Utama,\natau digital via dashboard);
-                note right
-                Level RED wajib konfirmasi
-                2-langkah. Cooldown 60 detik
-                berlaku pasca-trigger,
-                dipotong otomatis jika
-                eskalasi ke RED (FS-09).
-                end note
-            else (Tidak)
-                :Tidak ada tindakan lanjutan;
-            endif
-        }
-
-        partition "Sirine/Toa (1..N)" {
-            :Bunyikan sirine\n(broadcast ke seluruh Sirine\nterdaftar, bukan pilih satu);
-        }
-
-    else (GREEN/YELLOW)
-
-        partition "Unit Utama" {
-            :Tombol sirine nonaktif\n(safeguard by design);
-        }
-
+if (Level = GREEN?) then (Ya)
+    :Tidak menyimpan alert;
+    :Tidak mengirim notifikasi;
+else (Tidak)
+    if (Sama dengan alert yang berlaku?) then (Ya)
+        :Lewati penyimpanan;
+    else (Tidak)
+        :Simpan alert;
+        :Kirim Web Push ke seluruh subscriber;
     endif
+endif
 
-    stop
-}
+:Sediakan alert yang berlaku\nuntuk dashboard dan perangkat;
+
+|Unit Utama|
+:Baca level melalui REST polling;
+:Kirim heartbeat;
+
+|Admin / Operator|
+:Tinjau daftar alert;
+:Klasifikasikan: Dikonfirmasi,\nDitolak, atau Ditindaklanjuti;
+stop
 
 @enduml

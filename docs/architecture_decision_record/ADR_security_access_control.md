@@ -8,7 +8,7 @@
 | **Version** | 1.0 |
 | **Date** | 20 July 2026 |
 | **Author** | Tech Lead, SIGAP |
-| **Applies To** | `api/`, `db/schema/006_rbac.sql`, `db/data-dictionary/DD_rbac.md` |
+| **Applies To** | `docs/api_spec/`, `docs/architecture_data_and_schema/`, `apps/backend/src/middleware/` |
 
 ---
 
@@ -168,3 +168,24 @@ Pembagian kerja lapangan operator ternyata mencakup pembaruan konten kesiapsiaga
 ### Dampak Terhadap Sistem
 - Seed data di `006_rbac.sql`/`DD_rbac.md` diperbarui untuk menyertakan `content.manage` pada baris `role_permissions` milik operator.
 - ADR-007 tetap dipertahankan apa adanya sebagai catatan historis keputusan awal - tidak diedit ulang. Perubahan didokumentasikan di sini (ADR-016) mengikuti prinsip immutable decision record.
+
+---
+
+## ADR-039: Rate Limiting Sesuai Implementasi
+
+### Latar Belakang Keputusan
+ADR-008, ADR-009, dan ADR-010 menetapkan Token Bucket, dua lapis pembatasan, dan batas 5 per 15 menit untuk login serta 100 per menit untuk data publik. Implementasi memakai `express-rate-limit` pada lapisan aplikasi dengan batas berbeda, ditambah lockout per akun. Batas 100 per menit dinilai terlalu ketat karena satu kali muat dashboard memanggil sekitar 9 endpoint dan warga dapat berbagi satu IP publik saat kondisi darurat.
+
+### Alternatif yang Dipertimbangkan
+1. Mengubah implementasi mengikuti ADR-008 sampai ADR-010.
+2. Menetapkan implementasi yang berjalan sebagai keputusan.
+
+### Keputusan yang Dipilih
+Opsi 2: `express-rate-limit` pada lapisan aplikasi dengan batas umum 300 per menit per IP, login 15 percobaan gagal per 15 menit per IP, kesehatan sistem 60 per menit per IP, dan lockout akun 15 menit setelah 5 kali gagal. Pembatasan pada reverse proxy mengikuti kebijakan pengelola server.
+
+### Alasan Pemilihan
+Implementasi yang berjalan mengakomodasi pola pemakaian dashboard, dan lockout per akun menutup percobaan yang memutar IP. Pendekatan ini konsisten dengan ADR-013 dan ADR-027.
+
+### Dampak Terhadap Sistem
+- Penyimpanan penghitung berada di memori proses, sehingga backend berjalan satu replika.
+- ADR-008, ADR-009, dan ADR-010 digantikan oleh keputusan ini dan tetap dipertahankan sebagai catatan historis.

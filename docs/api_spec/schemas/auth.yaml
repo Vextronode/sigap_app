@@ -1,5 +1,5 @@
 # =====================================================================
-# schemas/auth.yaml — schema domain Auth & profil pengguna
+# schemas/auth.yaml - schema domain Auth
 # =====================================================================
 
 LoginRequest:
@@ -9,25 +9,38 @@ LoginRequest:
     email:
       type: string
       format: email
+      maxLength: 254
     password:
       type: string
       format: password
+      minLength: 6
+      maxLength: 128
 
 LoginResponse:
   type: object
   properties:
     token:
       type: string
-    expiresIn:
-      type: integer
-      description: Detik hingga token kedaluwarsa
     user:
-      $ref: './auth.yaml#/UserProfile'
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
 
-UserProfile:
+TokenClaims:
   type: object
   properties:
-    id:
+    sub:
       type: string
       format: uuid
     name:
@@ -35,9 +48,29 @@ UserProfile:
     email:
       type: string
       format: email
-    role:
+    roles:
+      type: array
+      items:
+        type: string
+    permissions:
+      type: array
+      items:
+        type: string
+    jti:
       type: string
-      enum: [admin, operator]
-      example: admin
-    isActive:
-      type: boolean
+    exp:
+      type: integer
+
+ChangePasswordRequest:
+  type: object
+  required: [currentPassword, newPassword]
+  properties:
+    currentPassword:
+      type: string
+      format: password
+      maxLength: 128
+    newPassword:
+      type: string
+      format: password
+      minLength: 8
+      maxLength: 128

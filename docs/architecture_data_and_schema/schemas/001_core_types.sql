@@ -1,30 +1,15 @@
 -- =====================================================================
 -- 001_core_types.sql
--- SIGAP - Draft Schema SQL (INTERIM, 7 Hari - bukan G3 final)
--- Berisi: extension, shared ENUM types, trigger function updated_at.
--- Dijalankan PALING AWAL karena file lain bergantung pada isi file ini.
+-- SIGAP - Tipe enum
+-- Sumber: apps/backend/prisma/schema.prisma
 -- =====================================================================
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto; -- untuk gen_random_uuid()
+CREATE SCHEMA IF NOT EXISTS "public";
 
--- Status kesiapsiagaan, 4 level, dipakai lintas domain
--- (alert_log, iot_devices, device_status_log, siren_action_log)
--- agar penamaan konsisten di seluruh sistem (bukan VARCHAR bebas per tabel).
---   hijau  = Aman
---   kuning = Waspada
---   oranye = Siaga
---   merah  = Awas
-CREATE TYPE status_level AS ENUM ('GREEN', 'YELLOW', 'ORANGE', 'RED');
+CREATE TYPE "DeviceStatus" AS ENUM ('ONLINE', 'OFFLINE');
 
--- Status konektivitas perangkat IoT
-CREATE TYPE device_connectivity AS ENUM ('online', 'offline', 'degraded');
+CREATE TYPE "AlertLevel" AS ENUM ('GREEN', 'YELLOW', 'ORANGE', 'RED');
 
--- Trigger function generik untuk auto-update kolom updated_at.
--- Dipakai oleh tabel-tabel yang punya kolom updated_at (lihat file domain).
-CREATE OR REPLACE FUNCTION set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+CREATE TYPE "alert_review_status" AS ENUM ('Belum Ditinjau', 'Dikonfirmasi', 'Ditolak', 'Ditindaklanjuti');
+
+CREATE TYPE "GuideSourceType" AS ENUM ('RESMI', 'MITRA');

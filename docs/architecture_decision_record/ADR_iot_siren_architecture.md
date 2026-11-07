@@ -8,7 +8,7 @@
 | **Version** | 1.0 |
 | **Date** | 20 July 2026 |
 | **Author** | Tech Lead, SIGAP |
-| **Applies To** | `db/schema/005_iot_kesiapsiagaan.sql`, `db/data-dictionary/DD_iot_kesiapsiagaan.md`, dokumentasi hardware Tim IoT |
+| **Applies To** | `docs/architecture/05_iot_architecture.md`, `docs/sigap-phase-2/planned_data_model.md`, dokumentasi hardware Tim IoT |
 
 ---
 

@@ -4,8 +4,6 @@
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
 | Bergantung Pada | Area 1 (Data Contract), FS-09 (Trigger Sirine) |
-| Status | Final |
-| Referensi | PRD.md S7 (catatan v4.0), S5.5 (NFR Keamanan Jalur Aktuasi Fisik), Dokumentasi_Sistem_IoT_SIGAP.md |
 
 ## 1. Ringkasan
 
@@ -56,7 +54,7 @@ Audit trail insert-only untuk setiap aktivasi sirine (Unit Utama di Kantor Desa 
 - `ack_status` - enum: `Diterima & Dieksekusi` / `Tidak Ada Respons` / `Menunggu`
 - `cooldown_overridden` - boolean, true jika trigger ini memotong cooldown karena eskalasi ke RED (lihat FS-09 S4)
 
-## 8. Dependency & Catatan Terbuka
+## 8. Dependency
 
-- Kemampuan Sirine mengirim status ack periodik via ESP-NOW ke Unit Utama **perlu dikonfirmasi Tim IoT** dari sisi firmware - desain ini mengasumsikan itu feasible tanpa hardware tambahan (reuse link ESP-NOW yang sudah ada).
-- Monitoring berkelanjutan (bukan hanya per-kejadian trigger) - konektivitas, kualitas sinyal, status daya - masuk cakupan FS-06 (saat ini *hold*), dicatat di sini sebagai dependensi data yang perlu diselaraskan saat FS-06 dilanjutkan.
+- Pengiriman status ack dari Sirine ke Unit Utama bergantung pada firmware Tim IoT.
+- Monitoring konektivitas, kualitas sinyal, dan status daya berada pada FS-06.

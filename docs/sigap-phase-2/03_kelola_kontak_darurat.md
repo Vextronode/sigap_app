@@ -4,8 +4,6 @@
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
 | Bergantung Pada | Area 1 (Data Contract) |
-| Status | Final |
-| Referensi | PRD.md S3.1 (Dashboard Admin), S5.2 (Security & Privasi Data) |
 
 ## 1. Ringkasan
 
@@ -25,9 +23,9 @@ CRUD kontak darurat dengan skema hybrid: 6 kontak inti (Ambulans, Damkar, Polisi
 ## 4. Functional Requirements
 
 - FR1: List seluruh kontak darurat, kontak inti ditampilkan dengan penanda visual berbeda.
-- FR2: Update institusi & nomor telepon berlaku untuk kontak inti maupun tambahan.
+- FR2: Update institusi, nomor telepon, dan ikon berlaku untuk kontak inti maupun tambahan.
 - FR3: Create & delete hanya berlaku untuk kontak non-inti (`is_core = false`).
-- FR4: Backend menolak request delete terhadap entri dengan `is_core = true`, terlepas dari apakah request dikirim lewat UI atau langsung ke API.
+- FR4: Backend menolak request delete terhadap entri dengan `is_core = true` dengan status 400.
 - FR5: Field `institution` dan `phone_number` **wajib diisi (NOT NULL)** untuk seluruh entri, tanpa pengecualian - entri dengan nomor belum tersedia tidak dibuat, bukan dibuat dengan field kosong.
 
 ## 5. Acceptance Criteria
@@ -46,9 +44,8 @@ CRUD kontak darurat dengan skema hybrid: 6 kontak inti (Ambulans, Damkar, Polisi
 
 ## 7. Data Terkait
 
-`emergency_contacts (id, institution, phone_number)` + kolom baru (masuk Data Dictionary G2):
-- `is_core` - boolean, default `false`. Di-set `true` khusus untuk 6 entri seed awal (Ambulans, Damkar, Polisi, Puskesmas, BPBD, Kantor Desa Cibenda).
+`emergency_contacts`, lihat `DD_content_admin.md`.
 
-## 8. Dependency & Catatan Terbuka
+## 8. Dependency
 
-Tidak ada isu terbuka signifikan - desain hybrid sudah final. Seeding 6 kontak inti perlu masuk sebagai bagian dari setup awal database (migration/seed script), bukan input manual pertama admin.
+Seed awal menyediakan 6 kontak inti.

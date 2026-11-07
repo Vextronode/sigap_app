@@ -4,7 +4,7 @@
 
 ---
 
-## 🎨 1. Desain Sistem & Panduan Visual (Design Tokens)
+## 1. Desain Sistem & Panduan Visual (Design Tokens)
 
 Untuk menjaga konsistensi 100% dengan dashboard publik SIGAP yang sudah dibangun:
 
@@ -15,36 +15,41 @@ Untuk menjaga konsistensi 100% dengan dashboard publik SIGAP yang sudah dibangun
   * **Surface / Container:** `#FFFFFF` (Pure White) dengan `border: 1px solid #E2E8F0` (Slate 200) dan `border-radius: 16px` (`rounded-2xl`).
   * **Typography Color:** `#0F172A` (Slate 900 - Headings), `#334155` (Slate 700 - Body), `#64748B` (Slate 500 - Subtitle & Caption).
 * **Status Badges & Indikator:**
-  * 🟢 **Hijau (Aman / Online / Sukses):** Text `#059669`, BG `#ECFDF5`, Border `#A7F3D0`
-  * 🟡 **Kuning (Waspada):** Text `#D97706`, BG `#FFFBEB`, Border `#FDE68A`
-  * 🟠 **Oranye (Siaga):** Text `#EA580C`, BG `#FFF7ED`, Border `#FDBA74`
-  * 🔴 **Merah (Awas / Darurat / Offline / Gagal):** Text `#DC2626`, BG `#FEF2F2`, Border `#FECACA`
+  * **Hijau (Aman / Online / Sukses):** Text `#059669`, BG `#ECFDF5`, Border `#A7F3D0`
+  * **Kuning (Waspada):** Text `#D97706`, BG `#FFFBEB`, Border `#FDE68A`
+  * **Oranye (Siaga):** Text `#EA580C`, BG `#FFF7ED`, Border `#FDBA74`
+  * **Merah (Awas / Darurat / Offline / Gagal):** Text `#DC2626`, BG `#FEF2F2`, Border `#FECACA`
 * **Elemen Khusus:**
   * **Logo Header:** Lambang resmi Kabupaten Pangandaran (perisai biru, gambar banteng/rusa, laut, dan bintang).
-  * **Sidebar Status Pill (Bawah Sidebar):** Kotak pill rounded-full dengan animasi dot berdenyut (`🟢 Alat Terhubung` / `🔴 Koneksi Alat Terputus`).
+  * **Sidebar Status Pill (Bawah Sidebar):** Kotak pill rounded-full dengan animasi dot berdenyut (` Alat Terhubung` / ` Koneksi Alat Terputus`).
   * **User Profile Widget (Topbar):** Avatar bulat berdenyut (Navy untuk Administrator, Hijau untuk Operator) + 2 baris teks (Nama Lengkap & Role).
 
 ---
 
-## 🗺️ 2. Struktur Navigasi & Arsitektur Halaman Admin
+## 2. Struktur Navigasi & Arsitektur Halaman Admin
 
-Sidebar navigasi di kiri memiliki lebar tetap `260px` dengan menu:
-1. 🔐 **Halaman Login Admin** (`/admin/login`) — *Layar terpisah tanpa sidebar*
-2. 📊 **Dashboard Utama** (`/admin/dashboard`) — *Ringkasan kondisi bencana, hardware IoT, dan kesehatan data*
-3. 🚨 **Pusat Kontrol Sirine & IoT** (`/admin/devices`) — *Remote trigger sirine 2-langkah, status ESP32, dan audit log*
-4. 📋 **Verifikasi Alert & Log Bencana** (`/admin/alerts`) — *Klasifikasi administratif data gempa/tsunami BMKG*
-5. 🛡️ **Kelola Kesiapsiagaan Desa** (`/admin/kesiapsiagaan`) — *Tab Kontak (6 kontak inti terproteksi), Evakuasi (Peta Leaflet), dan Panduan*
-6. 📡 **Log Notifikasi & Integrasi SID** (`/admin/logs`) — *Audit trail push notification warga & sinkronisasi SID*
-7. 👥 **Manajemen Akun & Role** (`/admin/users`) — *CRUD admin/operator khusus role Administrator*
+| Halaman | Route |
+|---|---|
+| Halaman Login Admin | `/admin/login` |
+| Dashboard Admin | `/admin/dashboard` |
+| Verifikasi Gempa | `/admin/alerts` |
+| Kontak Darurat | `/admin/kontak-darurat` |
+| Kelola Titik Evakuasi | `/admin/titik-evakuasi` |
+| Panduan Kesiapsiagaan | `/admin/panduan-kesiapsiagaan` |
+| Kontrol Sirine & IoT | `/admin/sirine-iot` |
+| Manajemen Akun | `/admin/manajemen-akun` |
+| Pengaturan Sistem | `/admin/pengaturan-sistem` |
+
+Bagian 3 dan 4 adalah prompt desain untuk Google Stitch dan menjadi acuan tata letak, bukan daftar route.
 
 ---
 
-## 🎯 3. MASTER PROMPT GOOGLE STITCH (Context & Design Brief)
+## 3. MASTER PROMPT GOOGLE STITCH (Context & Design Brief)
 
 Gunakan **Master Prompt** berikut di awal sesi Google Stitch untuk memberikan pemahaman menyeluruh tentang sistem, filosofi, konteks kebencanaan, dan standar visual SIGAP. Setelah memberikan Master Prompt ini, kamu bisa memberikan prompt spesifik per halaman di bawahnya atau melampirkan file `DESIGN_ADMIN.md` ini ke Google Stitch.
 
 ```markdown
-# 🏛️ PROJECT CONTEXT & DESIGN BRIEF: SIGAP ADMIN PORTAL
+# PROJECT CONTEXT & DESIGN BRIEF: SIGAP ADMIN PORTAL
 
 ## 1. Project Background & Purpose
 - Project Name: SIGAP (Sistem Informasi Gawat Darurat & Monitoring Cuaca)
@@ -74,13 +79,13 @@ When generating UI screens for this project:
 
 ---
 
-## 📝 4. PROMPT SPESIFIK PER HALAMAN (Detailed Screen Prompts)
+## 4. PROMPT SPESIFIK PER HALAMAN (Detailed Screen Prompts)
 
 Salin prompt di bawah ini langsung ke Google Stitch untuk menghasilkan masing-masing layar desain:
 
 ---
 
-### 🟢 PROMPT 1: Halaman Login Admin (`/admin/login`)
+### PROMPT 1: Halaman Login Admin (`/admin/login`)
 
 ```text
 Design a pixel-perfect, ultra-modern Admin Authentication Screen for "SIGAP Desa Cibenda" (Sistem Informasi Gawat Darurat & Monitoring Cuaca Desa Cibenda, Kabupaten Pangandaran).
@@ -115,7 +120,7 @@ Card Footer:
 
 ---
 
-### 🟢 PROMPT 2: Dashboard Ringkasan Admin (`/admin/dashboard`)
+### PROMPT 2: Dashboard Ringkasan Admin (`/admin/dashboard`)
 
 ```text
 Design a complete, high-fidelity Admin Dashboard for "SIGAP Desa Cibenda" featuring a unified left navigation sidebar, custom topbar with live user status, and modular metric cards styled like clean weather widgets.
@@ -165,21 +170,21 @@ Main Content Area:
    - Card 3 (Status Hardware Sirine Balai Desa):
      - Header: Icon Radio-tower in #7C3AED + Text "Hardware Sirine (ESP32-01)".
      - Status: Large Green Badge "ONLINE (Aktif)", Heartbeat "Terakhir 10 detik lalu".
-     - 3-LED Status Indicator: 🟢 Hijau (Menyala Aktif), 🟡 Kuning (Mati), 🔴 Merah (Mati).
+     - 3-LED Status Indicator: Hijau (Menyala Aktif), Kuning (Mati), Merah (Mati).
      - Quick Action Button: "Buka Pusat Kontrol Sirine →" in outlined blue.
 
 3. Section Bawah: External Health Check & Service Monitor (Multi-item grid card):
    - Card container with title "Status Konektivitas Sumber Data & Layanan":
    - 4 Item columns:
-     - Item 1: API BMKG Cuaca (🟢 Terhubung - Respon 120ms)
-     - Item 2: API BMKG Gempa & Tsunami (🟢 Terhubung - Respon 95ms)
-     - Item 3: Gateway Aplikasi SID Cibenda (🟢 Terhubung - Endpoint Active)
-     - Item 4: Web Push Notification Engine (🟢 142 Subscriber Warga Aktif)
+     - Item 1: API BMKG Cuaca (Terhubung - Respon 120ms)
+     - Item 2: API BMKG Gempa & Tsunami (Terhubung - Respon 95ms)
+     - Item 3: Gateway Aplikasi SID Cibenda (Terhubung - Endpoint Active)
+     - Item 4: Web Push Notification Engine (142 Subscriber Warga Aktif)
 ```
 
 ---
 
-### 🟢 PROMPT 3: Pusat Kontrol Sirine & Remote Emergency Trigger (`/admin/devices`)
+### PROMPT 3: Pusat Kontrol Sirine & Remote Emergency Trigger (`/admin/devices`)
 
 ```text
 Design the "Pusat Kontrol Sirine & Hardware IoT" page for SIGAP Admin, featuring remote siren trigger safeguards, hardware telemetry, and dual audit log cards styled after the modular weather widget.
@@ -198,16 +203,16 @@ Main Content Area:
      - Diagram representation of ESP32 Siren Device labeled "Unit Sirine 01 - Balai Desa Cibenda".
      - Status tag: Green Pill "ONLINE" with pulsing beacon.
      - 3 Physical LED Indicator Lights (Large 24px circles with glowing halos):
-       - 🟢 Hijau: Active Glowing Green (Level AMAN)
-       - 🟡 Kuning: Inactive Dark Yellow (Level SIAGA)
-       - 🔴 Merah: Inactive Dark Red (Level AWAS)
+       - Hijau: Active Glowing Green (Level AMAN)
+       - Kuning: Inactive Dark Yellow (Level SIAGA)
+       - Merah: Inactive Dark Red (Level AWAS)
    - Column 2 (Telemetry & Trigger Condition):
      - Status Level Saat Ini: "AMAN (GREEN)".
      - Sumber Trigger Otomatis: "BMKG InaTEWS / AutoGempa".
      - Keterangan: "Tombol aktivasi sirine hanya dapat dipicu apabila status kesiapsiagaan memasuki level SIAGA (Kuning) atau AWAS (Merah)."
    - Column 3 (Action Button State):
      - State Normal (Current View): Big button (height 56px, width 260px) in disabled muted gray (#E2E8F0), lock icon, text "Sirine Terkunci (Level Aman)".
-     - State Active Preview (Side note banner): High-visibility pulsing Red Button "🚨 AKTIFKAN SIRINE JARAK JAUH" (Trigger modal preview).
+     - State Active Preview (Side note banner): High-visibility pulsing Red Button "AKTIFKAN SIRINE JARAK JAUH" (Trigger modal preview).
 
 3. Popup Modal Safeguard (Shown in overlay preview for Level Merah activation):
    - Modal box (width 480px, white, rounded-2xl, border 2px solid #EF4444, shadow 0 25px 50px rgba(220, 38, 38, 0.25), padding 28px).
@@ -228,7 +233,7 @@ Main Content Area:
 
 ---
 
-### 🟢 PROMPT 4: Verifikasi & Riwayat Alert Bencana (`/admin/alerts`)
+### PROMPT 4: Verifikasi & Riwayat Alert Bencana (`/admin/alerts`)
 
 ```text
 Design the "Verifikasi & Riwayat Alert Bencana" admin page for SIGAP Desa Cibenda, focused on reviewing and administratively validating BMKG seismic and tsunami alerts.
@@ -255,7 +260,7 @@ Main Content Area:
      - Date Range: "30 Hari Terakhir".
    - Table Columns:
      - Waktu Trigger: "31 Agu 2026, 14:20:15 WIB" (bold 13px #0F172A).
-     - Tingkat Bahaya: Badge Pill 🔴 RED / 🟠 ORANGE / 🟡 YELLOW / 🟢 GREEN.
+     - Tingkat Bahaya: Badge Pill  RED / ORANGE / YELLOW / GREEN.
      - Sumber & Tipe: "BMKG AutoGempa (Gempa Lokal Pangandaran)".
      - Deskripsi Parameter: "M 5.3, Kedalaman 18 km, 79 km Barat Daya Pangandaran. Dirasakan III MMI di Cibenda."
      - Status Tinjauan: Badge "Belum Ditinjau" (#F1F5F9 text #475569) / "Dikonfirmasi" (#ECFDF5 text #059669) / "Ditindaklanjuti" (#FFF7ED text #EA580C).
@@ -275,7 +280,7 @@ Main Content Area:
 
 ---
 
-### 🟢 PROMPT 5: Kelola Kesiapsiagaan Desa (`/admin/kesiapsiagaan`)
+### PROMPT 5: Kelola Kesiapsiagaan Desa (`/admin/kesiapsiagaan`)
 
 ```text
 Design the "Kelola Kesiapsiagaan Desa" multi-tab admin page for SIGAP, managing emergency contacts with core protection, interactive evacuation map, and preparedness guides.
@@ -314,7 +319,7 @@ Main Content:
 
 ---
 
-### 🟢 PROMPT 6: Log Notifikasi & Integrasi SID (`/admin/logs`)
+### PROMPT 6: Log Notifikasi & Integrasi SID (`/admin/logs`)
 
 ```text
 Design the "Monitoring Notifikasi & Integrasi SID" log dashboard page for SIGAP Admin, formatted in clean modular weather-card widget style.
@@ -345,16 +350,16 @@ Main Content Area:
    - Table Columns:
      - Waktu Kirim: "31 Agu 2026 21:00:12 WIB"
      - Kanal: Badge "Web Push Browser" (Biru) / "Gateway SID PWA" (Ungu)
-     - Tingkat Bahaya: Badge 🔴 MERAH / 🟡 KUNING / 🟢 HIJAU
+     - Tingkat Bahaya: Badge  MERAH / KUNING / HIJAU
      - Judul Pesan: "Peringatan Dini Gempa Terkini Pangandaran M4.2"
      - Target Penerima: "142 Subscriber Browser" / "Server SID Cibenda"
-     - Status Pengiriman: Badge 🟢 "Terkirim (141/142)" / 🟡 "Retry 1x (Berhasil)" / 🔴 "Gagal (Timeout 504)"
+     - Status Pengiriman: Badge  "Terkirim (141/142)" / "Retry 1x (Berhasil)" / "Gagal (Timeout 504)"
      - Rincian Respon: "HTTP 200 OK (Latency 85ms)"
 ```
 
 ---
 
-### 🟢 PROMPT 7: Manajemen Akun & Pengguna (`/admin/users`)
+### PROMPT 7: Manajemen Akun & Pengguna (`/admin/users`)
 
 ```text
 Design the "Manajemen Akun & Role" page for SIGAP Admin, exclusively accessible to the Administrator role.

@@ -4,12 +4,10 @@
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
 | Bergantung Pada | Area 1 (Data Contract) |
-| Status | Draft - entitas baru di Tahap 2 |
-| Referensi | Roadmap S2.2 #1-2 |
 
 ## 1. Ringkasan
 
-Fitur baru di Tahap 2. Admin mengelola panduan kesiapsiagaan dalam dua mode input: artikel langsung (konten ditulis di sistem) atau tautan eksternal.
+Admin mengelola panduan kesiapsiagaan dalam dua mode input: artikel langsung (konten ditulis di sistem) atau tautan eksternal.
 
 ## 2. Actor & Akses
 
@@ -25,8 +23,9 @@ Fitur baru di Tahap 2. Admin mengelola panduan kesiapsiagaan dalam dua mode inpu
 
 - FR1: Create/update/delete entri panduan.
 - FR2: Constraint: minimal salah satu dari `content` atau `external_url` harus terisi (keduanya boleh kosong bersamaan **tidak** valid).
-- FR3: Field `source_type` wajib dipilih dari nilai tetap: resmi / mitra.
-- FR4: `published_at` diisi otomatis saat publish atau dapat dijadwalkan (**Perlu Klarifikasi** - lihat bagian 8).
+- FR3: Field `source_type` bernilai `RESMI` atau `MITRA`, dengan default `RESMI`.
+- FR4: `published_at` diisi waktu penyimpanan bila tidak dikirim.
+- FR5: Gambar panduan wajib diunggah saat pembuatan.
 
 ## 5. Acceptance Criteria
 
@@ -38,14 +37,8 @@ Fitur baru di Tahap 2. Admin mengelola panduan kesiapsiagaan dalam dua mode inpu
 ## 6. Edge Case & Error Handling
 
 - `external_url` mengarah ke tautan mati/tidak valid - tidak divalidasi ketersediaannya secara realtime di MVP (validasi format URL saja).
-- Kedua field terisi bersamaan (content + external_url) - diizinkan; UI publik menampilkan prioritas ke `content` (**Perlu Klarifikasi**: urutan prioritas tampilan belum ditentukan di sumber dokumen).
+- Kedua field terisi bersamaan diizinkan.
 
 ## 7. Data Terkait
 
-`preparedness_guides (id, content, external_url, source_type, published_at)` - struktur field mengikuti Roadmap S2.2 #1, field-level constraint detail tetap tanggung jawab Data Dictionary.
-
-## 8. Dependency & Catatan Terbuka
-
-**Perlu Klarifikasi:**
-- Apakah `published_at` mendukung penjadwalan (publish di masa depan) atau selalu langsung publish saat disimpan - tidak disebutkan di Roadmap.
-- Prioritas tampilan saat `content` dan `external_url` sama-sama terisi.
+`preparedness_guides`, lihat `DD_content_admin.md`.

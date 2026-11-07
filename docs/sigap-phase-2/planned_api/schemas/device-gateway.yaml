@@ -8,7 +8,7 @@ DeviceLevelResponse:
   type: object
   properties:
     level:
-      $ref: './shared.yaml#/StatusLevel'
+      $ref: '../../../api_spec/schemas/shared.yaml#/StatusLevel'
     updatedAt:
       type: string
       format: date-time
@@ -33,9 +33,6 @@ SirenEventReportRequest:
     EKSEKUSI dari command digital yang sebelumnya diterima via
     /protected/devices/{id}/trigger-siren - relatedActionId diisi ID
     baris pending tsb, backend UPDATE executedAt & ackStatus baris itu.
-    Ini bukan pelanggaran prinsip insert-only FS-08 (yang mengikat sisi
-    admin/API konsumen) - ini kanal internal device yang melengkapi
-    siklus hidup baris yang memang dirancang punya field pending.
   properties:
     relatedActionId:
       type: string
@@ -43,7 +40,7 @@ SirenEventReportRequest:
       nullable: true
       description: Diisi HANYA untuk skenario (2) di atas.
     levelAtTrigger:
-      $ref: './shared.yaml#/StatusLevel'
+      $ref: '../../../api_spec/schemas/shared.yaml#/StatusLevel'
       description: Business rule (server-enforced) - hanya ORANGE/RED yang valid.
     ackStatus:
       type: string

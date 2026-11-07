@@ -14,10 +14,11 @@ It serves as the primary implementation guide for developers and AI coding agent
 
 This guide complements:
 
-- PRD.md
-- DatabaseDesign.md
-- SoftwareArchitecture.md
-- SKILLS.md
+- docs/PRD.md
+- docs/architecture/
+- docs/api_spec/openapi.yaml
+- apps/backend/prisma/schema.prisma
+- AI/SKILLS.md
 
 ---
 
@@ -283,7 +284,7 @@ All API endpoints should return a standardized JSON response.
 {
   "success": false,
   "message": "Validation failed.",
-  "errors": {}
+  "errors": ["email: Format email tidak valid."]
 }
 ```
 
@@ -453,13 +454,8 @@ Role-based access control should be implemented.
 
 Current roles:
 
-- Admin
-
-Future roles may include:
-
-- Super Admin
-- Operator
-- BPBD Officer
+- admin
+- operator
 
 Authorization logic should remain extensible.
 
@@ -467,51 +463,15 @@ Authorization logic should remain extensible.
 
 # 15. Public Access
 
-The following endpoints should remain publicly accessible.
+Public endpoints use the `/api/public` prefix and do not require authentication.
 
-Examples:
-
-GET /weather
-
-GET /forecast
-
-GET /earthquakes
-
-GET /tsunami
-
-GET /evacuation-points
-
-GET /evacuation-routes
-
-GET /emergency-contacts
-
-GET /announcements
-
-These endpoints should not require authentication.
+The complete list is maintained in `docs/security_and_access_control/ROUTE_ACCESS_DESIGN.md`.
 
 ---
 
 # 16. Protected Access
 
-Administrative endpoints require authentication.
-
-Examples:
-
-POST /admin/login
-
-POST /admin/announcements
-
-PUT /admin/announcements/:id
-
-DELETE /admin/announcements/:id
-
-POST /admin/broadcast
-
-PUT /admin/emergency-contacts/:id
-
-POST /admin/evacuation-points
-
-DELETE /admin/evacuation-points/:id
+Administrative endpoints use the `/api/protected` prefix and require a valid JWT.
 
 Unauthorized users must receive HTTP 401 or HTTP 403.
 
@@ -519,22 +479,7 @@ Unauthorized users must receive HTTP 401 or HTTP 403.
 
 # 17. Authorization Matrix
 
-| Feature | Public | Admin |
-|----------|:------:|:-----:|
-| View Weather | ✅ | ✅ |
-| View Forecast | ✅ | ✅ |
-| View Earthquakes | ✅ | ✅ |
-| View Tsunami Status | ✅ | ✅ |
-| View Evacuation Routes | ✅ | ✅ |
-| View Emergency Contacts | ✅ | ✅ |
-| View Announcements | ✅ | ✅ |
-| Manage Announcements | ❌ | ✅ |
-| Manage Evacuation Points | ❌ | ✅ |
-| Manage Emergency Contacts | ❌ | ✅ |
-| Broadcast Disaster Information | ❌ | ✅ |
-| Validate Disaster Alerts | ❌ | ✅ |
-
-This authorization matrix serves as the reference for all backend permission checks.
+The authorization matrix is maintained in `docs/security_and_access_control/ROUTE_ACCESS_DESIGN.md` and serves as the reference for all backend permission checks.
 
 ---
 
@@ -617,13 +562,13 @@ Its responsibility is to classify official information into the SIGAP Alert Leve
 
 Alert Levels:
 
-🟢 Normal
+Aman
 
-🟡 Waspada
+Waspada
 
-🟠 Siaga
+Siaga
 
-🔴 Awas
+Awas
 
 Threshold values must remain configurable.
 

@@ -1,35 +1,38 @@
 # 9. Cross-Cutting Concerns
 
-Bagian ini merangkum prinsip yang berulang di lebih dari satu domain — bukan keputusan baru, melainkan pola yang perlu dikenali sebagai satu kesatuan filosofi desain.
+## 9.1 Ketahanan Data
 
-## 9.1 Fail-Safe by Design
+| Komponen | Perilaku |
+|---|---|
+| Data gempa | Memakai rekaman `earthquake_records` saat data BMKG tidak tersedia |
+| Cuaca | Menggabungkan BMKG dan Open-Meteo dengan cadangan antarsumber |
+| Permintaan eksternal | Timeout dan retry dapat dikonfigurasi |
+| Alert yang berlaku | Dihitung langsung dari BMKG saat tabel `alerts` kosong atau gagal dibaca |
+| Scheduler | Siklus baru dilewati bila siklus sebelumnya belum selesai |
+| Shutdown | Menghentikan scheduler, menunggu request berjalan, lalu menutup database |
 
-| Domain | Penerapan | Status | ADR |
-|---|---|---|---|
-| IoT | Device offline tidak dianggap level "aman" | Desain final, implementasi menunggu migrasi `iot_devices` ke Prisma | ADR-004, ADR-030 |
-| Integrasi SID | Kegagalan kirim notifikasi tidak menghentikan pencatatan inti SIGAP | N/A - integrasi belum dibangun | ADR-025 |
-| Aktivasi Sirine | Hanya level ORANGE/RED yang membuka opsi aktivasi | Desain final (FS-09), implementasi dijadwalkan Sprint 3 Tahap 2 | ADR-011 |
+## 9.2 Cache
 
-## 9.2 Defense in Depth (Keamanan Berlapis)
-
-| Lapis | Contoh | Status |
+| Data | Lokasi | Masa Berlaku |
 |---|---|---|
-| Database | `CHECK` constraint (`chk_operator_id_matches_source`, dst.) | Desain, tabel terkait belum live |
-| Aplikasi | Validasi bisnis + RBAC enforcement pada endpoint | RBAC belum ditegakkan sama sekali (Story SEC-1) |
-| Infrastruktur | Rate limiting lapis kedua di reverse proxy (ADR-009) | Belum ada sama sekali (Story SEC-2) |
+| Alert yang berlaku | Memori backend | 60 detik |
+| Ringkasan status perangkat | Memori backend | 30 detik |
+| Daftar gempa | Memori backend | `EARTHQUAKE_CACHE_TTL_MS`, default 30 detik |
+| Kesehatan sistem | Memori backend | 120 detik |
+| Respons `/api/public/*` | Service worker | Network first, timeout 5 detik |
 
-**Catatan jujur:** prinsip "berlapis" ini secara desain sudah benar, tapi saat ini secara implementasi lebih tepat disebut "belum berlapis sama sekali" pada 2 dari 3 lapis yang didesain. Jangan mengutip bagian ini sebagai bukti keamanan sudah tegak - lihat Epic E0 (Security & Hardening) untuk status implementasi sesungguhnya.
+## 9.3 Pembaruan Data Frontend
 
-## 9.3 Delivery > Complexity
+Frontend memakai TanStack Query dengan polling. Alert terkini diperbarui setiap `VITE_ALERT_REFETCH_INTERVAL_MS` (default 60 detik).
 
-- ADR-013 memilih mempertahankan REST Polling yang sudah berfungsi di prototipe, alih-alih memaksakan migrasi ke Firebase RTDB.
-- ADR-012 sengaja menangguhkan desain detail jalur remote trigger sirine, alih-alih merancang prematur.
-- **Baru:** ADR-027 memilih mempertahankan envelope response `{success, message, data}` yang sudah live, alih-alih memaksa migrasi kode mengikuti dokumen desain awal (`{status, code, message, data}`) yang ternyata menyimpang dari implementasi sejak awal.
+## 9.4 Aksesibilitas
 
-## 9.4 Non-Functional Requirements Terkait Arsitektur
+Level kesiapsiagaan ditampilkan dengan teks dan ikon, tidak hanya warna. Kartu alert menampilkan waktu pembaruan terakhir.
 
-| NFR | Sumber | Implikasi Arsitektur | Status |
-|---|---|---|---|
-| Interval polling IoT 15 detik | Ditetapkan firmware Tim IoT | Batas bawah latensi pembaruan level | **Perlu verifikasi** - endpoint polling level per-device tidak ditemukan di kode nyata saat audit (lihat `05_iot_architecture.md` §5.0), hanya heartbeat + status agregat yang terkonfirmasi live |
-| Aksesibilitas (PRD §5.3) | Warga literasi digital terbatas | Pesan error harus dapat diterjemahkan ke bahasa sederhana | Tidak berubah |
-| Fallback AI API | PRD §5.1 | `AiSummaryResponse.fallback` (boolean) di kontrak API | Desain final, fitur AI Summary sendiri belum live |
+## 9.5 Kesehatan Layanan
+
+| Endpoint | Fungsi |
+|---|---|
+| `/api/healthz` | Liveness tanpa akses database |
+| `/api/readyz` | Readiness dengan `SELECT 1`, batas 2 detik |
+| `/api/public/system-health` | Status BMKG, Open-Meteo, Web Push, SID, dan database untuk dashboard admin |

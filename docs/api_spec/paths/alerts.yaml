@@ -1,0 +1,165 @@
+# =====================================================================
+# paths/alerts.yaml - path domain Alert
+# =====================================================================
+
+alert-current:
+  get:
+    tags: [Alerts]
+    summary: Alert terkini yang berlaku untuk dashboard
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/alerts.yaml#/Alert'
+
+alert-history:
+  get:
+    tags: [Alerts]
+    summary: Seluruh riwayat alert
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/alerts.yaml#/Alert'
+
+alert-public-by-id:
+  get:
+    tags: [Alerts]
+    summary: Detail satu alert
+    security: []
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/alerts.yaml#/Alert'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+
+alerts-protected:
+  get:
+    tags: [Alerts]
+    summary: Daftar alert dengan filter dan paginasi
+    parameters:
+      - $ref: '../schemas/shared.yaml#/PageParam'
+      - $ref: '../schemas/shared.yaml#/LimitParam'
+      - name: severity
+        in: query
+        schema:
+          type: string
+        description: GREEN, YELLOW, ORANGE, RED, atau label Aman, Waspada, Siaga, Awas
+      - name: reviewStatus
+        in: query
+        schema:
+          type: string
+          enum: ['Belum Diverifikasi', 'Belum Ditinjau', Dikonfirmasi, Ditolak, Ditindaklanjuti]
+      - name: startDate
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        schema:
+          type: string
+          format: date
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/alerts.yaml#/Alert'
+                    pagination:
+                      $ref: '../schemas/shared.yaml#/Pagination'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '422':
+        $ref: './shared.yaml#/ValidationFailed'
+
+alert-protected-by-id:
+  get:
+    tags: [Alerts]
+    summary: Detail satu alert untuk admin/operator
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/alerts.yaml#/Alert'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+
+alert-review:
+  patch:
+    tags: [Alerts]
+    summary: Klasifikasi alert oleh pengguna terautentikasi
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/alerts.yaml#/AlertReviewRequest'
+    responses:
+      '200':
+        description: Status review berhasil diperbarui
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/alerts.yaml#/Alert'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+      '422':
+        $ref: './shared.yaml#/ValidationFailed'
