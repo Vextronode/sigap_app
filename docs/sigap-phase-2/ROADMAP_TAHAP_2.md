@@ -28,7 +28,7 @@
 | ID | Fitur | Status | Area |
 |---|---|---|---|
 | FS-01 | Login dan Sesi | Berjalan | 5 |
-| FS-02 | Verifikasi Alert | Berjalan | 5 |
+| FS-02 | Catatan Tinjauan Alert | Berjalan | 5 |
 | FS-03 | Kelola Kontak Darurat | Berjalan | 5 |
 | FS-04 | Kelola Titik Evakuasi | Berjalan | 5 |
 | FS-05 | Kelola Panduan Kesiapsiagaan | Berjalan | 5 |
@@ -88,12 +88,11 @@ Dashboard saat ini memakai polling (`architecture/09_cross_cutting_concerns.md`)
 
 | Urutan | Pekerjaan |
 |---|---|
-| 1 | Implementasi ADR-036 dan ADR-037 |
-| 2 | Area 4 - Integrasi SID |
-| 3 | Area 7 - Perangkat dan Sirine, setelah kontrak perangkat ditetapkan |
-| 4 | Area 8 - Ringkasan AI |
-| 5 | Area 6 - Data Historis dan Alert Cuaca |
-| 6 | Area 9 - Pembaruan Real-Time |
+| 1 | Area 4 - Integrasi SID |
+| 2 | Area 7 - Perangkat dan Sirine, setelah kontrak perangkat ditetapkan |
+| 3 | Area 8 - Ringkasan AI |
+| 4 | Area 6 - Data Historis dan Alert Cuaca |
+| 5 | Area 9 - Pembaruan Real-Time |
 
 ## 6. Isu Terbuka
 

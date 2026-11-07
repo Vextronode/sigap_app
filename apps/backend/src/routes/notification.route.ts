@@ -7,7 +7,7 @@ export const publicNotificationRouter = Router();
 export const protectedNotificationRouter = Router();
 
 /**
- * GET /api/v1/public/notifications/vapid-public-key
+ * GET /api/public/notifications/vapid-public-key
  * Dibutuhkan frontend browser untuk subscribe Web Push API.
  */
 publicNotificationRouter.get(
@@ -16,7 +16,7 @@ publicNotificationRouter.get(
 );
 
 /**
- * POST /api/v1/public/notifications/subscribe
+ * POST /api/public/notifications/subscribe
  * Mendaftarkan subscription token push warga.
  */
 publicNotificationRouter.post(
@@ -25,7 +25,7 @@ publicNotificationRouter.post(
 );
 
 /**
- * POST /api/v1/public/notifications/unsubscribe
+ * POST /api/public/notifications/unsubscribe
  * Membatalkan subscription token push.
  */
 publicNotificationRouter.post(
@@ -34,7 +34,7 @@ publicNotificationRouter.post(
 );
 
 /**
- * GET /api/v1/public/notifications/latest
+ * GET /api/public/notifications/latest
  * Konten payload notifikasi darurat terkini.
  */
 publicNotificationRouter.get(
@@ -43,7 +43,7 @@ publicNotificationRouter.get(
 );
 
 /**
- * POST /api/v1/protected/notifications/dispatch
+ * POST /api/protected/notifications/dispatch
  * SEC-05: Dispatch manual notifikasi darurat massal hanya untuk Administrator.
  */
 protectedNotificationRouter.post(
@@ -54,7 +54,7 @@ protectedNotificationRouter.post(
 );
 
 /**
- * GET /api/v1/protected/notifications/logs
+ * GET /api/protected/notifications/logs
  * SEC-08: Riwayat audit log pengiriman notifikasi — hanya admin terautentikasi.
  */
 protectedNotificationRouter.get(
@@ -64,7 +64,7 @@ protectedNotificationRouter.get(
 );
 
 /**
- * GET /api/v1/protected/notifications/subscribers/count
+ * GET /api/protected/notifications/subscribers/count
  * Mengambil total statistik subscriber warga penerima Web Push aktif.
  */
 protectedNotificationRouter.get(

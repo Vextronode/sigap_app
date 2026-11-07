@@ -602,6 +602,10 @@ svg {
   background: var(--success);
 }
 
+.status-banner--neutral {
+  background: #475569;
+}
+
 .status-banner--warning {
   background: var(--warning);
 }

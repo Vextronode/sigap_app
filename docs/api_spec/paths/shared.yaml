@@ -63,8 +63,7 @@ ValidationFailed:
       example:
         success: false
         message: "Validasi gagal."
-        errors:
-          institution: "Nama institusi wajib diisi."
+        errors: ["Nama institusi wajib diisi."]
 
 RateLimited:
   description: Melebihi batas permintaan

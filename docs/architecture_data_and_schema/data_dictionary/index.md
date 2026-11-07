@@ -38,3 +38,5 @@ Pemetaan label `AlertLevel`:
 | `YELLOW` | Waspada |
 | `ORANGE` | Siaga |
 | `RED` | Awas |
+
+Alert yang berlaku juga dapat bernilai `UNKNOWN` (Data Tidak Tersedia) pada respons API. Nilai ini tidak disimpan di database.

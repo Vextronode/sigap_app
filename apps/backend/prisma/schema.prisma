@@ -21,6 +21,7 @@ model User {
   isActive          Boolean   @default(true) @map("is_active")
   lastLoginAt       DateTime? @map("last_login_at")
   lastLoginIp       String?   @map("last_login_ip")
+  tokenVersion      Int       @default(0) @map("token_version")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

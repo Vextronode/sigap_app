@@ -1,7 +1,5 @@
 import type { Request, Response } from "express";
-import { AlertLevel } from "../../generated/prisma/enums.js";
-
-import { AlertService } from "../services/alert.service.js";
+import { AlertService, buildUnavailableAlert } from "../services/alert.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { UnauthorizedError } from "../errors/AppError.js";
 import type {
@@ -32,19 +30,8 @@ export class AlertController {
     } catch (error) {
       console.error("[GET /alerts] error:", error);
 
-      // Respon fallback aman (GREEN/AMAN) agar dashboard warga tidak pernah crash atau berstatus error
-      const now = new Date();
-      const safeFallback: AlertRecord = {
-        id: "safe-fallback",
-        level: AlertLevel.GREEN,
-        source: "BMKG",
-        description: "Tidak terdapat peringatan resmi BMKG.",
-        reviewStatus: "Belum Diverifikasi",
-        reviewedBy: null,
-        reviewedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      };
+      // Data tidak dapat dibaca: jangan menyatakan aman (ADR-037)
+      const safeFallback = buildUnavailableAlert("safe-fallback");
 
       res.status(200).json({
         success: true,

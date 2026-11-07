@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import { NotFoundError, ValidationError } from "../errors/AppError.js";
-import { AlertLevel, AlertReviewStatus } from "../../generated/prisma/enums.js";
+import { AlertLevel } from "../../generated/prisma/enums.js";
+import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
 import {
   AlertRepository,
   LABEL_TO_REVIEW_STATUS,
@@ -14,10 +15,29 @@ import type {
   ReviewAlertPayload,
 } from "../types/alert.types.js";
 
-const ALERT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 jam (1 hari)
 const ALERT_CACHE_TTL_MS = 60_000; // 60 detik TTL in-memory cache (menghemat compute DB)
 
 let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
+
+/** Id hasil evaluasi langsung dari BMKG yang tidak berasal dari tabel alerts. */
+export const LIVE_FALLBACK_ALERT_ID = "live-fallback";
+
+/** Alert saat database dan BMKG tidak dapat memberikan data (ADR-037). */
+export const buildUnavailableAlert = (id: string): AlertRecord => {
+  const now = new Date();
+  return {
+    id,
+    level: "UNKNOWN",
+    source: "SIGAP",
+    description:
+      "Data peringatan sedang tidak tersedia. Pantau informasi resmi BMKG di bmkg.go.id.",
+    reviewStatus: "Belum Diverifikasi",
+    reviewedBy: null,
+    reviewedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+};
 
 export class AlertService {
   /**
@@ -70,11 +90,11 @@ export class AlertService {
         const mapped = mapAlertToRecord(latest);
 
         // Cek umur alert dari waktu bencana (createdAt), BUKAN kapan admin klik verifikasi (updatedAt).
-        // Jika > 24 jam (1 hari) ATAU statusnya "Ditolak" (False Alarm), status alert otomatis kembali ke GREEN (Aman).
+        // Jika > 24 jam (1 hari), status alert otomatis kembali ke GREEN (Aman).
+        // Status review adalah catatan pasca-kejadian dan tidak memengaruhi level (ADR-041).
         const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-        const isRejected = latest.reviewStatus === AlertReviewStatus.DITOLAK;
 
-        if ((ageMs > ALERT_MAX_AGE_MS || isRejected) && latest.level !== AlertLevel.GREEN) {
+        if (ageMs > ALERT_ACTIVE_MAX_AGE_MS && latest.level !== AlertLevel.GREEN) {
           alertResult = {
             ...mapped,
             level: AlertLevel.GREEN,
@@ -104,13 +124,17 @@ export class AlertService {
       const { BmkgService } = await import("./bmkg.service.js");
       const { DecisionEngineService } = await import("./decisionEngine.service.js");
 
+      if (!(await EarthquakeService.isLiveDataAvailable())) {
+        throw new Error("Data gempa BMKG tidak tersedia.");
+      }
+
       const earthquake = await EarthquakeService.getPangandaran();
       const tsunami = await BmkgService.getTsunamiStatus();
       const liveEval = DecisionEngineService.evaluate({ earthquake, tsunami });
 
       const now = new Date();
       alertResult = {
-        id: "live-fallback",
+        id: LIVE_FALLBACK_ALERT_ID,
         level: liveEval.level as AlertLevel,
         source: liveEval.source || "BMKG",
         description:
@@ -124,18 +148,7 @@ export class AlertService {
       };
     } catch (fallbackError) {
       console.error("[AlertService] Evaluasi live BMKG fallback juga gagal:", fallbackError);
-      const now = new Date();
-      alertResult = {
-        id: "baseline-safe",
-        level: AlertLevel.GREEN,
-        source: "BMKG",
-        description: "Kondisi wilayah Desa Cibenda aman dan kondusif.",
-        reviewStatus: "Belum Diverifikasi",
-        reviewedBy: null,
-        reviewedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      };
+      alertResult = buildUnavailableAlert("data-unavailable");
     }
 
     cachedAlertState = {

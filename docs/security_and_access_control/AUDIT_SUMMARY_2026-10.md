@@ -28,10 +28,10 @@ Status berikut mencakup temuan yang ditinjau ulang terhadap kode pada 7 November
 | Template dan validasi environment | Selesai | - |
 | Prosedur deploy, rollback, dan backup | Selesai | `deploy/sigap.sh` |
 | Sinkronisasi dokumen | Selesai | Penyelarasan 7 November 2026 |
-| Logika level dan filter relevansi | Sebagian | ADR-035 menetapkan nilai; ADR-036 dan ADR-037 menunggu implementasi |
-| Perilaku saat data tidak tersedia | Terbuka | ADR-037 |
-| Review alert | Terbuka | ADR-036 |
-| Manajemen sesi | Terbuka | Menunggu konfirmasi perubahan kode |
+| Logika level dan filter relevansi | Sebagian | ADR-035, ADR-037, ADR-040, dan ADR-042 selesai |
+| Perilaku saat data tidak tersedia | Selesai di kode | ADR-037; firmware mengikuti kontrak perangkat |
+| Review alert | Selesai di kode | ADR-041 |
+| Manajemen sesi | Selesai di kode | Pencabutan sesi per akun dan logout ke server |
 | Tes otomatis | Terbuka | Belum dijadwalkan |
 | Pemantauan operasional | Sebagian | Heartbeat scheduler tersedia secara opsional |
 | Kontrak perangkat | Terbuka | Menunggu ketetapan Tech Lead |

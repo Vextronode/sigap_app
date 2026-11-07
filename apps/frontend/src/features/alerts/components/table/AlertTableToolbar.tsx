@@ -69,7 +69,7 @@ export const AlertTableToolbar: React.FC<AlertTableToolbarProps> = ({
             value={selectedReviewStatus}
             onChange={(e) => onReviewStatusChange(e.target.value)}
             className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--text)] hover:bg-[color:var(--surface-muted)]/80 focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]/20 cursor-pointer transition-colors"
-            aria-label="Filter Status Verifikasi"
+            aria-label="Filter Status Tinjauan"
           >
             <option value="ALL" className="bg-[color:var(--surface)] text-[color:var(--text)]">Semua Status</option>
             <option value="Belum Diverifikasi" className="bg-[color:var(--surface)] text-[color:var(--text)]">Belum Diverifikasi</option>

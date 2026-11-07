@@ -1,22 +1,15 @@
 # 10. Risks and Open Issues
 
-## 10.1 Keputusan Menunggu Implementasi
-
-| Isu | Keputusan | Dampak Selama Belum Diimplementasikan | Pemilik |
-|---|---|---|---|
-| Status saat data tidak tersedia | ADR-037 | Sistem menampilkan `GREEN` | Tech Lead |
-| Dampak review `Ditolak` dan permission review | ADR-036 | Review `Ditolak` dapat menurunkan level yang berlaku | Tech Lead |
-
-## 10.2 Isu Terbuka
+## 10.1 Isu Terbuka
 
 | Isu | Domain | Dampak | Pemilik |
 |---|---|---|---|
-| Kontrak perangkat: autentikasi, endpoint, dan interval | IoT | Desain pada `sigap-phase-2/` belum dapat dimulai | Tech Lead |
+| Kontrak perangkat: autentikasi, endpoint, interval, dan penanganan `UNKNOWN` pada firmware | IoT | Desain pada `sigap-phase-2/` belum dapat dimulai | Tech Lead |
 | Kontrak API SID | Integrasi | Integrasi SID belum dapat dibangun | Tech Lead SIGAP dan SID |
 | Hosting production | Deployment | Belum ada lingkungan production | Tim DevOps |
 | Fitur ringkasan AI | Produk | Kartu dashboard memakai konten sementara | Tech Lead |
 
-## 10.3 Risiko Teknis
+## 10.2 Risiko Teknis
 
 | Risiko | Dampak | Mitigasi Saat Ini |
 |---|---|---|

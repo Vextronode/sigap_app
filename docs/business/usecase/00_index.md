@@ -41,7 +41,7 @@ Diagram dirender dengan ekstensi PlantUML pada VS Code, `java -jar plantuml.jar 
 | Use Case | Proses pada `bw_sigap.md` |
 |---|---|
 | Lihat Dashboard Lingkungan, Lihat Ringkasan AI | 1, 6 |
-| Terima Notifikasi Level Alert, Klasifikasi Alert | 2 |
+| Terima Notifikasi Level Alert, Catat Tinjauan Alert | 2 |
 | Lihat Info Kesiapsiagaan, Buka Navigasi | 3 |
 | Kelola Kontak Darurat, Titik Evakuasi, Panduan | 4 |
 | Manajemen Akun dan Role, Pantau Kesehatan Sistem | 5 |

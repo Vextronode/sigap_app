@@ -17,7 +17,7 @@
 | Nama Proses | Penyampaian Alert dan Level Kesiapsiagaan |
 | Aktor | Sistem SIGAP, Admin, Operator, Unit Utama, Warga Desa |
 | Sebelum SIGAP | Peringatan mengandalkan komunikasi manual antarwarga dan perangkat desa, tanpa standar level bahaya. |
-| Proses Berjalan | Scheduler mengevaluasi data BMKG sesuai `Rules_Alerts.md` dan menetapkan level `GREEN`, `YELLOW`, `ORANGE`, atau `RED`. Alert selain `GREEN` disimpan dan dikirim sebagai Web Push ke seluruh subscriber. Level ditampilkan di dashboard dan dibaca Unit Utama melalui REST polling. Admin dan operator mengklasifikasikan alert menjadi Dikonfirmasi, Ditolak, atau Ditindaklanjuti. |
+| Proses Berjalan | Scheduler mengevaluasi data BMKG sesuai `Rules_Alerts.md` dan menetapkan level `GREEN`, `YELLOW`, `ORANGE`, atau `RED`. Alert selain `GREEN` disimpan dan dikirim sebagai Web Push ke seluruh subscriber. Level ditampilkan di dashboard dan dibaca Unit Utama melalui REST polling. Admin dan operator dapat mencatat tinjauan alert sebagai Dikonfirmasi, Ditolak, atau Ditindaklanjuti untuk arsip, tanpa mengubah level. |
 | Hasil | Level terstandar 4 tingkat yang sampai ke warga tanpa harus membuka dashboard. |
 
 Diagram aktivitas: `bw_alert_kesiapsiagaan.puml`.

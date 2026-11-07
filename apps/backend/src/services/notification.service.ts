@@ -108,7 +108,8 @@ export class NotificationService {
    */
   static async getLatestPayload(): Promise<NotificationPayload | null> {
     const alert = await AlertService.getCurrentAlert();
-    if (!alert) return null;
+    // UNKNOWN berarti data tidak tersedia, bukan peringatan yang perlu dikirim.
+    if (!alert || alert.level === "UNKNOWN") return null;
 
     const earthquake = await EarthquakeService.getPangandaran();
 

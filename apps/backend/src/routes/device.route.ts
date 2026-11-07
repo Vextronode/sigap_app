@@ -17,7 +17,7 @@ publicDeviceRouter.get("/status", async (_req, res) => {
     try {
         const systemStatus = await DeviceService.getSystemStatus();
         const currentAlert = await AlertService.getCurrentAlert();
-        const level = currentAlert?.level || "GREEN";
+        const level = currentAlert?.level ?? "UNKNOWN";
 
         const response: ApiSuccessResponse<typeof systemStatus & { level: string }> = {
             success: true,

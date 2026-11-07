@@ -899,7 +899,7 @@ Failed response:
 {
     "success": false,
     "message": "Validation failed.",
-    "errors": {}
+    "errors": ["email: Format email tidak valid."]
 }
 ```
 

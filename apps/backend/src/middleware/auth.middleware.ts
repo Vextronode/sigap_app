@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwt.util.js";
-import { isTokenRevoked } from "../repositories/token.repository.js";
+import { findSessionState, isTokenRevoked } from "../repositories/token.repository.js";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -18,10 +18,19 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   try {
     const payload = verifyToken(token);
 
-    // Cek apakah token masuk ke blocklist revoked_tokens
+    // Cek blocklist revoked_tokens, keaktifan akun, dan versi token.
+    // Token lama tanpa klaim tokenVersion dianggap versi 0.
     try {
-      const revoked = await isTokenRevoked(payload.jti);
-      if (revoked) {
+      const [revoked, session] = await Promise.all([
+        isTokenRevoked(payload.jti),
+        findSessionState(payload.sub),
+      ]);
+      const isSessionValid =
+        session !== null &&
+        session.isActive &&
+        session.tokenVersion === (payload.tokenVersion ?? 0);
+
+      if (revoked || !isSessionValid) {
         return res.status(401).json({
           success: false,
           message: "Token tidak valid atau kedaluwarsa.",
@@ -29,9 +38,9 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         });
       }
     } catch (dbErr) {
-      // Jika terjadi transient network error / timeout ke database saat cek revoked,
+      // Jika terjadi transient network error / timeout ke database saat cek sesi,
       // jangan langsung anggap token 401 Unauthorized (karena signature token sudah valid).
-      console.warn("[authMiddleware] Database query isTokenRevoked warning:", dbErr);
+      console.warn("[authMiddleware] Database query session check warning:", dbErr);
     }
 
     req.user = payload;

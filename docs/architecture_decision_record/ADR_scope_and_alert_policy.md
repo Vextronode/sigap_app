@@ -106,6 +106,8 @@ Nilai 100 km dan 7 hari adalah perilaku yang berjalan dan telah dipakai tim.
 ### Dampak Terhadap Sistem
 Rules_Alerts v2.0 mencatat nilai ini. Pra-filter 100 km pada `earthquake.service.ts` bernilai tetap, sehingga menaikkan `PANGANDARAN_RADIUS_KM` di atas 100 hanya berpengaruh pada gempa yang menyebut Pangandaran.
 
+**Catatan implementasi:** pra-filter tersebut kemudian diubah agar mengikuti `PANGANDARAN_RADIUS_KM`, dengan nilai default tetap 100 km.
+
 ---
 
 ## ADR-036: Review Ditolak Tidak Menurunkan Status Tsunami Resmi
@@ -133,7 +135,7 @@ Operator perlu dapat menangani alarm palsu dari hasil otomatis. Status resmi tid
 
 ## ADR-037: Status UNKNOWN Saat Data Tidak Tersedia
 
-**Status implementasi:** disetujui, menunggu perubahan kode.
+**Status implementasi:** diterapkan. Firmware perlu mengenali nilai ini mengikuti kontrak perangkat.
 
 ### Latar Belakang Keputusan
 Saat database dan BMKG sama-sama gagal, sistem menampilkan `GREEN` dengan pesan kondisi aman, dan nilai tersebut diteruskan ke perangkat. Hal ini bertentangan dengan prinsip fail-safe pada ADR-004.
@@ -167,3 +169,65 @@ Proses backend yang berjalan terus menghilangkan kebutuhan pemicu cron eksternal
 
 ### Dampak Terhadap Sistem
 Topologi dicatat pada `architecture/08_deployment_view.md`. Hosting production belum ditetapkan.
+
+---
+
+## ADR-040: Level Akhir Mengambil yang Tertinggi antara Tsunami dan Gempa
+
+### Latar Belakang Keputusan
+Decision Engine sebelumnya berhenti pada status tsunami selain `NORMAL`. Estimasi tsunami dibatasi `WASPADA`, sehingga gempa berpotensi tsunami yang juga dirasakan warga hanya menghasilkan `YELLOW`, padahal aturan gempa yang dirasakan menghasilkan `ORANGE`.
+
+### Alternatif yang Dipertimbangkan
+1. Mempertahankan status tsunami sebagai penentu tunggal.
+2. Mengambil level tertinggi antara tsunami dan gempa.
+
+### Keputusan yang Dipilih
+Opsi 2. Bila level sama, sumber dan deskripsi tsunami yang dipakai. Bila level gempa lebih tinggi, deskripsi tsunami disertakan pada alert.
+
+### Alasan Pemilihan
+Status yang lebih rendah tidak boleh menutupi kondisi yang lebih tinggi. Batas `WASPADA` pada estimasi tsunami tetap berlaku, karena kenaikan ke `ORANGE` berasal dari laporan `Dirasakan` BMKG, bukan dari estimasi.
+
+### Dampak Terhadap Sistem
+`decisionEngine.service.ts` mengevaluasi tsunami dan gempa terpisah. Level `RED` tetap hanya berasal dari `BMKG_TSUNAMI_STATUS`.
+
+---
+
+## ADR-041: Review Alert Sebagai Catatan Pasca-Kejadian
+
+Menggantikan ADR-036.
+
+### Latar Belakang Keputusan
+Review alert awalnya dirancang sebagai persetujuan sebelum broadcast untuk level tinggi. Persetujuan itu tidak efektif karena menunda peringatan, sehingga notifikasi dikirim otomatis (ADR-034) dan review kehilangan fungsi utamanya. Pada implementasi, `Dikonfirmasi` dan `Ditindaklanjuti` hanya mencatat label. `Ditolak` menurunkan level ke `GREEN` hanya sampai siklus scheduler berikutnya, lalu kondisi yang sama membuat alert baru dan mengirim push ulang. Dashboard admin menempatkan review sebagai tugas yang menunggu, dan modalnya menampilkan pesan aktivasi sirine tanpa perintah yang benar-benar dikirim.
+
+### Alternatif yang Dipertimbangkan
+1. Review sebagai catatan pasca-kejadian yang tidak mengubah level.
+2. Menyembunyikan seluruh aksi review lewat konfigurasi.
+3. Membuat `Ditolak` berfungsi penuh dengan penandaan per kejadian gempa.
+4. ADR-036: `Ditolak` berlaku untuk alert hasil estimasi dan gempa, tidak untuk status tsunami resmi.
+
+### Keputusan yang Dipilih
+Opsi 1. Status review hanya mencatat tinjauan dan tidak memengaruhi level, notifikasi, maupun perangkat. Aksi review berada di halaman Riwayat Alert. Dashboard admin tidak lagi menampilkan aksi, antrean, atau badge verifikasi. Route review memakai permission `alert.validate`.
+
+### Alasan Pemilihan
+SIGAP meneruskan data BMKG, sehingga menolak data tersebut bukan peran operator. Estimasi tsunami sudah dibatasi `WASPADA`, sehingga risiko alarm palsu berat sudah kecil. Jejak penanganan tetap tersimpan untuk laporan pasca-kejadian.
+
+### Dampak Terhadap Sistem
+- Operator tidak memiliki cara menurunkan alert secara manual. Alert berakhir mengikuti masa aktif 24 jam.
+- Komponen `DoubleConfirmationModal` tidak lagi ditampilkan dan tetap disimpan di kode, tanpa opsi sirine.
+- Kontrol sirine dari aplikasi tetap mengikuti FS-09 dan belum tersedia.
+
+---
+
+## ADR-042: Estimasi Tsunami Mengikuti Masa Aktif Alert 24 Jam
+
+### Latar Belakang Keputusan
+Estimasi tsunami memakai filter umur gempa relevan 7 hari, sedangkan alert yang tersimpan berlaku 24 jam. Gempa berpotensi tsunami dapat memicu alert baru dan push ulang setiap 24 jam selama 7 hari.
+
+### Keputusan yang Dipilih
+Estimasi `WASPADA` hanya berlaku selama gempa berumur paling lama 24 jam.
+
+### Alasan Pemilihan
+Satu kejadian tidak boleh menghasilkan notifikasi berulang. Masa aktif yang sama dengan alert gempa membuat perilaku level konsisten.
+
+### Dampak Terhadap Sistem
+`GET /api/public/tsunami/status` mengembalikan `NORMAL` setelah 24 jam. Status dari `BMKG_TSUNAMI_STATUS` tidak terpengaruh. Data gempa tetap tampil pada kartu gempa sampai batas umur 7 hari.

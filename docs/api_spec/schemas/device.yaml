@@ -6,7 +6,7 @@ DeviceSystemStatus:
   type: object
   properties:
     level:
-      $ref: './shared.yaml#/StatusLevel'
+      $ref: './shared.yaml#/CurrentStatusLevel'
     status:
       type: string
       enum: [ONLINE, OFFLINE]

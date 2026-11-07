@@ -3,6 +3,12 @@ import type { EarthquakeInfo } from "./earthquake.types.js";
 
 export { AlertReviewStatus };
 
+/**
+ * Level alert yang berlaku. UNKNOWN hanya menggambarkan kondisi saat data tidak
+ * tersedia dan tidak pernah disimpan ke database (ADR-037).
+ */
+export type CurrentAlertLevel = AlertLevel | "UNKNOWN";
+
 export type TsunamiStatus = "NORMAL" | "WASPADA" | "SIAGA" | "AWAS";
 
 /**
@@ -53,7 +59,7 @@ export interface AlertReviewerInfo {
 
 export interface AlertRecord {
   id: string;
-  level: AlertLevel;
+  level: CurrentAlertLevel;
   source: string;
   description: string | null;
   location?: string | null;

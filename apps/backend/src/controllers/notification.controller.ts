@@ -9,7 +9,7 @@ import type { PushSubscriptionInput } from "../types/notification.types.js";
 
 export class NotificationController {
   /**
-   * GET /api/v1/public/notifications/vapid-public-key
+   * GET /api/public/notifications/vapid-public-key
    * Diperlukan frontend browser untuk melakukan subscribe Web Push API.
    */
   static getVapidPublicKey(_req: Request, res: Response) {
@@ -22,7 +22,7 @@ export class NotificationController {
   }
 
   /**
-   * POST /api/v1/public/notifications/subscribe
+   * POST /api/public/notifications/subscribe
    * Mendaftarkan token push browser ke database dengan validasi anti-SSRF (SEC-06).
    */
   static async subscribe(req: Request, res: Response) {
@@ -105,7 +105,7 @@ export class NotificationController {
   }
 
   /**
-   * POST /api/v1/public/notifications/unsubscribe
+   * POST /api/public/notifications/unsubscribe
    * Membatalkan langganan push endpoint tertentu.
    */
   static async unsubscribe(req: Request, res: Response) {
@@ -131,7 +131,7 @@ export class NotificationController {
   }
 
   /**
-   * GET /api/v1/public/notifications/latest
+   * GET /api/public/notifications/latest
    * Konten notifikasi terkini yang dibangun dari alert yang sama dengan dashboard.
    */
   static async getLatest(_req: Request, res: Response) {
@@ -158,7 +158,7 @@ export class NotificationController {
   }
 
   /**
-   * POST /api/v1/protected/notifications/dispatch
+   * POST /api/protected/notifications/dispatch
    * SEC-05: Dispatch manual notifikasi darurat massal hanya untuk Administrator.
    */
   static async dispatch(_req: Request, res: Response) {
@@ -206,7 +206,7 @@ export class NotificationController {
   }
 
   /**
-   * GET /api/v1/protected/notifications/logs
+   * GET /api/protected/notifications/logs
    * SEC-08: Riwayat audit log notifikasi — hanya admin yang terautentikasi.
    */
   static async getLogs(req: Request, res: Response) {
@@ -236,7 +236,7 @@ export class NotificationController {
   }
 
   /**
-   * GET /api/v1/protected/notifications/subscribers/count
+   * GET /api/protected/notifications/subscribers/count
    * Mengambil total subscriber warga penerima Web Push aktif — admin & operator.
    */
   static async getSubscriberCount(_req: Request, res: Response) {

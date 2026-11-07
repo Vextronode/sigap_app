@@ -43,4 +43,5 @@
 |---|---|
 | `content.manage` | Mutasi kontak darurat, titik evakuasi, panduan |
 | `user.manage` | Seluruh route manajemen akun |
-| `alert.validate`, `device.view`, `device.manage`, `siren.view`, `siren.trigger` | Belum dipakai route |
+| `alert.validate` | Catat tinjauan alert |
+| `device.view`, `device.manage`, `siren.view`, `siren.trigger` | Belum dipakai route |

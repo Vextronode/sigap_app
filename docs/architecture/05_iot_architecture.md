@@ -35,7 +35,7 @@ Sebuah perangkat dihitung aktif bila berstatus `ONLINE` dan melapor dalam 20 det
 
 ## 5.5 Level
 
-Backend memberikan salah satu dari `GREEN`, `YELLOW`, `ORANGE`, `RED`, sesuai alert yang berlaku pada `Rules_Alerts.md`. Bila tidak ada alert, nilainya `GREEN`.
+Backend memberikan salah satu dari `GREEN`, `YELLOW`, `ORANGE`, `RED`, atau `UNKNOWN`, sesuai alert yang berlaku pada `Rules_Alerts.md`. Bila pembacaan status perangkat gagal, endpoint membalas 500.
 
 ## 5.6 Halaman Admin
 

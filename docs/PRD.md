@@ -73,7 +73,7 @@ Status: **Berjalan** tersedia di kode, **Sebagian** tersedia dengan batasan yang
 | Kesiapsiagaan | Panduan kesiapsiagaan (artikel atau tautan eksternal) | Berjalan |
 | Notifikasi | Web Push ke seluruh subscriber untuk level Waspada, Siaga, dan Awas | Berjalan |
 | Decision Support | Ringkasan cuaca dan gempa berbasis AI serta rekomendasi aktivitas | Belum; kartu dashboard tersedia dengan konten sementara |
-| Dashboard Admin | Verifikasi alert, kontak darurat, titik evakuasi, panduan | Berjalan |
+| Dashboard Admin | Riwayat alert dan catatan tinjauan, kontak darurat, titik evakuasi, panduan | Berjalan |
 | Dashboard Admin | Manajemen akun dan role, pengaturan sistem, ringkasan operasional | Berjalan |
 | Platform | Akses Public dan Protected, RBAC `admin`/`operator` | Berjalan |
 | Platform | PWA dengan cache data terakhir | Berjalan |
@@ -151,7 +151,7 @@ Struktur data lengkap berada di `architecture_data_and_schema/data_dictionary/` 
 
 **Warga:** membuka dashboard, melihat status kesiapsiagaan, cuaca, gempa, dan tsunami, membuka titik evakuasi terdekat serta navigasinya, mengakses kontak darurat dan panduan, serta dapat berlangganan notifikasi.
 
-**Admin dan Operator:** login, memantau ringkasan operasional, mengklasifikasikan alert, serta mengelola kontak darurat, titik evakuasi, dan panduan. Admin juga mengelola akun.
+**Admin dan Operator:** login, memantau ringkasan operasional, mencatat tinjauan alert, serta mengelola kontak darurat, titik evakuasi, dan panduan. Admin juga mengelola akun.
 
 ## 9. Penutup
 

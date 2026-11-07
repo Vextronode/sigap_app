@@ -16,11 +16,6 @@ import { SystemConnectivitySection } from "../features/admin/components/SystemCo
 import { AdminKpiMetrics } from "../features/admin/components/AdminKpiMetrics";
 import { ActiveIncidentBar } from "../features/admin/components/ActiveIncidentBar";
 import { AdminQuickActionsPanel } from "../features/admin/components/AdminQuickActionsPanel";
-import { DoubleConfirmationModal } from "../features/admin/components/DoubleConfirmationModal";
-import {
-  AlertFeedbackBanner,
-  type AlertFeedback,
-} from "../features/alerts/components/AlertFeedbackBanner";
 
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
@@ -30,15 +25,9 @@ import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
 import { useDeviceStatus } from "../features/dashboard/hooks/useDeviceStatus";
 import { usePushSubscribers } from "../features/admin/hooks/usePushSubscribers";
-import {
-  useAlerts,
-  useAlertStats,
-  useReviewAlert,
-} from "../features/alerts/hooks/useAlertVerification";
+import { useAlertStats } from "../features/alerts/hooks/useAlertVerification";
 import { useAuthStore } from "../stores/authStore";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
-import type { AlertItem } from "../types/alert";
-import type { CurrentAlert } from "../types/dashboard";
 import { cn } from "../utils/cn";
 
 export default function AdminDashboardPage() {
@@ -58,13 +47,6 @@ export default function AdminDashboardPage() {
   const deviceStatusQuery = useDeviceStatus();
   const alertStatsQuery = useAlertStats();
   const subscribersQuery = usePushSubscribers();
-  const latestAlertsQuery = useAlerts({ limit: 1 });
-
-  const reviewMutation = useReviewAlert();
-
-  // State modal konfirmasi ganda & feedback
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [feedback, setFeedback] = useState<AlertFeedback | null>(null);
 
   // Digital live clock WIB
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -87,7 +69,6 @@ export default function AdminDashboardPage() {
       deviceStatusQuery.refetch(),
       alertStatsQuery.refetch(),
       subscribersQuery.refetch(),
-      latestAlertsQuery.refetch(),
     ]);
   };
 
@@ -99,65 +80,6 @@ export default function AdminDashboardPage() {
     alertQuery.isFetching,
     alertStatsQuery.isFetching,
   ].some(Boolean);
-
-  // Resolve alert aktif yang dapat diverifikasi
-  const activeAlertData: AlertItem | CurrentAlert | null =
-    (latestAlertsQuery.data?.data?.[0] as AlertItem) || alertQuery.data || null;
-
-  const handleOpenVerifyModal = () => {
-    setIsConfirmModalOpen(true);
-  };
-
-  const handleCloseVerifyModal = () => {
-    setIsConfirmModalOpen(false);
-  };
-
-  const handleExecuteReview = async (
-    id: string,
-    status: "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti",
-    options?: { triggerSiren?: boolean }
-  ) => {
-    try {
-      const targetId =
-        id && id !== "current-alert" && id !== "safe-fallback"
-          ? id
-          : latestAlertsQuery.data?.data?.[0]?.id || alertQuery.data?.id;
-
-      if (!targetId) {
-        throw new Error("ID alert tidak ditemukan untuk diproses verifikasi.");
-      }
-
-      await reviewMutation.mutateAsync({
-        id: targetId,
-        payload: { reviewStatus: status },
-      });
-
-      let successMsg = `Alert resmi berhasil diklasifikasikan sebagai "${status}". Tercatat atas nama ${user?.name || "Operator"}.`;
-      if (options?.triggerSiren) {
-        successMsg += " Perintah aktivasi Sirine Menara (Alat 2) berhasil dikirimkan via ESP-NOW.";
-      }
-
-      setFeedback({
-        type: "success",
-        message: successMsg,
-      });
-
-      // Refetch untuk memastikan tampilan tersinkronisasi instan
-      await Promise.all([alertQuery.refetch(), alertStatsQuery.refetch(), latestAlertsQuery.refetch()]);
-
-      setTimeout(() => {
-        setFeedback(null);
-      }, 7000);
-    } catch (err: unknown) {
-      setFeedback({
-        type: "error",
-        message:
-          err instanceof Error
-            ? err.message
-            : "Gagal menyimpan verifikasi alert resmi.",
-      });
-    }
-  };
 
   const formattedTimeWib = currentTime.toLocaleTimeString("id-ID", {
     hour: "2-digit",
@@ -196,7 +118,7 @@ export default function AdminDashboardPage() {
               Command Center SIGAP
             </h1>
             <p className="text-xs sm:text-sm text-[color:var(--text-muted)] mt-0.5">
-              Pusat Kendali Operasional Kebencanaan, Telemetri Gempa & Validasi Siaga Desa
+              Pusat Kendali Operasional Kebencanaan & Telemetri Gempa
             </p>
           </div>
 
@@ -258,7 +180,7 @@ export default function AdminDashboardPage() {
                 onClick={handleRefreshAll}
                 disabled={isRefreshing}
                 className="flex h-10 w-10 sm:h-auto sm:w-auto sm:px-3 sm:py-2 items-center justify-center gap-1.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] text-xs font-bold text-[color:var(--text)] shadow-2xs hover:bg-[color:var(--surface-muted)] transition-all cursor-pointer shrink-0 disabled:opacity-50"
-                title="Segarkan seluruh data BMKG, IoT, dan Verifikasi"
+                title="Segarkan seluruh data BMKG, IoT, dan Riwayat Alert"
               >
                 <RefreshCw
                   size={14}
@@ -271,26 +193,22 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      {/* 2. Banner Notifikasi Feedback */}
-      <AlertFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
-
-      {/* 3. Active Incident Action Bar (Kondisional: muncul saat ada insiden aktif atau status belum diverifikasi) */}
+      {/* 2. Active Incident Bar (Kondisional: muncul saat ada insiden aktif) */}
       <ActiveIncidentBar
         alert={alertQuery.data ?? null}
         earthquake={pangandaranEarthquakeQuery.data ?? null}
-        onOpenVerify={handleOpenVerifyModal}
       />
 
-      {/* 4. 4 KPI Metrics Cards Command Center */}
+      {/* 3. 4 KPI Metrics Cards Command Center */}
       <AdminKpiMetrics
         alert={alertQuery.data ?? null}
         subscriberCount={subscribersQuery.data ?? 0}
         deviceStatus={deviceStatusQuery.data ?? null}
         alertStats={alertStatsQuery.data ?? null}
-        isLoading={alertQuery.isLoading && subscribersQuery.isLoading}
+        isLoading={alertQuery.isLoading || subscribersQuery.isLoading}
       />
 
-      {/* 5. Main Command Center Workspace (2 Kolom Desktop: 7 col kiri / 5 col kanan) */}
+      {/* 4. Main Command Center Workspace (2 Kolom Desktop: 7 col kiri / 5 col kanan) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
         {/* Kolom Kiri: Pemantauan Visual Telemetri (Col-span 7) */}
         <div className="space-y-6 lg:col-span-7">
@@ -333,12 +251,7 @@ export default function AdminDashboardPage() {
               icon={<Zap size={20} />}
             />
             <div className="mt-2">
-              <AdminQuickActionsPanel
-                alert={alertQuery.data ?? null}
-                pendingCount={alertStatsQuery.data?.pending ?? 0}
-                onOpenVerify={handleOpenVerifyModal}
-                onTriggerSiren={handleOpenVerifyModal}
-              />
+              <AdminQuickActionsPanel />
             </div>
           </section>
 
@@ -355,16 +268,6 @@ export default function AdminDashboardPage() {
           />
         </div>
       </div>
-
-      {/* 6. Modal Konfirmasi Ganda Verifikasi Gempa & Trigger Sirine */}
-      <DoubleConfirmationModal
-        isOpen={isConfirmModalOpen}
-        alert={activeAlertData}
-        earthquake={pangandaranEarthquakeQuery.data ?? null}
-        onClose={handleCloseVerifyModal}
-        onSubmit={handleExecuteReview}
-        isSubmitting={reviewMutation.isPending}
-      />
     </div>
   );
 }

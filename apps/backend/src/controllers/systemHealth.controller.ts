@@ -95,16 +95,16 @@ export class SystemHealthController {
 
     const dbPromise = prisma.$queryRaw`SELECT 1`
       .then((): ServiceHealthItem => ({
-        name: "PostgreSQL Cloud Database",
+        name: "PostgreSQL Database",
         category: "database",
         status: "ONLINE",
         provider: dbProviderName,
         latencyMs: Date.now() - startDb,
-        message: "Koneksi database stabil dan terenkripsi SSL.",
+        message: "Koneksi database stabil.",
         lastChecked: timestamp,
       }))
       .catch((): ServiceHealthItem => ({
-        name: "PostgreSQL Cloud Database",
+        name: "PostgreSQL Database",
         category: "database",
         status: "OFFLINE",
         provider: dbProviderName,
@@ -125,8 +125,8 @@ export class SystemHealthController {
       category: "sid",
       status: "STANDBY",
       provider: "SIGAP Notification Gateway",
-      latencyMs: 18,
-      message: "Protokol webhook POST /api/integrations/sigap siap menerima dispatch.",
+      latencyMs: 0,
+      message: "Integrasi SID belum tersedia.",
       lastChecked: timestamp,
     };
 

@@ -14,7 +14,7 @@ Feature Spec (FS) adalah kontrak perilaku per fitur: apa yang harus benar dan ba
 | ID | Fitur | File |
 |---|---|---|
 | FS-01 | Login dan Sesi | `01_login_sesi.md` |
-| FS-02 | Verifikasi Alert | `02_verifikasi_validasi_alert.md` |
+| FS-02 | Catatan Tinjauan Alert | `02_verifikasi_validasi_alert.md` |
 | FS-03 | Kelola Kontak Darurat | `03_kelola_kontak_darurat.md` |
 | FS-04 | Kelola Titik Evakuasi | `04_kelola_titik_jalur_evakuasi.md` |
 | FS-05 | Kelola Panduan Kesiapsiagaan | `05_kelola_panduan_kesiapsiagaan.md` |

@@ -1,54 +1,29 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  ShieldCheck,
-  Lock,
-  Volume2,
-  Settings,
-  Zap,
-} from "lucide-react";
+import { Settings, Zap } from "lucide-react";
 import { BiBarChartAlt } from "react-icons/bi";
 import { FaSearchLocation } from "react-icons/fa";
-import { FaExclamation } from "react-icons/fa6";
 import { IoMdArrowDropright } from "react-icons/io";
 import { LuBookOpenCheck, LuSiren } from "react-icons/lu";
 import { MdContactPhone, MdOutlineManageAccounts } from "react-icons/md";
 import { Card } from "../../../components/ui/Card";
-import type { CurrentAlert } from "../../../types/dashboard";
 import { useAuthStore } from "../../../stores/authStore";
 import { cn } from "../../../utils/cn";
 
-interface AdminQuickActionsPanelProps {
-  alert: CurrentAlert | null;
-  pendingCount?: number;
-  onOpenVerify: () => void;
-  onTriggerSiren: () => void;
-}
-
-export const AdminQuickActionsPanel: React.FC<AdminQuickActionsPanelProps> = ({
-  alert,
-  pendingCount = 0,
-  onOpenVerify,
-  onTriggerSiren,
-}) => {
-  const { isAdmin } = useAuthStore();
-
-  const alertLevel = alert?.level || "GREEN";
-  const isHighThreat = alertLevel === "ORANGE" || alertLevel === "RED";
-  const isPendingReview =
-    alert?.reviewStatus === "Belum Diverifikasi" ||
-    alert?.reviewStatus === "Belum Ditinjau";
+export const AdminQuickActionsPanel: React.FC = () => {
+  const { user } = useAuthStore();
+  const isOperator = user?.roles?.some((r) => r.toLowerCase().includes("operator")) ?? false;
 
   const quickNavItems = [
     {
-      label: "Verifikasi Gempa",
-      desc: "Audit log & arsip alert",
+      label: "Riwayat Alert",
+      desc: "Arsip & catatan tinjauan",
       href: "/admin/alerts",
       icon: BiBarChartAlt,
       iconColor: "text-blue-500",
       iconBg: "bg-blue-500/10 border-blue-500/20",
-      badge: pendingCount > 0 ? `${pendingCount} Review` : "Tabel Log",
-      badgeClass: pendingCount > 0 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold" : "bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700",
+      badge: "Tabel Log",
+      badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700",
     },
     {
       label: "Kontrol Sirine & IoT",
@@ -90,7 +65,7 @@ export const AdminQuickActionsPanel: React.FC<AdminQuickActionsPanelProps> = ({
       badge: "SOP Warga",
       badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     },
-    ...(isAdmin
+    ...(!isOperator
       ? [
           {
             label: "Manajemen Akun",
@@ -137,95 +112,6 @@ export const AdminQuickActionsPanel: React.FC<AdminQuickActionsPanelProps> = ({
         <span className="inline-flex shrink-0 items-center px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-[color:var(--surface-muted)] text-[color:var(--text-muted)] border border-[color:var(--border)] whitespace-nowrap">
           Klik Cepat
         </span>
-      </div>
-
-      {/* 2 Tombol Aksi Kritis Utama */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {/* Tombol 1: Verifikasi Alert Cepat */}
-        <button
-          type="button"
-          onClick={onOpenVerify}
-          className={cn(
-            "flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer shadow-2xs hover:-translate-y-0.5 active:translate-y-0 group",
-            isPendingReview
-              ? "border-amber-500/40 bg-amber-50/30 dark:bg-amber-950/20 hover:border-amber-500"
-              : "border-[color:var(--border)] bg-[color:var(--surface-muted)] hover:border-slate-300 dark:hover:border-slate-700"
-          )}
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <ShieldCheck size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-[color:var(--text)] truncate">
-                Verifikasi Alert
-              </p>
-              <p className="text-[10px] text-[color:var(--text-muted)] truncate">
-                {isPendingReview ? "Perlu Review Staf" : "Data Tervalidasi"}
-              </p>
-            </div>
-          </div>
-          {/* Ikon Exclamation goyang atas-bawah terus menerus tanpa background bulat */}
-          <FaExclamation className="text-amber-500 dark:text-amber-400 text-sm sm:text-base animate-bounce shrink-0" />
-        </button>
-
-        {/* Tombol 2: Trigger Sirine Menara (FS-09) */}
-        <button
-          type="button"
-          onClick={onTriggerSiren}
-          disabled={!isHighThreat}
-          className={cn(
-            "flex items-center justify-between p-3 rounded-xl border text-left transition-all shadow-2xs",
-            isHighThreat
-              ? "border-rose-500 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
-              : "border-[color:var(--border)] bg-slate-100/60 dark:bg-slate-800/40 text-[color:var(--text-muted)] cursor-not-allowed opacity-75"
-          )}
-          title={
-            isHighThreat
-              ? "Picu Sirine Menara Desa (Konfirmasi 2 lapis)"
-              : "Pemicu sirine terkunci saat level GREEN/YELLOW (FS-09)"
-          }
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
-                isHighThreat
-                  ? "bg-white/20 text-white border-white/30"
-                  : "bg-slate-200 dark:bg-slate-700 text-slate-500 border-slate-300 dark:border-slate-600"
-              )}
-            >
-              {isHighThreat ? (
-                <Volume2 size={16} className="animate-pulse" />
-              ) : (
-                <Lock size={15} />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p
-                className={cn(
-                  "text-xs font-bold truncate",
-                  isHighThreat ? "text-white" : "text-[color:var(--text)]"
-                )}
-              >
-                {isHighThreat ? "Pemicu Sirine" : "Sirine Terkunci"}
-              </p>
-              <p
-                className={cn(
-                  "text-[10px] truncate",
-                  isHighThreat ? "text-rose-100" : "text-[color:var(--text-muted)]"
-                )}
-              >
-                {isHighThreat ? "Level ORANGE/RED" : "Standby Desa"}
-              </p>
-            </div>
-          </div>
-          {isHighThreat && (
-            <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-white text-rose-700 shadow-2xs shrink-0">
-              Picu
-            </span>
-          )}
-        </button>
       </div>
 
       {/* Grid Pintasan Modul Cepat (Sesuai Ikon Sidebar) */}

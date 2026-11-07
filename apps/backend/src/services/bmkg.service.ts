@@ -24,6 +24,7 @@ import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 import type { TsunamiStatus, TsunamiStatusInfo } from "../types/alert.types.js";
 import { EarthquakeService } from "./earthquake.service.js";
+import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
@@ -121,6 +122,8 @@ export class BmkgService {
    * untuk Desa Cibenda (radius + umur maksimum sama seperti yang dipakai
    * card gempa Pangandaran & Decision Engine — lihat EarthquakeService.getPangandaran).
    * Dibatasi maksimal WASPADA, tidak pernah otomatis jadi SIAGA/AWAS.
+   * Hanya berlaku selama masa aktif alert (24 jam), agar gempa yang sama tidak
+   * memicu alert dan notifikasi ulang setiap 24 jam (ADR-042).
    */
   private static async estimateTsunamiStatus(): Promise<TsunamiStatusInfo> {
     try {
@@ -129,7 +132,11 @@ export class BmkgService {
       const isPotentiallyTsunamigenic =
         nearest?.potential?.trim().toLowerCase() === "berpotensi tsunami";
 
-      if (isPotentiallyTsunamigenic && nearest) {
+      if (
+        isPotentiallyTsunamigenic &&
+        nearest &&
+        Date.now() - new Date(nearest.updatedAt).getTime() <= ALERT_ACTIVE_MAX_AGE_MS
+      ) {
         return {
           status: "WASPADA",
           source: "BMKG (estimasi dari data gempa)",

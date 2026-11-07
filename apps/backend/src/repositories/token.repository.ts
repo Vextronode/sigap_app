@@ -11,6 +11,16 @@ export async function isTokenRevoked(jti: string): Promise<boolean> {
 }
 
 /**
+ * Mengambil status sesi pengguna: keaktifan akun dan versi token yang berlaku.
+ */
+export async function findSessionState(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { isActive: true, tokenVersion: true },
+  });
+}
+
+/**
  * Mencatat token ke dalam tabel blocklist revoked_tokens.
  * Menggunakan upsert agar bersifat idempoten jika terjadi retry request / double-click logout.
  */

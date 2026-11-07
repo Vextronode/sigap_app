@@ -45,7 +45,7 @@ Akun tidak dihapus, hanya dinonaktifkan melalui `isActive`.
 | Tsunami | GET `/api/public/tsunami`, `/tsunami/status`, `/tsunamis`, `/tsunamis/status` | Public | - |
 | Alert | GET `/api/public/alerts`, `/alerts/current`, `/alerts/history`, `/alerts/:id` | Public | - |
 | Daftar alert | GET `/api/protected/alerts`, `/alerts/:id` | Protected | Token valid |
-| Review alert | PATCH `/api/protected/alerts/:id/review` | Protected | Token valid |
+| Catat tinjauan alert | PATCH `/api/protected/alerts/:id/review` | Protected | `alert.validate` |
 
 ### 2.3 Perangkat
 
@@ -91,7 +91,7 @@ Nilai `x-device-token` dibandingkan dengan satu kunci bersama `DEVICE_SHARED_KEY
 | admin | `content.manage`, `alert.validate`, `device.view`, `device.manage`, `siren.view`, `user.manage` |
 | operator | `content.manage`, `alert.validate`, `device.view`, `siren.view`, `siren.trigger` |
 
-Permission yang dipakai route saat ini adalah `content.manage` dan `user.manage`. Permission dan role dibaca dari klaim JWT yang diterbitkan saat login.
+Permission yang dipakai route saat ini adalah `content.manage`, `user.manage`, dan `alert.validate`. Permission dan role dibaca dari klaim JWT yang diterbitkan saat login.
 
 ## 4. Rate Limiting
 
@@ -110,7 +110,9 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori per proses, 
 
 - Token JWT HS256 dengan `iss` dan `aud`; masa berlaku `JWT_EXPIRES_IN` (default 1 hari).
 - Logout mencabut `jti` token yang dipakai melalui tabel `revoked_tokens`.
-- `authMiddleware` memeriksa tanda tangan token dan daftar pencabutan.
+- Menonaktifkan akun, mengubah role, reset password oleh admin, dan ganti password sendiri menaikkan `users.token_version`, sehingga seluruh token akun tersebut yang terbit sebelumnya tidak berlaku. Pengguna login kembali setelah ganti password.
+- `authMiddleware` memeriksa tanda tangan token, daftar pencabutan, status aktif akun, dan versi token. Token tanpa klaim `tokenVersion` dianggap versi 0.
+- Bila database gagal dibaca saat pemeriksaan sesi, request dilanjutkan berdasarkan validitas tanda tangan token.
 
 ## 6. Notifikasi
 

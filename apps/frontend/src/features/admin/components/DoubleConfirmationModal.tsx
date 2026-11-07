@@ -8,7 +8,6 @@ import {
   Check,
   ArrowRight,
   ArrowLeft,
-  Volume2,
   MapPin,
   Clock,
   UserCheck,
@@ -27,8 +26,7 @@ interface DoubleConfirmationModalProps {
   onClose: () => void;
   onSubmit: (
     id: string,
-    status: "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti",
-    options?: { triggerSiren?: boolean }
+    status: "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti"
   ) => Promise<void>;
   isSubmitting?: boolean;
 }
@@ -50,14 +48,12 @@ export const DoubleConfirmationModal: React.FC<DoubleConfirmationModalProps> = (
 
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedStatus, setSelectedStatus] = useState<ReviewChoice>("Dikonfirmasi");
-  const [triggerSiren, setTriggerSiren] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen || !alert) return null;
 
   const alertId = alert.id || "current-alert";
   const level = alert.level || "GREEN";
-  const isHighDanger = level === "RED" || level === "ORANGE";
   const reviewerName = user?.name || user?.email || (isAdminRole ? "Administrator" : "Operator Posko");
 
   const handleNextToStep2 = () => {
@@ -73,7 +69,7 @@ export const DoubleConfirmationModal: React.FC<DoubleConfirmationModalProps> = (
   const handleFinalSubmit = async () => {
     try {
       setErrorMsg(null);
-      await onSubmit(alertId, selectedStatus, { triggerSiren });
+      await onSubmit(alertId, selectedStatus);
       handleClose();
     } catch (err: unknown) {
       setErrorMsg(
@@ -85,7 +81,6 @@ export const DoubleConfirmationModal: React.FC<DoubleConfirmationModalProps> = (
   const handleClose = () => {
     setStep(1);
     setSelectedStatus("Dikonfirmasi");
-    setTriggerSiren(false);
     setErrorMsg(null);
     onClose();
   };
@@ -296,7 +291,7 @@ export const DoubleConfirmationModal: React.FC<DoubleConfirmationModalProps> = (
                       <span className="text-sm font-bold text-[color:var(--text)]">Tolak / False Alarm</span>
                     </div>
                     <p className="text-xs text-[color:var(--text-muted)] mt-0.5">
-                      Tandai sebagai anomali sensor BMKG atau gempa di luar radius bahaya Pangandaran. Status siaga warga akan dinormalkan ke Aman (GREEN).
+                      Catat alert ini sebagai tidak relevan untuk arsip desa. Level yang berlaku tidak berubah.
                     </p>
                   </div>
                 </button>
@@ -359,43 +354,11 @@ export const DoubleConfirmationModal: React.FC<DoubleConfirmationModalProps> = (
                 </div>
               </div>
 
-              {/* Opsi Sirine Remote (FS-09) jika Level ORANGE / RED dan status konfirmasi */}
-              {isHighDanger && selectedStatus !== "Ditolak" && (
-                <div className="p-4 rounded-xl border border-red-500/40 bg-red-500/10 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Volume2 size={20} className="text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-                    <div className="space-y-1 flex-1">
-                      <p className="text-xs font-bold text-red-700 dark:text-red-300 uppercase tracking-wider">
-                        Pemicu Sirine Remote Jarak Jauh (FS-09)
-                      </p>
-                      <p className="text-xs text-red-800 dark:text-red-200 leading-relaxed">
-                        Level ancaman saat ini adalah <strong>{level}</strong>. Anda dapat sekaligus mengirimkan perintah pemicu ke Sirine Menara Desa (Alat 2).
-                      </p>
-
-                      <label className="mt-3 flex items-center gap-2.5 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={triggerSiren}
-                          onChange={(e) => setTriggerSiren(e.target.checked)}
-                          className="h-4 w-4 rounded border-red-400 text-red-600 focus:ring-red-500 cursor-pointer"
-                        />
-                        <span className="text-xs font-bold text-red-900 dark:text-red-100">
-                          BUNYIKAN SIRINE MENARA DESA (REMOTE TRIGGER)
-                        </span>
-                      </label>
-                      <p className="text-[10px] text-red-700/80 dark:text-red-300/80 pl-6">
-                        *Perintah dititipkan ke Unit Utama posko dalam polling berikutnya (≤15 detik).
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {selectedStatus === "Ditolak" && (
                 <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-[color:var(--border)] text-xs text-[color:var(--text-muted)] space-y-1">
-                  <p className="font-semibold text-[color:var(--text)]">Konsekuensi Penolakan:</p>
+                  <p className="font-semibold text-[color:var(--text)]">Dampak Catatan:</p>
                   <p>
-                    Status darurat warga akan langsung diturunkan ke level <strong>GREEN (Aman)</strong>. Arsip tetap disimpan di tabel audit log verifikasi.
+                    Catatan ini hanya untuk arsip. Level yang tampil ke warga dan perangkat tidak berubah.
                   </p>
                 </div>
               )}

@@ -15,7 +15,7 @@ Rincian tiap endpoint berada di `security_and_access_control/ROUTE_ACCESS_DESIGN
 
 ```mermaid
 flowchart LR
-    Req([Request Protected]) --> Token{Token valid dan belum dicabut?}
+    Req([Request Protected]) --> Token{Token valid, belum dicabut, akun aktif, versi token sesuai?}
     Token -- Tidak --> R401[401]
     Token -- Ya --> Need{Route butuh permission atau role?}
     Need -- Tidak --> Allow[Handler]
@@ -24,7 +24,7 @@ flowchart LR
     Claim -- Ya --> Allow
 ```
 
-Route yang memeriksa permission adalah mutasi konten (`content.manage`) dan manajemen akun (`user.manage`). Pengiriman notifikasi manual memeriksa role `admin`. Route Protected lainnya memeriksa validitas token. Struktur tabel dan seed: `DD_rbac.md`.
+Route yang memeriksa permission adalah mutasi konten (`content.manage`), manajemen akun (`user.manage`), dan catatan tinjauan alert (`alert.validate`). Pengiriman notifikasi manual memeriksa role `admin`. Route Protected lainnya memeriksa validitas token. Struktur tabel dan seed: `DD_rbac.md`.
 
 ## 4.3 Rate Limiting
 
@@ -42,6 +42,7 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori (ADR-039).
 - Password disimpan sebagai hash bcrypt.
 - JWT HS256 dengan `iss` dan `aud`; `JWT_SECRET` minimal 32 karakter.
 - Logout mencabut `jti` token melalui `revoked_tokens`.
+- Menonaktifkan akun, mengubah role, reset password, dan ganti password sendiri mencabut seluruh sesi akun melalui `users.token_version`.
 - CORS memakai whitelist `ALLOWED_ORIGINS`; origin localhost hanya diizinkan di luar production.
 - Header keamanan API memakai helmet; header SPA diatur Caddy.
 - `TRUST_PROXY` menentukan hop proxy yang dipercaya; nilai `true` ditolak.
@@ -51,4 +52,4 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori (ADR-039).
 
 ## 4.5 Envelope Error
 
-Response error memakai `{success: false, message, errors}`. Bentuk `errors` dicatat pada `api_spec/schemas/shared.yaml`.
+Response error memakai `{success: false, message, errors}`. Field `errors` selalu berupa array of string.

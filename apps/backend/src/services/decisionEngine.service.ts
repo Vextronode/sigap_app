@@ -12,10 +12,15 @@
  */
 
 import { AlertLevel } from "../../generated/prisma/enums.js";
-import { ALERT_RULES } from "../config/alertRules.js";
+import { ALERT_ACTIVE_MAX_AGE_MS, ALERT_RULES } from "../config/alertRules.js";
 import type { DecisionInput, DecisionResult, TsunamiStatus } from "../types/alert.types.js";
 
-const ALERT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 jam (1 hari)
+const LEVEL_RANK: Record<AlertLevel, number> = {
+  [AlertLevel.GREEN]: 0,
+  [AlertLevel.YELLOW]: 1,
+  [AlertLevel.ORANGE]: 2,
+  [AlertLevel.RED]: 3,
+};
 
 const isFeltNearVillage = (felt: string | undefined): boolean => {
   if (!felt) return false;
@@ -26,62 +31,76 @@ const isFeltNearVillage = (felt: string | undefined): boolean => {
   );
 };
 
+/**
+ * Status tsunami (resmi InaTEWS via override manual, ATAU estimasi
+ * SIGAP dari data gempa — lihat BmkgService.getTsunamiStatus()).
+ */
+const evaluateTsunami = (tsunami: DecisionInput["tsunami"]): DecisionResult | null => {
+  if (!tsunami || tsunami.status === "NORMAL") return null;
+
+  const tsunamiLevelMap: Record<Exclude<TsunamiStatus, "NORMAL">, AlertLevel> = {
+    AWAS: AlertLevel.RED,
+    SIAGA: AlertLevel.ORANGE,
+    WASPADA: AlertLevel.YELLOW,
+  };
+
+  return {
+    level: tsunamiLevelMap[tsunami.status as Exclude<TsunamiStatus, "NORMAL">],
+    source: tsunami.source,
+    description: tsunami.description,
+  };
+};
+
+/**
+ * Gempa (sudah difilter relevan untuk Desa Cibenda oleh
+ * EarthquakeService.getPangandaran() sebelum sampai di sini).
+ *
+ * Umur aktif alert gempa = 24 Jam (1 Hari). Jika gempa lebih dari 24 jam,
+ * gempa tidak lagi memengaruhi level.
+ */
+const evaluateEarthquake = (earthquake: DecisionInput["earthquake"]): DecisionResult | null => {
+  if (!earthquake) return null;
+
+  const { magnitude, felt, updatedAt } = earthquake;
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+
+  // Cek apakah gempa masih berusia <= 24 jam (1 hari)
+  if (ageMs > ALERT_ACTIVE_MAX_AGE_MS) return null;
+
+  if (isFeltNearVillage(felt)) {
+    return {
+      level: AlertLevel.ORANGE,
+      source: "BMKG",
+      description: `Gempa M${magnitude} dirasakan warga di sekitar Desa Cibenda (${felt}).`,
+    };
+  }
+
+  return {
+    level: AlertLevel.YELLOW,
+    source: "BMKG",
+    description: `Gempa M${magnitude} terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.`,
+  };
+};
+
 export class DecisionEngineService {
+  /**
+   * Level akhir = level tertinggi antara tsunami dan gempa (ADR-040).
+   * Bila sama tinggi, status tsunami yang dipakai. Bila gempa lebih tinggi,
+   * informasi tsunami tetap disertakan pada deskripsi.
+   */
   static evaluate(input: DecisionInput): DecisionResult {
-    const { earthquake, tsunami } = input;
+    const tsunami = evaluateTsunami(input.tsunami);
+    const earthquake = evaluateEarthquake(input.earthquake);
 
-    /**
-     * ============================
-     * PRIORITAS 1
-     * Status tsunami (resmi InaTEWS via override manual, ATAU estimasi
-     * SIGAP dari data gempa — lihat BmkgService.getTsunamiStatus()).
-     * ============================
-     */
-    if (tsunami && tsunami.status !== "NORMAL") {
-      const tsunamiLevelMap: Record<Exclude<TsunamiStatus, "NORMAL">, AlertLevel> = {
-        AWAS: AlertLevel.RED,
-        SIAGA: AlertLevel.ORANGE,
-        WASPADA: AlertLevel.YELLOW,
-      };
-
+    if (tsunami && earthquake && LEVEL_RANK[earthquake.level] > LEVEL_RANK[tsunami.level]) {
       return {
-        level: tsunamiLevelMap[tsunami.status as Exclude<TsunamiStatus, "NORMAL">],
-        source: tsunami.source,
-        description: tsunami.description,
+        ...earthquake,
+        description: `${earthquake.description} ${tsunami.description}`,
       };
     }
 
-    /**
-     * ============================
-     * PRIORITAS 2
-     * Gempa (sudah difilter relevan untuk Desa Cibenda oleh
-     * EarthquakeService.getPangandaran() sebelum sampai di sini).
-     *
-     * Umur aktif alert gempa = 24 Jam (1 Hari). Jika gempa lebih dari 24 jam,
-     * status alert otomatis kembali ke GREEN (Aman).
-     * ============================
-     */
-    if (earthquake) {
-      const { magnitude, felt, updatedAt } = earthquake;
-      const ageMs = Date.now() - new Date(updatedAt).getTime();
-
-      // Cek apakah gempa masih berusia <= 24 jam (1 hari)
-      if (ageMs <= ALERT_MAX_AGE_MS) {
-        if (isFeltNearVillage(felt)) {
-          return {
-            level: AlertLevel.ORANGE,
-            source: "BMKG",
-            description: `Gempa M${magnitude} dirasakan warga di sekitar Desa Cibenda (${felt}).`,
-          };
-        }
-
-        return {
-          level: AlertLevel.YELLOW,
-          source: "BMKG",
-          description: `Gempa M${magnitude} terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.`,
-        };
-      }
-    }
+    const result = tsunami ?? earthquake;
+    if (result) return result;
 
     /**
      * ============================

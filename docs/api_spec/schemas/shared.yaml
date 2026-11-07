@@ -27,17 +27,10 @@ ErrorEnvelope:
       type: string
       example: "Gagal mengambil status perangkat."
     errors:
-      description: >
-        Array of string pada handler umum. Validator permintaan konten, alert,
-        dan pengguna mengembalikan objek berkunci nama field. Rute yang tidak
-        ditemukan mengembalikan objek kosong.
-      oneOf:
-        - type: array
-          items:
-            type: string
-        - type: object
-          additionalProperties:
-            type: string
+      type: array
+      items:
+        type: string
+      example: ["Nama institusi wajib diisi."]
 
 Pagination:
   type: object
@@ -55,6 +48,11 @@ StatusLevel:
   type: string
   enum: [GREEN, YELLOW, ORANGE, RED]
   description: Nilai enum AlertLevel. Label tampilan adalah Aman, Waspada, Siaga, dan Awas.
+
+CurrentStatusLevel:
+  type: string
+  enum: [GREEN, YELLOW, ORANGE, RED, UNKNOWN]
+  description: Level alert yang berlaku. UNKNOWN berarti data tidak tersedia dan tidak disimpan.
 
 IdParam:
   name: id

@@ -32,7 +32,7 @@ Untuk menjaga konsistensi 100% dengan dashboard publik SIGAP yang sudah dibangun
 |---|---|
 | Halaman Login Admin | `/admin/login` |
 | Dashboard Admin | `/admin/dashboard` |
-| Verifikasi Gempa | `/admin/alerts` |
+| Riwayat Alert | `/admin/alerts` |
 | Kontak Darurat | `/admin/kontak-darurat` |
 | Kelola Titik Evakuasi | `/admin/titik-evakuasi` |
 | Panduan Kesiapsiagaan | `/admin/panduan-kesiapsiagaan` |
