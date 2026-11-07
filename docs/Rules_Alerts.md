@@ -120,7 +120,7 @@ Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifik
 |---|---|---|
 | `PANGANDARAN_RADIUS_KM` | 100 | Radius relevansi gempa Pangandaran |
 | `PANGANDARAN_MAX_AGE_DAYS` | 7 | Umur maksimum gempa relevan |
-| `WEST_JAVA_RADIUS_KM` | 350 | Radius tampilan gempa Jawa Barat |
+| `WEST_JAVA_RADIUS_KM` | 350 | Radius tampilan gempa Jawa Barat; kartu ini tidak memiliki batas umur |
 | `VILLAGE_LAT`, `VILLAGE_LON` | `-7.6838`, `108.5610` | Koordinat acuan desa |
 | `BMKG_TSUNAMI_STATUS` | kosong | Status tsunami resmi |
 | `ENABLE_LOCAL_SCHEDULER` | kosong | Mengaktifkan scheduler di dalam proses backend |

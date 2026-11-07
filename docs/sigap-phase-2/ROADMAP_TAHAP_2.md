@@ -25,6 +25,8 @@
 
 ## 2. Fitur Admin-Side
 
+Spesifikasi fitur berstatus Berjalan berada di `features/`, sedangkan fitur berstatus Belum berada di folder ini.
+
 | ID | Fitur | Status | Area |
 |---|---|---|---|
 | FS-01 | Login dan Sesi | Berjalan | 5 |

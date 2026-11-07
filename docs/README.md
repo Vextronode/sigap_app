@@ -5,6 +5,7 @@
 | Jenis | Isi | Dokumen |
 |---|---|---|
 | Kondisi aktual | Mencatat sistem yang berjalan | `Rules_Alerts.md`, `architecture/`, `api_spec/`, `architecture_data_and_schema/`, `security_and_access_control/`, `business/` |
+| Spesifikasi fitur berjalan | Kontrak perilaku fitur yang sudah berjalan | `features/` |
 | Kebutuhan produk | Cakupan dan status kebutuhan | `PRD.md` |
 | Catatan keputusan | Alasan dan alternatif keputusan, termasuk yang menunggu implementasi | `architecture_decision_record/` |
 | Rencana | Fitur dan rancangan yang belum berjalan | `sigap-phase-2/` |
@@ -18,6 +19,7 @@
 | Apa yang harus dibangun? | `PRD.md` |
 | Bagaimana aturan level dan notifikasi? | `Rules_Alerts.md` |
 | Mengapa sebuah keputusan diambil? | ADR |
+| Bagaimana perilaku sebuah fitur? | `features/` |
 | Apa yang direncanakan? | `sigap-phase-2/ROADMAP_TAHAP_2.md` |
 
 Perubahan kode pada endpoint, skema, atau aturan alert disertai pembaruan dokumen kondisi aktual pada pull request yang sama.
@@ -27,4 +29,4 @@ Perubahan kode pada endpoint, skema, atau aturan alert disertai pembaruan dokume
 - Dokumen ditulis formal dan tanpa emoji.
 - Dokumen kondisi aktual hanya mencatat keadaan yang berlaku, tanpa catatan revisi atau rencana.
 - Alasan dan konteks keputusan ditulis pada ADR.
-- Rencana ditulis pada `sigap-phase-2/`.
+- Rencana ditulis pada `sigap-phase-2/`. Spesifikasi fitur yang sudah berjalan dipindahkan ke `features/`.
