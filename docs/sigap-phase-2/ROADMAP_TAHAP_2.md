@@ -88,12 +88,11 @@ Dashboard saat ini memakai polling (`architecture/09_cross_cutting_concerns.md`)
 
 | Urutan | Pekerjaan |
 |---|---|
-| 1 | Implementasi ADR-037 |
-| 2 | Area 4 - Integrasi SID |
-| 3 | Area 7 - Perangkat dan Sirine, setelah kontrak perangkat ditetapkan |
-| 4 | Area 8 - Ringkasan AI |
-| 5 | Area 6 - Data Historis dan Alert Cuaca |
-| 6 | Area 9 - Pembaruan Real-Time |
+| 1 | Area 4 - Integrasi SID |
+| 2 | Area 7 - Perangkat dan Sirine, setelah kontrak perangkat ditetapkan |
+| 3 | Area 8 - Ringkasan AI |
+| 4 | Area 6 - Data Historis dan Alert Cuaca |
+| 5 | Area 9 - Pembaruan Real-Time |
 
 ## 6. Isu Terbuka
 

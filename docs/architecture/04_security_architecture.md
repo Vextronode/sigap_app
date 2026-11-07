@@ -42,7 +42,7 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori (ADR-039).
 - Password disimpan sebagai hash bcrypt.
 - JWT HS256 dengan `iss` dan `aud`; `JWT_SECRET` minimal 32 karakter.
 - Logout mencabut `jti` token melalui `revoked_tokens`.
-- Menonaktifkan akun, mengubah role, dan reset password oleh admin mencabut seluruh sesi akun melalui `users.token_version`.
+- Menonaktifkan akun, mengubah role, reset password, dan ganti password sendiri mencabut seluruh sesi akun melalui `users.token_version`.
 - CORS memakai whitelist `ALLOWED_ORIGINS`; origin localhost hanya diizinkan di luar production.
 - Header keamanan API memakai helmet; header SPA diatur Caddy.
 - `TRUST_PROXY` menentukan hop proxy yang dipercaya; nilai `true` ditolak.

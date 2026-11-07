@@ -128,6 +128,7 @@ export async function changeSelfPassword(
       password: hashedPassword,
       failedLoginCount: 0,
       lockedUntil: null,
+      tokenVersion: { increment: 1 },
     },
   });
 

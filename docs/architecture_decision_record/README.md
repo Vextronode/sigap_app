@@ -69,7 +69,7 @@ Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID ser
 | ADR-034 | Web Push Langsung ke Seluruh Subscriber | Berlaku | - |
 | ADR-035 | Filter Relevansi 100 km dan 7 Hari, Masa Aktif Alert 24 Jam | Berlaku | - |
 | ADR-036 | Review Ditolak Tidak Menurunkan Status Tsunami Resmi | Digantikan | ADR-041 |
-| ADR-037 | Status UNKNOWN Saat Data Tidak Tersedia | Disetujui, menunggu implementasi | - |
+| ADR-037 | Status UNKNOWN Saat Data Tidak Tersedia | Berlaku | - |
 | ADR-038 | Hosting Staging di Server Organisasi | Berlaku | - |
 | ADR-039 | Rate Limiting Sesuai Implementasi | Berlaku | - |
 | ADR-040 | Level Akhir Mengambil yang Tertinggi antara Tsunami dan Gempa | Berlaku | - |

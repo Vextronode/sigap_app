@@ -11,7 +11,8 @@ import { useAuthStore } from "../../../stores/authStore";
 import { cn } from "../../../utils/cn";
 
 export const AdminQuickActionsPanel: React.FC = () => {
-  const { isAdmin } = useAuthStore();
+  const { user } = useAuthStore();
+  const isOperator = user?.roles?.some((r) => r.toLowerCase().includes("operator")) ?? false;
 
   const quickNavItems = [
     {
@@ -64,7 +65,7 @@ export const AdminQuickActionsPanel: React.FC = () => {
       badge: "SOP Warga",
       badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     },
-    ...(isAdmin
+    ...(!isOperator
       ? [
           {
             label: "Manajemen Akun",

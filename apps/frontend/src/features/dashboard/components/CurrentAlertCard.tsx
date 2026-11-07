@@ -133,7 +133,7 @@ export const CurrentAlertCard = ({
       };
     }
 
-    if (isError) {
+    if (isError || meta.tone === "neutral") {
       return {
         label: "Sistem Pemantauan Terganggu",
         dotColor: "bg-amber-400",
@@ -173,13 +173,17 @@ export const CurrentAlertCard = ({
       </p>
 
       <div className="status-banner__meta flex flex-col items-center w-full">
-        <div className="status-banner__updated bg-black/15 rounded-full tracking-wide opacity-95">
-          Terakhir diperbarui: {formatKeIndonesia(alert?.updatedAt)}
-        </div>
+        {meta.tone !== "neutral" && (
+          <>
+            <div className="status-banner__updated bg-black/15 rounded-full tracking-wide opacity-95">
+              Terakhir diperbarui: {formatKeIndonesia(alert?.updatedAt)}
+            </div>
 
-        <span className="status-banner__source opacity-75">
-          Sumber data resmi: {getDisplaySource(alert?.source)}
-        </span>
+            <span className="status-banner__source opacity-75">
+              Sumber data resmi: {getDisplaySource(alert?.source)}
+            </span>
+          </>
+        )}
 
         {showSystemStatus && (
           <div className="mt-3.5 inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/20 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white shadow-xs backdrop-blur-xs">

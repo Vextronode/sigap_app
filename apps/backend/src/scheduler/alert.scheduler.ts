@@ -1,6 +1,6 @@
 import { EarthquakeService } from "../services/earthquake.service.js";
 import { DecisionEngineService } from "../services/decisionEngine.service.js";
-import { AlertService } from "../services/alert.service.js";
+import { AlertService, LIVE_FALLBACK_ALERT_ID } from "../services/alert.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
 import { NotificationService } from "../services/notification.service.js";
 
@@ -60,7 +60,9 @@ export async function runAlertCheck(): Promise<{
     }
 
     const latestAlert = await AlertService.getCurrentAlert();
+    // Hasil evaluasi langsung tidak berasal dari tabel alerts, jadi bukan duplikat.
     const isDuplicate =
+        latestAlert?.id !== LIVE_FALLBACK_ALERT_ID &&
         latestAlert?.level === result.level &&
         latestAlert?.source === result.source &&
         latestAlert?.description === result.description;

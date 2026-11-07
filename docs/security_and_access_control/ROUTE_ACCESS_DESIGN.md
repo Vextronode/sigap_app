@@ -110,7 +110,7 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori per proses, 
 
 - Token JWT HS256 dengan `iss` dan `aud`; masa berlaku `JWT_EXPIRES_IN` (default 1 hari).
 - Logout mencabut `jti` token yang dipakai melalui tabel `revoked_tokens`.
-- Menonaktifkan akun, mengubah role, dan reset password oleh admin menaikkan `users.token_version`, sehingga seluruh token akun tersebut yang terbit sebelumnya tidak berlaku.
+- Menonaktifkan akun, mengubah role, reset password oleh admin, dan ganti password sendiri menaikkan `users.token_version`, sehingga seluruh token akun tersebut yang terbit sebelumnya tidak berlaku. Pengguna login kembali setelah ganti password.
 - `authMiddleware` memeriksa tanda tangan token, daftar pencabutan, status aktif akun, dan versi token. Token tanpa klaim `tokenVersion` dianggap versi 0.
 - Bila database gagal dibaca saat pemeriksaan sesi, request dilanjutkan berdasarkan validitas tanda tangan token.
 

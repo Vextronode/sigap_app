@@ -19,6 +19,26 @@ const ALERT_CACHE_TTL_MS = 60_000; // 60 detik TTL in-memory cache (menghemat co
 
 let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
 
+/** Id hasil evaluasi langsung dari BMKG yang tidak berasal dari tabel alerts. */
+export const LIVE_FALLBACK_ALERT_ID = "live-fallback";
+
+/** Alert saat database dan BMKG tidak dapat memberikan data (ADR-037). */
+export const buildUnavailableAlert = (id: string): AlertRecord => {
+  const now = new Date();
+  return {
+    id,
+    level: "UNKNOWN",
+    source: "SIGAP",
+    description:
+      "Data peringatan sedang tidak tersedia. Pantau informasi resmi BMKG di bmkg.go.id.",
+    reviewStatus: "Belum Diverifikasi",
+    reviewedBy: null,
+    reviewedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
 export class AlertService {
   /**
    * Menyimpan alert baru ke database
@@ -104,13 +124,17 @@ export class AlertService {
       const { BmkgService } = await import("./bmkg.service.js");
       const { DecisionEngineService } = await import("./decisionEngine.service.js");
 
+      if (!(await EarthquakeService.isLiveDataAvailable())) {
+        throw new Error("Data gempa BMKG tidak tersedia.");
+      }
+
       const earthquake = await EarthquakeService.getPangandaran();
       const tsunami = await BmkgService.getTsunamiStatus();
       const liveEval = DecisionEngineService.evaluate({ earthquake, tsunami });
 
       const now = new Date();
       alertResult = {
-        id: "live-fallback",
+        id: LIVE_FALLBACK_ALERT_ID,
         level: liveEval.level as AlertLevel,
         source: liveEval.source || "BMKG",
         description:
@@ -124,18 +148,7 @@ export class AlertService {
       };
     } catch (fallbackError) {
       console.error("[AlertService] Evaluasi live BMKG fallback juga gagal:", fallbackError);
-      const now = new Date();
-      alertResult = {
-        id: "baseline-safe",
-        level: AlertLevel.GREEN,
-        source: "BMKG",
-        description: "Kondisi wilayah Desa Cibenda aman dan kondusif.",
-        reviewStatus: "Belum Diverifikasi",
-        reviewedBy: null,
-        reviewedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      };
+      alertResult = buildUnavailableAlert("data-unavailable");
     }
 
     cachedAlertState = {

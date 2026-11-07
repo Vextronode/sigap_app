@@ -115,6 +115,7 @@ async function main() {
         password: await bcrypt.hash(options.password, 10),
         failedLoginCount: 0,
         lockedUntil: null,
+        tokenVersion: { increment: 1 },
       },
     });
     adminSummary = `Akun admin ${options.email} sudah ada; password di-reset ke SEED_ADMIN_PASSWORD dan lockout dibuka.`;

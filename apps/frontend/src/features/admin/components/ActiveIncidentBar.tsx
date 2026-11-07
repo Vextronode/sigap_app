@@ -17,9 +17,26 @@ export const ActiveIncidentBar: React.FC<ActiveIncidentBarProps> = ({
   alert,
   earthquake,
 }) => {
-  const alertLevel = alert?.level || "GREEN";
+  if (!alert) return null;
+
+  const alertLevel = alert.level;
   const isEmergency = alertLevel === "ORANGE" || alertLevel === "RED";
   const isWarning = alertLevel === "YELLOW";
+
+  // Data tidak tersedia: jangan menyatakan kondisi aman
+  if (alertLevel === "UNKNOWN") {
+    return (
+      <div
+        className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-slate-400/40 bg-slate-500/10 text-slate-900 dark:text-slate-100 text-xs shadow-2xs"
+        role="status"
+      >
+        <AlertTriangle size={16} className="shrink-0" />
+        <p>
+          <strong className="font-bold">Data Tidak Tersedia:</strong> {alert.description}
+        </p>
+      </div>
+    );
+  }
 
   // Jika kondisi aman, tampilkan banner posko kondusif yang tenang
   if (!isEmergency && !isWarning) {
@@ -89,7 +106,7 @@ export const ActiveIncidentBar: React.FC<ActiveIncidentBarProps> = ({
                 Peringatan Insiden: Level {alertLevel}
               </span>
 
-              {alert?.updatedAt && (
+              {alert.updatedAt && (
                 <span className="text-[11px] opacity-80 font-mono">
                   {new Date(alert.updatedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
                 </span>
@@ -99,10 +116,10 @@ export const ActiveIncidentBar: React.FC<ActiveIncidentBarProps> = ({
             <h3 className="text-xs sm:text-sm font-extrabold tracking-tight line-clamp-2 sm:line-clamp-1">
               {earthquake
                 ? `Gempa M ${earthquake.magnitude} — ${earthquake.distanceToVillage} km dari Balai Desa Cibenda`
-                : alert?.description || "Peringatan Dini Bencana Gempa Pangandaran"}
+                : alert.description || "Peringatan Dini Bencana Gempa Pangandaran"}
             </h3>
 
-            {alert?.location && (
+            {alert.location && (
               <p className="flex items-center gap-1.5 text-[11px] sm:text-xs opacity-90 truncate font-medium">
                 <MapPin size={11} className="shrink-0 text-rose-500" />
                 <span>{alert.location}</span>

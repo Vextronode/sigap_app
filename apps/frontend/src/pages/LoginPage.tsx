@@ -261,6 +261,12 @@ export default function LoginPage() {
         )}
 
         {/* banner informasi sesi kedaluwarsa jika dialihkan oleh interceptor 401 */}
+        {searchParams.get("passwordChanged") === "true" && (
+          <div className="mt-6 bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-[11px] sm:text-xs text-emerald-800 leading-relaxed">
+            Password berhasil diperbarui. Silakan masuk kembali dengan password baru.
+          </div>
+        )}
+
         {isSessionExpired && !showSecurityWarning && (
           <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3 text-left">
             <TriangleAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0 mt-0.5" />

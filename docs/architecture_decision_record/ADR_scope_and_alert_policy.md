@@ -135,7 +135,7 @@ Operator perlu dapat menangani alarm palsu dari hasil otomatis. Status resmi tid
 
 ## ADR-037: Status UNKNOWN Saat Data Tidak Tersedia
 
-**Status implementasi:** disetujui, menunggu perubahan kode.
+**Status implementasi:** diterapkan. Firmware perlu mengenali nilai ini mengikuti kontrak perangkat.
 
 ### Latar Belakang Keputusan
 Saat database dan BMKG sama-sama gagal, sistem menampilkan `GREEN` dengan pesan kondisi aman, dan nilai tersebut diteruskan ke perangkat. Hal ini bertentangan dengan prinsip fail-safe pada ADR-004.

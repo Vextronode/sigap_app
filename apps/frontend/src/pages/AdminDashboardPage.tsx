@@ -205,7 +205,7 @@ export default function AdminDashboardPage() {
         subscriberCount={subscribersQuery.data ?? 0}
         deviceStatus={deviceStatusQuery.data ?? null}
         alertStats={alertStatsQuery.data ?? null}
-        isLoading={alertQuery.isLoading && subscribersQuery.isLoading}
+        isLoading={alertQuery.isLoading || subscribersQuery.isLoading}
       />
 
       {/* 4. Main Command Center Workspace (2 Kolom Desktop: 7 col kiri / 5 col kanan) */}

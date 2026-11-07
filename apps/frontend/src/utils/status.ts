@@ -2,7 +2,7 @@ import type { AlertLevel, CurrentAlert } from "../types/dashboard";
 
 type AlertMeta = {
   label: string;
-  tone: "safe" | "warning" | "orange" | "danger";
+  tone: "safe" | "warning" | "orange" | "danger" | "neutral";
   description: string;
 };
 
@@ -27,6 +27,11 @@ export const alertMeta: Record<AlertLevel, AlertMeta> = {
     tone: "danger",
     description: "Ikuti instruksi resmi dan segera menuju titik evakuasi.",
   },
+  UNKNOWN: {
+    label: "Data Tidak Tersedia",
+    tone: "neutral",
+    description: "Data peringatan sedang tidak tersedia. Pantau informasi resmi BMKG.",
+  },
 };
 
 export const normalizeAlertLevel = (level?: string): AlertLevel => {
@@ -39,7 +44,7 @@ export const normalizeAlertLevel = (level?: string): AlertLevel => {
   ) {
     return normalized;
   }
-  return "GREEN";
+  return "UNKNOWN";
 };
 
 export const getAlertMeta = (alert?: CurrentAlert | null) => {

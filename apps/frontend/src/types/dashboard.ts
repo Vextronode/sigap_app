@@ -1,4 +1,4 @@
-export type AlertLevel = "GREEN" | "YELLOW" | "ORANGE" | "RED";
+export type AlertLevel = "GREEN" | "YELLOW" | "ORANGE" | "RED" | "UNKNOWN";
 
 export type PriorityLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 

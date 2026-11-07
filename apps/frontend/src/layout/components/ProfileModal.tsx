@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   CircleUser,
   KeyRound,
   Eye,
   EyeOff,
-  CheckCircle2,
   AlertCircle,
   Loader2,
   ChevronDown,
@@ -22,7 +22,8 @@ interface ProfileModalProps {
 }
 
 export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   const isOperator = user?.roles?.some((r) => r.toLowerCase().includes("operator")) ?? false;
   const isAdminRole = !isOperator;
@@ -37,14 +38,12 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
-  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
 
   const resetPasswordForm = () => {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
     setPwError(null);
-    setPwSuccess(null);
   };
 
   const handleClose = () => {
@@ -56,7 +55,6 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   const handleChangePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwError(null);
-    setPwSuccess(null);
 
     if (!currentPassword.trim()) {
       setPwError("Password saat ini wajib diisi.");
@@ -94,8 +92,10 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
         currentPassword,
         newPassword,
       });
-      setPwSuccess("Password akun Anda berhasil diperbarui!");
-      resetPasswordForm();
+      // Seluruh sesi akun gugur setelah ganti password, termasuk sesi ini.
+      handleClose();
+      logout();
+      navigate("/admin/login?passwordChanged=true");
     } catch (err: unknown) {
       setPwError(parseApiError(err, "Gagal mengubah password."));
     } finally {
@@ -208,7 +208,6 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
             onClick={() => {
               setShowChangePassword(!showChangePassword);
               setPwError(null);
-              setPwSuccess(null);
             }}
             className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/90 dark:border-amber-800/60 hover:bg-amber-100/70 dark:hover:bg-amber-900/30 text-amber-900 dark:text-amber-200 text-xs font-medium transition-colors cursor-pointer"
           >
@@ -225,12 +224,6 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
 
           {showChangePassword && (
             <form onSubmit={handleChangePasswordSubmit} className="mt-3 space-y-3 text-left">
-              {pwSuccess && (
-                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
-                  <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
-                  <span>{pwSuccess}</span>
-                </div>
-              )}
 
               {pwError && (
                 <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">

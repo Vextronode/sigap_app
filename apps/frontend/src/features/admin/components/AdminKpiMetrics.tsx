@@ -46,7 +46,7 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
   }
 
   // 1. Status Siaga Desa
-  const alertLevel = alert?.level || "GREEN";
+  const alertLevel = alert?.level || "UNKNOWN";
   const isEmergency = alertLevel === "ORANGE" || alertLevel === "RED";
   const isWarning = alertLevel === "YELLOW";
 
@@ -86,6 +86,15 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
       desc: "Kedaruratan aktif!",
       icon: ShieldAlert,
       iconBg: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    },
+    UNKNOWN: {
+      label: "DATA TIDAK TERSEDIA",
+      shortLabel: "TIDAK TERSEDIA",
+      badgeClass: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30",
+      dotClass: "bg-slate-400",
+      desc: "Data peringatan tidak tersedia",
+      icon: ShieldAlert,
+      iconBg: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
     },
   }[alertLevel];
 
@@ -243,7 +252,7 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
             )}
           >
             <span className={cn("h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full", isIotOnline ? "bg-emerald-500" : "bg-slate-400")} />
-            {isIotOnline ? "Online" : "Standby"}
+            {isIotOnline ? "Online" : "Offline"}
           </span>
         </div>
 
@@ -257,14 +266,14 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
               Unit Posko
             </p>
             <p className="mt-0.5 text-[10px] sm:text-xs text-[color:var(--text-muted)] font-medium truncate">
-              {isIotOnline ? "ESP-NOW Radio Online" : "Jalur Radio Standby"}
+              {isIotOnline ? "Perangkat terhubung" : "Perangkat tidak terhubung"}
             </p>
           </div>
         </div>
 
         <div className="pt-2 sm:pt-2.5 border-t border-[color:var(--border)] flex items-center justify-between text-[10px] sm:text-[11px] text-[color:var(--text-muted)]">
-          <span className="truncate">Menara</span>
-          <span className="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1">Siap Picu</span>
+          <span className="truncate">Kontrol sirine</span>
+          <span className="font-semibold shrink-0 ml-1">Belum tersedia</span>
         </div>
       </Card>
     </div>

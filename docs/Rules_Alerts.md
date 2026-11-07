@@ -32,6 +32,9 @@ Open-Meteo hanya dipakai untuk informasi cuaca dan tidak memengaruhi level kesia
 | `YELLOW` | Waspada | Kuning |
 | `ORANGE` | Siaga | Oranye |
 | `RED` | Awas | Merah |
+| `UNKNOWN` | Data Tidak Tersedia | Abu-abu |
+
+`UNKNOWN` hanya muncul pada alert yang berlaku dan tidak disimpan ke database.
 
 # 4. Filter Relevansi Gempa
 
@@ -75,7 +78,7 @@ Magnitudo ditampilkan pada deskripsi alert dan tidak dipakai sebagai ambang bata
 Scheduler menjalankan evaluasi di dalam proses backend saat `ENABLE_LOCAL_SCHEDULER=true`, dengan interval `ALERT_SCHEDULER_INTERVAL_MS` (default 60 detik). Evaluasi juga dapat dipicu melalui `/api/public/internal/run-scheduler`.
 
 - Hasil `GREEN` tidak disimpan.
-- Hasil selain `GREEN` disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan alert yang sedang berlaku.
+- Hasil selain `GREEN` disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman yang sedang berlaku.
 
 # 8. Alert yang Berlaku
 
@@ -85,7 +88,7 @@ Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan 
 |---|---|
 | Rekaman berumur lebih dari 24 jam | Ditampilkan sebagai `GREEN` |
 | Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
-| Database dan BMKG gagal | Ditampilkan sebagai `GREEN` |
+| Tidak ada rekaman yang dapat dibaca dan data BMKG gagal diambil | `UNKNOWN` |
 
 Hasil disimpan dalam cache memori selama 60 detik.
 
@@ -99,7 +102,7 @@ Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifik
 
 | Level | Tindakan |
 |---|---|
-| `GREEN` | Tidak ada notifikasi |
+| `GREEN`, `UNKNOWN` | Tidak ada notifikasi |
 | `YELLOW`, `ORANGE`, `RED` | Web Push otomatis ke seluruh subscriber saat alert baru tercatat, tanpa validasi manual |
 
 - Admin dapat mengirim notifikasi manual untuk alert yang berlaku melalui `/api/protected/notifications/dispatch`.

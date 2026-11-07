@@ -202,6 +202,15 @@ export class EarthquakeService {
     }
   }
 
+  /** true bila minimal satu daftar gempa BMKG berhasil diambil. */
+  static async isLiveDataAvailable(): Promise<boolean> {
+    const results = await Promise.allSettled([
+      this.fetchCached<BmkgEarthquakeListResponse>(BMKG_GEMPA_TERKINI_URL),
+      this.fetchCached<BmkgEarthquakeListResponse>(BMKG_GEMPA_DIRASAKAN_URL),
+    ]);
+    return results.some((result) => result.status === "fulfilled");
+  }
+
   static async getLatest(): Promise<EarthquakeInfo> {
     return this.getIndonesia();
   }

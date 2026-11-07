@@ -9,7 +9,7 @@ Alert:
       type: string
       description: UUID, atau id sintetis untuk hasil evaluasi langsung yang tidak tersimpan
     level:
-      $ref: './shared.yaml#/StatusLevel'
+      $ref: './shared.yaml#/CurrentStatusLevel'
     source:
       type: string
       example: "BMKG (estimasi dari data gempa)"
