@@ -32,7 +32,7 @@ publicAlertsRouter.get("/history", AlertController.getHistory);
  * GET /api/public/alerts/:id
  * Mengambil detail satu alert.
  */
-publicAlertsRouter.get("/:id", AlertController.getById);
+publicAlertsRouter.get("/:id", AlertController.getPublicById);
 
 // router terproteksi alert untuk admin & operator (FS-02)
 export const protectedAlertsRouter = Router();

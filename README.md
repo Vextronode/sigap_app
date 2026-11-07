@@ -66,7 +66,7 @@ Ketentuan:
   - Notifikasi gempa via web push, serta dapat dipasang sebagai aplikasi (PWA).
 - **Admin & Operator (Dashboard Admin)**:
   - Command center: ringkasan alert, kesiapsiagaan, jumlah pelanggan web push, dan status perangkat IoT.
-  - Verifikasi alert (dikonfirmasi, ditindaklanjuti, atau ditolak).
+  - Riwayat alert dan catatan tinjauan (dikonfirmasi, ditindaklanjuti, atau ditolak) yang tidak mengubah level.
   - Kelola kontak darurat, titik evakuasi, dan panduan kesiapsiagaan.
   - Manajemen akun dan role (RBAC `admin`/`operator`).
   - Halaman kontrol sirine & IoT (modul masih dalam pengembangan, menunggu integrasi perangkat keras).

@@ -29,3 +29,5 @@ Role pengguna disimpan pada `user_roles`, lihat `DD_rbac.md`.
 | user_id | TEXT, FK ke `users.id`, cascade | Pemilik token |
 | revoked_at | TIMESTAMP | Waktu pencabutan |
 | expires_at | TIMESTAMP | Waktu kedaluwarsa token |
+
+Baris yang sudah kedaluwarsa dihapus saat logout.

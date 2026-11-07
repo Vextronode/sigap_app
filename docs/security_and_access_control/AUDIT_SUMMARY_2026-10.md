@@ -29,7 +29,7 @@ Status berikut mencakup temuan yang ditinjau ulang terhadap kode pada 7 November
 | Prosedur deploy, rollback, dan backup | Selesai | `deploy/sigap.sh` |
 | Sinkronisasi dokumen | Selesai | Penyelarasan 7 November 2026 |
 | Logika level dan filter relevansi | Sebagian | ADR-035, ADR-037, ADR-040, dan ADR-042 selesai |
-| Perilaku saat data tidak tersedia | Selesai di kode | ADR-037; firmware mengikuti kontrak perangkat |
+| Perilaku saat data tidak tersedia | Selesai di kode | ADR-037 dan ADR-043; firmware mengikuti kontrak perangkat |
 | Review alert | Selesai di kode | ADR-041 |
 | Manajemen sesi | Selesai di kode | Pencabutan sesi per akun dan logout ke server |
 | Tes otomatis | Terbuka | Belum dijadwalkan |

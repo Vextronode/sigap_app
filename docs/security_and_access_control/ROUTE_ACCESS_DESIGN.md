@@ -43,7 +43,7 @@ Akun tidak dihapus, hanya dinonaktifkan melalui `isActive`.
 | Cuaca | GET `/api/public/weather/current`, `/weather/forecast` | Public | - |
 | Gempa | GET `/api/public/earthquakes`, `/latest`, `/indonesia`, `/map`, `/west-java`, `/west-java/history`, `/pangandaran`, `/pangandaran/history` | Public | - |
 | Tsunami | GET `/api/public/tsunami`, `/tsunami/status`, `/tsunamis`, `/tsunamis/status` | Public | - |
-| Alert | GET `/api/public/alerts`, `/alerts/current`, `/alerts/history`, `/alerts/:id` | Public | - |
+| Alert, tanpa data peninjau; riwayat 30 hari terakhir | GET `/api/public/alerts`, `/alerts/current`, `/alerts/history`, `/alerts/:id` | Public | - |
 | Daftar alert | GET `/api/protected/alerts`, `/alerts/:id` | Protected | Token valid |
 | Catat tinjauan alert | PATCH `/api/protected/alerts/:id/review` | Protected | `alert.validate` |
 
@@ -109,7 +109,7 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori per proses, 
 ## 5. Sesi
 
 - Token JWT HS256 dengan `iss` dan `aud`; masa berlaku `JWT_EXPIRES_IN` (default 1 hari).
-- Logout mencabut `jti` token yang dipakai melalui tabel `revoked_tokens`.
+- Logout mencabut `jti` token yang dipakai melalui tabel `revoked_tokens`, dan menghapus baris yang sudah kedaluwarsa.
 - Menonaktifkan akun, mengubah role, reset password oleh admin, dan ganti password sendiri menaikkan `users.token_version`, sehingga seluruh token akun tersebut yang terbit sebelumnya tidak berlaku. Pengguna login kembali setelah ganti password.
 - `authMiddleware` memeriksa tanda tangan token, daftar pencabutan, status aktif akun, dan versi token. Token tanpa klaim `tokenVersion` dianggap versi 0.
 - Bila database gagal dibaca saat pemeriksaan sesi, request dilanjutkan berdasarkan validitas tanda tangan token.

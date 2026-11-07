@@ -12,18 +12,23 @@ import type {
   AlertRecord,
 } from "../types/alert.types.js";
 
+// respons publik tidak memuat identitas staf peninjau (ADR-044)
+const toPublicAlert = ({ reviewer, reviewedBy, ...alert }: AlertRecord) => alert;
+
+type PublicAlert = ReturnType<typeof toPublicAlert>;
+
 export class AlertController {
   // ambil alert terkini (public)
   static async getLatest(_req: Request, res: Response) {
     try {
       const data = await AlertService.getCurrentAlert();
 
-      const response: ApiSuccessResponse<AlertRecord | null> = {
+      const response: ApiSuccessResponse<PublicAlert | null> = {
         success: true,
         message: data
           ? "Alert terbaru berhasil diambil."
           : "Belum ada alert yang tersedia.",
-        data,
+        data: data && toPublicAlert(data),
       };
 
       res.status(200).json(response);
@@ -36,7 +41,7 @@ export class AlertController {
       res.status(200).json({
         success: true,
         message: "Alert terbaru berhasil diambil (safe mode).",
-        data: safeFallback,
+        data: toPublicAlert(safeFallback),
       });
     }
   }
@@ -46,17 +51,17 @@ export class AlertController {
     try {
       const data = await AlertService.getAllAlerts();
 
-      const response: ApiSuccessResponse<AlertRecord[]> = {
+      const response: ApiSuccessResponse<PublicAlert[]> = {
         success: true,
         message: "Riwayat alert berhasil diambil.",
-        data,
+        data: data.map(toPublicAlert),
       };
 
       res.status(200).json(response);
     } catch (error) {
       console.error("[GET /alerts/history] error:", error);
 
-      const response: ApiSuccessResponse<AlertRecord[]> = {
+      const response: ApiSuccessResponse<PublicAlert[]> = {
         success: true,
         message: "Riwayat alert berhasil diambil.",
         data: [],
@@ -100,6 +105,18 @@ export class AlertController {
       });
     }
   }
+
+  // ambil detail satu entri alert untuk portal warga
+  static getPublicById = asyncHandler(async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const data = await AlertService.getAlertById(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Detail alert berhasil diambil.",
+      data: toPublicAlert(data),
+    });
+  });
 
   // ambil detail satu entri alert berdasarkan ID (FS-02 AC2)
   static getById = asyncHandler(async (req: Request, res: Response) => {
