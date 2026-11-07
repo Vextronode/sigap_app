@@ -78,7 +78,7 @@ Magnitudo ditampilkan pada deskripsi alert dan tidak dipakai sebagai ambang bata
 Scheduler menjalankan evaluasi di dalam proses backend saat `ENABLE_LOCAL_SCHEDULER=true`, dengan interval `ALERT_SCHEDULER_INTERVAL_MS` (default 60 detik). Evaluasi juga dapat dipicu melalui `/api/public/internal/run-scheduler`.
 
 - Hasil `GREEN` tidak disimpan.
-- Hasil selain `GREEN` disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman yang sedang berlaku.
+- Hasil selain `GREEN` disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman yang sedang berlaku dan berumur paling lama 24 jam.
 
 # 8. Alert yang Berlaku
 
@@ -86,8 +86,10 @@ Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan 
 
 | Kondisi | Hasil |
 |---|---|
-| Rekaman berumur paling lama 24 jam dengan level selain `GREEN` (alert aktif) | Ditampilkan apa adanya |
-| Rekaman berumur lebih dari 24 jam dan data BMKG terbaca | Ditampilkan sebagai `GREEN` |
+| Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` sama dengan levelnya (alert aktif) | Ditampilkan apa adanya, tanpa batas umur |
+| Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` berubah atau kosong, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
+| Rekaman lain berumur paling lama 24 jam dengan level selain `GREEN` (alert aktif) | Ditampilkan apa adanya |
+| Rekaman lain berumur lebih dari 24 jam, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
 | Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
 | Tidak ada alert aktif dan data BMKG gagal diambil | `UNKNOWN` |
 
@@ -110,7 +112,7 @@ Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifik
 - Isi notifikasi berasal dari alert yang berlaku dan data gempa Pangandaran terkait.
 - Subscription yang dibalas 404 atau 410 oleh layanan push dihapus.
 - Setiap pengiriman dicatat pada tabel `notification_logs`.
-- Selama `BMKG_TSUNAMI_STATUS` terisi selain `NORMAL`, alert baru dan notifikasi terbit setiap 24 jam mengikuti masa aktif alert.
+- Selama `BMKG_TSUNAMI_STATUS` terisi selain `NORMAL`, alert baru dan notifikasi terbit setiap 24 jam.
 
 # 11. Parameter Konfigurasi
 

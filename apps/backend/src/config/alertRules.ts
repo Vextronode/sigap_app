@@ -1,6 +1,9 @@
 /** Masa aktif alert dan gempa terhadap level: 24 jam. */
 export const ALERT_ACTIVE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
+/** Sumber alert yang berasal dari status tsunami resmi (BMKG_TSUNAMI_STATUS). */
+export const OFFICIAL_TSUNAMI_SOURCE = "BMKG InaTEWS";
+
 export const ALERT_RULES = {
   tsunami: {
     AWAS: "RED",

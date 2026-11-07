@@ -276,3 +276,26 @@ Data peninjau tetap diperlukan pada endpoint Protected, sehingga pemisahan pada 
 
 ### Dampak Terhadap Sistem
 Riwayat lebih lama tetap tersedia melalui `GET /api/protected/alerts`.
+
+---
+
+## ADR-045: Masa Berlaku Alert Status Tsunami Resmi Mengikuti BMKG_TSUNAMI_STATUS
+
+### Latar Belakang Keputusan
+Seluruh alert berakhir setelah 24 jam, dan hasil `GREEN` tidak disimpan. Akibatnya, setelah `BMKG_TSUNAMI_STATUS` dikosongkan, warga dan perangkat tetap menerima status lama sampai 24 jam. Sebaliknya, selama status masih terisi, level sempat tampil `GREEN` setiap 24 jam sampai siklus scheduler berikutnya membuat alert baru.
+
+### Alternatif yang Dipertimbangkan
+1. Menyimpan hasil `GREEN` untuk menandai akhir setiap alert.
+2. Menentukan masa berlaku alert status tsunami resmi dari `BMKG_TSUNAMI_STATUS`, dan mempertahankan 24 jam untuk alert gempa.
+
+### Keputusan yang Dipilih
+Opsi 2. Alert bersumber `BMKG InaTEWS` berlaku selama `BMKG_TSUNAMI_STATUS` sama dengan levelnya, tanpa batas umur. Alert gempa dan estimasi tsunami tetap berakhir setelah 24 jam. Selama status resmi masih berlaku, alert baru dan notifikasi tetap terbit setiap 24 jam sebagai pengingat.
+
+### Alasan Pemilihan
+Status resmi memiliki penanda berakhir yang jelas, yaitu perubahan variabel oleh operator. BMKG tidak mengirim penanda berakhir untuk gempa, sehingga batas 24 jam tetap diperlukan. Menyimpan `GREEN` akan mengisi riwayat dengan rekaman yang bukan kejadian.
+
+### Dampak Terhadap Sistem
+- Status `AWAS` yang masih berlaku tidak lagi sempat tampil `GREEN`.
+- Saat status dikosongkan, level turun tanpa menunggu 24 jam, dan siklus scheduler berikutnya mengevaluasi ulang gempa yang masih aktif.
+- Perubahan `BMKG_TSUNAMI_STATUS` memerlukan restart backend. Scheduler menjalankan satu siklus saat proses dimulai.
+- Scheduler menganggap rekaman berumur lebih dari 24 jam bukan duplikat.
