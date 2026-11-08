@@ -178,7 +178,7 @@ jobs:
           echo "OK — daftar variabel env sinkron"
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build backend (runtime)
         uses: docker/build-push-action@v6
