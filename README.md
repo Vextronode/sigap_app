@@ -197,7 +197,8 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    Kredensial admin placeholder ditampilkan di output seed. Segera ganti di luar lingkungan lokal. Opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, dan `SEED_SAMPLE_DATA` juga berlaku di sini.
 4. Jalankan layanan development (terminal terpisah):
    - Backend: `npm run dev --workspace=apps/backend` (Port 3000)
-   - Frontend: `npm run dev --workspace=apps/frontend` (Port 5173)
+   - Frontend: `npm run dev --workspace=apps/frontend` (Port 5173, dapat diganti lewat `PORT`)
+   - Preview build production: `npm run build --workspace=apps/frontend`, lalu `npm run preview --workspace=apps/frontend` (Port 4380, dapat diganti lewat `PREVIEW_PORT`)
 
 Perintah lain: `npm run lint --workspace=<apps/frontend|apps/backend>`, `npm run typecheck --workspace=apps/backend`, `npm run build --workspace=<apps/frontend|apps/backend>`, `npm test --workspace=apps/backend`, `npm run check:api-spec --workspace=apps/backend`, `node scripts/check-doc-links.mjs`.
 
