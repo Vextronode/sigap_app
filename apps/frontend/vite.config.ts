@@ -13,6 +13,9 @@ export default defineConfig({
   preview: {
     port: Number(process.env.PREVIEW_PORT) || 4380,
     strictPort: true,
+    proxy: {
+      "/api": process.env.PREVIEW_API_TARGET || "http://localhost:3000",
+    },
   },
   plugins: [react(), tailwindcss(), VitePWA({
       registerType: 'autoUpdate',
