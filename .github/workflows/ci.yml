@@ -181,7 +181,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build backend (runtime)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: deploy/docker/backend.Dockerfile
@@ -191,7 +191,7 @@ jobs:
           cache-to: type=gha,scope=backend,mode=max
 
       - name: Build backend (migrate)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: deploy/docker/backend.Dockerfile
@@ -200,7 +200,7 @@ jobs:
           cache-from: type=gha,scope=backend
 
       - name: Build frontend (web)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: deploy/docker/frontend.Dockerfile
