@@ -47,7 +47,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
-    "@types/node": "^24.19.2",
+    "@types/node": "^25.9.9",
     "@types/web-push": "^3.6.4",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",
