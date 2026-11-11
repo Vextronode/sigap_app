@@ -30,6 +30,31 @@ PublicAlert:
       type: string
       format: date-time
       nullable: true
+    eventTime:
+      type: string
+      format: date-time
+      nullable: true
+      description: Waktu gempa terbaru pada level alert; kosong untuk alert status tsunami.
+    episodeStartedAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Waktu gempa aktif paling awal dalam rentetan.
+    episodeEventCount:
+      type: integer
+      nullable: true
+      description: Jumlah gempa aktif dalam rentetan.
+    episodeMaxMagnitude:
+      type: number
+      nullable: true
+      description: Magnitudo terbesar di antara gempa aktif.
+    activeUntil:
+      type: string
+      format: date-time
+      nullable: true
+      description: >
+        Batas masa aktif alert yang berlaku bila tidak ada gempa baru. Hanya pada
+        alert terkini; kosong untuk alert status tsunami resmi.
     createdAt:
       type: string
       format: date-time
@@ -47,6 +72,10 @@ Alert:
           type: string
           format: uuid
           nullable: true
+        referenceMagnitude:
+          type: number
+          nullable: true
+          description: Magnitudo yang terakhir dikirim notifikasi dalam rentetan gempa.
         reviewer:
           type: object
           nullable: true

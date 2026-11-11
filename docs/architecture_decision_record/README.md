@@ -78,6 +78,7 @@ Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID ser
 | ADR-043 | Status UNKNOWN Saat BMKG Tidak Dapat Dijangkau | Berlaku | - |
 | ADR-044 | Respons Alert Publik Tanpa Data Peninjau dan Riwayat 30 Hari | Berlaku | - |
 | ADR-045 | Masa Berlaku Alert Status Tsunami Resmi Mengikuti BMKG_TSUNAMI_STATUS | Berlaku | - |
+| ADR-046 | Penyatuan Data Gempa per Kejadian dan Aturan Rentetan Gempa | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 

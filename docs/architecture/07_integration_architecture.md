@@ -23,14 +23,19 @@ sequenceDiagram
     participant P as Layanan Push
     participant W as Warga
 
-    S->>E: Evaluasi data BMKG
-    E-->>S: Level
-    S->>DB: Simpan alert selain GREEN
-    S->>N: Kirim notifikasi
-    N->>P: Web Push ke seluruh subscriber
-    P->>W: Notifikasi
-    N->>DB: Catat notification_logs
+    S->>E: Evaluasi status tsunami dan seluruh gempa aktif
+    E-->>S: Level dan ringkasan rentetan
+    S->>DB: Bandingkan dengan alert terakhir
+    S->>DB: Simpan alert baru atau perpanjang alert yang berlaku
+    opt Alert baru dengan notifikasi
+        S->>N: Kirim notifikasi
+        N->>P: Web Push ke seluruh subscriber
+        P->>W: Notifikasi
+        N->>DB: Catat notification_logs
+    end
 ```
+
+Notifikasi dikirim untuk alert baru pada level naik, rentetan baru, atau kenaikan magnitudo paling sedikit 1,0 pada level yang sama. Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi (`Rules_Alerts.md` bagian 7).
 
 ## 7.3 Integrasi SID
 

@@ -3,10 +3,10 @@
 | Field | Detail |
 |---|---|
 | Project | SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda) |
-| Versi | 2.0 |
-| Tanggal | 7 November 2026 |
+| Versi | 2.1 |
+| Tanggal | 11 November 2026 |
 | Status | Aktif |
-| Implementasi | `apps/backend/src/services/decisionEngine.service.ts`, `alert.service.ts`, `bmkg.service.ts`, `earthquake.service.ts`, `scheduler/alert.scheduler.ts` |
+| Implementasi | `apps/backend/src/services/decisionEngine.service.ts`, `alertSequence.service.ts`, `alert.service.ts`, `bmkg.service.ts`, `earthquake.service.ts`, `utils/bmkgEarthquake.util.ts`, `scheduler/alert.scheduler.ts` |
 
 # 1. Tujuan
 
@@ -21,6 +21,8 @@ Dokumen ini mendefinisikan aturan yang digunakan SIGAP untuk menentukan status k
 | Potensi tsunami | Field `Potensi` pada data gempa BMKG |
 | Status tsunami resmi | Variabel `BMKG_TSUNAMI_STATUS`, diisi operator berwenang dari kanal resmi |
 | Riwayat gempa | Tabel `earthquake_records` |
+
+Ketiga feed gempa disatukan per kejadian (`DateTime` sama). `Dirasakan` diambil dari `autogempa.json` atau `gempadirasakan.json`, `Potensi` dari `gempaterkini.json` atau `autogempa.json`, dan Shakemap dari `autogempa.json`. Item dengan waktu, koordinat, atau magnitudo yang tidak valid tidak dipakai.
 
 Open-Meteo hanya dipakai untuk informasi cuaca dan tidak memengaruhi level kesiapsiagaan.
 
@@ -38,23 +40,32 @@ Open-Meteo hanya dipakai untuk informasi cuaca dan tidak memengaruhi level kesia
 
 # 4. Filter Relevansi Gempa
 
-Gempa dianggap relevan untuk Desa Cibenda bila memenuhi seluruh syarat berikut:
+Gempa dianggap relevan untuk Desa Cibenda bila memenuhi salah satu syarat berikut:
 
-1. Wilayah atau field `Dirasakan` menyebut Pangandaran, atau jaraknya berada dalam `PANGANDARAN_RADIUS_KM` (default 100 km).
-2. Lolos radius `PANGANDARAN_RADIUS_KM`.
-3. Umurnya paling lama `PANGANDARAN_MAX_AGE_DAYS` (default 7 hari).
+1. Episentrum berada dalam `PANGANDARAN_RADIUS_KM` (default 100 km).
+2. Field `Dirasakan` menyebut wilayah Cibenda, Parigi, atau Pangandaran, berapa pun jaraknya. Pencocokan dilakukan per nama wilayah, sehingga "Kecamatan Parigi" terhitung tetapi "Parigi Moutong" tidak.
 
-Radius adalah filter relevansi, bukan penentu tingkat bahaya. Jarak dihitung dengan rumus Haversine dari koordinat `VILLAGE_LAT` dan `VILLAGE_LON` (default `-7.6838`, `108.5610`) ke episentrum.
+Kartu gempa Pangandaran menampilkan gempa relevan terbaru yang berumur paling lama `PANGANDARAN_MAX_AGE_DAYS` (default 7 hari). Radius adalah filter relevansi, bukan penentu tingkat bahaya. Jarak dihitung dengan rumus Haversine dari koordinat `VILLAGE_LAT` dan `VILLAGE_LON` (default `-7.6838`, `108.5610`) ke episentrum.
 
 # 5. Status Tsunami
 
 | Kondisi | Status | Sumber yang dicatat |
 |---|---|---|
 | `BMKG_TSUNAMI_STATUS` terisi | Nilai variabel: `NORMAL`, `WASPADA`, `SIAGA`, atau `AWAS` | `BMKG InaTEWS` |
-| Variabel kosong dan gempa relevan berumur paling lama 24 jam berpotensi tsunami | `WASPADA` | `BMKG (estimasi dari data gempa)` |
+| Variabel kosong dan salah satu gempa aktif memiliki `Potensi` yang dikenali sebagai berpotensi tsunami | `WASPADA` | `BMKG (estimasi dari data gempa)` |
 | Variabel kosong selain kondisi di atas | `NORMAL` | `BMKG` |
 
 Estimasi otomatis dibatasi sampai `WASPADA`. Status `SIAGA` dan `AWAS` hanya berasal dari `BMKG_TSUNAMI_STATUS`.
+
+Hanya teks `Potensi` yang terverifikasi dari feed BMKG yang dikenali:
+
+| Teks `Potensi` | Klasifikasi |
+|---|---|
+| `Tidak berpotensi tsunami` | `TIDAK_BERPOTENSI` |
+| `Gempa ini dirasakan untuk diteruskan pada masyarakat` | `INFORMASI_DIRASAKAN` |
+| Teks lain | `TIDAK_DIKENAL`, dicatat ke log |
+
+Teks untuk gempa berpotensi tsunami belum terverifikasi, sehingga estimasi `WASPADA` belum dapat aktif sampai teks tersebut ditambahkan pada `TSUNAMI_POTENTIAL_TEXTS`.
 
 # 6. Penentuan Level
 
@@ -65,20 +76,38 @@ Level tsunami dan level gempa dievaluasi terpisah, lalu level akhir adalah yang 
 | Tsunami | Status `AWAS` | `RED` |
 | Tsunami | Status `SIAGA` | `ORANGE` |
 | Tsunami | Status `WASPADA` | `YELLOW` |
-| Gempa | Relevan, berumur paling lama 24 jam, dan `Dirasakan` menyebut Cibenda, Parigi, atau Pangandaran | `ORANGE` |
-| Gempa | Relevan dan berumur paling lama 24 jam | `YELLOW` |
+| Gempa | Aktif (berumur paling lama 24 jam) dan `Dirasakan` menyebut Cibenda, Parigi, atau Pangandaran | `ORANGE` |
+| Gempa | Aktif | `YELLOW` |
 | - | Tidak ada kondisi di atas | `GREEN` |
+
+Level gempa adalah level tertinggi di antara seluruh gempa aktif, sehingga gempa susulan yang lebih kecil tidak menurunkan level selama gempa penentu masih aktif. Deskripsi alert memakai gempa terbesar pada level tersebut.
 
 Bila level keduanya sama, alert memakai sumber dan deskripsi tsunami. Bila level gempa lebih tinggi, alert memakai sumber gempa dan deskripsinya menyertakan deskripsi tsunami.
 
-Magnitudo ditampilkan pada deskripsi alert dan tidak dipakai sebagai ambang batas.
+Magnitudo tidak dipakai sebagai penentu level. Magnitudo hanya dipakai pada aturan notifikasi rentetan gempa (bagian 7).
 
 # 7. Penyimpanan Alert
 
 Scheduler menjalankan evaluasi di dalam proses backend saat `ENABLE_LOCAL_SCHEDULER=true`, dengan interval `ALERT_SCHEDULER_INTERVAL_MS` (default 60 detik). Evaluasi juga dapat dipicu melalui `/api/public/internal/run-scheduler`.
 
 - Hasil `GREEN` tidak disimpan.
-- Hasil selain `GREEN` disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman yang sedang berlaku dan berumur paling lama 24 jam.
+- Hasil yang levelnya berasal dari status tsunami disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman terakhir yang berumur paling lama 24 jam.
+- Hasil yang levelnya berasal dari gempa mengikuti aturan rentetan gempa di bawah.
+
+## 7.1 Rentetan Gempa
+
+Rentetan gempa adalah gempa relevan yang masih aktif. Rentetan berlanjut bila masih ada gempa aktif yang terjadi selama alert rentetan sebelumnya berlaku. Hasil evaluasi dibandingkan dengan rekaman alert terakhir:
+
+| Kondisi | Tindakan | Notifikasi |
+|---|---|---|
+| Tidak ada alert aktif dan rentetan tidak berlanjut | Alert baru | Ya |
+| Level naik | Alert baru | Ya |
+| Level turun karena gempa penentu berakhir | Alert baru | Tidak |
+| Level sama dan magnitudo terbesar pada level itu paling sedikit 1,0 di atas magnitudo yang terakhir dikirim notifikasi | Alert baru | Ya |
+| Level sama selain kondisi di atas | Alert yang berlaku diperpanjang ke kejadian terbaru | Tidak |
+| Tidak ada perubahan | Tidak ada | Tidak |
+
+Revisi magnitudo atau penambahan wilayah `Dirasakan` oleh BMKG pada kejadian yang sama diperlakukan sebagai kejadian yang sama. Alert menyimpan waktu kejadian terbaru pada levelnya, magnitudo acuan notifikasi, serta jumlah, awal, dan magnitudo terbesar gempa aktif.
 
 # 8. Alert yang Berlaku
 
@@ -88,8 +117,8 @@ Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan 
 |---|---|
 | Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` sama dengan levelnya (alert aktif) | Ditampilkan apa adanya, tanpa batas umur |
 | Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` berubah atau kosong, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
-| Rekaman lain berumur paling lama 24 jam dengan level selain `GREEN` (alert aktif) | Ditampilkan apa adanya |
-| Rekaman lain berumur lebih dari 24 jam, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
+| Rekaman lain dengan level selain `GREEN`, paling lama 24 jam sejak waktu kejadian gempa (atau sejak disimpan bila waktu kejadian kosong) (alert aktif) | Ditampilkan apa adanya, beserta batas masa aktifnya |
+| Rekaman lain yang melewati batas tersebut, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
 | Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
 | Tidak ada alert aktif dan data BMKG gagal diambil | `UNKNOWN` |
 
@@ -106,7 +135,9 @@ Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifik
 | Level | Tindakan |
 |---|---|
 | `GREEN`, `UNKNOWN` | Tidak ada notifikasi |
-| `YELLOW`, `ORANGE`, `RED` | Web Push otomatis ke seluruh subscriber saat alert baru tercatat, tanpa validasi manual |
+| `YELLOW`, `ORANGE`, `RED` | Web Push otomatis ke seluruh subscriber saat alert baru tercatat dengan notifikasi menurut bagian 7, tanpa validasi manual |
+
+Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi.
 
 - Admin dapat mengirim notifikasi manual untuk alert yang berlaku melalui `/api/protected/notifications/dispatch`.
 - Isi notifikasi berasal dari alert yang berlaku dan data gempa Pangandaran terkait.
