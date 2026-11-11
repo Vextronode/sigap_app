@@ -1,3 +1,5 @@
+import type { TsunamiPotential } from "../types/earthquake.types.js";
+
 /** Masa aktif alert dan gempa terhadap level: 24 jam. */
 export const ALERT_ACTIVE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -25,3 +27,13 @@ export const ALERT_RULES = {
     feltAreaKeywords: ["Cibenda", "Parigi", "Pangandaran"],
   },
 } as const;
+
+/**
+ * Teks `Potensi` BMKG yang sudah terverifikasi dari feed. Teks lain bernilai
+ * `TIDAK_DIKENAL` dan dicatat ke log; teks gempa berpotensi tsunami ditambahkan
+ * setelah terverifikasi dari BMKG (ADR-046).
+ */
+export const TSUNAMI_POTENTIAL_TEXTS: Readonly<Record<string, TsunamiPotential>> = {
+  "tidak berpotensi tsunami": "TIDAK_BERPOTENSI",
+  "gempa ini dirasakan untuk diteruskan pada masyarakat": "INFORMASI_DIRASAKAN",
+};

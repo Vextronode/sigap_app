@@ -32,8 +32,8 @@ const EARTHQUAKE_SCENARIOS: Record<string, DecisionInput> = {
   waspada: {
     earthquake: {
       magnitude: 4.8, depth: "18 km", location: "25 km Tenggara Pangandaran-Jawa Barat",
-      coordinates: { latitude: -7.85, longitude: 108.55 }, distanceToVillage: 28, felt: "",
-      potential: "Tidak berpotensi tsunami",
+      coordinates: { latitude: -7.85, longitude: 108.55 }, distanceToVillage: 28, felt: "", feltAreas: [],
+      potential: "Tidak berpotensi tsunami", tsunamiPotential: "TIDAK_BERPOTENSI",
       shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/simulasi-demo.mmi.jpg",
       updatedAt: new Date().toISOString(),
     } satisfies EarthquakeInfo,
@@ -43,7 +43,12 @@ const EARTHQUAKE_SCENARIOS: Record<string, DecisionInput> = {
       magnitude: 5.4, depth: "12 km", location: "12 km BaratDaya Pangandaran-Jawa Barat",
       coordinates: { latitude: -7.75, longitude: 108.45 }, distanceToVillage: 15,
       felt: "III Cibenda, II-III Parigi, II Pangandaran",
-      potential: "Tidak berpotensi tsunami",
+      feltAreas: [
+        { area: "Cibenda", mmi: "III" },
+        { area: "Parigi", mmi: "II-III" },
+        { area: "Pangandaran", mmi: "II" },
+      ],
+      potential: "Tidak berpotensi tsunami", tsunamiPotential: "TIDAK_BERPOTENSI",
       shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/simulasi-demo.mmi.jpg",
       updatedAt: new Date().toISOString(),
     } satisfies EarthquakeInfo,

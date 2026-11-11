@@ -97,14 +97,16 @@ function record(overrides: Record<string, unknown> = {}) {
   };
 }
 
-const quake = (ageHours: number, potential = "", felt = "") => ({
+const quake = (ageHours: number, tsunamiPotential: string | null = null, felt = "") => ({
   magnitude: 6,
   location: "Laut",
   depth: "10 km",
   coordinates: { latitude: 0, longitude: 0 },
   distanceToVillage: 50,
   felt,
-  potential,
+  feltAreas: [],
+  potential: "",
+  tsunamiPotential,
   shakemap: "",
   updatedAt: hoursAgo(ageHours).toISOString(),
 });
@@ -130,10 +132,10 @@ afterEach(() => {
 });
 
 test("estimasi tsunami mengikuti masa aktif gempa 24 jam", async () => {
-  await arrange({ quake: quake(1, "Berpotensi Tsunami") });
+  await arrange({ quake: quake(1, "BERPOTENSI") });
   assert.equal((await BmkgService.getTsunamiStatus()).status, "WASPADA");
 
-  await arrange({ quake: quake(25, "Berpotensi Tsunami") });
+  await arrange({ quake: quake(25, "BERPOTENSI") });
   assert.equal((await BmkgService.getTsunamiStatus()).status, "NORMAL");
 
   await arrange({ quake: null });
@@ -174,7 +176,7 @@ test("siklus scheduler tidak menyimpan ulang alert yang Ditolak", async () => {
 
 test("estimasi tsunami lewat 24 jam tidak memicu alert baru", async () => {
   await arrange({
-    quake: quake(25, "Berpotensi Tsunami"),
+    quake: quake(25, "BERPOTENSI"),
     latest: record({ createdAt: hoursAgo(25), source: ESTIMATE }),
   });
   const result = await runAlertCheck();

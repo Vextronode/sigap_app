@@ -129,8 +129,8 @@ export class BmkgService {
     try {
       const nearest = await EarthquakeService.getPangandaran();
 
-      const isPotentiallyTsunamigenic =
-        nearest?.potential?.trim().toLowerCase() === "berpotensi tsunami";
+      // Hanya teks Potensi yang terverifikasi yang dikenali (ADR-046).
+      const isPotentiallyTsunamigenic = nearest?.tsunamiPotential === "BERPOTENSI";
 
       if (
         isPotentiallyTsunamigenic &&
