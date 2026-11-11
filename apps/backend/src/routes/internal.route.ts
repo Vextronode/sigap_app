@@ -67,7 +67,9 @@ const handleScheduler = async (req: Request, res: Response): Promise<void> => {
             success: true,
             message: result.saved
                 ? `Alert check selesai — level ${result.level} disimpan.`
-                : `Alert check selesai — level ${result.level} sudah sama, dilewati.`,
+                : result.extended
+                    ? `Alert check selesai — alert level ${result.level} diperpanjang.`
+                    : `Alert check selesai — level ${result.level} sudah sama, dilewati.`,
             data: result,
         };
 

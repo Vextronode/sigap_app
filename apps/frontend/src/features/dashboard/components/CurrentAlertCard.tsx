@@ -4,6 +4,7 @@ import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
+import { getSequenceSummary } from "../../../utils/alertSequence";
 
 const getDisplaySource = (source?: string) => {
   if (!source || source.toLowerCase() === "system" || source.toLowerCase() === "live-fallback") {
@@ -103,6 +104,7 @@ export const CurrentAlertCard = ({
   }
 
   const meta = getAlertMeta(alert);
+  const sequenceSummary = getSequenceSummary(alert);
 
   const renderStatusIcon = () => {
     switch (meta.tone) {
@@ -147,6 +149,10 @@ export const CurrentAlertCard = ({
       </p>
 
       <div className="status-banner__meta flex flex-col items-center w-full">
+        {meta.tone !== "neutral" && sequenceSummary && (
+          <span className="status-banner__source opacity-90">{sequenceSummary}</span>
+        )}
+
         {meta.tone !== "neutral" && (
           <>
             <div className="status-banner__updated bg-black/15 rounded-full tracking-wide opacity-95">

@@ -11,9 +11,14 @@
 | review_status | ENUM `alert_review_status`, default `Belum Ditinjau` | Catatan tinjauan pasca-kejadian; tidak memengaruhi level | `Dikonfirmasi` |
 | reviewed_by | TEXT, NULLABLE, FK ke `users.id`, set null | Peninjau terakhir | - |
 | reviewed_at | TIMESTAMP, NULLABLE | Waktu peninjauan terakhir | - |
+| event_time | TIMESTAMP, NULLABLE | Waktu kejadian gempa terbaru pada level alert; awal masa aktif 24 jam | - |
+| reference_magnitude | DOUBLE PRECISION, NULLABLE | Magnitudo yang terakhir dikirim notifikasi dalam rentetan | `5.6` |
+| episode_started_at | TIMESTAMP, NULLABLE | Waktu gempa aktif paling awal dalam rentetan | - |
+| episode_event_count | INTEGER, NULLABLE | Jumlah gempa aktif dalam rentetan | `6` |
+| episode_max_magnitude | DOUBLE PRECISION, NULLABLE | Magnitudo terbesar di antara gempa aktif | `5.6` |
 | createdAt / updatedAt | TIMESTAMP | Waktu dibuat dan diperbarui | - |
 
-Nilai `source` yang dihasilkan sistem: `BMKG`, `BMKG InaTEWS`, `BMKG (estimasi dari data gempa)`. Aturan level berada di `Rules_Alerts.md`.
+Nilai `source` yang dihasilkan sistem: `BMKG`, `BMKG InaTEWS`, `BMKG (estimasi dari data gempa)`. Kolom rentetan terisi untuk alert yang levelnya berasal dari gempa dan kosong untuk alert status tsunami. Alert dapat diperbarui scheduler selama rentetan berlangsung. Aturan level berada di `Rules_Alerts.md`.
 
 ## Entity: `earthquake_records`
 
@@ -26,10 +31,12 @@ Nilai `source` yang dihasilkan sistem: `BMKG`, `BMKG InaTEWS`, `BMKG (estimasi d
 | location | TEXT | Wilayah | - |
 | latitude / longitude | DOUBLE PRECISION | Koordinat episentrum | - |
 | distanceToVillage | DOUBLE PRECISION | Jarak ke desa dalam kilometer | - |
-| felt | TEXT, NULLABLE | Field `Dirasakan` BMKG | - |
-| potential | TEXT, NULLABLE | Field `Potensi` BMKG | - |
+| felt | TEXT, NULLABLE | Field `Dirasakan` dari `autogempa` atau `gempadirasakan` | `III Pangandaran, II Ciamis` |
+| potential | TEXT, NULLABLE | Field `Potensi` dari `gempaterkini` atau `autogempa` | `Tidak berpotensi tsunami` |
 | shakemap | TEXT, NULLABLE | URL shakemap | - |
 | createdAt / updatedAt | TIMESTAMP | Waktu dibuat dan diperbarui | - |
+
+Satu baris mewakili satu kejadian hasil penyatuan feed BMKG per `DateTime`. Nilai kosong dari satu feed tidak menimpa `felt`, `potential`, dan `shakemap` yang sudah tersimpan.
 
 ## Entity: `push_subscriptions`
 

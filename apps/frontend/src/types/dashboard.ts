@@ -32,7 +32,9 @@ export type Earthquake = {
   coordinates?: Coordinates;
   distanceToVillage: number;
   felt?: string;
+  feltAreas?: { area: string; mmi: string | null }[];
   potential: string;
+  tsunamiPotential?: "TIDAK_BERPOTENSI" | "INFORMASI_DIRASAKAN" | "BERPOTENSI" | "TIDAK_DIKENAL" | null;
   shakemap?: string;
   updatedAt: string;
 };
@@ -60,6 +62,12 @@ export type CurrentAlert = {
     email: string;
     roles?: string[];
   } | null;
+  /** Rentetan gempa; kosong untuk alert status tsunami. */
+  eventTime?: string | null;
+  episodeStartedAt?: string | null;
+  episodeEventCount?: number | null;
+  episodeMaxMagnitude?: number | null;
+  activeUntil?: string | null;
   createdAt?: string;
   updatedAt: string;
 };

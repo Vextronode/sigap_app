@@ -65,9 +65,29 @@ EarthquakeInfo:
     felt:
       type: string
       description: Field Dirasakan dari BMKG. Dapat berupa string kosong.
+    feltAreas:
+      type: array
+      description: Hasil parsing `felt` per wilayah.
+      items:
+        type: object
+        properties:
+          area:
+            type: string
+            example: "Pangandaran"
+          mmi:
+            type: string
+            nullable: true
+            example: "II-III"
     potential:
       type: string
       example: "Tidak berpotensi tsunami"
+    tsunamiPotential:
+      type: string
+      nullable: true
+      enum: [TIDAK_BERPOTENSI, INFORMASI_DIRASAKAN, BERPOTENSI, TIDAK_DIKENAL]
+      description: >
+        Klasifikasi `potential`. Hanya teks yang terverifikasi yang dikenali; teks lain
+        bernilai TIDAK_DIKENAL. Kosong bila `potential` kosong.
     shakemap:
       type: string
       description: URL lengkap, atau string kosong bila tidak tersedia.

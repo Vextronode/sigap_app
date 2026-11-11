@@ -138,9 +138,23 @@ export function mapAlertToRecord(
           roles: alert.reviewer.userRoles?.map((ur) => ur.role.name) ?? [],
         }
       : null,
+    eventTime: alert.eventTime,
+    referenceMagnitude: alert.referenceMagnitude,
+    episodeStartedAt: alert.episodeStartedAt,
+    episodeEventCount: alert.episodeEventCount,
+    episodeMaxMagnitude: alert.episodeMaxMagnitude,
     createdAt: alert.createdAt,
     updatedAt: alert.updatedAt,
   };
+}
+
+/** Kolom rentetan gempa pada tabel alerts (ADR-046). */
+export interface AlertSequenceColumns {
+  eventTime: Date;
+  referenceMagnitude: number | null;
+  episodeStartedAt: Date;
+  episodeEventCount: number;
+  episodeMaxMagnitude: number;
 }
 
 export class AlertRepository {
@@ -313,6 +327,41 @@ export class AlertRepository {
 
     if (!alert) return null;
     return mapAlertToRecord(alert, matchAlertToEarthquake(alert, eqRecords));
+  }
+
+  // ambil rekaman alert terbaru
+  static async findLatest(): Promise<AlertRecord | null> {
+    const latest = await prisma.alert.findFirst({ orderBy: { createdAt: "desc" } });
+    return latest ? mapAlertToRecord({ ...latest, reviewer: null }) : null;
+  }
+
+  // simpan alert baru beserta kolom rentetan gempa bila ada
+  static async create(data: {
+    level: AlertLevel;
+    source: string;
+    description: string | undefined;
+    sequence?: AlertSequenceColumns;
+  }) {
+    return prisma.alert.create({
+      data: {
+        level: data.level,
+        source: data.source,
+        description: data.description,
+        ...data.sequence,
+      },
+    });
+  }
+
+  // perpanjang alert yang berlaku dengan kejadian terbaru dalam rentetan yang sama
+  static async extendSequence(
+    id: string,
+    description: string,
+    sequence: AlertSequenceColumns
+  ): Promise<void> {
+    await prisma.alert.update({
+      where: { id },
+      data: { description, ...sequence },
+    });
   }
 
   // perbarui status tinjauan alert dan catatan audit (reviewedBy, reviewedAt)

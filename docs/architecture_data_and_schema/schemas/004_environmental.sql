@@ -12,6 +12,11 @@ CREATE TABLE "alerts" (
     "review_status" "alert_review_status" NOT NULL DEFAULT 'Belum Ditinjau',
     "reviewed_by" TEXT,
     "reviewed_at" TIMESTAMP(3),
+    "event_time" TIMESTAMP(3),
+    "reference_magnitude" DOUBLE PRECISION,
+    "episode_started_at" TIMESTAMP(3),
+    "episode_event_count" INTEGER,
+    "episode_max_magnitude" DOUBLE PRECISION,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

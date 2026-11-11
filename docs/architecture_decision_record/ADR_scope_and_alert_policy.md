@@ -299,3 +299,39 @@ Status resmi memiliki penanda berakhir yang jelas, yaitu perubahan variabel oleh
 - Saat status dikosongkan, level turun tanpa menunggu 24 jam, dan siklus scheduler berikutnya mengevaluasi ulang gempa yang masih aktif.
 - Perubahan `BMKG_TSUNAMI_STATUS` memerlukan restart backend. Scheduler menjalankan satu siklus saat proses dimulai.
 - Scheduler menganggap rekaman berumur lebih dari 24 jam bukan duplikat.
+
+## ADR-046: Penyatuan Data Gempa per Kejadian dan Aturan Rentetan Gempa
+
+### Latar Belakang Keputusan
+`gempaterkini.json` memuat `Potensi` tanpa `Dirasakan`, sedangkan `gempadirasakan.json` memuat `Dirasakan` tanpa `Potensi`. Kedua daftar digabung tanpa penyatuan, sehingga gempa M5 ke atas yang dirasakan di sekitar Desa Cibenda terbaca tidak dirasakan dan menghasilkan `YELLOW`. Decision Engine juga hanya menilai satu gempa terbaru, sehingga gempa susulan kecil menurunkan level dan memicu alert serta notifikasi baru. Penentuan duplikat memakai teks deskripsi yang berubah setiap BMKG menambah wilayah `Dirasakan`, dan masa aktif alert dihitung dari waktu simpan, bukan waktu kejadian.
+
+Gempa besar umumnya diikuti rentetan gempa susulan. Gempa susulan terbesar biasanya lebih kecil dari gempa utama, sedangkan gempa yang lebih besar dalam rentetan dapat menandakan gempa utama baru.
+
+### Alternatif yang Dipertimbangkan
+1. Mempertahankan penilaian satu gempa terbaru dan memperbaiki penggabungan feed saja.
+2. Menilai seluruh gempa aktif dengan level tertinggi, lalu mengatur penyimpanan dan notifikasi per rentetan.
+3. Opsi 2 dengan notifikasi untuk setiap gempa susulan.
+
+Untuk gempa dengan level sama dalam rentetan, dipertimbangkan: memperpanjang alert tanpa notifikasi, menyimpan alert baru tanpa notifikasi, atau menerbitkan alert dan notifikasi bila magnitudo bertambah paling sedikit 1,0. Acuan selisih magnitudo dibandingkan antara gempa sebelumnya dan magnitudo yang terakhir dikirim notifikasi.
+
+Untuk teks `Potensi` yang belum terverifikasi, dipertimbangkan: mencatat tanpa menebak, mencocokkan pola teks, atau menganggapnya `WASPADA`.
+
+### Keputusan yang Dipilih
+Opsi 2, dengan ketentuan:
+- Ketiga feed disatukan per `DateTime`. Item dengan waktu, koordinat, atau magnitudo tidak valid tidak dipakai.
+- Gempa relevan bila episentrum dalam radius, atau `Dirasakan` menyebut wilayah kata kunci desa berapa pun jaraknya, dicocokkan per nama wilayah.
+- Level gempa adalah level tertinggi di antara gempa aktif. Masa aktif alert dihitung dari waktu kejadian terbaru pada level tersebut.
+- Level naik menerbitkan alert dan notifikasi. Level turun menerbitkan alert tanpa notifikasi.
+- Level sama menerbitkan alert dan notifikasi bila magnitudo terbesar pada level itu paling sedikit 1,0 di atas magnitudo yang terakhir dikirim notifikasi. Selain itu alert diperpanjang tanpa notifikasi.
+- Hanya teks `Potensi` yang terverifikasi yang dikenali. Teks lain dicatat tanpa ditebak.
+
+### Alasan Pemilihan
+Penyatuan feed mengembalikan informasi `Dirasakan` dan `Potensi` yang selama ini terpisah. Level tertinggi dari gempa aktif mencegah penurunan level oleh gempa susulan kecil. Selisih 1,0 magnitudo, setara energi sekitar 32 kali, tidak tercapai oleh gempa susulan biasa sehingga warga tidak menerima notifikasi berulang, tetapi tetap diberi tahu bila muncul gempa yang jauh lebih besar. Acuan magnitudo yang terakhir dikirim notifikasi mencegah gempa yang jauh lebih besar terlewat karena kenaikan bertahap. Teks `Potensi` yang tidak ditebak menghindari klaim potensi tsunami tanpa dasar.
+
+### Dampak Terhadap Sistem
+- Tabel `alerts` memperoleh kolom `event_time`, `reference_magnitude`, `episode_started_at`, `episode_event_count`, dan `episode_max_magnitude`.
+- Alert dapat diperbarui scheduler selama rentetan berlangsung.
+- Gempa aktif diambil dari data live dan `earthquake_records` 24 jam terakhir. Kejadian baru atau berubah disimpan.
+- Banner warga dan bar insiden admin menampilkan ringkasan rentetan bila gempa aktif lebih dari satu.
+- Estimasi tsunami `WASPADA` belum dapat aktif sampai teks `Potensi` resmi untuk gempa berpotensi tsunami ditambahkan.
+- Memperluas ADR-035, ADR-040, dan ADR-042. Alert status tsunami tetap mengikuti ADR-045.
