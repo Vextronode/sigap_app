@@ -75,7 +75,7 @@ test("Decision Engine: ringkasan rentetan gempa aktif", () => {
   assert.equal(result.sequence?.eventCount, 3);
   assert.equal(result.sequence?.maxMagnitude, 5.6);
   assert.equal(result.sequence?.levelMaxMagnitude, 5.6);
-  assert.equal(result.sequence?.eventMagnitude, 4.8);
+  assert.match(result.description, /M5\.6/);
 });
 
 test("Decision Engine: masa aktif mengikuti kejadian terbaru pada level tertinggi", () => {

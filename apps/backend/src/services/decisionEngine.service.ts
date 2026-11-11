@@ -58,8 +58,9 @@ const describeEarthquake = (earthquake: EarthquakeInfo, level: AlertLevel): stri
     : `Gempa M${earthquake.magnitude} terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.`;
 
 /**
- * Rentetan gempa: level tertinggi di antara gempa aktif. Deskripsi dan masa
- * aktif memakai kejadian terbaru pada level tersebut.
+ * Rentetan gempa: level tertinggi di antara gempa aktif. Deskripsi memakai gempa
+ * terbesar pada level tersebut; masa aktif memakai kejadian terbaru pada level itu,
+ * sehingga gempa susulan dengan level sama memperpanjang alert.
  */
 const evaluateEarthquakes = (earthquakes: DecisionInput["earthquakes"]): DecisionResult | null => {
   const active = (earthquakes ?? [])
@@ -73,16 +74,22 @@ const evaluateEarthquakes = (earthquakes: DecisionInput["earthquakes"]): Decisio
   const latestAtTop = atTopLevel.reduce((latest, item) =>
     eventTimeMs(item.event) > eventTimeMs(latest.event) ? item : latest
   );
+  const largestAtTop = atTopLevel.reduce((largest, item) =>
+    item.event.magnitude > largest.event.magnitude ||
+    (item.event.magnitude === largest.event.magnitude &&
+      eventTimeMs(item.event) > eventTimeMs(largest.event))
+      ? item
+      : largest
+  );
   const startedAt = Math.min(...active.map((item) => eventTimeMs(item.event)));
 
   return {
     level: latestAtTop.level,
     source: "BMKG",
-    description: describeEarthquake(latestAtTop.event, latestAtTop.level),
+    description: describeEarthquake(largestAtTop.event, largestAtTop.level),
     sequence: {
       eventTime: latestAtTop.event.updatedAt,
-      eventMagnitude: latestAtTop.event.magnitude,
-      levelMaxMagnitude: Math.max(...atTopLevel.map((item) => item.event.magnitude)),
+      levelMaxMagnitude: largestAtTop.event.magnitude,
       startedAt: new Date(startedAt).toISOString(),
       eventCount: active.length,
       maxMagnitude: Math.max(...active.map((item) => item.event.magnitude)),

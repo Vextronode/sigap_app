@@ -81,7 +81,14 @@ async function main() {
   }
 
   const result = DecisionEngineService.evaluate(input);
-  const alert = await AlertService.saveAlert(result.level, result.source, result.description);
+  const alert = await AlertService.saveAlert(
+    result.level,
+    result.source,
+    result.description,
+    result.sequence
+      ? { details: result.sequence, referenceMagnitude: result.sequence.levelMaxMagnitude }
+      : undefined
+  );
 
   console.log(`Skenario "${scenarioArg}"${useTsunami ? " (tsunami)" : " (gempa)"} -> level ${result.level}`);
   console.log(alert);

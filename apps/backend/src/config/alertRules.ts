@@ -26,6 +26,15 @@ export const ALERT_RULES = {
   earthquake: {
     feltAreaKeywords: ["Cibenda", "Parigi", "Pangandaran"],
   },
+
+  /**
+   * Dalam satu rentetan gempa dengan level sama, alert baru dan notifikasi terbit
+   * bila magnitudo terbesar pada level tersebut paling sedikit sebesar ini di atas
+   * magnitudo yang terakhir dikirim notifikasi (ditetapkan Tech Lead, ADR-046).
+   */
+  sequence: {
+    magnitudeStepForNotification: 1.0,
+  },
 } as const;
 
 /**

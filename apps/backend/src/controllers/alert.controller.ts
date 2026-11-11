@@ -5,8 +5,9 @@ import { UnauthorizedError } from "../errors/AppError.js";
 import type { ApiSuccessResponse } from "../types/weather.types.js";
 import type { AlertFilterQuery, AlertRecord } from "../types/alert.types.js";
 
-// respons publik tidak memuat identitas staf peninjau (ADR-044)
-const toPublicAlert = ({ reviewer, reviewedBy, ...alert }: AlertRecord) => alert;
+// respons publik tidak memuat identitas staf peninjau (ADR-044) maupun acuan
+// internal aturan notifikasi rentetan (ADR-046)
+const toPublicAlert = ({ reviewer, reviewedBy, referenceMagnitude, ...alert }: AlertRecord) => alert;
 
 type PublicAlert = ReturnType<typeof toPublicAlert>;
 

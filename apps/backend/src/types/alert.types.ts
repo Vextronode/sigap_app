@@ -35,8 +35,7 @@ export interface DecisionInput {
 export interface EarthquakeSequence {
   /** Kejadian terbaru pada level tertinggi; dasar masa aktif alert. */
   eventTime: string;
-  eventMagnitude: number;
-  /** Magnitudo terbesar pada level tertinggi; dasar aturan notifikasi rentetan. */
+  /** Magnitudo terbesar pada level tertinggi; dasar deskripsi dan aturan notifikasi rentetan. */
   levelMaxMagnitude: number;
   startedAt: string;
   eventCount: number;
@@ -83,6 +82,14 @@ export interface AlertRecord {
   reviewedBy: string | null;
   reviewedAt: Date | null;
   reviewer?: AlertReviewerInfo | null;
+  /** Rentetan gempa (ADR-046); kosong untuk alert status tsunami dan alert lama. */
+  eventTime?: Date | null;
+  referenceMagnitude?: number | null;
+  episodeStartedAt?: Date | null;
+  episodeEventCount?: number | null;
+  episodeMaxMagnitude?: number | null;
+  /** Batas masa aktif alert yang berlaku; null bila mengikuti BMKG_TSUNAMI_STATUS. */
+  activeUntil?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,9 +1,9 @@
 import { EarthquakeService } from "../services/earthquake.service.js";
 import { DecisionEngineService } from "../services/decisionEngine.service.js";
-import { AlertService, LIVE_FALLBACK_ALERT_ID } from "../services/alert.service.js";
+import { AlertService } from "../services/alert.service.js";
+import { decideAlertAction } from "../services/alertSequence.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
 import { NotificationService } from "../services/notification.service.js";
-import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
 import type { TsunamiStatusInfo } from "../types/alert.types.js";
 import type { EarthquakeInfo } from "../types/earthquake.types.js";
 
@@ -22,6 +22,7 @@ export async function runAlertCheck(): Promise<{
     source: string;
     description: string | undefined;
     saved: boolean;
+    extended?: boolean;
 }> {
     // Seluruh gempa relevan untuk Desa Cibenda yang masih aktif (24 jam),
     // BUKAN gempa nasional terbaru — lihat catatan di decisionEngine.service.ts.
@@ -61,27 +62,54 @@ export async function runAlertCheck(): Promise<{
         return { ...result, saved: false };
     }
 
-    const latestAlert = await AlertService.getCurrentAlert();
-    // Hasil evaluasi langsung tidak berasal dari tabel alerts, jadi bukan duplikat.
-    // Rekaman berumur > 24 jam juga bukan duplikat: status tsunami resmi yang masih
-    // berlaku diterbitkan ulang sebagai pengingat harian (ADR-045).
-    const isDuplicate =
-        latestAlert?.id !== LIVE_FALLBACK_ALERT_ID &&
-        latestAlert !== null &&
-        Date.now() - new Date(latestAlert.createdAt).getTime() <= ALERT_ACTIVE_MAX_AGE_MS &&
-        latestAlert?.level === result.level &&
-        latestAlert?.source === result.source &&
-        latestAlert?.description === result.description;
+    // Simpan, perpanjang, atau lewati sesuai aturan rentetan gempa (ADR-046).
+    // Hasil tanpa rentetan (status tsunami) memakai aturan duplikat sebelumnya,
+    // termasuk pengingat harian status tsunami resmi (ADR-045).
+    let latestAlert = null;
+    try {
+        latestAlert = await AlertService.getLatestRecord();
+    } catch (dbError) {
+        console.warn(
+            "[AlertScheduler] Gagal membaca alert terakhir:",
+            dbError instanceof Error ? dbError.message : dbError
+        );
+    }
+    const action = decideAlertAction(result, latestAlert);
 
-    if (isDuplicate) {
+    if (action.type === "skip") {
         console.log(`[AlertScheduler] Skipped duplicate alert (${result.level})`);
         return { ...result, saved: false };
+    }
+
+    if (action.type === "extend" && latestAlert && result.sequence) {
+        try {
+            await AlertService.extendSequence(
+                latestAlert.id,
+                result.description,
+                result.sequence,
+                action.referenceMagnitude
+            );
+            console.log(`[AlertScheduler] Alert diperpanjang (${result.level}) - ${result.description}`);
+        } catch (dbError) {
+            console.warn(
+                "[AlertScheduler] Gagal memperpanjang alert:",
+                dbError instanceof Error ? dbError.message : dbError
+            );
+        }
+        return { ...result, saved: false, extended: true };
     }
 
     // Simpan ke database jika DB tersedia
     let isSaved = false;
     try {
-        await AlertService.saveAlert(result.level, result.source, result.description);
+        await AlertService.saveAlert(
+            result.level,
+            result.source,
+            result.description,
+            result.sequence && action.type === "save"
+                ? { details: result.sequence, referenceMagnitude: action.referenceMagnitude }
+                : undefined
+        );
         console.log(`[AlertScheduler] Alert saved (${result.level}) - ${result.description}`);
         isSaved = true;
     } catch (dbError) {
@@ -91,10 +119,11 @@ export async function runAlertCheck(): Promise<{
         );
     }
 
-    // Kirim push notification otomatis jika level bukan GREEN.
-    // shouldNotify() sudah menjamin GREEN tidak dikirim — warga tidak perlu
-    // dinotif untuk kondisi aman, hanya YELLOW/ORANGE/RED (Waspada/Siaga/Awas).
-    if (NotificationService.shouldNotify(result.level as never)) {
+    // Kirim push notification otomatis bila aturan rentetan mengizinkan.
+    // Penurunan level gempa tidak dikirim (ADR-046). shouldNotify() menjamin GREEN
+    // tidak dikirim, hanya YELLOW/ORANGE/RED (Waspada/Siaga/Awas).
+    const notify = action.type === "save" && action.notify;
+    if (notify && NotificationService.shouldNotify(result.level as never)) {
         try {
             const payload = await NotificationService.getLatestPayload();
             if (payload) {

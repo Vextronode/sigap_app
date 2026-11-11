@@ -11,11 +11,13 @@ import {
   LABEL_TO_REVIEW_STATUS,
   LABEL_TO_SEVERITY,
   mapAlertToRecord,
+  type AlertSequenceColumns,
 } from "../repositories/alert.repository.js";
 import type {
   AlertFilterQuery,
   AlertListPagination,
   AlertRecord,
+  EarthquakeSequence,
   ReviewAlertPayload,
 } from "../types/alert.types.js";
 
@@ -25,11 +27,51 @@ const ALERT_CACHE_TTL_MS = 60_000; // 60 detik TTL in-memory cache (menghemat co
 let cachedAlertState: { data: AlertRecord | null; expiresAt: number } | null = null;
 
 /** Alert status tsunami resmi berlaku selama BMKG_TSUNAMI_STATUS sama dengan levelnya (ADR-045). */
-const isOfficialStatusActive = (level: AlertLevel): boolean => {
+const isOfficialStatusActive = (level: AlertLevel | string): boolean => {
   const configured = process.env.BMKG_TSUNAMI_STATUS?.toUpperCase();
   const tsunamiLevels: Record<string, string> = ALERT_RULES.tsunami;
   return configured !== undefined && tsunamiLevels[configured] === level;
 };
+
+/** Awal masa aktif: waktu kejadian gempa, atau waktu simpan untuk alert tanpa rentetan (ADR-046). */
+export const alertActiveFrom = (alert: { eventTime?: Date | null; createdAt: Date }): Date =>
+  new Date(alert.eventTime ?? alert.createdAt);
+
+/**
+ * Alert selain GREEN yang masih berlaku: status tsunami resmi mengikuti
+ * BMKG_TSUNAMI_STATUS (ADR-045), alert lain berlaku 24 jam sejak awal masa aktif.
+ */
+export const isAlertRecordActive = (alert: {
+  level: AlertLevel | string;
+  source: string;
+  eventTime?: Date | null;
+  createdAt: Date;
+}): boolean => {
+  if (alert.level === AlertLevel.GREEN || alert.level === "UNKNOWN") return false;
+  if (alert.source === OFFICIAL_TSUNAMI_SOURCE) return isOfficialStatusActive(alert.level);
+  return Date.now() - alertActiveFrom(alert).getTime() <= ALERT_ACTIVE_MAX_AGE_MS;
+};
+
+const toSequenceColumns = (
+  details: EarthquakeSequence,
+  referenceMagnitude: number | null
+): AlertSequenceColumns => ({
+  eventTime: new Date(details.eventTime),
+  referenceMagnitude,
+  episodeStartedAt: new Date(details.startedAt),
+  episodeEventCount: details.eventCount,
+  episodeMaxMagnitude: details.maxMagnitude,
+});
+
+/** Alert tanpa rentetan gempa yang berlaku, mis. setelah alert berakhir. */
+const WITHOUT_SEQUENCE = {
+  eventTime: null,
+  referenceMagnitude: null,
+  episodeStartedAt: null,
+  episodeEventCount: null,
+  episodeMaxMagnitude: null,
+  activeUntil: null,
+} as const;
 
 /** Id hasil evaluasi langsung dari BMKG yang tidak berasal dari tabel alerts. */
 export const LIVE_FALLBACK_ALERT_ID = "live-fallback";
@@ -53,21 +95,40 @@ export const buildUnavailableAlert = (id: string): AlertRecord => {
 
 export class AlertService {
   /**
-   * Menyimpan alert baru ke database
+   * Menyimpan alert baru ke database, beserta rentetan gempa bila level berasal dari gempa.
    */
   static async saveAlert(
     level: AlertLevel,
     source: string,
-    description?: string
+    description?: string,
+    sequence?: { details: EarthquakeSequence; referenceMagnitude: number | null }
   ) {
-    cachedAlertState = null; // Invalidate cache saat ada alert baru
-    return prisma.alert.create({
-      data: {
-        level,
-        source,
-        description,
-      },
+    const saved = await AlertRepository.create({
+      level,
+      source,
+      description,
+      sequence: sequence && toSequenceColumns(sequence.details, sequence.referenceMagnitude),
     });
+    cachedAlertState = null; // Invalidate cache setelah alert baru tersimpan
+    return saved;
+  }
+
+  /**
+   * Memperpanjang alert yang berlaku dengan kejadian terbaru pada rentetan yang sama,
+   * tanpa alert baru dan tanpa notifikasi (ADR-046).
+   */
+  static async extendSequence(
+    id: string,
+    description: string,
+    details: EarthquakeSequence,
+    referenceMagnitude: number
+  ): Promise<void> {
+    await AlertRepository.extendSequence(
+      id,
+      description,
+      toSequenceColumns(details, referenceMagnitude)
+    );
+    cachedAlertState = null;
   }
 
   /**
@@ -99,19 +160,20 @@ export class AlertService {
       });
 
       if (latest) {
-        const mapped = mapAlertToRecord(latest);
-
-        // Cek umur alert dari waktu bencana (createdAt), BUKAN kapan admin klik verifikasi (updatedAt).
-        // Alert gempa berakhir setelah > 24 jam (1 hari). Alert status tsunami resmi
+        // Masa aktif dihitung dari waktu kejadian gempa (event_time), atau dari createdAt
+        // untuk alert tanpa rentetan, BUKAN kapan admin klik verifikasi (updatedAt).
+        // Alert gempa berakhir setelah > 24 jam (ADR-046). Alert status tsunami resmi
         // berakhir saat BMKG_TSUNAMI_STATUS berubah (ADR-045).
         // Status review adalah catatan pasca-kejadian dan tidak memengaruhi level (ADR-041).
-        const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-        const hasEnded =
-          latest.source === OFFICIAL_TSUNAMI_SOURCE
-            ? !isOfficialStatusActive(latest.level)
-            : ageMs > ALERT_ACTIVE_MAX_AGE_MS;
-        const isExpired = hasEnded && latest.level !== AlertLevel.GREEN;
-        const isActive = !isExpired && latest.level !== AlertLevel.GREEN;
+        const isOfficial = latest.source === OFFICIAL_TSUNAMI_SOURCE;
+        const mapped: AlertRecord = {
+          ...mapAlertToRecord(latest),
+          activeUntil: isOfficial
+            ? null
+            : new Date(alertActiveFrom(latest).getTime() + ALERT_ACTIVE_MAX_AGE_MS),
+        };
+        const isActive = isAlertRecordActive(latest);
+        const isExpired = !isActive && latest.level !== AlertLevel.GREEN;
 
         // Tanpa alert aktif, GREEN hanya berlaku bila data BMKG terbaca (ADR-043).
         const { EarthquakeService } = await import("./earthquake.service.js");
@@ -120,6 +182,7 @@ export class AlertService {
         } else if (isExpired) {
           alertResult = {
             ...mapped,
+            ...WITHOUT_SEQUENCE,
             level: AlertLevel.GREEN,
             source: "BMKG",
             description: "Tidak terdapat peringatan resmi BMKG.",
@@ -156,6 +219,7 @@ export class AlertService {
       const liveEval = DecisionEngineService.evaluate({ earthquakes, tsunami });
 
       const now = new Date();
+      const sequence = liveEval.sequence;
       alertResult = {
         id: LIVE_FALLBACK_ALERT_ID,
         level: liveEval.level as AlertLevel,
@@ -166,6 +230,12 @@ export class AlertService {
         reviewStatus: "Belum Diverifikasi",
         reviewedBy: null,
         reviewedAt: null,
+        ...(sequence
+          ? {
+              ...toSequenceColumns(sequence, null),
+              activeUntil: new Date(new Date(sequence.eventTime).getTime() + ALERT_ACTIVE_MAX_AGE_MS),
+            }
+          : WITHOUT_SEQUENCE),
         createdAt: now,
         updatedAt: now,
       };
@@ -179,6 +249,14 @@ export class AlertService {
       expiresAt: nowMs + ALERT_CACHE_TTL_MS,
     };
     return alertResult;
+  }
+
+  /**
+   * Rekaman alert terakhir apa adanya, tanpa penyesuaian masa aktif. Dipakai
+   * scheduler untuk membandingkan rentetan gempa (ADR-046).
+   */
+  static async getLatestRecord(): Promise<AlertRecord | null> {
+    return AlertRepository.findLatest();
   }
 
   /**
