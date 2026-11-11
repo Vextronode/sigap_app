@@ -18,6 +18,28 @@ const shortDateFormatter = new Intl.DateTimeFormat("id-ID", {
   month: "short",
 });
 
+const wibTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Jakarta",
+});
+
+const wibDayFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "short",
+  timeZone: "Asia/Jakarta",
+});
+
+/** Jam WIB, mis. "10.12 WIB"; tanggal ikut ditampilkan bila bukan hari ini (WIB). */
+export const formatWibMoment = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const time = `${wibTimeFormatter.format(date).replace(":", ".")} WIB`;
+  const isToday = wibDayFormatter.format(date) === wibDayFormatter.format(new Date());
+  return isToday ? time : `${wibDayFormatter.format(date)} ${time}`;
+};
+
 export const formatShortDate = (value?: string) => {
   if (!value) return "";
   const parts = value.split("-");

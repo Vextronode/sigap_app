@@ -4,9 +4,11 @@ import {
   ShieldAlert,
   MapPin,
   CheckCircle2,
+  Waves,
 } from "lucide-react";
 import type { CurrentAlert, Earthquake } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
+import { getSequenceSummary } from "../../../utils/alertSequence";
 
 interface ActiveIncidentBarProps {
   alert: CurrentAlert | null;
@@ -64,6 +66,7 @@ export const ActiveIncidentBar: React.FC<ActiveIncidentBarProps> = ({
   }
 
   // Jika ada insiden aktif
+  const sequenceSummary = getSequenceSummary(alert);
   const toneClass = isEmergency
     ? "border-rose-500/50 bg-rose-500/10 text-rose-950 dark:text-rose-100"
     : "border-amber-500/50 bg-amber-500/10 text-amber-950 dark:text-amber-100";
@@ -113,8 +116,10 @@ export const ActiveIncidentBar: React.FC<ActiveIncidentBarProps> = ({
               )}
             </div>
 
+            {/* Pada rentetan, gempa terakhir di kartu belum tentu gempa penentu level,
+                sehingga judul memakai deskripsi alert (gempa terbesar pada level itu). */}
             <h3 className="text-xs sm:text-sm font-extrabold tracking-tight line-clamp-2 sm:line-clamp-1">
-              {earthquake
+              {earthquake && !sequenceSummary
                 ? `Gempa M ${earthquake.magnitude} — ${earthquake.distanceToVillage} km dari Balai Desa Cibenda`
                 : alert.description || "Peringatan Dini Bencana Gempa Pangandaran"}
             </h3>
@@ -123,6 +128,13 @@ export const ActiveIncidentBar: React.FC<ActiveIncidentBarProps> = ({
               <p className="flex items-center gap-1.5 text-[11px] sm:text-xs opacity-90 truncate font-medium">
                 <MapPin size={11} className="shrink-0 text-rose-500" />
                 <span>{alert.location}</span>
+              </p>
+            )}
+
+            {sequenceSummary && (
+              <p className="flex items-start gap-1.5 text-[11px] sm:text-xs opacity-90 font-medium">
+                <Waves size={11} className="shrink-0 mt-0.5" />
+                <span>{sequenceSummary}</span>
               </p>
             )}
           </div>
