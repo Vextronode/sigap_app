@@ -5,6 +5,7 @@ import { BmkgService } from "../services/bmkg.service.js";
 import { NotificationService } from "../services/notification.service.js";
 import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
 import type { TsunamiStatusInfo } from "../types/alert.types.js";
+import type { EarthquakeInfo } from "../types/earthquake.types.js";
 
 /**
  * Jalankan satu siklus pengecekan alert BMKG.
@@ -22,17 +23,16 @@ export async function runAlertCheck(): Promise<{
     description: string | undefined;
     saved: boolean;
 }> {
-    // Gempa yang relevan untuk Desa Cibenda (sudah difilter radius +
-    // umur maksimum oleh EarthquakeService), BUKAN gempa nasional
-    // terbaru — lihat catatan di decisionEngine.service.ts.
-    let earthquake = null;
+    // Seluruh gempa relevan untuk Desa Cibenda yang masih aktif (24 jam),
+    // BUKAN gempa nasional terbaru — lihat catatan di decisionEngine.service.ts.
+    let earthquakes: EarthquakeInfo[] = [];
     let tsunami: TsunamiStatusInfo;
 
     try {
-        earthquake = await EarthquakeService.getPangandaran();
+        earthquakes = await EarthquakeService.getActiveEvents();
     } catch (eqError) {
         console.warn(
-            "[AlertScheduler] Gagal mengambil data gempa Pangandaran terkini:",
+            "[AlertScheduler] Gagal mengambil data gempa aktif:",
             eqError instanceof Error ? eqError.message : eqError
         );
     }
@@ -52,7 +52,7 @@ export async function runAlertCheck(): Promise<{
     }
 
     // Jalankan Decision Engine
-    const result = DecisionEngineService.evaluate({ earthquake, tsunami });
+    const result = DecisionEngineService.evaluate({ earthquakes, tsunami });
 
     // Jika hasil evaluasi adalah GREEN (Aman / tidak ada ancaman aktif),
     // jangan simpan ke riwayat alert verifikasi. Alert verifikasi khusus mencatat

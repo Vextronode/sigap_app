@@ -151,9 +151,9 @@ export class AlertService {
         throw new Error("Data gempa BMKG tidak tersedia.");
       }
 
-      const earthquake = await EarthquakeService.getPangandaran();
+      const earthquakes = await EarthquakeService.getActiveEvents();
       const tsunami = await BmkgService.getTsunamiStatus();
-      const liveEval = DecisionEngineService.evaluate({ earthquake, tsunami });
+      const liveEval = DecisionEngineService.evaluate({ earthquakes, tsunami });
 
       const now = new Date();
       alertResult = {

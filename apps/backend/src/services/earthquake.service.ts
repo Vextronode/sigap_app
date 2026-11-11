@@ -11,10 +11,12 @@ import { requestWithRetry } from "../utils/httpRetryWrapper.js";
 import { prisma } from "../config/prisma.js";
 import {
   classifyTsunamiPotential,
+  isFeltNearVillage,
   mergeBmkgFeeds,
   parseBmkgDateTime,
   parseFeltAreas,
 } from "../utils/bmkgEarthquake.util.js";
+import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
 import type {
   BmkgAutogempaResponse,
   BmkgEarthquakeItem,
@@ -119,6 +121,24 @@ const fromRecord = (record: EarthquakeRecord): EarthquakeInfo => ({
 
 const isPresent = <T>(value: T | null): value is T => value !== null;
 
+/**
+ * Gempa relevan untuk Desa Cibenda: episenter dalam PANGANDARAN_RADIUS_KM, atau
+ * dirasakan di wilayah kata kunci desa berapa pun jaraknya (ADR-046).
+ */
+const isRelevantToVillage = (earthquake: EarthquakeInfo): boolean =>
+  (Number.isFinite(earthquake.distanceToVillage) &&
+    earthquake.distanceToVillage <= PANGANDARAN_RADIUS_KM) ||
+  isFeltNearVillage(earthquake.feltAreas);
+
+/** true bila data live berbeda dari rekaman tersimpan sehingga perlu disimpan ulang. */
+const differsFromRecord = (live: EarthquakeInfo, stored: EarthquakeInfo | undefined): boolean =>
+  !stored ||
+  live.magnitude !== stored.magnitude ||
+  live.location !== stored.location ||
+  (live.felt !== "" && live.felt !== stored.felt) ||
+  (live.potential !== "" && live.potential !== stored.potential) ||
+  (live.shakemap !== "" && live.shakemap !== stored.shakemap);
+
 export class EarthquakeService {
   static async getIndonesia(): Promise<EarthquakeInfo> {
     try {
@@ -143,13 +163,13 @@ export class EarthquakeService {
   }
 
   /**
-   * Mengembalikan gempa terdekat terhadap Desa Cibenda berdasarkan radius
-   * dan umur maksimum tertentu. Return null jika tidak ada gempa yang
-   * memenuhi kriteria (dianggap kondisi aman, bukan error).
+   * Mengembalikan gempa yang lolos filter relevansi dan umur maksimum tertentu.
+   * Return null jika tidak ada gempa yang memenuhi kriteria (dianggap kondisi
+   * aman, bukan error).
    */
   private static findNearestEarthquake(
     earthquakes: BmkgEarthquakeItem[],
-    radiusKm: number,
+    isRelevant: (earthquake: EarthquakeInfo) => boolean,
     maxAgeDays?: number,
     sortBy: "nearest" | "latest" = "nearest",
   ): EarthquakeInfo | null {
@@ -168,8 +188,7 @@ export class EarthquakeService {
         .filter(isPresent)
         .filter(
           (earthquake) =>
-            Number.isFinite(earthquake.distanceToVillage) &&
-            earthquake.distanceToVillage <= radiusKm &&
+            isRelevant(earthquake) &&
             (cutoffMs === null || new Date(earthquake.updatedAt).getTime() >= cutoffMs),
         )
         .sort((left, right) => {
@@ -214,6 +233,44 @@ export class EarthquakeService {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * Seluruh gempa relevan yang masih dalam masa aktif (24 jam), terbaru lebih dulu.
+   * Data live digabung dengan `earthquake_records` agar gempa yang sudah tergeser
+   * dari daftar BMKG tetap terhitung. Kejadian baru atau berubah disimpan (ADR-046).
+   */
+  static async getActiveEvents(): Promise<EarthquakeInfo[]> {
+    const cutoffIso = new Date(Date.now() - ALERT_ACTIVE_MAX_AGE_MS).toISOString();
+
+    const live = (await this.fetchCombinedList())
+      .map((item) => this.parse(item))
+      .filter(isPresent)
+      .filter((earthquake) => earthquake.updatedAt >= cutoffIso && isRelevantToVillage(earthquake));
+
+    let stored: EarthquakeInfo[] = [];
+    try {
+      const records = await prisma.earthquakeRecord.findMany({
+        where: { eventTime: { gte: cutoffIso } },
+      });
+      stored = records.map(fromRecord).filter(isRelevantToVillage);
+    } catch (error) {
+      console.warn(
+        "[EarthquakeService] Gagal membaca earthquake_records untuk gempa aktif:",
+        error instanceof Error ? error.message : error
+      );
+    }
+
+    const storedById = new Map(stored.map((earthquake) => [earthquake.updatedAt, earthquake]));
+    const events = new Map(storedById);
+    for (const earthquake of live) {
+      const current = differsFromRecord(earthquake, storedById.get(earthquake.updatedAt))
+        ? await this.persistAndRetrievePangandaranShakemap(earthquake)
+        : (storedById.get(earthquake.updatedAt) as EarthquakeInfo);
+      events.set(earthquake.updatedAt, current);
+    }
+
+    return [...events.values()].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
   /** true bila minimal satu daftar gempa BMKG berhasil diambil. */
@@ -329,7 +386,7 @@ export class EarthquakeService {
     // 1. Ambil gempa terbaru wilayah Jawa Barat dari feed BMKG jika ada
     const liveNearest = this.findNearestEarthquake(
       rawItems,
-      WEST_JAVA_RADIUS_KM,
+      (earthquake) => earthquake.distanceToVillage <= WEST_JAVA_RADIUS_KM,
       undefined,
       "latest",
     );
@@ -383,26 +440,10 @@ export class EarthquakeService {
   static async getPangandaran(ignoreAgeLimit = false): Promise<EarthquakeInfo | null> {
     const rawItems = await this.fetchCombinedList();
 
-    // Saring gempa khusus Pangandaran: menyebut nama Pangandaran ATAU berada dalam PANGANDARAN_RADIUS_KM dari Desa Cibenda
-    const pangandaranItems = rawItems.filter((item) => {
-      const locationLower = item.Wilayah?.toLowerCase() ?? "";
-      const feltLower = item.Dirasakan?.toLowerCase() ?? "";
-      const isPangandaranName =
-        locationLower.includes("pangandaran") || feltLower.includes("pangandaran");
-
-      const parsed = this.parse(item);
-      const isClose =
-        parsed !== null &&
-        Number.isFinite(parsed.distanceToVillage) &&
-        parsed.distanceToVillage <= PANGANDARAN_RADIUS_KM;
-
-      return isPangandaranName || isClose;
-    });
-
-    // Cari gempa live terkini (dalam batas umur 7 hari) dan urutkan berdasarkan yang paling baru
+    // Cari gempa relevan terkini (dalam batas umur 7 hari) dan urutkan berdasarkan yang paling baru
     const liveNearest = this.findNearestEarthquake(
-      pangandaranItems,
-      PANGANDARAN_RADIUS_KM,
+      rawItems,
+      isRelevantToVillage,
       PANGANDARAN_MAX_AGE_DAYS,
       "latest",
     );

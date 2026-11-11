@@ -24,7 +24,7 @@ import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 import type { TsunamiStatus, TsunamiStatusInfo } from "../types/alert.types.js";
 import { EarthquakeService } from "./earthquake.service.js";
-import { ALERT_ACTIVE_MAX_AGE_MS, OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
+import { OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
@@ -127,20 +127,16 @@ export class BmkgService {
    */
   private static async estimateTsunamiStatus(): Promise<TsunamiStatusInfo> {
     try {
-      const nearest = await EarthquakeService.getPangandaran();
+      // Seluruh gempa aktif (24 jam), terbaru lebih dulu. Hanya teks Potensi yang
+      // terverifikasi yang dikenali (ADR-046).
+      const activeEvents = await EarthquakeService.getActiveEvents();
+      const potential = activeEvents.find((event) => event.tsunamiPotential === "BERPOTENSI");
 
-      // Hanya teks Potensi yang terverifikasi yang dikenali (ADR-046).
-      const isPotentiallyTsunamigenic = nearest?.tsunamiPotential === "BERPOTENSI";
-
-      if (
-        isPotentiallyTsunamigenic &&
-        nearest &&
-        Date.now() - new Date(nearest.updatedAt).getTime() <= ALERT_ACTIVE_MAX_AGE_MS
-      ) {
+      if (potential) {
         return {
           status: "WASPADA",
           source: "BMKG (estimasi dari data gempa)",
-          description: `Estimasi awal dari gempa M${nearest.magnitude} di ${nearest.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+          description: `Estimasi awal dari gempa M${potential.magnitude} di ${potential.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
         };
       }
 

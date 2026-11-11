@@ -1,4 +1,4 @@
-import { TSUNAMI_POTENTIAL_TEXTS } from "../config/alertRules.js";
+import { ALERT_RULES, TSUNAMI_POTENTIAL_TEXTS } from "../config/alertRules.js";
 import type {
   BmkgEarthquakeItem,
   FeltArea,
@@ -57,6 +57,18 @@ export const parseFeltAreas = (felt: string | undefined): FeltArea[] =>
         ? { area: match[2].trim(), mmi: match[1].replace(/\s+/g, "") }
         : { area: entry, mmi: null };
     });
+
+/**
+ * true bila salah satu wilayah dirasakan adalah wilayah kata kunci desa.
+ * Dicocokkan per nama wilayah, sehingga "Kecamatan Parigi" cocok tetapi
+ * "Parigi Moutong" (Sulawesi Tengah) tidak.
+ */
+export const isFeltNearVillage = (feltAreas: FeltArea[]): boolean =>
+  feltAreas.some(({ area }) =>
+    ALERT_RULES.earthquake.feltAreaKeywords.some((keyword) =>
+      new RegExp(`(^|\\s)${keyword}$`, "i").test(area.trim())
+    )
+  );
 
 type FeedItems = {
   auto?: BmkgEarthquakeItem | null;

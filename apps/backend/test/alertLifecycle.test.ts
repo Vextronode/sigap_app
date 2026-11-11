@@ -59,6 +59,11 @@ mock.module(src("services/earthquake.service.ts"), {
         if (state.quakeThrows) throw new Error("gagal");
         return state.quake;
       },
+      getActiveEvents: async () => {
+        if (state.quakeThrows) throw new Error("gagal");
+        const ageMs = state.quake ? Date.now() - new Date(String(state.quake.updatedAt)).getTime() : Infinity;
+        return ageMs <= 24 * 3_600_000 ? [state.quake] : [];
+      },
       isLiveDataAvailable: async () => state.bmkgUp,
     },
   },

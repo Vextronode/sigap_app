@@ -1,35 +1,29 @@
 /**
- * Decision Engine sederhana — menentukan level kesiapsiagaan berdasarkan
- * data gempa terkini.
+ * Decision Engine — menentukan level kesiapsiagaan dari status tsunami dan
+ * seluruh gempa relevan yang masih aktif.
  *
- * Sumber gempa (lihat alert.scheduler.ts): `EarthquakeService.getPangandaran()`,
- * bukan gempa nasional terbaru. Artinya radius & umur maksimum gempa yang
- * masuk ke sini SUDAH difilter relevansinya sebelum sampai ke engine ini
- * (lihat `findNearestEarthquake` di earthquake.service.ts).
+ * Sumber gempa (lihat alert.scheduler.ts): `EarthquakeService.getActiveEvents()`,
+ * yaitu gempa yang sudah lolos filter relevansi Desa Cibenda.
  *
- * Umur status alert aktif dipatok maksimal 24 Jam (1 Hari) sejak waktu gempa.
- * Jika gempa berusia > 24 jam, status kesiapsiagaan otomatis kembali ke GREEN (Aman).
+ * Setiap gempa aktif selama 24 jam sejak waktu kejadiannya. Level gempa adalah
+ * level tertinggi di antara gempa yang masih aktif, sehingga gempa susulan yang
+ * lebih kecil tidak menurunkan level selama gempa penentu masih aktif (ADR-046).
  */
 
 import { AlertLevel } from "../../generated/prisma/enums.js";
-import { ALERT_ACTIVE_MAX_AGE_MS, ALERT_RULES } from "../config/alertRules.js";
+import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
+import { isFeltNearVillage } from "../utils/bmkgEarthquake.util.js";
+import type { EarthquakeInfo } from "../types/earthquake.types.js";
 import type { DecisionInput, DecisionResult, TsunamiStatus } from "../types/alert.types.js";
 
-const LEVEL_RANK: Record<AlertLevel, number> = {
+export const LEVEL_RANK: Record<AlertLevel, number> = {
   [AlertLevel.GREEN]: 0,
   [AlertLevel.YELLOW]: 1,
   [AlertLevel.ORANGE]: 2,
   [AlertLevel.RED]: 3,
 };
 
-const isFeltNearVillage = (felt: string | undefined): boolean => {
-  if (!felt) return false;
-
-  const normalized = felt.toLowerCase();
-  return ALERT_RULES.earthquake.feltAreaKeywords.some((keyword) =>
-    normalized.includes(keyword.toLowerCase())
-  );
-};
+const eventTimeMs = (earthquake: EarthquakeInfo) => new Date(earthquake.updatedAt).getTime();
 
 /**
  * Status tsunami (resmi InaTEWS via override manual, ATAU estimasi
@@ -51,34 +45,48 @@ const evaluateTsunami = (tsunami: DecisionInput["tsunami"]): DecisionResult | nu
   };
 };
 
+/** Level satu gempa, atau null bila sudah berumur lebih dari 24 jam. */
+const assessEarthquake = (earthquake: EarthquakeInfo): AlertLevel | null => {
+  const ageMs = Date.now() - eventTimeMs(earthquake);
+  if (!(ageMs <= ALERT_ACTIVE_MAX_AGE_MS)) return null;
+  return isFeltNearVillage(earthquake.feltAreas) ? AlertLevel.ORANGE : AlertLevel.YELLOW;
+};
+
+const describeEarthquake = (earthquake: EarthquakeInfo, level: AlertLevel): string =>
+  level === AlertLevel.ORANGE
+    ? `Gempa M${earthquake.magnitude} dirasakan warga di sekitar Desa Cibenda (${earthquake.felt}).`
+    : `Gempa M${earthquake.magnitude} terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.`;
+
 /**
- * Gempa (sudah difilter relevan untuk Desa Cibenda oleh
- * EarthquakeService.getPangandaran() sebelum sampai di sini).
- *
- * Umur aktif alert gempa = 24 Jam (1 Hari). Jika gempa lebih dari 24 jam,
- * gempa tidak lagi memengaruhi level.
+ * Rentetan gempa: level tertinggi di antara gempa aktif. Deskripsi dan masa
+ * aktif memakai kejadian terbaru pada level tersebut.
  */
-const evaluateEarthquake = (earthquake: DecisionInput["earthquake"]): DecisionResult | null => {
-  if (!earthquake) return null;
+const evaluateEarthquakes = (earthquakes: DecisionInput["earthquakes"]): DecisionResult | null => {
+  const active = (earthquakes ?? [])
+    .map((event) => ({ event, level: assessEarthquake(event) }))
+    .filter((item): item is { event: EarthquakeInfo; level: AlertLevel } => item.level !== null);
 
-  const { magnitude, felt, updatedAt } = earthquake;
-  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  if (active.length === 0) return null;
 
-  // Cek apakah gempa masih berusia <= 24 jam (1 hari)
-  if (ageMs > ALERT_ACTIVE_MAX_AGE_MS) return null;
-
-  if (isFeltNearVillage(felt)) {
-    return {
-      level: AlertLevel.ORANGE,
-      source: "BMKG",
-      description: `Gempa M${magnitude} dirasakan warga di sekitar Desa Cibenda (${felt}).`,
-    };
-  }
+  const topRank = Math.max(...active.map((item) => LEVEL_RANK[item.level]));
+  const atTopLevel = active.filter((item) => LEVEL_RANK[item.level] === topRank);
+  const latestAtTop = atTopLevel.reduce((latest, item) =>
+    eventTimeMs(item.event) > eventTimeMs(latest.event) ? item : latest
+  );
+  const startedAt = Math.min(...active.map((item) => eventTimeMs(item.event)));
 
   return {
-    level: AlertLevel.YELLOW,
+    level: latestAtTop.level,
     source: "BMKG",
-    description: `Gempa M${magnitude} terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.`,
+    description: describeEarthquake(latestAtTop.event, latestAtTop.level),
+    sequence: {
+      eventTime: latestAtTop.event.updatedAt,
+      eventMagnitude: latestAtTop.event.magnitude,
+      levelMaxMagnitude: Math.max(...atTopLevel.map((item) => item.event.magnitude)),
+      startedAt: new Date(startedAt).toISOString(),
+      eventCount: active.length,
+      maxMagnitude: Math.max(...active.map((item) => item.event.magnitude)),
+    },
   };
 };
 
@@ -90,7 +98,7 @@ export class DecisionEngineService {
    */
   static evaluate(input: DecisionInput): DecisionResult {
     const tsunami = evaluateTsunami(input.tsunami);
-    const earthquake = evaluateEarthquake(input.earthquake);
+    const earthquake = evaluateEarthquakes(input.earthquakes);
 
     if (tsunami && earthquake && LEVEL_RANK[earthquake.level] > LEVEL_RANK[tsunami.level]) {
       return {
@@ -102,11 +110,6 @@ export class DecisionEngineService {
     const result = tsunami ?? earthquake;
     if (result) return result;
 
-    /**
-     * ============================
-     * Default (Aman)
-     * ============================
-     */
     return {
       level: AlertLevel.GREEN,
       source: "BMKG",

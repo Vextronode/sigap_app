@@ -26,14 +26,29 @@ export interface TsunamiStatusInfo {
 }
 
 export interface DecisionInput {
-  earthquake?: EarthquakeInfo | null;
+  /** Gempa relevan; yang berumur lebih dari 24 jam diabaikan Decision Engine. */
+  earthquakes?: EarthquakeInfo[] | null;
   tsunami?: TsunamiStatusInfo | null;
+}
+
+/** Ringkasan rentetan gempa aktif yang menentukan level (ADR-046). */
+export interface EarthquakeSequence {
+  /** Kejadian terbaru pada level tertinggi; dasar masa aktif alert. */
+  eventTime: string;
+  eventMagnitude: number;
+  /** Magnitudo terbesar pada level tertinggi; dasar aturan notifikasi rentetan. */
+  levelMaxMagnitude: number;
+  startedAt: string;
+  eventCount: number;
+  maxMagnitude: number;
 }
 
 export interface DecisionResult {
   level: AlertLevel;
   source: string;
   description: string;
+  /** Terisi bila level berasal dari gempa. */
+  sequence?: EarthquakeSequence;
 }
 
 // label status review dalam bahasa indonesia sesuai spesifikasi fs-02
