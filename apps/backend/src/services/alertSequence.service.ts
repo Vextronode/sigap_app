@@ -18,13 +18,20 @@ const sameTime = (left: Date | null | undefined, right: string) =>
 
 const rankOf = (level: string) => LEVEL_RANK[level as AlertLevel] ?? 0;
 
-/** Aturan duplikat untuk alert tanpa rentetan gempa (status tsunami). */
-const isDuplicateWithoutSequence = (result: DecisionResult, latest: AlertRecord | null) =>
-  latest !== null &&
-  Date.now() - new Date(latest.createdAt).getTime() <= ALERT_ACTIVE_MAX_AGE_MS &&
-  latest.level === result.level &&
-  latest.source === result.source &&
-  latest.description === result.description;
+/**
+ * Aturan duplikat untuk alert tanpa rentetan gempa (status tsunami). Estimasi
+ * tsunami dikenali dari gempa asalnya, sehingga revisi data BMKG pada gempa yang
+ * sama tidak menerbitkan alert ulang. Status resmi dikenali dari teksnya dan
+ * diterbitkan ulang setiap 24 jam sebagai pengingat (ADR-045).
+ */
+const isDuplicateWithoutSequence = (result: DecisionResult, latest: AlertRecord | null) => {
+  if (!latest || latest.level !== result.level || latest.source !== result.source) return false;
+  if (result.sourceEventTime) return sameTime(latest.eventTime, result.sourceEventTime);
+  return (
+    Date.now() - new Date(latest.createdAt).getTime() <= ALERT_ACTIVE_MAX_AGE_MS &&
+    latest.description === result.description
+  );
+};
 
 /**
  * Rentetan berlanjut bila masih ada gempa aktif yang terjadi selama alert rentetan
@@ -32,7 +39,7 @@ const isDuplicateWithoutSequence = (result: DecisionResult, latest: AlertRecord 
  * saat alert tersebut berakhir, sehingga tidak dianggap rentetan baru.
  */
 const continuesSequence = (result: DecisionResult, latest: AlertRecord): boolean =>
-  !!latest.eventTime &&
+  !!latest.episodeStartedAt &&
   !!result.sequence &&
   new Date(result.sequence.startedAt).getTime() <=
     alertActiveFrom(latest).getTime() + ALERT_ACTIVE_MAX_AGE_MS;

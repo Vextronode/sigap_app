@@ -91,7 +91,8 @@ Magnitudo tidak dipakai sebagai penentu level. Magnitudo hanya dipakai pada atur
 Scheduler menjalankan evaluasi di dalam proses backend saat `ENABLE_LOCAL_SCHEDULER=true`, dengan interval `ALERT_SCHEDULER_INTERVAL_MS` (default 60 detik). Evaluasi juga dapat dipicu melalui `/api/public/internal/run-scheduler`.
 
 - Hasil `GREEN` tidak disimpan.
-- Hasil yang levelnya berasal dari status tsunami disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman terakhir yang berumur paling lama 24 jam.
+- Hasil yang levelnya berasal dari status tsunami resmi disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman terakhir yang berumur paling lama 24 jam.
+- Hasil yang levelnya berasal dari estimasi tsunami disimpan bersama waktu gempa asalnya, kecuali level, sumber, dan gempa asalnya sama dengan rekaman terakhir. Revisi data BMKG pada gempa asal yang sama tidak menerbitkan alert baru.
 - Hasil yang levelnya berasal dari gempa mengikuti aturan rentetan gempa di bawah.
 
 ## 7.1 Rentetan Gempa

@@ -341,12 +341,14 @@ export class AlertRepository {
     source: string;
     description: string | undefined;
     sequence?: AlertSequenceColumns;
+    eventTime?: Date;
   }) {
     return prisma.alert.create({
       data: {
         level: data.level,
         source: data.source,
         description: data.description,
+        eventTime: data.eventTime,
         ...data.sequence,
       },
     });

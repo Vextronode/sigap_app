@@ -95,19 +95,22 @@ export const buildUnavailableAlert = (id: string): AlertRecord => {
 
 export class AlertService {
   /**
-   * Menyimpan alert baru ke database, beserta rentetan gempa bila level berasal dari gempa.
+   * Menyimpan alert baru ke database, beserta rentetan gempa bila level berasal dari gempa,
+   * atau waktu gempa asal bila level berasal dari estimasi tsunami.
    */
   static async saveAlert(
     level: AlertLevel,
     source: string,
     description?: string,
-    sequence?: { details: EarthquakeSequence; referenceMagnitude: number | null }
+    sequence?: { details: EarthquakeSequence; referenceMagnitude: number | null },
+    sourceEventTime?: string
   ) {
     const saved = await AlertRepository.create({
       level,
       source,
       description,
       sequence: sequence && toSequenceColumns(sequence.details, sequence.referenceMagnitude),
+      eventTime: sourceEventTime ? new Date(sourceEventTime) : undefined,
     });
     cachedAlertState = null; // Invalidate cache setelah alert baru tersimpan
     return saved;
