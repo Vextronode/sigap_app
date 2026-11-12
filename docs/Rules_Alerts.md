@@ -123,6 +123,7 @@ Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan 
 | Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` berubah atau kosong, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
 | Rekaman lain dengan level selain `GREEN`, paling lama 24 jam sejak waktu kejadian gempa (atau sejak disimpan bila waktu kejadian kosong) (alert aktif) | Ditampilkan apa adanya, beserta batas masa aktifnya |
 | Rekaman lain yang melewati batas tersebut, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
+| Scheduler terlambat, gagal, atau tidak aktif, dan tidak sedang menjalankan siklus | Dihitung langsung dari data BMKG terkini; bila BMKG juga gagal, memakai ketentuan lain pada tabel ini |
 | Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
 | Tidak ada alert aktif dan data BMKG gagal diambil | `UNKNOWN` |
 
@@ -159,7 +160,7 @@ Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi.
 | `VILLAGE_LAT`, `VILLAGE_LON` | `-7.6838`, `108.5610` | Koordinat acuan desa |
 | `BMKG_TSUNAMI_STATUS` | kosong | Status tsunami resmi |
 | `ENABLE_LOCAL_SCHEDULER` | kosong | Mengaktifkan scheduler di dalam proses backend |
-| `ALERT_SCHEDULER_INTERVAL_MS` | 60000 | Interval scheduler, minimal 15000 |
+| `ALERT_SCHEDULER_INTERVAL_MS` | 60000 | Interval scheduler, minimal 15000. Juga acuan batas terlambat (3 kali interval), termasuk untuk siklus dari pemicu eksternal |
 
 # 12. Batasan
 

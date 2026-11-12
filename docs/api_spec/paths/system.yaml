@@ -30,6 +30,7 @@ run-scheduler:
     summary: Menjalankan satu siklus evaluasi alert
     description: >
       Dilindungi CRON_SECRET melalui header Authorization Bearer atau x-cron-secret.
+      Membalas 500 bila siklus gagal menyimpan atau memperpanjang alert.
     security:
       - cronSecret: []
     responses:
@@ -46,6 +47,8 @@ run-scheduler:
                       $ref: '../schemas/system.yaml#/SchedulerResult'
       '401':
         $ref: './shared.yaml#/Unauthorized'
+      '500':
+        $ref: './shared.yaml#/InternalError'
   get:
     tags: [System]
     summary: Menjalankan satu siklus evaluasi alert
@@ -67,3 +70,5 @@ run-scheduler:
                       $ref: '../schemas/system.yaml#/SchedulerResult'
       '401':
         $ref: './shared.yaml#/Unauthorized'
+      '500':
+        $ref: './shared.yaml#/InternalError'

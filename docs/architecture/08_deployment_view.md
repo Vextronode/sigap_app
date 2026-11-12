@@ -47,6 +47,8 @@ Backend berjalan satu replika.
 
 Seluruh operasi dijalankan lewat `deploy/sigap.sh`: deploy per tag dengan rollback otomatis bila smoke test gagal, migrasi, seed, backup dan restore, log, serta status. Rincian perintah berada di `README.md`.
 
+Status scheduler terlihat di dashboard admin dan `/api/public/system-health`. `SCHEDULER_HEARTBEAT_URL` hanya dipanggil setelah siklus sukses, sehingga monitoring eksternal mendeteksi scheduler yang berhenti maupun gagal menyimpan alert. Backend production yang menjalankan scheduler tanpa variabel ini mencetak peringatan saat start.
+
 ## 8.4 Alur Rilis
 
 | Branch | Fungsi |
