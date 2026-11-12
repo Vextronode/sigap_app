@@ -53,9 +53,12 @@ Kartu gempa Pangandaran menampilkan gempa relevan terbaru yang berumur paling la
 |---|---|---|
 | `BMKG_TSUNAMI_STATUS` terisi | Nilai variabel: `NORMAL`, `WASPADA`, `SIAGA`, atau `AWAS` | `BMKG InaTEWS` |
 | Variabel kosong dan salah satu gempa aktif memiliki `Potensi` yang dikenali sebagai berpotensi tsunami | `WASPADA` | `BMKG (estimasi dari data gempa)` |
+| Variabel kosong dan data gempa BMKG gagal diambil | `UNKNOWN` | `SIGAP` |
 | Variabel kosong selain kondisi di atas | `NORMAL` | `BMKG` |
 
-Estimasi otomatis dibatasi sampai `WASPADA`. Status `SIAGA` dan `AWAS` hanya berasal dari `BMKG_TSUNAMI_STATUS`.
+Estimasi otomatis dibatasi sampai `WASPADA`. Status `SIAGA` dan `AWAS` hanya berasal dari `BMKG_TSUNAMI_STATUS`. Status `UNKNOWN` tidak memengaruhi level.
+
+Waktu pembaruan status tsunami mengikuti data sumbernya: saat backend membaca `BMKG_TSUNAMI_STATUS` untuk status resmi, waktu gempa asal untuk estimasi, dan waktu data gempa BMKG terakhir berhasil diambil untuk `NORMAL` dan `UNKNOWN`.
 
 Hanya teks `Potensi` yang terverifikasi dari feed BMKG yang dikenali:
 

@@ -9,7 +9,8 @@ export { AlertReviewStatus };
  */
 export type CurrentAlertLevel = AlertLevel | "UNKNOWN";
 
-export type TsunamiStatus = "NORMAL" | "WASPADA" | "SIAGA" | "AWAS";
+/** `UNKNOWN` saat data gempa BMKG gagal diambil dan status resmi kosong (ADR-043). */
+export type TsunamiStatus = "NORMAL" | "WASPADA" | "SIAGA" | "AWAS" | "UNKNOWN";
 
 /**
  * Hasil status tsunami lengkap dengan `source`/`description` yang jujur
@@ -25,6 +26,11 @@ export interface TsunamiStatusInfo {
   description: string;
   /** Waktu gempa asal estimasi; kosong untuk status resmi. */
   eventTime?: string;
+  /**
+   * Waktu data sumber: konfigurasi status resmi dibaca, gempa asal estimasi, atau
+   * pengambilan data gempa BMKG sukses terakhir. null bila belum pernah berhasil.
+   */
+  updatedAt: string | null;
 }
 
 export interface DecisionInput {

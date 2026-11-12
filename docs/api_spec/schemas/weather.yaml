@@ -100,10 +100,11 @@ TsunamiStatus:
   properties:
     status:
       type: string
-      enum: [NORMAL, WASPADA, SIAGA, AWAS]
+      enum: [NORMAL, WASPADA, SIAGA, AWAS, UNKNOWN]
       description: >
         SIAGA dan AWAS hanya berasal dari BMKG_TSUNAMI_STATUS. Estimasi otomatis
-        dari field Potensi dibatasi sampai WASPADA.
+        dari field Potensi dibatasi sampai WASPADA. UNKNOWN bila BMKG_TSUNAMI_STATUS
+        kosong dan data gempa BMKG gagal diambil.
     description:
       type: string
     source:
@@ -112,7 +113,13 @@ TsunamiStatus:
       description: >
         "BMKG InaTEWS" untuk status dari BMKG_TSUNAMI_STATUS,
         "BMKG (estimasi dari data gempa)" untuk estimasi WASPADA,
-        dan "BMKG" untuk hasil estimasi NORMAL.
+        "BMKG" untuk hasil estimasi NORMAL, dan "SIGAP" untuk UNKNOWN.
     updatedAt:
       type: string
       format: date-time
+      nullable: true
+      description: >
+        Waktu data sumber: saat backend membaca BMKG_TSUNAMI_STATUS untuk status
+        resmi, waktu gempa asal untuk estimasi WASPADA, atau waktu data gempa BMKG
+        terakhir berhasil diambil untuk NORMAL dan UNKNOWN. null bila data gempa
+        belum pernah berhasil diambil sejak backend berjalan.

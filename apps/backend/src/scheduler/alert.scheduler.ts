@@ -45,10 +45,12 @@ export async function runAlertCheck(): Promise<{
             "[AlertScheduler] Gagal mengambil status tsunami BMKG:",
             tsunamiError instanceof Error ? tsunamiError.message : tsunamiError
         );
+        // Status tidak dapat ditentukan, bukan dinyatakan normal (ADR-043).
         tsunami = {
-            status: "NORMAL" as const,
-            source: "BMKG (Degraded Fallback)",
-            description: "Tidak terdapat indikasi ancaman tsunami aktif yang terkonfirmasi.",
+            status: "UNKNOWN" as const,
+            source: "SIGAP",
+            description: "Status tsunami sedang tidak dapat ditentukan.",
+            updatedAt: null,
         };
     }
 

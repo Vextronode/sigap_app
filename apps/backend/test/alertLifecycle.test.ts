@@ -35,6 +35,8 @@ const whenDbUp = <T>(value: () => T) => {
 
 const src = (path: string) => new URL(`../src/${path}`, import.meta.url).href;
 
+const LAST_FEED_SUCCESS_AT = "2026-11-12T03:00:00.000Z";
+
 mock.module(src("config/prisma.ts"), {
   namedExports: {
     prisma: {
@@ -78,6 +80,7 @@ mock.module(src("services/earthquake.service.ts"), {
         );
       },
       isLiveDataAvailable: async () => state.bmkgUp,
+      getLastFeedSuccessAt: () => LAST_FEED_SUCCESS_AT,
     },
   },
 });
@@ -499,6 +502,38 @@ test("estimasi tsunami: alert estimasi tidak diperpanjang sebagai rentetan gempa
   assert.equal(state.extended, 0);
   assert.equal(state.latest?.source, "BMKG");
   assert.equal(state.pushLogs, 0);
+});
+
+test("status tsunami UNKNOWN saat data gempa BMKG gagal dan status resmi kosong (TK-03)", async () => {
+  await arrange({ bmkgUp: false, quake: quake(1, "BERPOTENSI") });
+  const status = await BmkgService.getTsunamiStatus();
+  assert.equal(status.status, "UNKNOWN");
+  assert.equal(status.updatedAt, LAST_FEED_SUCCESS_AT);
+});
+
+test("status tsunami resmi tetap berlaku saat data gempa BMKG gagal (TK-03)", async () => {
+  process.env.BMKG_TSUNAMI_STATUS = "AWAS";
+  await arrange({ bmkgUp: false });
+  const status = await BmkgService.getTsunamiStatus();
+  assert.equal(status.status, "AWAS");
+  assert.equal(status.source, OFFICIAL);
+  assert.notEqual(status.updatedAt, null);
+});
+
+test("waktu status tsunami mengikuti data sumber, bukan waktu request (TK-03)", async () => {
+  await arrange({ bmkgUp: true, quake: null });
+  assert.equal((await BmkgService.getTsunamiStatus()).updatedAt, LAST_FEED_SUCCESS_AT);
+
+  const event = quake(1, "BERPOTENSI");
+  await arrange({ bmkgUp: true, quake: event });
+  assert.equal((await BmkgService.getTsunamiStatus()).updatedAt, event.updatedAt);
+});
+
+test("status tsunami UNKNOWN tidak menaikkan level dan tidak disimpan", async () => {
+  await arrange({ bmkgUp: false, quake: null });
+  const result = await runAlertCheck();
+  assert.equal(result.level, "GREEN");
+  assert.equal(state.saved.length, 0);
 });
 
 test("rentetan: selisih magnitudo dibandingkan pada satu desimal", () => {

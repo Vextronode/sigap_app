@@ -29,17 +29,18 @@ const eventTimeMs = (earthquake: EarthquakeInfo) => new Date(earthquake.updatedA
  * Status tsunami (resmi InaTEWS via override manual, ATAU estimasi
  * SIGAP dari data gempa — lihat BmkgService.getTsunamiStatus()).
  */
+// UNKNOWN tidak menaikkan level; ketersediaan data ditangani getCurrentAlert (ADR-043).
 const evaluateTsunami = (tsunami: DecisionInput["tsunami"]): DecisionResult | null => {
-  if (!tsunami || tsunami.status === "NORMAL") return null;
+  if (!tsunami || tsunami.status === "NORMAL" || tsunami.status === "UNKNOWN") return null;
 
-  const tsunamiLevelMap: Record<Exclude<TsunamiStatus, "NORMAL">, AlertLevel> = {
+  const tsunamiLevelMap: Record<Exclude<TsunamiStatus, "NORMAL" | "UNKNOWN">, AlertLevel> = {
     AWAS: AlertLevel.RED,
     SIAGA: AlertLevel.ORANGE,
     WASPADA: AlertLevel.YELLOW,
   };
 
   return {
-    level: tsunamiLevelMap[tsunami.status as Exclude<TsunamiStatus, "NORMAL">],
+    level: tsunamiLevelMap[tsunami.status],
     source: tsunami.source,
     description: tsunami.description,
     ...(tsunami.eventTime ? { sourceEventTime: tsunami.eventTime } : {}),

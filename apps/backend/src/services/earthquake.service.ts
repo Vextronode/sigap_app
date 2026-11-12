@@ -53,6 +53,9 @@ type CacheEntry<T> = {
 
 const earthquakeCache = new Map<string, CacheEntry<unknown>>();
 
+/** Waktu gempaterkini atau gempadirasakan terakhir berhasil diambil dari BMKG. */
+let lastFeedSuccessAt: string | null = null;
+
 // In-Memory cache khusus fallback database PostgreSQL untuk mencegah
 // query berulang ke DB pada kondisi feed tenang (tanpa gempa baru).
 const DB_FALLBACK_CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit
@@ -271,6 +274,11 @@ export class EarthquakeService {
     }
 
     return [...events.values()].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
+  /** Waktu daftar gempa BMKG terakhir berhasil diambil; null bila belum pernah. */
+  static getLastFeedSuccessAt(): string | null {
+    return lastFeedSuccessAt;
   }
 
   /** true bila minimal satu daftar gempa BMKG berhasil diambil. */
@@ -602,6 +610,10 @@ export class EarthquakeService {
       {},
       { retries: 1, retryDelayMs: 500, backoffFactor: 2, timeoutMs: 6000 },
     );
+
+    if (url === BMKG_GEMPA_TERKINI_URL || url === BMKG_GEMPA_DIRASAKAN_URL) {
+      lastFeedSuccessAt = new Date().toISOString();
+    }
 
     earthquakeCache.set(url, {
       data,

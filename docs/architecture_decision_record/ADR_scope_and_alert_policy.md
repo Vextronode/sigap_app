@@ -255,6 +255,7 @@ Ketiadaan data bukan bukti kondisi aman. Sebaliknya, peringatan yang sudah terca
 ### Dampak Terhadap Sistem
 - `AlertService.getCurrentAlert` memeriksa ketersediaan BMKG saat tidak ada alert aktif, dengan hasil disimpan dalam cache 60 detik.
 - Saat BMKG tidak merespons, permintaan yang memicu pemeriksaan dapat tertahan sekitar 12 detik, sesuai timeout dan retry pada `EarthquakeService`.
+- Aturan yang sama berlaku untuk status tsunami: tanpa `BMKG_TSUNAMI_STATUS` dan tanpa data gempa BMKG, status tsunami bernilai `UNKNOWN`, bukan `NORMAL`.
 - Status dari `BMKG_TSUNAMI_STATUS` tetap menghasilkan alert aktif karena tidak bergantung pada BMKG.
 
 ---
