@@ -41,6 +41,7 @@ export const UserTable: React.FC<UserTableProps> = ({
         day: "numeric",
         month: "short",
         year: "numeric",
+        timeZone: "Asia/Jakarta",
       }).format(d);
     } catch {
       return isoString;

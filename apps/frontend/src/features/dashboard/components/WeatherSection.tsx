@@ -17,7 +17,7 @@ import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import type { CurrentWeather, WeatherForecastItem } from "../../../types/dashboard";
-import { formatShortDate } from "../../../utils/date";
+import { formatShortDate, wibHour } from "../../../utils/date";
 
 type WeatherSectionProps = {
   weather: CurrentWeather | null;
@@ -84,7 +84,7 @@ const checkIsNight = (label?: string): boolean => {
     if (s.includes("pagi") || s.includes("siang") || s.includes("sore"))
       return false;
   }
-  const hour = new Date().getHours();
+  const hour = wibHour();
   return hour >= 18 || hour < 6;
 };
 

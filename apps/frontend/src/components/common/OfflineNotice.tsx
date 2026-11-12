@@ -14,6 +14,7 @@ export const OfflineNotice = ({ lastUpdatedAt }: OfflineNoticeProps) => {
     ? new Date(lastUpdatedAt).toLocaleString("id-ID", {
         dateStyle: "medium",
         timeStyle: "short",
+        timeZone: "Asia/Jakarta",
       })
     : null;
 

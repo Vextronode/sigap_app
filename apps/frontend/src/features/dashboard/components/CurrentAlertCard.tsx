@@ -5,6 +5,7 @@ import { StateMessage } from "../../../components/ui/StateMessage";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
 import { getSequenceSummary } from "../../../utils/alertSequence";
+import { formatWibLongDateTime } from "../../../utils/date";
 
 const getDisplaySource = (source?: string) => {
   if (!source || source.toLowerCase() === "system" || source.toLowerCase() === "live-fallback") {
@@ -20,24 +21,6 @@ type CurrentAlertCardProps = {
   alert: CurrentAlert | null;
   isLoading?: boolean;
   isError?: boolean;
-};
-
-const formatKeIndonesia = (dateString?: string) => {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  
-  const opsi: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  };
-
-  const terformat = new Intl.DateTimeFormat('id-ID', opsi).format(date);
-  return terformat.replace(' pukul ', ' - ').replace(':', '.') + ' WIB';
 };
 
 export const CurrentAlertCard = ({ 
@@ -156,7 +139,7 @@ export const CurrentAlertCard = ({
         {meta.tone !== "neutral" && (
           <>
             <div className="status-banner__updated bg-black/15 rounded-full tracking-wide opacity-95">
-              Terakhir diperbarui: {formatKeIndonesia(alert?.updatedAt)}
+              Terakhir diperbarui: {formatWibLongDateTime(alert?.updatedAt)}
             </div>
 
             <span className="status-banner__source opacity-75">

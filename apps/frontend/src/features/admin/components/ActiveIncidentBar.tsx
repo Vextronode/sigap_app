@@ -9,6 +9,7 @@ import {
 import type { CurrentAlert, Earthquake } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
 import { getSequenceSummary } from "../../../utils/alertSequence";
+import { formatTime } from "../../../utils/date";
 
 interface ActiveIncidentBarProps {
   alert: CurrentAlert | null;
@@ -111,7 +112,7 @@ export const ActiveIncidentBar: React.FC<ActiveIncidentBarProps> = ({
 
               {alert.updatedAt && (
                 <span className="text-[11px] opacity-80 font-mono">
-                  {new Date(alert.updatedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+                  {formatTime(alert.updatedAt)} WIB
                 </span>
               )}
             </div>

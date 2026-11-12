@@ -37,3 +37,13 @@ Level kesiapsiagaan ditampilkan dengan teks dan ikon, tidak hanya warna. Kartu a
 | `/api/healthz` | Liveness tanpa akses database |
 | `/api/readyz` | Readiness dengan `SELECT 1`, batas 2 detik |
 | `/api/public/system-health` | Status data gempa BMKG, prakiraan BMKG dan Open-Meteo, Web Push, SID, database, dan scheduler untuk dashboard admin. Pengecekan jaringan di-cache 120 detik; status scheduler dihitung setiap permintaan |
+
+## 9.6 Zona Waktu
+
+| Aspek | Ketentuan |
+|---|---|
+| Penyimpanan dan API | Waktu disimpan dan dikirim dalam ISO 8601 UTC |
+| Waktu lokal BMKG | `local_datetime` adalah WIB tanpa offset; perhitungan waktu memakai `utc_datetime` |
+| Label hari dan tanggal di backend | Dihitung dari tanggal kalender WIB, tidak bergantung zona waktu server. Container backend berjalan dalam UTC |
+| Tampilan frontend | Seluruh tanggal dan jam diformat dengan `timeZone: "Asia/Jakarta"` melalui `utils/date.ts`, termasuk perbandingan hari ini dan kemarin |
+| Pengaman | Aturan lint frontend menolak format tanggal dan jam tanpa `timeZone`; tes backend dijalankan pada beberapa zona waktu |
