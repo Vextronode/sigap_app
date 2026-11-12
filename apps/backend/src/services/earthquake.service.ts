@@ -8,7 +8,7 @@
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
-import { prisma } from "../config/prisma.js";
+import { EarthquakeRecordRepository } from "../repositories/earthquakeRecord.repository.js";
 import {
   classifyTsunamiPotential,
   isFeltNearVillage,
@@ -45,6 +45,13 @@ const WEST_JAVA_RADIUS_KM = Number(process.env.WEST_JAVA_RADIUS_KM ?? 350);
 const PANGANDARAN_MAX_AGE_DAYS = Number(
   process.env.PANGANDARAN_MAX_AGE_DAYS ?? 7,
 );
+
+/** Kriteria rekaman gempa Pangandaran pada earthquake_records. */
+const PANGANDARAN_RECORD_MATCH = {
+  locationContains: ["Pangandaran"],
+  feltContains: ["Pangandaran"],
+  maxDistanceKm: PANGANDARAN_RADIUS_KM,
+};
 
 type CacheEntry<T> = {
   data: T;
@@ -155,9 +162,7 @@ export class EarthquakeService {
         "[EarthquakeService] Gagal fetch autogempa BMKG, mencoba fallback DB history:",
         error instanceof Error ? error.message : error
       );
-      const latestDbRecord = await prisma.earthquakeRecord.findFirst({
-        orderBy: { eventTime: "desc" },
-      });
+      const latestDbRecord = await EarthquakeRecordRepository.findLatest();
       if (latestDbRecord) {
         return fromRecord(latestDbRecord);
       }
@@ -253,9 +258,7 @@ export class EarthquakeService {
 
     let stored: EarthquakeInfo[] = [];
     try {
-      const records = await prisma.earthquakeRecord.findMany({
-        where: { eventTime: { gte: cutoffIso } },
-      });
+      const records = await EarthquakeRecordRepository.findSince(cutoffIso);
       stored = records.map(fromRecord).filter(isRelevantToVillage);
     } catch (error) {
       console.warn(
@@ -314,12 +317,7 @@ export class EarthquakeService {
       const [autoRaw, listItems, dbRecords] = await Promise.all([
         this.fetchCached<BmkgAutogempaResponse>(BMKG_AUTOGEMPA_URL).catch(() => null),
         this.fetchCombinedList().catch(() => []),
-        prisma.earthquakeRecord
-          .findMany({
-            orderBy: { eventTime: "desc" },
-            take: 15,
-          })
-          .catch(() => []),
+        EarthquakeRecordRepository.findRecent(15).catch(() => []),
       ]);
 
       const pointsMap = new Map<string, EarthquakeInfo>();
@@ -411,15 +409,9 @@ export class EarthquakeService {
     if (cachedWestJavaDbRecord && cachedWestJavaDbRecord.expiresAt > now) {
       dbInfo = cachedWestJavaDbRecord.data;
     } else {
-      const latestDbRecord = await prisma.earthquakeRecord.findFirst({
-        where: {
-          OR: [
-            { location: { contains: "Jawa Barat", mode: "insensitive" } },
-            { location: { contains: "Jabar", mode: "insensitive" } },
-            { distanceToVillage: { lte: WEST_JAVA_RADIUS_KM } },
-          ],
-        },
-        orderBy: { eventTime: "desc" },
+      const latestDbRecord = await EarthquakeRecordRepository.findLatestMatching({
+        locationContains: ["Jawa Barat", "Jabar"],
+        maxDistanceKm: WEST_JAVA_RADIUS_KM,
       });
 
       if (latestDbRecord) {
@@ -475,16 +467,7 @@ export class EarthquakeService {
         recentDbInfo = cachedPangandaranRecentDbRecord.data;
       } else {
         const cutoffMs = now - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
-        const recentDbRecord = await prisma.earthquakeRecord.findFirst({
-          where: {
-            OR: [
-              { location: { contains: "Pangandaran", mode: "insensitive" } },
-              { felt: { contains: "Pangandaran", mode: "insensitive" } },
-              { distanceToVillage: { lte: PANGANDARAN_RADIUS_KM } },
-            ],
-          },
-          orderBy: { eventTime: "desc" },
-        });
+        const recentDbRecord = await EarthquakeRecordRepository.findLatestMatching(PANGANDARAN_RECORD_MATCH);
 
         if (recentDbRecord && new Date(recentDbRecord.eventTime).getTime() >= cutoffMs) {
           recentDbInfo = fromRecord(recentDbRecord);
@@ -507,16 +490,7 @@ export class EarthquakeService {
     if (cachedPangandaranHistoryDbRecord && cachedPangandaranHistoryDbRecord.expiresAt > now) {
       historyDbInfo = cachedPangandaranHistoryDbRecord.data;
     } else {
-      const latestDbRecord = await prisma.earthquakeRecord.findFirst({
-        where: {
-          OR: [
-            { location: { contains: "Pangandaran", mode: "insensitive" } },
-            { felt: { contains: "Pangandaran", mode: "insensitive" } },
-            { distanceToVillage: { lte: PANGANDARAN_RADIUS_KM } },
-          ],
-        },
-        orderBy: { eventTime: "desc" },
-      });
+      const latestDbRecord = await EarthquakeRecordRepository.findLatestMatching(PANGANDARAN_RECORD_MATCH);
 
       if (latestDbRecord) {
         historyDbInfo = fromRecord(latestDbRecord);
@@ -550,9 +524,7 @@ export class EarthquakeService {
   ): Promise<EarthquakeInfo> {
     try {
       // Cari record yang sudah tersimpan di database
-      const existingRecord = await prisma.earthquakeRecord.findUnique({
-        where: { eventTime: earthquake.updatedAt },
-      });
+      const existingRecord = await EarthquakeRecordRepository.findByEventTime(earthquake.updatedAt);
 
       // Nilai baru diutamakan; nilai kosong tidak menimpa nilai tersimpan, karena tiap feed
       // BMKG hanya memuat sebagian field (ADR-046).
@@ -561,31 +533,17 @@ export class EarthquakeService {
       const finalPotential = earthquake.potential || existingRecord?.potential || "";
 
       // Upsert ke database agar tersimpan permanen
-      const saved = await prisma.earthquakeRecord.upsert({
-        where: { eventTime: earthquake.updatedAt },
-        update: {
-          magnitude: earthquake.magnitude,
-          depth: earthquake.depth,
-          location: earthquake.location,
-          latitude: earthquake.coordinates.latitude,
-          longitude: earthquake.coordinates.longitude,
-          distanceToVillage: earthquake.distanceToVillage,
-          felt: finalFelt,
-          potential: finalPotential,
-          shakemap: finalShakemap,
-        },
-        create: {
-          eventTime: earthquake.updatedAt,
-          magnitude: earthquake.magnitude,
-          depth: earthquake.depth,
-          location: earthquake.location,
-          latitude: earthquake.coordinates.latitude,
-          longitude: earthquake.coordinates.longitude,
-          distanceToVillage: earthquake.distanceToVillage,
-          felt: earthquake.felt,
-          potential: earthquake.potential,
-          shakemap: finalShakemap,
-        },
+      const saved = await EarthquakeRecordRepository.upsert({
+        eventTime: earthquake.updatedAt,
+        magnitude: earthquake.magnitude,
+        depth: earthquake.depth,
+        location: earthquake.location,
+        latitude: earthquake.coordinates.latitude,
+        longitude: earthquake.coordinates.longitude,
+        distanceToVillage: earthquake.distanceToVillage,
+        felt: finalFelt,
+        potential: finalPotential,
+        shakemap: finalShakemap,
       });
 
       // Reset cache database in-memory agar record gempa baru langsung terbaca seketika

@@ -15,7 +15,7 @@
     "simulate:alert": "tsx scripts/simulate-alert.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --import tsx --experimental-test-module-mocks --test --test-force-exit \"test/**/*.test.ts\"",
+    "test": "node --import tsx --import ./test/setup.ts --experimental-test-module-mocks --test --test-force-exit \"test/**/*.test.ts\"",
     "check:api-spec": "tsx scripts/check-api-spec.ts"
   },
   "keywords": [],

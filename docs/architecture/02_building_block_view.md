@@ -57,4 +57,4 @@ flowchart TB
 
 ## 2.3 Pola Lapisan Backend
 
-Domain kontak darurat, titik evakuasi, panduan, pengguna, dan alert memakai pola route, validator, controller, service, repository. Rute `device`, `earthquakes`, `tsunami`, dan `internal` memuat handler langsung di file route. Sejumlah service mengakses Prisma tanpa repository: `alert`, `auth`, `device`, `earthquake`, dan `notification`, serta `systemHealth.controller`.
+Domain kontak darurat, titik evakuasi, panduan, pengguna, dan alert memakai pola route, validator, controller, service, repository. Rute `device`, `earthquakes`, `tsunami`, dan `internal` memuat handler langsung di file route. Sejumlah service mengakses Prisma tanpa repository: `alert`, `auth`, `device`, dan `notification`. Akses `earthquake_records` melalui `earthquakeRecord.repository.ts`, dan pengecekan kesehatan sistem berada di `systemHealth.service.ts`.
