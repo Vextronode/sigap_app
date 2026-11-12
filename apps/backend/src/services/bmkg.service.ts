@@ -137,6 +137,7 @@ export class BmkgService {
           status: "WASPADA",
           source: "BMKG (estimasi dari data gempa)",
           description: `Estimasi awal dari gempa M${potential.magnitude} di ${potential.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+          eventTime: potential.updatedAt,
         };
       }
 

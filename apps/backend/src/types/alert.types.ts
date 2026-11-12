@@ -23,6 +23,8 @@ export interface TsunamiStatusInfo {
   status: TsunamiStatus;
   source: string;
   description: string;
+  /** Waktu gempa asal estimasi; kosong untuk status resmi. */
+  eventTime?: string;
 }
 
 export interface DecisionInput {
@@ -48,6 +50,8 @@ export interface DecisionResult {
   description: string;
   /** Terisi bila level berasal dari gempa. */
   sequence?: EarthquakeSequence;
+  /** Waktu gempa asal estimasi tsunami; dasar duplikat dan masa aktif alert estimasi. */
+  sourceEventTime?: string;
 }
 
 // label status review dalam bahasa indonesia sesuai spesifikasi fs-02

@@ -42,6 +42,7 @@ const evaluateTsunami = (tsunami: DecisionInput["tsunami"]): DecisionResult | nu
     level: tsunamiLevelMap[tsunami.status as Exclude<TsunamiStatus, "NORMAL">],
     source: tsunami.source,
     description: tsunami.description,
+    ...(tsunami.eventTime ? { sourceEventTime: tsunami.eventTime } : {}),
   };
 };
 

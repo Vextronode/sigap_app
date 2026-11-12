@@ -108,7 +108,8 @@ export async function runAlertCheck(): Promise<{
             result.description,
             result.sequence && action.type === "save"
                 ? { details: result.sequence, referenceMagnitude: action.referenceMagnitude }
-                : undefined
+                : undefined,
+            result.sourceEventTime
         );
         console.log(`[AlertScheduler] Alert saved (${result.level}) - ${result.description}`);
         isSaved = true;
