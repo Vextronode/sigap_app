@@ -40,10 +40,11 @@ export type Earthquake = {
 };
 
 export type TsunamiStatus = {
-  status: "NORMAL" | "WASPADA" | "SIAGA" | "AWAS";
+  status: "NORMAL" | "WASPADA" | "SIAGA" | "AWAS" | "UNKNOWN";
   description: string;
   source: string;
-  updatedAt: string;
+  /** Waktu data sumber; null bila data gempa BMKG belum pernah berhasil diambil. */
+  updatedAt: string | null;
 };
 
 export type CurrentAlert = {
