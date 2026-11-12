@@ -121,8 +121,10 @@ const DAY_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"] as const;
 function buildDayLabel(dateStr: string, indexFromToday: number): string {
   if (indexFromToday === 0) return "Hari Ini";
   if (indexFromToday === 1) return "Besok";
-  const date = new Date(`${dateStr}T00:00:00+07:00`);
-  return DAY_ID[date.getDay()];
+  // dateStr adalah tanggal kalender WIB. Tengah hari UTC jatuh pada tanggal yang sama
+  // di zona mana pun, sehingga label tidak bergantung zona waktu server (TK-05).
+  const date = new Date(`${dateStr}T12:00:00Z`);
+  return DAY_ID[date.getUTCDay()];
 }
 
 // ---------------------------------------------------------------------------

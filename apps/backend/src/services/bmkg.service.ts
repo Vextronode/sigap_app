@@ -214,7 +214,7 @@ export class BmkgService {
     const localHour = (item: BmkgCuacaItem): number =>
       item.local_datetime
         ? parseInt(item.local_datetime.slice(11, 13), 10)
-        : new Date(this.toUtcIso(item)).getUTCHours() + 7;
+        : (new Date(this.toUtcIso(item)).getUTCHours() + 7) % 24;
 
     const current = this.pickClosestToNow(items);
 
@@ -248,8 +248,10 @@ export class BmkgService {
     if (tomorrowForecast) {
       result.push({
         ...this.toForecastItem(tomorrowForecast),
+        // tomorrowWib sudah digeser ke WIB, sehingga diformat sebagai UTC (TK-05).
         label: new Intl.DateTimeFormat("id-ID", {
           weekday: "short",
+          timeZone: "UTC",
         }).format(tomorrowWib),
       });
     }
@@ -259,6 +261,7 @@ export class BmkgService {
         ...this.toForecastItem(dayAfterForecast),
         label: new Intl.DateTimeFormat("id-ID", {
           weekday: "short",
+          timeZone: "UTC",
         }).format(dayAfterWib),
       });
     }
@@ -286,7 +289,8 @@ export class BmkgService {
       windSpeed: item.ws,
       windDirection: item.wd ?? "",
       visibility: item.vs_text ?? "",
-      updatedAt: this.toIso(item.local_datetime ?? item.datetime),
+      // local_datetime adalah WIB tanpa offset; waktu UTC diambil dari utc_datetime (TK-05).
+      updatedAt: this.toUtcIso(item),
     };
   }
 
@@ -335,16 +339,6 @@ export class BmkgService {
     const raw = item.utc_datetime ?? item.datetime;
     if (!raw) return new Date().toISOString();
     const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
-    const withZ = normalized.endsWith("Z") ? normalized : `${normalized}Z`;
-    const date = new Date(withZ);
-    return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
-  }
-
-  /** @deprecated Gunakan toUtcIso() untuk perbandingan waktu. Fungsi ini hanya
-   * aman untuk display string yang sudah UTC (mis. field `datetime`). */
-  private static toIso(rawDatetime: string | undefined): string {
-    if (!rawDatetime) return new Date().toISOString();
-    const normalized = rawDatetime.includes("T") ? rawDatetime : rawDatetime.replace(" ", "T");
     const withZ = normalized.endsWith("Z") ? normalized : `${normalized}Z`;
     const date = new Date(withZ);
     return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
