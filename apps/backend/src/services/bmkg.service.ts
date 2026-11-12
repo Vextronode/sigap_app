@@ -28,6 +28,9 @@ import { OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
+/** Waktu proses backend dimulai, yaitu saat BMKG_TSUNAMI_STATUS terakhir dibaca. */
+const PROCESS_STARTED_AT = new Date().toISOString();
+
 export class BmkgService {
   /** Fetch mentah dari BMKG, dengan retry (lihat httpRetryWrapper.ts untuk SIG-122) */
   private static fetchRaw(adm4Code: string): Promise<BmkgApiResponse> {
@@ -91,14 +94,27 @@ export class BmkgService {
       configured === "WASPADA" ||
       configured === "NORMAL"
     ) {
+      // Perubahan BMKG_TSUNAMI_STATUS berlaku setelah restart (ADR-045).
       return {
         status: configured,
         source: OFFICIAL_TSUNAMI_SOURCE,
         description: this.buildOfficialTsunamiDescription(configured),
+        updatedAt: PROCESS_STARTED_AT,
       };
     }
 
     return this.estimateTsunamiStatus();
+  }
+
+  /** Status saat data gempa BMKG gagal diambil dan status resmi kosong (ADR-043). */
+  private static unavailableTsunamiStatus(): TsunamiStatusInfo {
+    return {
+      status: "UNKNOWN",
+      source: "SIGAP",
+      description:
+        "Data gempa BMKG sedang tidak dapat diambil. Pantau informasi resmi di bmkg.go.id.",
+      updatedAt: EarthquakeService.getLastFeedSuccessAt(),
+    };
   }
 
   private static buildOfficialTsunamiDescription(status: TsunamiStatus): string {
@@ -127,6 +143,11 @@ export class BmkgService {
    */
   private static async estimateTsunamiStatus(): Promise<TsunamiStatusInfo> {
     try {
+      // Tanpa data gempa BMKG, ketiadaan potensi tidak dapat dinyatakan (ADR-043).
+      if (!(await EarthquakeService.isLiveDataAvailable())) {
+        return this.unavailableTsunamiStatus();
+      }
+
       // Seluruh gempa aktif (24 jam), terbaru lebih dulu. Hanya teks Potensi yang
       // terverifikasi yang dikenali (ADR-046).
       const activeEvents = await EarthquakeService.getActiveEvents();
@@ -138,6 +159,7 @@ export class BmkgService {
           source: "BMKG (estimasi dari data gempa)",
           description: `Estimasi awal dari gempa M${potential.magnitude} di ${potential.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
           eventTime: potential.updatedAt,
+          updatedAt: potential.updatedAt,
         };
       }
 
@@ -146,18 +168,14 @@ export class BmkgService {
         source: "BMKG",
         description:
           "Tidak ada indikasi potensi tsunami dari data gempa terkini BMKG.",
+        updatedAt: EarthquakeService.getLastFeedSuccessAt(),
       };
     } catch (error) {
       console.warn(
         "[BmkgService] Gagal estimasi status tsunami dari data gempa:",
         error instanceof Error ? error.message : error
       );
-      return {
-        status: "NORMAL",
-        source: "BMKG (Fallback)",
-        description:
-          "Layanan data gempa BMKG sedang tidak stabil. Tidak terdapat indikasi tsunami yang terkonfirmasi.",
-      };
+      return this.unavailableTsunamiStatus();
     }
   }
 

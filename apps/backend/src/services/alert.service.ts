@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { isSchedulerHealthy } from "../scheduler/schedulerStatus.js";
 import { NotFoundError, ValidationError } from "../errors/AppError.js";
 import { AlertLevel } from "../../generated/prisma/enums.js";
 import {
@@ -135,7 +136,47 @@ export class AlertService {
   }
 
   /**
-   * Mengambil alert terbaru. Menggunakan in-memory cache (TTL 30 detik)
+   * Level yang dihitung langsung dari data BMKG terkini, tanpa tabel alerts.
+   * Melempar error bila data gempa BMKG tidak tersedia.
+   */
+  private static async evaluateLive(): Promise<AlertRecord> {
+    const { EarthquakeService } = await import("./earthquake.service.js");
+    const { BmkgService } = await import("./bmkg.service.js");
+    const { DecisionEngineService } = await import("./decisionEngine.service.js");
+
+    if (!(await EarthquakeService.isLiveDataAvailable())) {
+      throw new Error("Data gempa BMKG tidak tersedia.");
+    }
+
+    const earthquakes = await EarthquakeService.getActiveEvents();
+    const tsunami = await BmkgService.getTsunamiStatus();
+    const liveEval = DecisionEngineService.evaluate({ earthquakes, tsunami });
+
+    const now = new Date();
+    const sequence = liveEval.sequence;
+    return {
+      id: LIVE_FALLBACK_ALERT_ID,
+      level: liveEval.level as AlertLevel,
+      source: liveEval.source || "BMKG",
+      description:
+        liveEval.description ||
+        "Tidak terdapat indikasi ancaman gempa atau tsunami dari data terkini BMKG.",
+      reviewStatus: "Belum Diverifikasi",
+      reviewedBy: null,
+      reviewedAt: null,
+      ...(sequence
+        ? {
+            ...toSequenceColumns(sequence, null),
+            activeUntil: new Date(new Date(sequence.eventTime).getTime() + ALERT_ACTIVE_MAX_AGE_MS),
+          }
+        : WITHOUT_SEQUENCE),
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  /**
+   * Mengambil alert terbaru. Menggunakan in-memory cache (TTL 60 detik)
    * untuk meminimalisasi beban kuota compute basis data.
    */
   static async getCurrentAlert(): Promise<AlertRecord | null> {
@@ -145,6 +186,21 @@ export class AlertService {
     }
 
     let alertResult: AlertRecord;
+
+    // Scheduler tidak sehat: level dihitung langsung dari BMKG agar banner tidak beku.
+    // Bila BMKG juga gagal, tetap memakai tabel alerts di bawah (TK-04).
+    if (!isSchedulerHealthy()) {
+      try {
+        alertResult = await this.evaluateLive();
+        cachedAlertState = { data: alertResult, expiresAt: nowMs + ALERT_CACHE_TTL_MS };
+        return alertResult;
+      } catch (liveError) {
+        console.warn(
+          "[AlertService] Scheduler tidak sehat dan evaluasi langsung BMKG gagal, memakai tabel alerts:",
+          liveError instanceof Error ? liveError.message : liveError
+        );
+      }
+    }
 
     try {
       const latest = await prisma.alert.findFirst({
@@ -209,39 +265,7 @@ export class AlertService {
 
     // Fallback cerdas: Jika DB gagal atau belum ada record, hitung live in-memory dari data BMKG terkini
     try {
-      const { EarthquakeService } = await import("./earthquake.service.js");
-      const { BmkgService } = await import("./bmkg.service.js");
-      const { DecisionEngineService } = await import("./decisionEngine.service.js");
-
-      if (!(await EarthquakeService.isLiveDataAvailable())) {
-        throw new Error("Data gempa BMKG tidak tersedia.");
-      }
-
-      const earthquakes = await EarthquakeService.getActiveEvents();
-      const tsunami = await BmkgService.getTsunamiStatus();
-      const liveEval = DecisionEngineService.evaluate({ earthquakes, tsunami });
-
-      const now = new Date();
-      const sequence = liveEval.sequence;
-      alertResult = {
-        id: LIVE_FALLBACK_ALERT_ID,
-        level: liveEval.level as AlertLevel,
-        source: liveEval.source || "BMKG",
-        description:
-          liveEval.description ||
-          "Tidak terdapat indikasi ancaman gempa atau tsunami dari data terkini BMKG.",
-        reviewStatus: "Belum Diverifikasi",
-        reviewedBy: null,
-        reviewedAt: null,
-        ...(sequence
-          ? {
-              ...toSequenceColumns(sequence, null),
-              activeUntil: new Date(new Date(sequence.eventTime).getTime() + ALERT_ACTIVE_MAX_AGE_MS),
-            }
-          : WITHOUT_SEQUENCE),
-        createdAt: now,
-        updatedAt: now,
-      };
+      alertResult = await this.evaluateLive();
     } catch (fallbackError) {
       console.error("[AlertService] Evaluasi live BMKG fallback juga gagal:", fallbackError);
       alertResult = buildUnavailableAlert("data-unavailable");

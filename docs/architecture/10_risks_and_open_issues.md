@@ -17,4 +17,4 @@
 | Celah pada dependency development tanpa versi perbaikan yang kompatibel: `minimatch` (ESLint), `glob` dan `deepmerge` (build service worker) | Hanya berpengaruh saat lint dan build | Tidak ikut ke image runtime; Dependabot memeriksa update setiap minggu |
 | Scheduler, rate limiter, dan cache berada di memori proses | Backend tidak dapat berjalan lebih dari satu replika | Stack berjalan satu replika |
 | Ketergantungan pada ketersediaan BMKG | Data gempa dan cuaca dapat tertunda | Retry, timeout, rekaman `earthquake_records`, dan cadangan Open-Meteo |
-| Pemantauan scheduler bergantung konfigurasi | Kegagalan scheduler dapat tidak terdeteksi | `SCHEDULER_HEARTBEAT_URL` opsional |
+| Pemantauan scheduler dari luar server bergantung konfigurasi | Scheduler yang berhenti saat tidak ada admin membuka dashboard dapat tidak terdeteksi | Status scheduler di dashboard admin, banner dihitung langsung dari BMKG saat scheduler tidak sehat, dan `SCHEDULER_HEARTBEAT_URL` opsional dengan peringatan saat start |

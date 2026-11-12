@@ -10,7 +10,7 @@ type TsunamiStatusResponse = {
     status: TsunamiStatusLevel;
     description: string;
     source: string;
-    updatedAt: string;
+    updatedAt: string | null;
 };
 
 /**
@@ -21,14 +21,10 @@ type TsunamiStatusResponse = {
  * yang bisa saling tidak sinkron.
  */
 const buildTsunamiStatus = async (): Promise<TsunamiStatusResponse> => {
-    const { status, source, description } = await BmkgService.getTsunamiStatus();
+    const { status, source, description, updatedAt } = await BmkgService.getTsunamiStatus();
 
-    return {
-        status,
-        description,
-        source,
-        updatedAt: new Date().toISOString(),
-    };
+    // updatedAt mengikuti waktu data sumber, bukan waktu request.
+    return { status, description, source, updatedAt };
 };
 
 const handleTsunamiStatus = async (_req: Request, res: Response) => {

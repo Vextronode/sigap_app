@@ -53,9 +53,12 @@ Kartu gempa Pangandaran menampilkan gempa relevan terbaru yang berumur paling la
 |---|---|---|
 | `BMKG_TSUNAMI_STATUS` terisi | Nilai variabel: `NORMAL`, `WASPADA`, `SIAGA`, atau `AWAS` | `BMKG InaTEWS` |
 | Variabel kosong dan salah satu gempa aktif memiliki `Potensi` yang dikenali sebagai berpotensi tsunami | `WASPADA` | `BMKG (estimasi dari data gempa)` |
+| Variabel kosong dan data gempa BMKG gagal diambil | `UNKNOWN` | `SIGAP` |
 | Variabel kosong selain kondisi di atas | `NORMAL` | `BMKG` |
 
-Estimasi otomatis dibatasi sampai `WASPADA`. Status `SIAGA` dan `AWAS` hanya berasal dari `BMKG_TSUNAMI_STATUS`.
+Estimasi otomatis dibatasi sampai `WASPADA`. Status `SIAGA` dan `AWAS` hanya berasal dari `BMKG_TSUNAMI_STATUS`. Status `UNKNOWN` tidak memengaruhi level.
+
+Waktu pembaruan status tsunami mengikuti data sumbernya: saat backend membaca `BMKG_TSUNAMI_STATUS` untuk status resmi, waktu gempa asal untuk estimasi, dan waktu data gempa BMKG terakhir berhasil diambil untuk `NORMAL` dan `UNKNOWN`.
 
 Hanya teks `Potensi` yang terverifikasi dari feed BMKG yang dikenali:
 
@@ -120,6 +123,7 @@ Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan 
 | Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` berubah atau kosong, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
 | Rekaman lain dengan level selain `GREEN`, paling lama 24 jam sejak waktu kejadian gempa (atau sejak disimpan bila waktu kejadian kosong) (alert aktif) | Ditampilkan apa adanya, beserta batas masa aktifnya |
 | Rekaman lain yang melewati batas tersebut, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
+| Scheduler terlambat, gagal, atau tidak aktif, dan tidak sedang menjalankan siklus | Dihitung langsung dari data BMKG terkini; bila BMKG juga gagal, memakai ketentuan lain pada tabel ini |
 | Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
 | Tidak ada alert aktif dan data BMKG gagal diambil | `UNKNOWN` |
 
@@ -156,7 +160,7 @@ Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi.
 | `VILLAGE_LAT`, `VILLAGE_LON` | `-7.6838`, `108.5610` | Koordinat acuan desa |
 | `BMKG_TSUNAMI_STATUS` | kosong | Status tsunami resmi |
 | `ENABLE_LOCAL_SCHEDULER` | kosong | Mengaktifkan scheduler di dalam proses backend |
-| `ALERT_SCHEDULER_INTERVAL_MS` | 60000 | Interval scheduler, minimal 15000 |
+| `ALERT_SCHEDULER_INTERVAL_MS` | 60000 | Interval scheduler, minimal 15000. Juga acuan batas terlambat (3 kali interval), termasuk untuk siklus dari pemicu eksternal |
 
 # 12. Batasan
 

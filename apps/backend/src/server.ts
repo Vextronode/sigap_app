@@ -11,6 +11,7 @@ setDefaultResultOrder("ipv4first");
 
 const { default: app } = await import("./app.js");
 const { startAlertScheduler } = await import("./scheduler/alert.scheduler.js");
+const { configureSchedulerStatus } = await import("./scheduler/schedulerStatus.js");
 const { closeDatabase } = await import("./config/prisma.js");
 
 const PORT = process.env.PORT ?? 3000;
@@ -33,6 +34,16 @@ const heartbeatUrl = process.env.SCHEDULER_HEARTBEAT_URL?.trim() || undefined;
 console.log(
   `[AlertScheduler] enabled=${schedulerEnabled} intervalMs=${schedulerIntervalMs} heartbeat=${heartbeatUrl ? "on" : "off"}`
 );
+
+// TK-04: status scheduler tercatat juga saat siklus dipicu cron eksternal; interval
+// dipakai sebagai acuan batas terlambat.
+configureSchedulerStatus({ enabled: schedulerEnabled, intervalMs: schedulerIntervalMs });
+
+if (process.env.NODE_ENV === "production" && schedulerEnabled && !heartbeatUrl) {
+  console.warn(
+    "[AlertScheduler] SCHEDULER_HEARTBEAT_URL belum diisi. Kegagalan scheduler tidak terpantau dari luar server."
+  );
+}
 
 let stopScheduler: () => Promise<void> = async () => {};
 

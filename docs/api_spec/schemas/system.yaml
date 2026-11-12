@@ -14,7 +14,7 @@ SystemHealth:
             type: string
           category:
             type: string
-            enum: [weather, earthquake, sid, push, database]
+            enum: [weather, earthquake, sid, push, database, scheduler]
           status:
             type: string
             enum: [ONLINE, STANDBY, OFFLINE]
@@ -22,17 +22,50 @@ SystemHealth:
             type: string
           latencyMs:
             type: integer
+            nullable: true
+            description: null bila tidak diukur atau pengecekan gagal.
           message:
             type: string
           lastChecked:
             type: string
             format: date-time
+    scheduler:
+      $ref: './system.yaml#/SchedulerStatus'
     overallStatus:
       type: string
       enum: [HEALTHY, DEGRADED]
+      description: HEALTHY bila database, data gempa BMKG, dan scheduler sehat.
     checkedAt:
       type: string
       format: date-time
+
+SchedulerStatus:
+  type: object
+  description: Status siklus scheduler di memori proses, termasuk siklus dari pemicu eksternal.
+  properties:
+    state:
+      type: string
+      enum: [MEMULAI, AKTIF, TERLAMBAT, GAGAL, TIDAK_AKTIF]
+      description: >
+        TERLAMBAT bila tidak ada siklus sukses selama 3 kali ALERT_SCHEDULER_INTERVAL_MS.
+        GAGAL bila siklus terakhir gagal menyimpan alert. TIDAK_AKTIF bila scheduler
+        internal mati dan belum ada siklus dari pemicu eksternal.
+    enabled:
+      type: boolean
+    intervalMs:
+      type: integer
+    running:
+      type: boolean
+    lastRunAt:
+      type: string
+      format: date-time
+      nullable: true
+    lastSuccessAt:
+      type: string
+      format: date-time
+      nullable: true
+    consecutiveFailures:
+      type: integer
 
 SchedulerResult:
   type: object
@@ -45,6 +78,9 @@ SchedulerResult:
       type: string
     saved:
       type: boolean
-    error:
-      type: string
-      description: Terisi bila siklus berakhir dengan kegagalan
+    extended:
+      type: boolean
+      description: true bila alert rentetan yang berlaku diperpanjang
+    ok:
+      type: boolean
+      description: false bila alert gagal disimpan atau diperpanjang

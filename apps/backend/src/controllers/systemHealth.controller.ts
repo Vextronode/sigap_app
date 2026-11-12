@@ -1,167 +1,207 @@
 import type { Request, Response } from "express";
 import axios from "axios";
 import { prisma } from "../config/prisma.js";
+import { OPEN_METEO_BASE_URL, OPEN_METEO_COORDINATES } from "../services/openmeteo.service.js";
+import { DEFAULT_ADM4_CODE } from "../services/weather.service.js";
+import {
+  getSchedulerStatus,
+  isSchedulerHealthy,
+  SCHEDULER_STALE_INTERVALS,
+  type SchedulerState,
+  type SchedulerStatus,
+} from "../scheduler/schedulerStatus.js";
+
+type ServiceStatus = "ONLINE" | "STANDBY" | "OFFLINE";
 
 interface ServiceHealthItem {
   name: string;
-  category: "weather" | "earthquake" | "sid" | "push" | "database";
-  status: "ONLINE" | "STANDBY" | "OFFLINE";
+  category: "weather" | "earthquake" | "sid" | "push" | "database" | "scheduler";
+  status: ServiceStatus;
   provider: string;
-  latencyMs: number;
+  /** null bila tidak diukur atau pengecekan gagal. */
+  latencyMs: number | null;
   message: string;
   lastChecked: string;
 }
 
-// SEC-10: In-memory TTL cache (30 detik) untuk mencegah connection pool exhaustion & DoS
-interface HealthCacheEntry {
-  data: {
-    success: boolean;
-    message: string;
-    data: {
-      services: ServiceHealthItem[];
-      overallStatus: string;
-      checkedAt: string;
-    };
-  };
-  cachedAt: number;
+interface NetworkChecks {
+  weather: ServiceHealthItem;
+  earthquake: ServiceHealthItem;
+  database: ServiceHealthItem;
+  checkedAt: string;
 }
 
-let healthCache: HealthCacheEntry | null = null;
-const HEALTH_CACHE_TTL_MS = 120 * 1000; // 120 detik (2 menit) in-memory cache agar pengecekan berulang tidak membebani DB dan API eksternal
+// SEC-10: pengecekan jaringan di-cache agar tidak membebani DB dan API eksternal.
+// Status scheduler dihitung pada setiap request karena tidak memerlukan jaringan.
+const HEALTH_CACHE_TTL_MS = 120 * 1000;
+let networkCache: { data: NetworkChecks; cachedAt: number } | null = null;
+
+/** Waktu tempuh request, atau null bila gagal. */
+const probe = async (url: string, timeout: number): Promise<number | null> => {
+  const start = Date.now();
+  try {
+    await axios.get(url, { timeout });
+    return Date.now() - start;
+  } catch {
+    return null;
+  }
+};
+
+const checkWeather = async (timestamp: string): Promise<ServiceHealthItem> => {
+  const { latitude, longitude } = OPEN_METEO_COORDINATES;
+  const [bmkg, openMeteo] = await Promise.all([
+    probe(`https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${DEFAULT_ADM4_CODE}`, 3500),
+    probe(`${OPEN_METEO_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m`, 3000),
+  ]);
+  const reachable = [bmkg, openMeteo].filter((latency): latency is number => latency !== null);
+
+  const status: ServiceStatus =
+    reachable.length === 2 ? "ONLINE" : reachable.length === 1 ? "STANDBY" : "OFFLINE";
+  const message =
+    status === "ONLINE"
+      ? "Prakiraan cuaca BMKG dan Open-Meteo terhubung."
+      : status === "STANDBY"
+        ? `Hanya ${bmkg !== null ? "BMKG" : "Open-Meteo"} yang terhubung; cuaca memakai sumber yang tersedia.`
+        : "Prakiraan cuaca BMKG dan Open-Meteo tidak dapat dijangkau.";
+
+  return {
+    name: "Cuaca BMKG dan Open-Meteo",
+    category: "weather",
+    status,
+    provider: "BMKG dan Open-Meteo",
+    latencyMs: reachable.length > 0 ? Math.max(...reachable) : null,
+    message,
+    lastChecked: timestamp,
+  };
+};
+
+const checkEarthquake = async (timestamp: string): Promise<ServiceHealthItem> => {
+  const latency = await probe("https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json", 3500);
+  return {
+    name: "Data Gempa BMKG",
+    category: "earthquake",
+    status: latency !== null ? "ONLINE" : "OFFLINE",
+    provider: "Badan Meteorologi, Klimatologi, dan Geofisika",
+    latencyMs: latency,
+    message:
+      latency !== null
+        ? "Feed gempa BMKG terhubung."
+        : "Feed gempa BMKG tidak dapat diambil. Level memakai rekaman earthquake_records dan alert aktif.",
+    lastChecked: timestamp,
+  };
+};
+
+const checkDatabase = async (timestamp: string): Promise<ServiceHealthItem> => {
+  const start = Date.now();
+  // DEPLOY-01 (FR-A10): label generik, tidak membuka penyedia DB di endpoint publik.
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return {
+      name: "PostgreSQL Database",
+      category: "database",
+      status: "ONLINE",
+      provider: "PostgreSQL",
+      latencyMs: Date.now() - start,
+      message: "Koneksi database stabil.",
+      lastChecked: timestamp,
+    };
+  } catch {
+    return {
+      name: "PostgreSQL Database",
+      category: "database",
+      status: "OFFLINE",
+      provider: "PostgreSQL",
+      latencyMs: null,
+      message: "Terjadi gangguan koneksi ke basis data.",
+      lastChecked: timestamp,
+    };
+  }
+};
+
+const runNetworkChecks = async (): Promise<NetworkChecks> => {
+  const now = Date.now();
+  if (networkCache && now - networkCache.cachedAt < HEALTH_CACHE_TTL_MS) {
+    return networkCache.data;
+  }
+
+  const checkedAt = new Date().toISOString();
+  const [weather, earthquake, database] = await Promise.all([
+    checkWeather(checkedAt),
+    checkEarthquake(checkedAt),
+    checkDatabase(checkedAt),
+  ]);
+  const data = { weather, earthquake, database, checkedAt };
+  networkCache = { data, cachedAt: now };
+  return data;
+};
+
+const SCHEDULER_MESSAGES: Record<SchedulerState, string> = {
+  AKTIF: "Siklus evaluasi alert berjalan normal.",
+  MEMULAI: "Menunggu siklus evaluasi pertama selesai.",
+  TERLAMBAT: `Tidak ada siklus sukses melewati ${SCHEDULER_STALE_INTERVALS} kali interval. Level dihitung langsung dari BMKG.`,
+  GAGAL: "Siklus terakhir gagal menyimpan alert. Level dihitung langsung dari BMKG.",
+  TIDAK_AKTIF:
+    "Scheduler internal tidak aktif dan belum ada siklus dari pemicu eksternal. Level dihitung langsung dari BMKG.",
+};
+
+const schedulerItem = (scheduler: SchedulerStatus, healthy: boolean): ServiceHealthItem => ({
+  name: "Scheduler Alert",
+  category: "scheduler",
+  status: healthy ? "ONLINE" : "OFFLINE",
+  provider: "Evaluasi Alert BMKG",
+  latencyMs: null,
+  message: SCHEDULER_MESSAGES[scheduler.state],
+  lastChecked: new Date().toISOString(),
+});
 
 export class SystemHealthController {
   static async getHealth(_req: Request, res: Response) {
-    const now = Date.now();
+    const network = await runNetworkChecks();
+    const scheduler = getSchedulerStatus();
+    const schedulerHealthy = isSchedulerHealthy();
+    const hasVapid = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 
-    // Jika cache masih valid dalam rentang 30 detik, kembalikan langsung tanpa hit database / upstream
-    if (healthCache && now - healthCache.cachedAt < HEALTH_CACHE_TTL_MS) {
-      return res.status(200).json(healthCache.data);
-    }
-
-    const timestamp = new Date().toISOString();
-
-    // Jalankan pengecekan latensi secara paralel (Promise.allSettled) agar waktu respons jauh lebih cepat
-    const startWeather = Date.now();
-    const weatherPromise = axios
-      .get("https://api.open-meteo.com/v1/forecast?latitude=-7.6838&longitude=108.5610&current=temperature_2m", {
-        timeout: 3000,
-      })
-      .then((): ServiceHealthItem => ({
-        name: "BMKG & Open-Meteo Cuaca",
-        category: "weather",
-        status: "ONLINE",
-        provider: "Open-Meteo High-Resolution Model",
-        latencyMs: Date.now() - startWeather,
-        message: "Pembaruan per jam aktif, data cuaca Desa Cibenda sinkron.",
-        lastChecked: timestamp,
-      }))
-      .catch((): ServiceHealthItem => ({
-        name: "BMKG & Open-Meteo Cuaca",
-        category: "weather",
+    const services: ServiceHealthItem[] = [
+      network.weather,
+      network.earthquake,
+      {
+        name: "Gateway Integrasi OpenSID",
+        category: "sid",
         status: "STANDBY",
-        provider: "Open-Meteo High-Resolution Model",
-        latencyMs: Date.now() - startWeather,
-        message: "Fallback cache cuaca aktif.",
-        lastChecked: timestamp,
-      }));
+        provider: "SIGAP Notification Gateway",
+        latencyMs: null,
+        message: "Integrasi SID belum tersedia.",
+        lastChecked: network.checkedAt,
+      },
+      {
+        name: "Web Push Notification Service",
+        category: "push",
+        status: hasVapid ? "ONLINE" : "STANDBY",
+        provider: "W3C VAPID (Google FCM & Apple APNs)",
+        latencyMs: null,
+        message: hasVapid
+          ? "Kunci VAPID aktif, notifikasi darurat siap dikirimkan ke peramban warga."
+          : "VAPID key belum diset lengkap.",
+        lastChecked: network.checkedAt,
+      },
+      network.database,
+      schedulerItem(scheduler, schedulerHealthy),
+    ];
 
-    const startEarthquake = Date.now();
-    const earthquakePromise = axios
-      .get("https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json", {
-        timeout: 3500,
-      })
-      .then((): ServiceHealthItem => ({
-        name: "BMKG InaTEWS Auto-Gempa",
-        category: "earthquake",
-        status: "ONLINE",
-        provider: "Badan Meteorologi, Klimatologi, dan Geofisika",
-        latencyMs: Date.now() - startEarthquake,
-        message: "Feed auto-gempa MMI & estimasi tsunami terhubung.",
-        lastChecked: timestamp,
-      }))
-      .catch((): ServiceHealthItem => ({
-        name: "BMKG InaTEWS Auto-Gempa",
-        category: "earthquake",
-        status: "ONLINE",
-        provider: "PostgreSQL Fallback (earthquake_records)",
-        latencyMs: Date.now() - startEarthquake,
-        message: "Menggunakan data persistensi Postgres lokal.",
-        lastChecked: timestamp,
-      }));
+    const isHealthy =
+      network.database.status === "ONLINE" &&
+      network.earthquake.status === "ONLINE" &&
+      schedulerHealthy;
 
-    const startDb = Date.now();
-    // DEPLOY-01 (FR-A10): label generik, tidak membuka penyedia DB di endpoint publik.
-    const dbProviderName = "PostgreSQL";
-
-    const dbPromise = prisma.$queryRaw`SELECT 1`
-      .then((): ServiceHealthItem => ({
-        name: "PostgreSQL Database",
-        category: "database",
-        status: "ONLINE",
-        provider: dbProviderName,
-        latencyMs: Date.now() - startDb,
-        message: "Koneksi database stabil.",
-        lastChecked: timestamp,
-      }))
-      .catch((): ServiceHealthItem => ({
-        name: "PostgreSQL Database",
-        category: "database",
-        status: "OFFLINE",
-        provider: dbProviderName,
-        latencyMs: Date.now() - startDb,
-        message: "Terjadi gangguan koneksi ke basis data.",
-        lastChecked: timestamp,
-      }));
-
-    const [weatherHealthResult, earthquakeHealthResult, dbHealthResult] = await Promise.all([
-      weatherPromise,
-      earthquakePromise,
-      dbPromise,
-    ]);
-
-    // 3. Status Gateway Sistem Informasi Desa (SID)
-    const sidHealth: ServiceHealthItem = {
-      name: "Gateway Integrasi OpenSID",
-      category: "sid",
-      status: "STANDBY",
-      provider: "SIGAP Notification Gateway",
-      latencyMs: 0,
-      message: "Integrasi SID belum tersedia.",
-      lastChecked: timestamp,
-    };
-
-    // 4. Status Web Push VAPID & FCM
-    const hasVapid = Boolean(
-      process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
-    );
-    const pushHealth: ServiceHealthItem = {
-      name: "Web Push Notification Service",
-      category: "push",
-      status: hasVapid ? "ONLINE" : "STANDBY",
-      provider: "W3C VAPID (Google FCM & Apple APNs)",
-      latencyMs: 12,
-      message: hasVapid
-        ? "Kunci VAPID aktif, notifikasi darurat siap dikirimkan ke peramban warga."
-        : "VAPID key belum diset lengkap.",
-      lastChecked: timestamp,
-    };
-
-    const responseData = {
+    return res.status(200).json({
       success: true,
       message: "Status konektivitas sistem berhasil diambil.",
       data: {
-        services: [weatherHealthResult, earthquakeHealthResult, sidHealth, pushHealth, dbHealthResult],
-        overallStatus: dbHealthResult.status === "ONLINE" ? "HEALTHY" : "DEGRADED",
-        checkedAt: timestamp,
+        services,
+        scheduler,
+        overallStatus: isHealthy ? "HEALTHY" : "DEGRADED",
+        checkedAt: network.checkedAt,
       },
-    };
-
-    // Simpan ke in-memory cache
-    healthCache = {
-      data: responseData,
-      cachedAt: now,
-    };
-
-    return res.status(200).json(responseData);
+    });
   }
 }
