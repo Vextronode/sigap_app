@@ -25,7 +25,11 @@ import type { ForecastItem } from "../types/weather.types.js";
 const LAT = parseFloat(process.env.VILLAGE_LAT ?? "-7.6838");
 const LON = parseFloat(process.env.VILLAGE_LON ?? "108.5610");
 
-const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+export const OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast";
+const BASE_URL = OPEN_METEO_BASE_URL;
+
+/** Koordinat desa yang dipakai Open-Meteo, juga untuk pengecekan kesehatan layanan. */
+export const OPEN_METEO_COORDINATES = { latitude: LAT, longitude: LON };
 
 // ---------------------------------------------------------------------------
 // Tipe respons Open-Meteo (subset yang dipakai)

@@ -97,6 +97,10 @@ const { NotificationService } = await import("../src/services/notification.servi
 const { runAlertCheck } = await import("../src/scheduler/alert.scheduler.js");
 const { AlertController } = await import("../src/controllers/alert.controller.js");
 const { decideAlertAction } = await import("../src/services/alertSequence.service.js");
+const schedulerStatus = await import("../src/scheduler/schedulerStatus.js");
+
+// Skenario memakai scheduler internal aktif yang baru dimulai (MEMULAI).
+schedulerStatus.configureSchedulerStatus({ enabled: true, intervalMs: 60_000 });
 const { parseFeltAreas } = await import("../src/utils/bmkgEarthquake.util.js");
 
 const OFFICIAL = "BMKG InaTEWS";
@@ -138,6 +142,7 @@ const quake = (ageHours: number, tsunamiPotential: string | null = null, felt = 
 const arrange = async (next: Partial<State>) => {
   state = initialState();
   await AlertService.saveAlert("YELLOW" as never, "reset-cache");
+  schedulerStatus.resetSchedulerStatus();
   state = { ...initialState(), ...next };
 };
 
@@ -534,6 +539,45 @@ test("status tsunami UNKNOWN tidak menaikkan level dan tidak disimpan", async ()
   const result = await runAlertCheck();
   assert.equal(result.level, "GREEN");
   assert.equal(state.saved.length, 0);
+});
+
+test("status scheduler mengikuti siklus (TK-04)", async () => {
+  await arrange({ quake: null });
+  const minute = 60_000;
+  const start = Date.now();
+  assert.equal(schedulerStatus.getSchedulerStatus(start).state, "MEMULAI");
+  assert.equal(schedulerStatus.getSchedulerStatus(start + 4 * minute).state, "TERLAMBAT");
+
+  const result = await runAlertCheck();
+  assert.equal(result.ok, true);
+  const now = Date.now();
+  assert.equal(schedulerStatus.getSchedulerStatus(now).state, "AKTIF");
+  assert.equal(schedulerStatus.getSchedulerStatus(now + 2 * minute).state, "AKTIF");
+  assert.equal(schedulerStatus.getSchedulerStatus(now + 4 * minute).state, "TERLAMBAT");
+});
+
+test("siklus gagal menyimpan alert ditandai GAGAL (TK-04)", async () => {
+  await arrange({ quake: quake(1), dbDown: true });
+  const result = await runAlertCheck();
+  assert.equal(result.ok, false);
+  assert.equal(schedulerStatus.getSchedulerStatus().state, "GAGAL");
+});
+
+test("scheduler tidak sehat: banner dihitung langsung dari BMKG (TK-04)", async () => {
+  await arrange({ quake: quake(1, null, FELT), latest: record({ level: "YELLOW", createdAt: hoursAgo(1) }) });
+  assert.equal(await currentLevel(), "YELLOW");
+
+  await arrange({ quake: quake(1, null, FELT), latest: record({ level: "YELLOW", createdAt: hoursAgo(1) }) });
+  schedulerStatus.markCycleFinished(false);
+  const current = await AlertService.getCurrentAlert();
+  assert.equal(current?.level, "ORANGE");
+  assert.equal(current?.id, "live-fallback");
+});
+
+test("scheduler tidak sehat dan BMKG gagal: tetap memakai tabel alerts (TK-04)", async () => {
+  await arrange({ bmkgUp: false, latest: record({ level: "YELLOW", createdAt: hoursAgo(1) }) });
+  schedulerStatus.markCycleFinished(false);
+  assert.equal(await currentLevel(), "YELLOW");
 });
 
 test("rentetan: selisih magnitudo dibandingkan pada satu desimal", () => {

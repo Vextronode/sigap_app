@@ -6,6 +6,7 @@ import { BmkgService } from "../services/bmkg.service.js";
 import { NotificationService } from "../services/notification.service.js";
 import type { TsunamiStatusInfo } from "../types/alert.types.js";
 import type { EarthquakeInfo } from "../types/earthquake.types.js";
+import { markCycleFinished, markCycleStarted } from "./schedulerStatus.js";
 
 /**
  * Jalankan satu siklus pengecekan alert BMKG.
@@ -17,13 +18,33 @@ import type { EarthquakeInfo } from "../types/earthquake.types.js";
  * Notifikasi push dikirim OTOMATIS saat ada alert baru yang bukan duplikat
  * dan levelnya bukan GREEN (Aman). Tidak ada validasi manual admin lagi.
  */
-export async function runAlertCheck(): Promise<{
+export interface AlertCheckResult {
     level: string;
     source: string;
     description: string | undefined;
     saved: boolean;
     extended?: boolean;
-}> {
+    /** false bila alert gagal disimpan atau diperpanjang. */
+    ok: boolean;
+}
+
+export async function runAlertCheck(): Promise<AlertCheckResult> {
+    markCycleStarted();
+    try {
+        const result = await runCycle();
+        markCycleFinished(result.ok, {
+            level: result.level,
+            saved: result.saved,
+            extended: result.extended,
+        });
+        return result;
+    } catch (error) {
+        markCycleFinished(false);
+        throw error;
+    }
+}
+
+async function runCycle(): Promise<AlertCheckResult> {
     // Seluruh gempa relevan untuk Desa Cibenda yang masih aktif (24 jam),
     // BUKAN gempa nasional terbaru — lihat catatan di decisionEngine.service.ts.
     let earthquakes: EarthquakeInfo[] = [];
@@ -61,7 +82,7 @@ export async function runAlertCheck(): Promise<{
     // jangan simpan ke riwayat alert verifikasi. Alert verifikasi khusus mencatat
     // kejadian darurat nyata (WASPADA, SIAGA, AWAS) untuk ditinjau admin.
     if (result.level === "GREEN") {
-        return { ...result, saved: false };
+        return { ...result, saved: false, ok: true };
     }
 
     // Simpan, perpanjang, atau lewati sesuai aturan rentetan gempa (ADR-046).
@@ -80,10 +101,11 @@ export async function runAlertCheck(): Promise<{
 
     if (action.type === "skip") {
         console.log(`[AlertScheduler] Skipped duplicate alert (${result.level})`);
-        return { ...result, saved: false };
+        return { ...result, saved: false, ok: true };
     }
 
     if (action.type === "extend" && latestAlert && result.sequence) {
+        let extendedOk = true;
         try {
             await AlertService.extendSequence(
                 latestAlert.id,
@@ -93,12 +115,13 @@ export async function runAlertCheck(): Promise<{
             );
             console.log(`[AlertScheduler] Alert diperpanjang (${result.level}) - ${result.description}`);
         } catch (dbError) {
+            extendedOk = false;
             console.warn(
                 "[AlertScheduler] Gagal memperpanjang alert:",
                 dbError instanceof Error ? dbError.message : dbError
             );
         }
-        return { ...result, saved: false, extended: true };
+        return { ...result, saved: false, extended: extendedOk, ok: extendedOk };
     }
 
     // Simpan ke database jika DB tersedia
@@ -142,7 +165,7 @@ export async function runAlertCheck(): Promise<{
         }
     }
 
-    return { ...result, saved: isSaved };
+    return { ...result, saved: isSaved, ok: isSaved };
 }
 
 const HEARTBEAT_TIMEOUT_MS = 5_000;
@@ -196,8 +219,10 @@ export function startAlertScheduler({
         try {
             const result = await runAlertCheck();
             console.log(
-                `[AlertScheduler] Siklus selesai: level=${result.level} saved=${result.saved} durasi=${Date.now() - startedAt}ms`
+                `[AlertScheduler] Siklus selesai: level=${result.level} saved=${result.saved} ok=${result.ok} durasi=${Date.now() - startedAt}ms`
             );
+            // Heartbeat hanya untuk siklus sukses, agar kegagalan terlihat dari luar server.
+            if (!result.ok) return;
         } catch (error) {
             console.error("[AlertScheduler] Error:", error);
             return;

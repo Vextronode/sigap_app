@@ -63,6 +63,17 @@ const handleScheduler = async (req: Request, res: Response): Promise<void> => {
     try {
         const result = await runAlertCheck();
 
+        // Siklus yang gagal menyimpan alert dilaporkan sebagai error agar cron eksternal tahu (TK-04).
+        if (!result.ok) {
+            const failure: ApiErrorResponse = {
+                success: false,
+                message: "Siklus scheduler gagal menyimpan alert.",
+                errors: ["Alert gagal disimpan atau diperpanjang. Periksa koneksi database."],
+            };
+            res.status(500).json(failure);
+            return;
+        }
+
         const response: ApiSuccessResponse<typeof result> = {
             success: true,
             message: result.saved
@@ -77,15 +88,13 @@ const handleScheduler = async (req: Request, res: Response): Promise<void> => {
     } catch (error) {
         console.error("[InternalRoute] run-scheduler error:", error);
 
-        const response: ApiSuccessResponse<{ error: string }> = {
-            success: true,
-            message: "Pengecekan alert selesai dengan catatan degradasi layanan.",
-            data: {
-                error: error instanceof Error ? error.message : String(error),
-            },
+        const response: ApiErrorResponse = {
+            success: false,
+            message: "Siklus scheduler gagal.",
+            errors: ["Terjadi kesalahan saat menjalankan siklus scheduler."],
         };
 
-        res.status(200).json(response);
+        res.status(500).json(response);
     }
 };
 

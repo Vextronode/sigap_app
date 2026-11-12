@@ -3,7 +3,7 @@ import { OpenMeteoService } from "./openmeteo.service.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 
 // Kode wilayah adm4 Desa Cibenda, Kecamatan Parigi, Kabupaten Pangandaran
-const DEFAULT_ADM4_CODE = process.env.BMKG_ADM4_CODE ?? "32.18.01.2008";
+export const DEFAULT_ADM4_CODE = process.env.BMKG_ADM4_CODE ?? "32.18.01.2008";
 
 export class WeatherService {
   /**
