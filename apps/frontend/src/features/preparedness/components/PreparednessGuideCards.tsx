@@ -72,6 +72,7 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
               day: "numeric",
               month: "short",
               year: "numeric",
+              timeZone: "Asia/Jakarta",
             })
           : null;
 

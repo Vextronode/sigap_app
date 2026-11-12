@@ -154,7 +154,7 @@ export const DoubleConfirmationModal: React.FC<DoubleConfirmationModalProps> = (
                     </span>
                     <span className="text-xs text-[color:var(--text-muted)] flex items-center gap-1 font-mono">
                       <Clock size={12} />
-                      {alert.updatedAt ? new Date(alert.updatedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB" : "-"}
+                      {alert.updatedAt ? new Date(alert.updatedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) + " WIB" : "-"}
                     </span>
                   </div>
 

@@ -99,6 +99,7 @@ export default function AdminDashboardPage() {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    timeZone: "Asia/Jakarta",
   });
 
   const formattedDateWib = currentTime.toLocaleDateString("id-ID", {
@@ -106,6 +107,7 @@ export default function AdminDashboardPage() {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Jakarta",
   });
 
   return (

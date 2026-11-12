@@ -18,5 +18,27 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Tanggal dan jam wajib menyebut zona waktu agar tampil dalam WIB di perangkat
+      // mana pun (TK-05). Format angka seperti kapasitas tidak terkena.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.property.name=/^toLocale(Date|Time)String$/]:not(:has(Property[key.name='timeZone']))",
+          message: 'Sertakan timeZone (Asia/Jakarta) atau gunakan helper di utils/date.ts.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='toLocaleString'][arguments.length>=2]:not(:has(Property[key.name='timeZone']))",
+          message: 'Sertakan timeZone (Asia/Jakarta) atau gunakan helper di utils/date.ts.',
+        },
+        {
+          selector:
+            "NewExpression[callee.object.name='Intl'][callee.property.name='DateTimeFormat']:not(:has(Property[key.name='timeZone']))",
+          message: 'Sertakan timeZone (Asia/Jakarta) atau gunakan helper di utils/date.ts.',
+        },
+      ],
+    },
   },
 ])

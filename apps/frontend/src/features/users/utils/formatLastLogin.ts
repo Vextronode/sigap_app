@@ -5,6 +5,8 @@
  * - Tanggal lain: "12 Okt 2023, 09:15 WIB"
  * - Belum pernah: "Belum pernah login"
  */
+import { wibDayDiff } from "../../../utils/date";
+
 export function formatLastLoginTime(isoString?: string | null): {
   primaryText: string;
   hasLoggedIn: boolean;
@@ -36,26 +38,17 @@ export function formatLastLoginTime(isoString?: string | null): {
     })
     .replace(".", ":");
 
-  // Format perbandingan kalender tanggal WIB
-  const isSameDay = (d1: Date, d2: Date) => {
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
-  };
+  // Format perbandingan kalender tanggal WIB, bukan zona perangkat (TK-05)
+  const dayDiff = wibDayDiff(date, now);
 
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-
-  if (isSameDay(date, now)) {
+  if (dayDiff === 0) {
     return {
       primaryText: `Hari ini, ${timeStr} WIB`,
       hasLoggedIn: true,
     };
   }
 
-  if (isSameDay(date, yesterday)) {
+  if (dayDiff === 1) {
     return {
       primaryText: `Kemarin, ${timeStr} WIB`,
       hasLoggedIn: true,
