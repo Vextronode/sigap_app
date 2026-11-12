@@ -16,6 +16,7 @@ import { SystemConnectivitySection } from "../features/admin/components/SystemCo
 import { AdminKpiMetrics } from "../features/admin/components/AdminKpiMetrics";
 import { ActiveIncidentBar } from "../features/admin/components/ActiveIncidentBar";
 import { AdminQuickActionsPanel } from "../features/admin/components/AdminQuickActionsPanel";
+import { SchedulerWarningBar } from "../features/admin/components/SchedulerWarningBar";
 
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
@@ -219,6 +220,9 @@ export default function AdminDashboardPage() {
         alert={alertQuery.data ?? null}
         earthquake={pangandaranEarthquakeQuery.data ?? null}
       />
+
+      {/* Peringatan saat scheduler alert tidak sehat (TK-04) */}
+      <SchedulerWarningBar />
 
       {/* 3. 4 KPI Metrics Cards Command Center */}
       <AdminKpiMetrics

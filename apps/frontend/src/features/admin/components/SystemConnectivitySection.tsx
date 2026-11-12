@@ -1,10 +1,48 @@
-import { Bell, RefreshCw } from "lucide-react";
+import { Bell, Clock, RefreshCw, type LucideIcon } from "lucide-react";
 import { TbHeartRateMonitor } from "react-icons/tb";
 import { SectionHeader } from "../../../components/common/SectionHeader";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
 import { cn } from "../../../utils/cn";
+import { formatWibMoment } from "../../../utils/date";
+import { isSchedulerStateHealthy } from "../../../services/systemHealthService";
 import { useSystemHealth } from "../hooks/useSystemHealth";
+
+type CardTone = "ok" | "bad" | "checking";
+
+type ConnectivityCard = {
+  name: string;
+  provider: string;
+  logo?: string;
+  icon?: LucideIcon;
+  tone: CardTone;
+  statusText: string;
+  message: string;
+  footerLabel: string;
+  footerValue: string;
+};
+
+const BADGE_CLASSES: Record<CardTone, string> = {
+  ok: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  bad: "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400",
+  checking: "border-slate-400/20 bg-slate-500/10 text-slate-600 dark:text-slate-400",
+};
+
+const SCHEDULER_LABEL = {
+  AKTIF: "AKTIF",
+  MEMULAI: "MEMULAI",
+  TERLAMBAT: "TERLAMBAT",
+  GAGAL: "GAGAL",
+  TIDAK_AKTIF: "TIDAK AKTIF",
+} as const;
+
+/** Latensi yang tidak diukur ditampilkan "-", bukan angka bawaan. */
+const formatLatency = (values: (number | null | undefined)[]) => {
+  const measured = values.filter((value): value is number => typeof value === "number");
+  return measured.length > 0
+    ? `${Math.round(measured.reduce((sum, value) => sum + value, 0) / measured.length)} ms`
+    : "-";
+};
 
 export const SystemConnectivitySection = () => {
   const { data, refetch, isFetching } = useSystemHealth();
@@ -13,43 +51,54 @@ export const SystemConnectivitySection = () => {
   const weatherService = data?.services?.find((s) => s.category === "weather");
   const earthquakeService = data?.services?.find((s) => s.category === "earthquake");
   const pushService = data?.services?.find((s) => s.category === "push");
+  const schedulerService = data?.services?.find((s) => s.category === "scheduler");
+  const scheduler = data?.scheduler;
 
-  const weatherLatency = weatherService?.latencyMs;
-  const earthquakeLatency = earthquakeService?.latencyMs;
-  const bmkgAvgLatency =
-    weatherLatency !== undefined && earthquakeLatency !== undefined
-      ? Math.round((weatherLatency + earthquakeLatency) / 2)
-      : (weatherLatency ?? earthquakeLatency ?? 82);
-
-  const pushLatency = pushService?.latencyMs ?? 12;
-
-  // Status online dinamis sesuai respon API backend (bukan hardcoded)
+  // Status dari respons backend; selama data belum termuat tidak dianggap terhubung.
   const isBmkgOnline =
-    !data || (weatherService?.status !== "OFFLINE" && earthquakeService?.status !== "OFFLINE");
-  const isPushOnline = !data || pushService?.status !== "OFFLINE";
+    earthquakeService?.status === "ONLINE" && weatherService?.status !== "OFFLINE";
+  const isPushOnline = pushService?.status !== "OFFLINE";
 
-  const connectivityCards = [
+  const connectivityCards: ConnectivityCard[] = [
     {
       name: "Data BMKG",
       provider: "Data Gempa & Cuaca BMKG dan API Open-Meteo",
       logo: "/assets/image/logo-bmkg.webp",
-      isOnline: isBmkgOnline,
-      statusText: isBmkgOnline ? "TERHUBUNG" : "TERPUTUS",
-      message: isBmkgOnline
-        ? "Pembaruan data cuaca per jam dan pemantauan gempa bumi terkini aktif tersinkronisasi."
-        : "Terjadi kendala koneksi ke server BMKG / Open-Meteo. Sistem menggunakan data cache lokal.",
-      latencyMs: bmkgAvgLatency,
+      tone: !data ? "checking" : isBmkgOnline ? "ok" : "bad",
+      statusText: !data ? "MEMERIKSA" : isBmkgOnline ? "TERHUBUNG" : "TERPUTUS",
+      message: !data
+        ? "Memeriksa koneksi ke BMKG dan Open-Meteo."
+        : isBmkgOnline
+          ? "Pembaruan data cuaca per jam dan pemantauan gempa bumi terkini aktif tersinkronisasi."
+          : earthquakeService?.status !== "ONLINE"
+            ? earthquakeService?.message ?? ""
+            : weatherService?.message ?? "",
+      footerLabel: "Latensi",
+      footerValue: formatLatency([weatherService?.latencyMs, earthquakeService?.latencyMs]),
     },
     {
       name: "Notifikasi Real-Time",
       provider: "Layanan Pengiriman Peringatan Dini Warga",
       icon: Bell,
-      isOnline: isPushOnline,
-      statusText: isPushOnline ? "TERHUBUNG" : "TERPUTUS",
-      message: isPushOnline
-        ? "Sistem notifikasi darurat aktif dan siap mengirimkan pesan peringatan langsung ke handphone warga."
-        : "Layanan push notification sedang offline atau konfigurasi VAPID belum lengkap.",
-      latencyMs: pushLatency,
+      tone: !data ? "checking" : isPushOnline ? "ok" : "bad",
+      statusText: !data ? "MEMERIKSA" : isPushOnline ? "TERHUBUNG" : "TERPUTUS",
+      message: !data
+        ? "Memeriksa layanan notifikasi."
+        : isPushOnline
+          ? "Sistem notifikasi darurat aktif dan siap mengirimkan pesan peringatan langsung ke handphone warga."
+          : "Layanan push notification sedang offline atau konfigurasi VAPID belum lengkap.",
+      footerLabel: "Latensi",
+      footerValue: formatLatency([pushService?.latencyMs]),
+    },
+    {
+      name: "Scheduler Alert",
+      provider: "Evaluasi Alert BMKG",
+      icon: Clock,
+      tone: !scheduler ? "checking" : isSchedulerStateHealthy(scheduler.state) ? "ok" : "bad",
+      statusText: !scheduler ? "MEMERIKSA" : SCHEDULER_LABEL[scheduler.state],
+      message: schedulerService?.message ?? "Memeriksa status scheduler.",
+      footerLabel: "Siklus terakhir",
+      footerValue: scheduler?.lastSuccessAt ? formatWibMoment(scheduler.lastSuccessAt) : "-",
     },
   ];
 
@@ -79,14 +128,13 @@ export const SystemConnectivitySection = () => {
         }
       />
 
-      <div className="dashboard-grid dashboard-grid--two">
-        {connectivityCards.map((card, index) => {
-          const isOnline = card.isOnline;
+      <div className="dashboard-grid dashboard-grid--three">
+        {connectivityCards.map((card) => {
           const Icon = card.icon;
 
           return (
             <Card
-              key={index}
+              key={card.name}
               className="flex flex-col justify-between border border-[color:var(--border)] bg-[color:var(--surface)] p-5 shadow-xs"
             >
               <div>
@@ -114,12 +162,10 @@ export const SystemConnectivitySection = () => {
                   </div>
 
                   <Badge
-                    tone={isOnline ? "safe" : "danger"}
+                    tone={card.tone === "ok" ? "safe" : card.tone === "bad" ? "danger" : "neutral"}
                     className={cn(
                       "shrink-0 border px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] uppercase",
-                      isOnline
-                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                        : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
+                      BADGE_CLASSES[card.tone]
                     )}
                   >
                     {card.statusText}
@@ -133,9 +179,9 @@ export const SystemConnectivitySection = () => {
 
               <div className="mt-4 border-t border-[color:var(--border)] pt-3 flex items-center justify-between text-xs text-[color:var(--text-muted)]">
                 <span className="font-medium">
-                  Latensi:{" "}
+                  {card.footerLabel}:{" "}
                   <strong className="font-bold text-[color:var(--text)]">
-                    {card.latencyMs} ms
+                    {card.footerValue}
                   </strong>
                 </span>
               </div>
