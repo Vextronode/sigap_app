@@ -449,6 +449,58 @@ test("rentetan: masa aktif alert gempa dihitung dari waktu kejadian", async () =
   assert.equal(current?.activeUntil?.getTime(), eventTime.getTime() + 24 * 3_600_000);
 });
 
+test("rentetan: BMKG menambah wilayah Dirasakan pada gempa yang sama tanpa push ulang", async () => {
+  const event = quake(2, null, FELT, 5.4);
+  await arrange({ quakes: [event] });
+  await runAlertCheck();
+  assert.equal(state.pushLogs, 1);
+
+  const revised = { ...event, felt: `${FELT}, II Ciamis, II Banjar`, feltAreas: parseFeltAreas(`${FELT}, II Ciamis, II Banjar`) };
+  const result = await nextCycle([revised]);
+  assert.equal(result.saved, false);
+  assert.equal(result.extended, true);
+  assert.equal(state.pushLogs, 1);
+  assert.match(String(state.latest?.description), /Ciamis/);
+});
+
+test("rentetan: revisi magnitudo BMKG pada gempa yang sama tanpa push ulang", async () => {
+  const event = quake(2, null, FELT, 5.4);
+  await arrange({ quakes: [event] });
+  await runAlertCheck();
+
+  const result = await nextCycle([{ ...event, magnitude: 5.6 }]);
+  assert.equal(result.saved, false);
+  assert.equal(result.extended, true);
+  assert.equal(state.pushLogs, 1);
+  assert.equal(state.latest?.episodeMaxMagnitude, 5.6);
+});
+
+test("estimasi tsunami: revisi magnitudo pada gempa asal yang sama tanpa push ulang", async () => {
+  const event = quake(2, "BERPOTENSI", "", 6.0);
+  await arrange({ quakes: [event] });
+  const first = await runAlertCheck();
+  assert.equal(first.source, ESTIMATE);
+  assert.equal(state.pushLogs, 1);
+  assert.equal((state.latest?.eventTime as Date).getTime(), new Date(event.updatedAt).getTime());
+
+  const second = await nextCycle([{ ...event, magnitude: 6.2 }]);
+  assert.equal(second.source, ESTIMATE);
+  assert.equal(second.saved, false);
+  assert.equal(state.pushLogs, 1);
+});
+
+test("estimasi tsunami: alert estimasi tidak diperpanjang sebagai rentetan gempa", async () => {
+  await arrange({
+    latest: record({ level: "YELLOW", source: ESTIMATE, eventTime: hoursAgo(2), createdAt: hoursAgo(2) }),
+    quakes: [quake(1, null, "", 5.0)],
+  });
+  const result = await runAlertCheck();
+  assert.equal(result.saved, true);
+  assert.equal(state.extended, 0);
+  assert.equal(state.latest?.source, "BMKG");
+  assert.equal(state.pushLogs, 0);
+});
+
 test("rentetan: selisih magnitudo dibandingkan pada satu desimal", () => {
   const latest = record({
     level: "ORANGE",
