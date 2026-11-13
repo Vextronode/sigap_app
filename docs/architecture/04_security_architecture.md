@@ -30,12 +30,15 @@ Route yang memeriksa permission adalah mutasi konten (`content.manage`), manajem
 
 | Cakupan | Batas | Kunci |
 |---|---|---|
+| Baca publik ter-cache | 3.000 request per menit | IP |
 | Umum | 300 request per menit | IP |
 | Login | 15 percobaan gagal per 15 menit | IP |
 | Kesehatan sistem | 60 request per menit | IP |
 | Lockout login | 5 kali gagal, terkunci 15 menit | Akun |
 
-Implementasi memakai `express-rate-limit` dengan penyimpanan memori (ADR-039).
+Baca publik ter-cache mencakup GET `/alerts`, `/alerts/current`, `/earthquakes` beserta subpath-nya, `/tsunami`, `/tsunamis`, dan `/device/status`. Batasnya menampung 250 warga di belakang satu IP publik dengan sekitar 12 request per warga per menit. Request baca publik ter-cache tidak dihitung oleh batas umum. Request publik lain dan seluruh `/api/protected` memakai batas umum dengan satu penghitung bersama; login dan kesehatan sistem juga dihitung oleh batas khususnya.
+
+Implementasi memakai `express-rate-limit` dengan penyimpanan memori (ADR-039, ADR-048).
 
 ## 4.4 Kontrol Lain
 

@@ -6,6 +6,7 @@ import { LoginSuccessToast } from "../components/common/LoginSuccessToast";
 import { OfflineNotice } from "../components/common/OfflineNotice";
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { useSessionGuard } from "../hooks/useSessionGuard";
+import { failedWithoutData } from "../utils/queryFreshness";
 
 export const MainLayout = () => {
   useSessionGuard();
@@ -20,7 +21,7 @@ export const MainLayout = () => {
         <TopNavbar
           alert={alertQuery.data ?? null}
           isLoading={alertQuery.isLoading}
-          isError={alertQuery.isError}
+          isError={failedWithoutData(alertQuery)}
         />
         <OfflineNotice lastUpdatedAt={alertQuery.data?.updatedAt} />
         <LoginSuccessToast />

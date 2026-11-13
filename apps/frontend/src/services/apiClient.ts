@@ -1,5 +1,27 @@
-import axios from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../stores/authStore";
+
+/**
+ * TK-07: setelah 429, GET publik ke URL yang sama tidak dikirim sampai batas direset.
+ * Waktu reset dibaca dari header `RateLimit-Reset` atau `Retry-After` (detik); bila header
+ * tidak terbaca (misalnya request lintas origin di development), dipakai 60 detik.
+ */
+const DEFAULT_RATE_LIMIT_BACKOFF_MS = 60_000;
+const RATE_LIMITED_CODE = "ERR_RATE_LIMITED";
+const rateLimitedUntil = new Map<string, number>();
+
+const publicGetKey = (config?: InternalAxiosRequestConfig) =>
+  config?.method === "get" && config.url?.startsWith("/public/") ? config.url : null;
+
+const resetDelayMs = (error: AxiosError) => {
+  const headers = error.response?.headers;
+  const seconds = Number(headers?.["ratelimit-reset"] ?? headers?.["retry-after"]);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : DEFAULT_RATE_LIMIT_BACKOFF_MS;
+};
+
+export const isRateLimitError = (error: unknown) =>
+  axios.isAxiosError(error) &&
+  (error.response?.status === 429 || error.code === RATE_LIMITED_CODE);
 
 const trimSlash = (value: string) => value.replace(/\/+$/, "");
 
@@ -25,6 +47,11 @@ export const apiClient = axios.create({
 
 // Interceptor request: menyertakan token JWT pada setiap panggilan jika tersedia
 apiClient.interceptors.request.use((config) => {
+  const key = publicGetKey(config);
+  if (key && Date.now() < (rateLimitedUntil.get(key) ?? 0)) {
+    throw new AxiosError("Menunggu batas permintaan direset.", RATE_LIMITED_CODE, config);
+  }
+
   const token = localStorage.getItem("sigap_token");
 
   if (token) {
@@ -38,6 +65,11 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const rateLimitKey = error.response?.status === 429 ? publicGetKey(error.config) : null;
+    if (rateLimitKey) {
+      rateLimitedUntil.set(rateLimitKey, Date.now() + resetDelayMs(error));
+    }
+
     if (error.response && error.response.status === 401) {
       const authState = useAuthStore.getState();
       const hasStoredToken = Boolean(localStorage.getItem("sigap_token"));

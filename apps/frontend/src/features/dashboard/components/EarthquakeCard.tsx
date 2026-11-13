@@ -3,6 +3,7 @@ import { IoIosArrowRoundBack, IoIosArrowRoundForward } from "react-icons/io";
 import { useState, type ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import type { Earthquake } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
@@ -27,6 +28,7 @@ type EarthquakeCardProps = {
   isError?: boolean;
   historicalEarthquake?: Earthquake | null;
   showSourceLink?: boolean;
+  staleSince?: number;
 };
 
 const PANGANDARAN_FALLBACK_HISTORY: Earthquake = {
@@ -184,6 +186,7 @@ export const EarthquakeCard = ({
   isError = false,
   historicalEarthquake,
   showSourceLink = false,
+  staleSince,
 }: EarthquakeCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
 
@@ -529,6 +532,7 @@ export const EarthquakeCard = ({
           </div>
         ) : null}
       </div>
+      <StaleDataNotice since={staleSince} />
     </Card>
   );
 };

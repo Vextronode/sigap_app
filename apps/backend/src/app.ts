@@ -6,7 +6,7 @@ import morgan from "morgan";
 
 import { publicRouter, protectedRouter } from "./routes/index.js";
 import { healthRouter } from "./routes/health.route.js";
-import { generalRateLimiter } from "./middleware/rateLimit.middleware.js";
+import { generalRateLimiter, publicRateLimiter } from "./middleware/rateLimit.middleware.js";
 import { helmetOptions } from "./config/helmet.config.js";
 import {
   assertAllowedOriginsConfigured,
@@ -88,10 +88,10 @@ app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 // memakai rate limiter, agar healthcheck tidak terkena limit atau tertangkap router lain.
 app.use("/api", healthRouter);
 
-app.use("/api/public", generalRateLimiter, publicRouter);
+app.use("/api/public", publicRateLimiter, publicRouter);
 app.use("/api/protected", generalRateLimiter, protectedRouter);
 // Alias agar endpoint publik juga dapat diakses langsung via /api/... di Postman
-app.use("/api", generalRateLimiter, publicRouter);
+app.use("/api", publicRateLimiter, publicRouter);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({

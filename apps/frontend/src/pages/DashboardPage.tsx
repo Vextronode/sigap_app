@@ -26,6 +26,7 @@ import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { TriangleAlert, Siren } from "lucide-react";
+import { failedWithoutData, getStaleSince } from "../utils/queryFreshness";
 
 export default function DashboardPage() {
   useDocumentTitle("Dashboard SIGAP Desa Cibenda");
@@ -82,7 +83,8 @@ export default function DashboardPage() {
         <CurrentAlertCard
           alert={alertQuery.data ?? null}
           isLoading={alertQuery.isLoading}
-          isError={alertQuery.isError}
+          isError={failedWithoutData(alertQuery)}
+          staleSince={getStaleSince(alertQuery)}
         />
         <NotificationPrompt />
         <EarthquakeDistributionMap />
@@ -97,7 +99,8 @@ export default function DashboardPage() {
           weather={weatherQuery.data ?? null}
           forecast={forecastQuery.data ?? []}
           isWeatherLoading={weatherQuery.isLoading}
-          isWeatherError={weatherQuery.isError}
+          isWeatherError={failedWithoutData(weatherQuery)}
+          weatherStaleSince={getStaleSince(weatherQuery)}
           isForecastLoading={forecastQuery.isLoading}
           isForecastError={forecastQuery.isError}
         />
@@ -112,7 +115,8 @@ export default function DashboardPage() {
               title="Info Gempa Pangandaran"
               earthquake={pangandaranEarthquakeQuery.data ?? null}
               isLoading={pangandaranEarthquakeQuery.isLoading}
-              isError={pangandaranEarthquakeQuery.isError}
+              isError={failedWithoutData(pangandaranEarthquakeQuery)}
+              staleSince={getStaleSince(pangandaranEarthquakeQuery)}
               historicalEarthquake={pangandaranHistoryQuery.data ?? null}
             />
             <div className="dashboard-grid dashboard-grid--two">
@@ -120,13 +124,15 @@ export default function DashboardPage() {
                 title="Info Gempa Indonesia"
                 earthquake={indonesiaEarthquakeQuery.data ?? null}
                 isLoading={indonesiaEarthquakeQuery.isLoading}
-                isError={indonesiaEarthquakeQuery.isError}
+                isError={failedWithoutData(indonesiaEarthquakeQuery)}
+                staleSince={getStaleSince(indonesiaEarthquakeQuery)}
               />
               <EarthquakeCard
                 title="Info Gempa Jawa Barat"
                 earthquake={westJavaEarthquakeQuery.data ?? null}
                 isLoading={westJavaEarthquakeQuery.isLoading}
-                isError={westJavaEarthquakeQuery.isError}
+                isError={failedWithoutData(westJavaEarthquakeQuery)}
+                staleSince={getStaleSince(westJavaEarthquakeQuery)}
               />
             </div>
           </div>
@@ -140,7 +146,8 @@ export default function DashboardPage() {
           <TsunamiCard
             tsunami={tsunamiQuery.data ?? null}
             isLoading={tsunamiQuery.isLoading}
-            isError={tsunamiQuery.isError}
+            isError={failedWithoutData(tsunamiQuery)}
+            staleSince={getStaleSince(tsunamiQuery)}
           />
         </section>
         <EvacuationRoutes
