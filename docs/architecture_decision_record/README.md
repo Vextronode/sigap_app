@@ -21,7 +21,7 @@ ADR dikelompokkan per domain dalam satu file. Nomor ADR sekuensial lintas file d
 | File | Domain | Rentang ADR |
 |---|---|---|
 | `ADR_data_architecture.md` | Arsitektur Data dan Skema | ADR-001, 002, 003, 004, 030 |
-| `ADR_security_access_control.md` | Keamanan dan Kontrol Akses | ADR-005, 006, 007, 008, 009, 010, 026, 039 |
+| `ADR_security_access_control.md` | Keamanan dan Kontrol Akses | ADR-005, 006, 007, 008, 009, 010, 026, 039, 048 |
 | `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029 |
 | `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 |
 | `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025 |
@@ -80,6 +80,7 @@ Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID ser
 | ADR-045 | Masa Berlaku Alert Status Tsunami Resmi Mengikuti BMKG_TSUNAMI_STATUS | Berlaku | - |
 | ADR-046 | Penyatuan Data Gempa per Kejadian dan Aturan Rentetan Gempa | Berlaku | - |
 | ADR-047 | Konsistensi Isi dan Pengiriman Notifikasi Push | Berlaku | - |
+| ADR-048 | Batas Baca Publik Terpisah untuk Akses Bersamaan dari Satu IP | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 

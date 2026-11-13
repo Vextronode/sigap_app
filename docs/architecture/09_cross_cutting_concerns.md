@@ -26,6 +26,12 @@
 
 Frontend memakai TanStack Query dengan polling. Alert terkini diperbarui setiap `VITE_ALERT_REFETCH_INTERVAL_MS` (default 60 detik).
 
+| Kondisi | Perilaku |
+|---|---|
+| Pembaruan gagal setelah data pernah dimuat | Kartu alert, gempa, tsunami, peta gempa, cuaca, dan status perangkat tetap menampilkan data terakhir dengan penanda "Data belum diperbarui" beserta jam terakhir berhasil (WIB). Penanda tidak tampil saat perangkat offline karena pemberitahuan offline sudah tampil |
+| Pembaruan gagal sebelum data pernah dimuat | Kartu menampilkan keadaan galat |
+| Respons `429` | Tidak diulang. GET publik ke URL yang sama tidak dikirim sampai waktu `RateLimit-Reset` atau `Retry-After`; bila header tidak terbaca, 60 detik |
+
 ## 9.4 Aksesibilitas
 
 Level kesiapsiagaan ditampilkan dengan teks dan ikon, tidak hanya warna. Kartu alert menampilkan waktu pembaruan terakhir.

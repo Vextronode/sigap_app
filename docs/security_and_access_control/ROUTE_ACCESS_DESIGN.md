@@ -99,7 +99,8 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori per proses, 
 
 | Cakupan | Batas | Kunci |
 |---|---|---|
-| Seluruh `/api/public`, `/api/protected`, dan alias `/api` | 300 request per menit | IP |
+| GET `/alerts`, `/alerts/current`, `/earthquakes/*`, `/tsunami`, `/tsunamis`, dan `/device/status` pada `/api/public` dan alias `/api` | 3.000 request per menit | IP |
+| `/api/public` dan alias `/api` selain baris di atas, serta seluruh `/api/protected` | 300 request per menit, satu penghitung bersama | IP |
 | POST `/api/public/auth/login` | 15 percobaan gagal per 15 menit | IP |
 | Kesehatan sistem | 60 request per menit | IP |
 | Lockout login | 5 kali gagal, akun terkunci 15 menit | Akun |

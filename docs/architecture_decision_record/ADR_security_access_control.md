@@ -189,3 +189,28 @@ Implementasi yang berjalan mengakomodasi pola pemakaian dashboard, dan lockout p
 ### Dampak Terhadap Sistem
 - Penyimpanan penghitung berada di memori proses, sehingga backend berjalan satu replika.
 - ADR-008, ADR-009, dan ADR-010 digantikan oleh keputusan ini dan tetap dipertahankan sebagai catatan historis.
+
+---
+
+## ADR-048: Batas Baca Publik Terpisah untuk Akses Bersamaan dari Satu IP
+
+### Latar Belakang Keputusan
+ADR-039 menetapkan satu batas umum 300 request per menit per IP untuk seluruh `/api/public` dan `/api/protected`. Dashboard warga melakukan polling sekitar 7 request per menit dan sekitar 12 request saat pertama dibuka. Operator seluler memakai CGNAT dan warga dapat berbagi Wi-Fi desa, sehingga sekitar 40 warga di belakang satu IP publik sudah mencapai batas. Saat kejadian bencana, ketika banyak warga membuka dashboard bersamaan, sebagian warga menerima `429` dan kartu dashboard kehilangan data terakhir.
+
+### Alternatif yang Dipertimbangkan
+1. Menaikkan batas umum untuk seluruh endpoint.
+2. Batas terpisah untuk GET publik yang dilayani dari cache backend, batas umum dan login tetap.
+3. Cache respons publik di reverse proxy.
+4. Endpoint gabungan dashboard yang mengurangi jumlah request per warga.
+
+### Keputusan yang Dipilih
+Opsi 2. GET `/alerts`, `/alerts/current`, `/earthquakes` beserta subpath-nya, `/tsunami`, `/tsunamis`, dan `/device/status` memakai limiter baca publik 3.000 request per menit per IP, dihitung dari target 250 warga di belakang satu IP publik dengan sekitar 12 request per warga per menit. Request publik lain dan `/api/protected` tetap memakai batas umum 300 per menit dengan satu penghitung bersama; login, kesehatan sistem, dan lockout akun tidak berubah. Request baca publik ter-cache tidak dihitung oleh batas umum. Frontend tetap menampilkan data terakhir dengan penanda saat pembaruan gagal, tidak mengulang request yang dibalas `429`, dan menunda GET publik ke URL yang sama sampai batas direset.
+
+### Alasan Pemilihan
+Endpoint yang dipisahkan dilayani dari cache backend, sehingga batas yang lebih longgar tidak menambah beban per request secara sebanding. Endpoint yang belum ter-cache (cuaca, riwayat alert, titik evakuasi, kontak, panduan) tetap dibatasi ketat agar lonjakan tidak diteruskan ke BMKG, Open-Meteo, dan database. Opsi 1 melonggarkan endpoint tulis dan Protected. Opsi 3 memerlukan modul cache yang tidak tersedia pada Caddy bawaan, dan service worker sudah memakai network first. Opsi 4 bergantung pada snapshot yang dibangun scheduler dan dikerjakan bersama sinkronisasi data dashboard.
+
+### Dampak Terhadap Sistem
+- `rateLimit.middleware.ts` memiliki `publicReadRateLimiter` dan `publicRateLimiter`; mount `/api/public` dan alias `/api` memakai `publicRateLimiter`.
+- Penyimpanan penghitung tetap di memori proses; backend tetap satu replika.
+- Ketepatan batas per IP bergantung pada `TRUST_PROXY` yang sesuai topologi proxy.
+- ADR-039 tetap berlaku untuk batas umum, login, kesehatan sistem, dan lockout akun.
