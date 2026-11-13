@@ -22,7 +22,11 @@
  */
 import "dotenv/config";
 import { AlertService } from "../src/services/alert.service.js";
-import { NotificationService } from "../src/services/notification.service.js";
+import {
+  NotificationService,
+  findDeterminingEarthquake,
+  toNotifiableAlert,
+} from "../src/services/notification.service.js";
 import { DecisionEngineService } from "../src/services/decisionEngine.service.js";
 import type { DecisionInput, TsunamiStatusInfo } from "../src/types/alert.types.js";
 import type { EarthquakeInfo } from "../src/types/earthquake.types.js";
@@ -97,11 +101,14 @@ async function main() {
     if (!NotificationService.shouldNotify(result.level)) {
       console.log("Level GREEN — notifikasi di-skip (sesuai NotificationService.shouldNotify()).");
     } else {
-      const payload = await NotificationService.getLatestPayload();
-      if (payload) {
-        const dispatchResult = await NotificationService.dispatch(payload, "MANUAL_SIMULATION");
-        console.log(`Push notification terkirim ke ${dispatchResult.sent}/${dispatchResult.total} subscriber.`);
-      }
+      // Dibangun dari alert simulasi yang baru disimpan, bukan dari alert yang berlaku.
+      const notifiable = toNotifiableAlert(alert);
+      const notification = NotificationService.buildNotification(
+        notifiable,
+        findDeterminingEarthquake(notifiable, input.earthquakes ?? [])
+      );
+      const dispatchResult = await NotificationService.dispatch(notification, "MANUAL_SIMULATION");
+      console.log(`Push notification terkirim ke ${dispatchResult.sent}/${dispatchResult.total} subscriber.`);
     }
   }
 
