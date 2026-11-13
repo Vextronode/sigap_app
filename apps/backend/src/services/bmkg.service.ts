@@ -24,7 +24,7 @@ import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 import type { TsunamiStatus, TsunamiStatusInfo } from "../types/alert.types.js";
 import { EarthquakeService } from "./earthquake.service.js";
-import { OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
+import { ESTIMATED_TSUNAMI_SOURCE, OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
 
@@ -156,7 +156,7 @@ export class BmkgService {
       if (potential) {
         return {
           status: "WASPADA",
-          source: "BMKG (estimasi dari data gempa)",
+          source: ESTIMATED_TSUNAMI_SOURCE,
           description: `Estimasi awal dari gempa M${potential.magnitude} di ${potential.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
           eventTime: potential.updatedAt,
           updatedAt: potential.updatedAt,

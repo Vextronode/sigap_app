@@ -38,6 +38,16 @@ const isOfficialStatusActive = (level: AlertLevel | string): boolean => {
 export const alertActiveFrom = (alert: { eventTime?: Date | null; createdAt: Date }): Date =>
   new Date(alert.eventTime ?? alert.createdAt);
 
+/** Batas masa aktif alert: null untuk status tsunami resmi, selain itu 24 jam sejak awal masa aktif. */
+export const alertActiveUntil = (alert: {
+  source: string;
+  eventTime?: Date | null;
+  createdAt: Date;
+}): Date | null =>
+  alert.source === OFFICIAL_TSUNAMI_SOURCE
+    ? null
+    : new Date(alertActiveFrom(alert).getTime() + ALERT_ACTIVE_MAX_AGE_MS);
+
 /**
  * Alert selain GREEN yang masih berlaku: status tsunami resmi mengikuti
  * BMKG_TSUNAMI_STATUS (ADR-045), alert lain berlaku 24 jam sejak awal masa aktif.
@@ -224,12 +234,9 @@ export class AlertService {
         // Alert gempa berakhir setelah > 24 jam (ADR-046). Alert status tsunami resmi
         // berakhir saat BMKG_TSUNAMI_STATUS berubah (ADR-045).
         // Status review adalah catatan pasca-kejadian dan tidak memengaruhi level (ADR-041).
-        const isOfficial = latest.source === OFFICIAL_TSUNAMI_SOURCE;
         const mapped: AlertRecord = {
           ...mapAlertToRecord(latest),
-          activeUntil: isOfficial
-            ? null
-            : new Date(alertActiveFrom(latest).getTime() + ALERT_ACTIVE_MAX_AGE_MS),
+          activeUntil: alertActiveUntil(latest),
         };
         const isActive = isAlertRecordActive(latest);
         const isExpired = !isActive && latest.level !== AlertLevel.GREEN;
