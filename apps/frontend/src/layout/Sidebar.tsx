@@ -25,6 +25,8 @@ import { useAuthStore } from "../stores/authStore";
 import { authService } from "../services/authService";
 import { useDeviceStatus } from "../features/dashboard/hooks/useDeviceStatus";
 import { Badge } from "../components/ui/Badge";
+import { StaleDataNotice } from "../components/common/StaleDataNotice";
+import { failedWithoutData, getStaleSince } from "../utils/queryFreshness";
 import { ProfileModal } from "./components/ProfileModal";
 
 // daftar tautan publik warga desa
@@ -55,7 +57,9 @@ export const Sidebar = () => {
   const location = useLocation();
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const closeSidebar = useUiStore((state) => state.closeSidebar);
-  const { data: deviceStatus, isLoading: isDeviceLoading, isError: isDeviceError } = useDeviceStatus();
+  const deviceQuery = useDeviceStatus();
+  const { data: deviceStatus, isLoading: isDeviceLoading } = deviceQuery;
+  const isDeviceError = failedWithoutData(deviceQuery);
 
   // state autentikasi admin dan modal profil
   const { isAdmin, user, logout } = useAuthStore();
@@ -421,12 +425,15 @@ export const Sidebar = () => {
 
         {/* kartu monitor status alat iot (khusus admin) */}
         {showAdminNav && (
-          <div className="sidebar__device-card">
-            <span className={`status-dot ${getDotClass()}`} />
-            <span className={getLabelClass()}>
-              {getStatusLabel()}
-            </span>
-          </div>
+          <>
+            <div className="sidebar__device-card">
+              <span className={`status-dot ${getDotClass()}`} />
+              <span className={getLabelClass()}>
+                {getStatusLabel()}
+              </span>
+            </div>
+            <StaleDataNotice since={getStaleSince(deviceQuery)} compact className="mt-2 rounded-lg" />
+          </>
         )}
 
         {/* menu profil dan logout langsung di paling bawah khusus admin */}

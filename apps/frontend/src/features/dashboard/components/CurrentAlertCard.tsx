@@ -2,6 +2,7 @@ import { AlertOctagon, AlertTriangle, ShieldAlert, RotateCw } from "lucide-react
 import { AiFillAlert } from "react-icons/ai";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import type { CurrentAlert } from "../../../types/dashboard";
 import { getAlertMeta } from "../../../utils/status";
 import { getSequenceSummary } from "../../../utils/alertSequence";
@@ -21,12 +22,14 @@ type CurrentAlertCardProps = {
   alert: CurrentAlert | null;
   isLoading?: boolean;
   isError?: boolean;
+  staleSince?: number;
 };
 
 export const CurrentAlertCard = ({ 
   alert, 
   isLoading = false, 
-  isError = false
+  isError = false,
+  staleSince,
 }: CurrentAlertCardProps) => {
   // Jika terjadi error koneksi, tampilkan indikator offline/error secara stabil
   if (isError) {
@@ -147,6 +150,8 @@ export const CurrentAlertCard = ({
             </span>
           </>
         )}
+
+        <StaleDataNotice since={staleSince} className="rounded-full" />
       </div>
     </section>
   );

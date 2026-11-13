@@ -25,6 +25,8 @@ import { useEarthquakeMapPoints } from "../hooks/useEarthquakeMapPoints";
 import { formatDateTime, getDaysAgoInfo } from "../../../utils/date";
 import type { Earthquake } from "../../../types/dashboard";
 import { Skeleton } from "../../../components/ui/Skeleton";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
+import { getStaleSince } from "../../../utils/queryFreshness";
 
 // Titik tengah default kepulauan Jawa / Indonesia bagian barat
 const DEFAULT_MAP_CENTER: [number, number] = [-7.6838, 108.561]; // Koordinat Desa Cibenda / Jawa Barat
@@ -144,7 +146,8 @@ const CustomMapControls: React.FC<{
 const earthquakeIconCache = new Map<string, L.DivIcon>();
 
 export const EarthquakeDistributionMap: React.FC = () => {
-  const { data: earthquakes = [], isLoading, isError } = useEarthquakeMapPoints();
+  const mapQuery = useEarthquakeMapPoints();
+  const { data: earthquakes = [], isLoading, isError } = mapQuery;
   const [isZoomActive, setIsZoomActive] = useState(false);
   const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
   const [resetTrigger, setResetTrigger] = useState(0);
@@ -421,6 +424,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
           })}
         </MapContainer>
       </div>
+      <StaleDataNotice since={getStaleSince(mapQuery)} className="mt-2 rounded-lg" />
     </section>
   );
 };

@@ -1,5 +1,6 @@
 import { GiBigWave } from "react-icons/gi";
 import { Card } from "../../../components/ui/Card";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import { CardSkeleton } from "../../../components/ui/Skeleton";
 import type { TsunamiStatus } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
@@ -9,6 +10,7 @@ type TsunamiCardProps = {
   tsunami: TsunamiStatus | null;
   isLoading?: boolean;
   isError?: boolean;
+  staleSince?: number;
 };
 
 type TsunamiTone = "safe" | "warning" | "orange" | "danger" | "neutral";
@@ -59,6 +61,7 @@ export const TsunamiCard = ({
   tsunami,
   isLoading = false,
   isError = false,
+  staleSince,
 }: TsunamiCardProps) => {
   if (isLoading && !isError) return <CardSkeleton />;
 
@@ -159,6 +162,7 @@ export const TsunamiCard = ({
           </div>
         </div>
       </div>
+      <StaleDataNotice since={staleSince} />
     </Card>
   );
 };
