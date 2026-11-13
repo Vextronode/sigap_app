@@ -336,3 +336,37 @@ Penyatuan feed mengembalikan informasi `Dirasakan` dan `Potensi` yang selama ini
 - Banner warga dan bar insiden admin menampilkan ringkasan rentetan bila gempa aktif lebih dari satu.
 - Estimasi tsunami `WASPADA` belum dapat aktif sampai teks `Potensi` resmi untuk gempa berpotensi tsunami ditambahkan.
 - Memperluas ADR-035, ADR-040, dan ADR-042. Alert status tsunami tetap mengikuti ADR-045.
+
+---
+
+## ADR-047: Konsistensi Isi dan Pengiriman Notifikasi Push
+
+### Latar Belakang Keputusan
+Isi notifikasi dibangun ulang dari alert yang berlaku dan gempa Pangandaran terbaru setelah alert disimpan. Judul dan gambar shakemap dapat berasal dari gempa yang bukan penentu level, misalnya gempa susulan kecil, dan status tsunami ditampilkan dengan judul gempa. Pengiriman Web Push tidak menetapkan TTL dan urgency, sehingga perangkat yang offline dapat menerima peringatan yang sudah berakhir. Bila alert gagal disimpan, scheduler tidak memiliki pembanding dan mengirim notifikasi yang sama setiap siklus. Notifikasi dari evaluasi langsung mencatat `alert_id` yang tidak ada di tabel `alerts`. Warga juga tidak menerima pemberitahuan saat peringatan berakhir.
+
+### Alternatif yang Dipertimbangkan
+Untuk TTL: nilai tetap, atau sisa masa aktif alert.
+
+Untuk notifikasi kembali aman: tidak dikirim, dikirim setelah setiap peringatan, atau dikirim hanya setelah `SIAGA` atau `AWAS`.
+
+Untuk database gagal: tidak mengirim notifikasi, mengirim setiap siklus, atau mengirim sekali dan mencegah pengiriman ulang di memori.
+
+Untuk judul: satu judul umum, atau judul per jenis ancaman.
+
+### Keputusan yang Dipilih
+- Isi notifikasi dibangun dari alert yang baru disimpan, atau dari hasil evaluasi bila alert gagal disimpan. Gambar shakemap hanya dari gempa penentu level.
+- Judul per jenis ancaman: gempa dirasakan, gempa terdeteksi, status tsunami resmi, estimasi tsunami, dan kembali aman.
+- TTL sama dengan sisa masa aktif alert, minimal 60 detik. Status tsunami resmi dan kembali aman memakai 24 jam. Urgency `high` untuk `ORANGE` dan `RED`.
+- Notifikasi kembali aman dikirim sekali saat hasil evaluasi `GREEN`, data BMKG terbaca, dan notifikasi terakhir berlevel `ORANGE` atau `RED` paling lama 48 jam lalu.
+- Alert yang gagal disimpan tetap dikirim sekali, disimpan di memori sebagai pembanding aturan rentetan, lalu disimpan ulang tanpa notifikasi pada siklus berikutnya.
+
+### Alasan Pemilihan
+Membangun isi dari alert yang disimpan menjamin notifikasi sama dengan rekaman yang ditinjau admin. TTL dari sisa masa aktif mencegah peringatan yang sudah berakhir sampai ke perangkat. Kembali aman hanya setelah `SIAGA` atau `AWAS` memberi kepastian kepada warga yang mungkin sudah bersiap evakuasi tanpa menambah notifikasi untuk `WASPADA`. Batas 48 jam (masa aktif 24 jam ditambah 24 jam) mencegah log lama memicu pesan kembali aman setelah deploy atau restart. Pembanding di memori menjaga aturan rentetan tetap berlaku saat database tidak dapat ditulis, tanpa menahan peringatan.
+
+### Dampak Terhadap Sistem
+- `notification_logs.alert_id` kosong untuk notifikasi kembali aman, alert yang gagal disimpan, dan notifikasi dari evaluasi langsung.
+- `notification_logs` dapat memuat level `GREEN`.
+- Log notifikasi terakhir dibaca dari database sekali sejak proses dimulai, lalu diperbarui di memori setiap pengiriman.
+- Alert yang belum tersimpan hilang saat backend dimulai ulang.
+- Rentetan yang diperpanjang lebih dari 48 jam setelah notifikasi terakhir tidak diikuti notifikasi kembali aman.
+- Memperluas ADR-046. Pengingat status tsunami resmi tetap mengikuti ADR-045.

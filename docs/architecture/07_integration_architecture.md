@@ -25,17 +25,22 @@ sequenceDiagram
 
     S->>E: Evaluasi status tsunami dan seluruh gempa aktif
     E-->>S: Level dan ringkasan rentetan
-    S->>DB: Bandingkan dengan alert terakhir
+    S->>DB: Bandingkan dengan alert terakhir atau alert yang belum tersimpan
     S->>DB: Simpan alert baru atau perpanjang alert yang berlaku
     opt Alert baru dengan notifikasi
-        S->>N: Kirim notifikasi
-        N->>P: Web Push ke seluruh subscriber
+        S->>N: Bangun notifikasi dari alert yang disimpan
+        N->>P: Web Push dengan TTL dan urgency ke seluruh subscriber
         P->>W: Notifikasi
+        N->>DB: Catat notification_logs
+    end
+    opt GREEN setelah notifikasi SIAGA atau AWAS
+        S->>N: Kirim notifikasi kembali aman
+        N->>P: Web Push ke seluruh subscriber
         N->>DB: Catat notification_logs
     end
 ```
 
-Notifikasi dikirim untuk alert baru pada level naik, rentetan baru, atau kenaikan magnitudo paling sedikit 1,0 pada level yang sama. Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi (`Rules_Alerts.md` bagian 7).
+Notifikasi dikirim untuk alert baru pada level naik, rentetan baru, atau kenaikan magnitudo paling sedikit 1,0 pada level yang sama. Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi (`Rules_Alerts.md` bagian 7). Judul, gambar, TTL, urgency, notifikasi kembali aman, dan penanganan database gagal mengikuti `Rules_Alerts.md` bagian 7.2 dan 10.
 
 ## 7.3 Integrasi SID
 

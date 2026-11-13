@@ -29,9 +29,14 @@ UnsubscribeRequest:
 NotificationPayload:
   type: object
   nullable: true
+  description: >-
+    Isi notifikasi. Level GREEN berisi notifikasi kembali aman. Judul dan
+    gambar mengikuti Rules_Alerts.md bagian 10.
   properties:
     alertId:
       type: string
+      nullable: true
+      description: Kosong untuk notifikasi kembali aman dan alert yang tidak tersimpan di tabel alerts.
     level:
       $ref: './shared.yaml#/StatusLevel'
     title:

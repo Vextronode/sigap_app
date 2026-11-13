@@ -3,10 +3,10 @@
 | Field | Detail |
 |---|---|
 | Project | SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda) |
-| Versi | 2.1 |
-| Tanggal | 11 November 2026 |
+| Versi | 2.2 |
+| Tanggal | 13 November 2026 |
 | Status | Aktif |
-| Implementasi | `apps/backend/src/services/decisionEngine.service.ts`, `alertSequence.service.ts`, `alert.service.ts`, `bmkg.service.ts`, `earthquake.service.ts`, `utils/bmkgEarthquake.util.ts`, `scheduler/alert.scheduler.ts` |
+| Implementasi | `apps/backend/src/services/decisionEngine.service.ts`, `alertSequence.service.ts`, `alert.service.ts`, `bmkg.service.ts`, `earthquake.service.ts`, `notification.service.ts`, `utils/bmkgEarthquake.util.ts`, `scheduler/alert.scheduler.ts` |
 
 # 1. Tujuan
 
@@ -113,6 +113,10 @@ Rentetan gempa adalah gempa relevan yang masih aktif. Rentetan berlanjut bila ma
 
 Revisi magnitudo atau penambahan wilayah `Dirasakan` oleh BMKG pada kejadian yang sama diperlakukan sebagai kejadian yang sama. Alert menyimpan waktu kejadian terbaru pada levelnya, magnitudo acuan notifikasi, serta jumlah, awal, dan magnitudo terbesar gempa aktif.
 
+## 7.2 Database Gagal
+
+Bila alert gagal disimpan, notifikasinya tetap dikirim dan alert tersebut disimpan di memori proses backend. Selama lebih baru dari rekaman terakhir di database, alert di memori menjadi pembanding aturan bagian 7 dan 7.1, sehingga notifikasi tidak terkirim ulang setiap siklus. Pada siklus berikutnya alert disimpan ulang tanpa notifikasi, lalu dihapus dari memori setelah berhasil tersimpan. Memori ini hilang saat backend dimulai ulang.
+
 # 8. Alert yang Berlaku
 
 Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan pada dashboard dan diberikan kepada perangkat, dengan ketentuan:
@@ -139,15 +143,32 @@ Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifik
 
 | Level | Tindakan |
 |---|---|
-| `GREEN`, `UNKNOWN` | Tidak ada notifikasi |
+| `UNKNOWN` | Tidak ada notifikasi |
+| `GREEN` | Notifikasi kembali aman, satu kali, bila notifikasi terakhir berlevel `ORANGE` atau `RED` dan paling lama 48 jam lalu, serta data gempa dan status tsunami BMKG terbaca |
 | `YELLOW`, `ORANGE`, `RED` | Web Push otomatis ke seluruh subscriber saat alert baru tercatat dengan notifikasi menurut bagian 7, tanpa validasi manual |
 
-Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi.
+Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi. Berakhirnya peringatan `YELLOW` tidak mengirim notifikasi kembali aman.
 
-- Admin dapat mengirim notifikasi manual untuk alert yang berlaku melalui `/api/protected/notifications/dispatch`.
-- Isi notifikasi berasal dari alert yang berlaku dan data gempa Pangandaran terkait.
+Isi notifikasi dibangun dari alert yang baru disimpan, atau dari hasil evaluasi bila alert gagal disimpan (bagian 7.2):
+
+| Jenis | Judul | Gambar |
+|---|---|---|
+| Gempa `ORANGE` | `[SIAGA] Gempa M<magnitudo> dirasakan di sekitar Desa Cibenda` | Shakemap gempa penentu level |
+| Gempa `YELLOW` | `[WASPADA] Gempa M<magnitudo> terdeteksi di sekitar Desa Cibenda` | Shakemap gempa penentu level |
+| Status tsunami resmi | `[<STATUS>] Status tsunami dari BMKG` | Tidak ada |
+| Estimasi tsunami | `[<STATUS>] Estimasi potensi tsunami dari data gempa` | Tidak ada |
+| Kembali aman | `[AMAN] Peringatan telah berakhir` | Tidak ada |
+
+Gempa penentu level adalah gempa aktif dengan magnitudo terbesar pada level alert. Isi notifikasi adalah deskripsi alert. Isi notifikasi kembali aman: "Tidak ada gempa aktif maupun status tsunami yang berlaku. Tetap pantau informasi resmi BMKG."
+
+| Aturan pengiriman Web Push | Nilai |
+|---|---|
+| TTL | Sisa masa aktif alert, minimal 60 detik. Status tsunami resmi dan kembali aman: 24 jam |
+| Urgency | `high` untuk `ORANGE` dan `RED`, `normal` untuk lainnya |
+
+- Admin dapat mengirim notifikasi manual untuk alert yang berlaku melalui `/api/protected/notifications/dispatch`, dengan isi dan aturan pengiriman yang sama.
 - Subscription yang dibalas 404 atau 410 oleh layanan push dihapus.
-- Setiap pengiriman dicatat pada tabel `notification_logs`.
+- Setiap pengiriman dicatat pada tabel `notification_logs`. `alert_id` kosong untuk notifikasi kembali aman dan alert yang gagal disimpan.
 - Selama `BMKG_TSUNAMI_STATUS` terisi selain `NORMAL`, alert baru dan notifikasi terbit setiap 24 jam.
 
 # 11. Parameter Konfigurasi
