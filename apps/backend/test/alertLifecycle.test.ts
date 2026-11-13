@@ -12,6 +12,14 @@ type State = {
   saved: Record<string, unknown>[];
   extended: number;
   pushLogs: number;
+  /** Jumlah subscription tiruan; 0 berarti webpush tidak dipanggil. */
+  subscribers: number;
+  /** Notifikasi yang dikirim ke webpush beserta opsi TTL dan urgency. */
+  sent: { payload: Record<string, unknown>; options: Record<string, unknown> }[];
+  /** Isi notification_logs yang dicatat. */
+  logs: Record<string, unknown>[];
+  /** Log notifikasi terakhir di database sebelum siklus. */
+  lastLog: { level: string; createdAt: Date } | null;
 };
 
 const initialState = (): State => ({
@@ -24,6 +32,10 @@ const initialState = (): State => ({
   saved: [],
   extended: 0,
   pushLogs: 0,
+  subscribers: 0,
+  sent: [],
+  logs: [],
+  lastLog: null,
 });
 
 let state = initialState();
@@ -55,12 +67,21 @@ mock.module(src("config/prisma.ts"), {
             return state.latest;
           }),
       },
-      pushSubscription: { findMany: async () => [] },
+      pushSubscription: {
+        findMany: async () =>
+          Array.from({ length: state.subscribers }, (_, index) => ({
+            endpoint: `https://push.example/${index}`,
+            p256dh: "p",
+            auth: "a",
+          })),
+      },
       notificationLog: {
-        create: async () => {
+        create: async ({ data }: { data: Record<string, unknown> }) => {
           state.pushLogs++;
+          state.logs.push(data);
           return {};
         },
+        findFirst: async () => whenDbUp(() => state.lastLog),
       },
     },
   },
@@ -86,7 +107,11 @@ mock.module(src("services/earthquake.service.ts"), {
 });
 mock.module(src("config/webPush.ts"), {
   namedExports: {
-    webpush: { sendNotification: async () => {} },
+    webpush: {
+      sendNotification: async (_subscription: unknown, body: string, options: Record<string, unknown>) => {
+        state.sent.push({ payload: JSON.parse(body), options });
+      },
+    },
     VAPID_PUBLIC_KEY: "",
   },
 });
@@ -94,7 +119,7 @@ mock.module(src("config/webPush.ts"), {
 const { AlertService } = await import("../src/services/alert.service.js");
 const { BmkgService } = await import("../src/services/bmkg.service.js");
 const { NotificationService } = await import("../src/services/notification.service.js");
-const { runAlertCheck } = await import("../src/scheduler/alert.scheduler.js");
+const { runAlertCheck, resetUnsavedAlert } = await import("../src/scheduler/alert.scheduler.js");
 const { AlertController } = await import("../src/controllers/alert.controller.js");
 const { decideAlertAction } = await import("../src/services/alertSequence.service.js");
 const schedulerStatus = await import("../src/scheduler/schedulerStatus.js");
@@ -138,11 +163,18 @@ const quake = (ageHours: number, tsunamiPotential: string | null = null, felt = 
   updatedAt: hoursAgo(ageHours).toISOString(),
 });
 
-/** Mengosongkan cache alert 60 detik, lalu memasang kondisi skenario. */
-const arrange = async (next: Partial<State>) => {
+/**
+ * Mengosongkan cache alert 60 detik, lalu memasang kondisi skenario. Memori
+ * scheduler dan notifikasi ikut dikosongkan kecuali `keepMemory`.
+ */
+const arrange = async (next: Partial<State>, { keepMemory = false } = {}) => {
   state = initialState();
   await AlertService.saveAlert("YELLOW" as never, "reset-cache");
   schedulerStatus.resetSchedulerStatus();
+  if (!keepMemory) {
+    resetUnsavedAlert();
+    NotificationService.resetLastSent();
+  }
   state = { ...initialState(), ...next };
 };
 
@@ -343,8 +375,11 @@ test("controller membalas UNKNOWN saat service gagal", async (t) => {
 const FELT = "III Pangandaran";
 
 /** Siklus berikutnya dengan alert terakhir dan hitungan push dari siklus sebelumnya. */
-const nextCycle = async (quakes: Record<string, unknown>[]) => {
-  await arrange({ latest: state.latest, pushLogs: state.pushLogs, quakes });
+const nextCycle = async (quakes: Record<string, unknown>[], next: Partial<State> = {}) => {
+  await arrange(
+    { latest: state.latest, pushLogs: state.pushLogs, quakes, subscribers: state.subscribers, ...next },
+    { keepMemory: true }
+  );
   return runAlertCheck();
 };
 
@@ -603,4 +638,187 @@ test("rentetan: selisih magnitudo dibandingkan pada satu desimal", () => {
     latest as never
   );
   assert.deepEqual(action, { type: "save", notify: true, referenceMagnitude: 5.1 });
+});
+
+const SHAKEMAP = "https://data.bmkg.go.id/DataMKG/TEWS/shakemap.mmi.jpg";
+
+const notifiable = (overrides: Record<string, unknown> = {}) => ({
+  id: "a1",
+  level: "ORANGE",
+  source: "BMKG",
+  description: "Gempa M5.6 dirasakan warga di sekitar Desa Cibenda (III Pangandaran).",
+  activeUntil: null,
+  updatedAt: new Date(),
+  ...overrides,
+}) as never;
+
+test("notifikasi: judul per jenis ancaman, TTL sisa masa aktif, urgency per level (TK-06)", () => {
+  const now = new Date("2026-11-13T03:00:00.000Z");
+  const twoHoursLater = new Date(now.getTime() + 2 * 3_600_000);
+
+  const felt = NotificationService.buildNotification(notifiable({ activeUntil: twoHoursLater }), null, now);
+  assert.equal(felt.payload.title, "[SIAGA] Gempa M5.6 dirasakan di sekitar Desa Cibenda");
+  assert.equal(felt.ttlSeconds, 7200);
+  assert.equal(felt.urgency, "high");
+
+  const detected = NotificationService.buildNotification(
+    notifiable({
+      level: "YELLOW",
+      description: "Gempa M4.2 terdeteksi dalam radius pemantauan Desa Cibenda.",
+      activeUntil: twoHoursLater,
+    }),
+    null,
+    now
+  );
+  assert.equal(detected.payload.title, "[WASPADA] Gempa M4.2 terdeteksi di sekitar Desa Cibenda");
+  assert.equal(detected.urgency, "normal");
+
+  const official = NotificationService.buildNotification(
+    notifiable({ level: "RED", source: OFFICIAL, description: "Status AWAS" }),
+    null,
+    now
+  );
+  assert.equal(official.payload.title, "[AWAS] Status tsunami dari BMKG");
+  assert.equal(official.ttlSeconds, 24 * 3600);
+
+  const estimate = NotificationService.buildNotification(
+    notifiable({ level: "YELLOW", source: ESTIMATE, description: "Estimasi", activeUntil: twoHoursLater }),
+    null,
+    now
+  );
+  assert.equal(estimate.payload.title, "[WASPADA] Estimasi potensi tsunami dari data gempa");
+  assert.equal(estimate.payload.image, undefined);
+
+  const ending = NotificationService.buildNotification(
+    notifiable({ activeUntil: new Date(now.getTime() - 1000) }),
+    null,
+    now
+  );
+  assert.equal(ending.ttlSeconds, 60);
+
+  const allClear = NotificationService.buildAllClearNotification(now);
+  assert.equal(allClear.payload.title, "[AMAN] Peringatan telah berakhir");
+  assert.equal(allClear.payload.alertId, null);
+  assert.equal(allClear.payload.requireInteraction, false);
+  assert.equal(allClear.ttlSeconds, 24 * 3600);
+  assert.equal(allClear.urgency, "normal");
+});
+
+test("notifikasi scheduler dibangun dari alert yang baru disimpan (TK-06)", async () => {
+  const main = { ...quake(2, null, FELT, 5.6), shakemap: SHAKEMAP };
+  await arrange({ quakes: [main], subscribers: 1 });
+  await runAlertCheck();
+
+  assert.equal(state.sent.length, 1);
+  const [{ payload, options }] = state.sent;
+  assert.equal(payload.alertId, "n1");
+  assert.equal(payload.title, "[SIAGA] Gempa M5.6 dirasakan di sekitar Desa Cibenda");
+  assert.equal(payload.image, SHAKEMAP);
+  assert.equal(options.urgency, "high");
+  // Gempa terjadi 2 jam lalu: sisa masa aktif sekitar 22 jam.
+  const ttl = options.TTL as number;
+  assert.ok(ttl > 22 * 3600 - 60 && ttl <= 22 * 3600, `TTL ${ttl}`);
+  assert.equal(state.logs[0].alertId, "n1");
+});
+
+test("notifikasi: shakemap hanya dari gempa penentu level (TK-06)", async () => {
+  const main = { ...quake(3, null, FELT, 5.6), shakemap: SHAKEMAP };
+  const aftershock = { ...quake(1, null, "", 4.0), shakemap: "https://example/lain.jpg" };
+  await arrange({ quakes: [main, aftershock], subscribers: 1 });
+  await runAlertCheck();
+  assert.equal(state.sent[0].payload.image, SHAKEMAP);
+});
+
+test("database gagal: notifikasi terkirim sekali, lalu alert disimpan ulang tanpa push (TK-06)", async () => {
+  const main = quake(3, null, FELT, 5.6);
+  const larger = quake(1, null, FELT, 6.6);
+
+  await arrange({ dbDown: true, quakes: [main], subscribers: 1 });
+  const first = await runAlertCheck();
+  assert.equal(first.ok, false);
+  assert.equal(state.pushLogs, 1);
+  assert.equal(state.sent[0].payload.alertId, null);
+  assert.equal(state.logs[0].alertId, null);
+
+  const repeated = await nextCycle([main], { dbDown: true });
+  assert.equal(repeated.ok, false);
+  assert.equal(state.pushLogs, 1);
+
+  // Aturan +1,0 M tetap berlaku terhadap alert yang belum tersimpan.
+  await nextCycle([main, larger], { dbDown: true });
+  assert.equal(state.pushLogs, 2);
+
+  const recovered = await nextCycle([main, larger]);
+  assert.equal(recovered.saved, true);
+  assert.equal(state.pushLogs, 2);
+  assert.equal(state.saved.length, 1);
+  assert.equal(state.latest?.referenceMagnitude, 6.6);
+
+  const after = await nextCycle([main, larger]);
+  assert.equal(after.saved, false);
+  assert.equal(state.pushLogs, 2);
+});
+
+test("kembali aman dikirim sekali setelah peringatan SIAGA berakhir (TK-06)", async () => {
+  await arrange({ quakes: [quake(2, null, FELT, 5.6)], subscribers: 1 });
+  await runAlertCheck();
+  assert.equal(state.pushLogs, 1);
+
+  const ended = await nextCycle([]);
+  assert.equal(ended.level, "GREEN");
+  assert.equal(state.pushLogs, 2);
+  assert.equal(state.sent[0].payload.title, "[AMAN] Peringatan telah berakhir");
+  assert.equal(state.sent[0].options.urgency, "normal");
+  assert.equal(state.logs[0].level, "GREEN");
+  assert.equal(state.logs[0].alertId, null);
+
+  await nextCycle([]);
+  assert.equal(state.pushLogs, 2);
+});
+
+test("kembali aman tidak dikirim setelah WASPADA saja (TK-06)", async () => {
+  await arrange({ quakes: [quake(2, null, "", 5.0)] });
+  await runAlertCheck();
+  assert.equal(state.pushLogs, 1);
+
+  await nextCycle([]);
+  assert.equal(state.pushLogs, 1);
+});
+
+test("kembali aman menunggu data BMKG terbaca (TK-06)", async () => {
+  await arrange({ quakes: [quake(2, null, FELT, 5.6)] });
+  await runAlertCheck();
+
+  await nextCycle([], { bmkgUp: false });
+  assert.equal(state.pushLogs, 1);
+
+  await nextCycle([]);
+  assert.equal(state.pushLogs, 2);
+});
+
+test("kembali aman memakai log notifikasi terakhir di database setelah restart (TK-06)", async () => {
+  await arrange({ lastLog: { level: "RED", createdAt: hoursAgo(2) } });
+  await runAlertCheck();
+  assert.equal(state.pushLogs, 1);
+  assert.equal(state.logs[0].level, "GREEN");
+
+  await arrange({ lastLog: { level: "RED", createdAt: hoursAgo(47) } });
+  await runAlertCheck();
+  assert.equal(state.pushLogs, 1);
+
+  await arrange({ lastLog: { level: "RED", createdAt: hoursAgo(49) } });
+  await runAlertCheck();
+  assert.equal(state.pushLogs, 0);
+
+  await arrange({ lastLog: { level: "GREEN", createdAt: hoursAgo(2) } });
+  await runAlertCheck();
+  assert.equal(state.pushLogs, 0);
+});
+
+test("notifikasi dari evaluasi langsung tidak mencatat alertId (TK-06)", async () => {
+  await arrange({ quake: quake(1, null, FELT) });
+  schedulerStatus.markCycleFinished(false);
+  const payload = await NotificationService.getLatestPayload();
+  assert.equal(payload?.level, "ORANGE");
+  assert.equal(payload?.alertId, null);
 });
