@@ -9,9 +9,10 @@ export interface PushSubscriptionInput {
   };
 }
 
-/** Isi notifikasi siap kirim — dibangun dari alert + data gempa Pangandaran terkait. */
+/** Isi notifikasi siap kirim, dibangun dari alert dan gempa penentu levelnya. */
 export interface NotificationPayload {
-  alertId: string;
+  /** null untuk notifikasi kembali aman atau alert yang gagal disimpan. */
+  alertId: string | null;
   level: AlertLevel;
   title: string;
   body: string;
@@ -31,6 +32,25 @@ export interface NotificationPayload {
    * Selalu true untuk level YELLOW/ORANGE/RED agar warga tidak melewatkan peringatan.
    */
   requireInteraction: boolean;
+}
+
+/** Notifikasi beserta aturan pengiriman Web Push (TK-06). */
+export interface OutgoingNotification {
+  payload: NotificationPayload;
+  /** Batas waktu layanan push menyimpan notifikasi untuk perangkat yang offline. */
+  ttlSeconds: number;
+  urgency: "high" | "normal";
+}
+
+/** Data alert yang cukup untuk membangun notifikasi, tersimpan maupun belum. */
+export interface NotifiableAlert {
+  id: string | null;
+  level: AlertLevel;
+  source: string;
+  description: string | null;
+  /** Batas masa aktif; null untuk status tsunami resmi. */
+  activeUntil: Date | null;
+  updatedAt: Date;
 }
 
 export interface DispatchResult {

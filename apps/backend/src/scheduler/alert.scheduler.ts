@@ -3,10 +3,75 @@ import { DecisionEngineService } from "../services/decisionEngine.service.js";
 import { AlertService } from "../services/alert.service.js";
 import { decideAlertAction } from "../services/alertSequence.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
-import { NotificationService } from "../services/notification.service.js";
-import type { TsunamiStatusInfo } from "../types/alert.types.js";
+import {
+    NotificationService,
+    findDeterminingEarthquake,
+    toNotifiableAlert,
+} from "../services/notification.service.js";
+import type { AlertRecord, DecisionResult, TsunamiStatusInfo } from "../types/alert.types.js";
 import type { EarthquakeInfo } from "../types/earthquake.types.js";
 import { markCycleFinished, markCycleStarted } from "./schedulerStatus.js";
+
+/** Id alert yang notifikasinya sudah diproses tetapi belum tersimpan ke database. */
+const UNSAVED_ALERT_ID = "unsaved";
+
+/**
+ * Alert terakhir yang gagal disimpan. Dipakai sebagai pembanding aturan rentetan
+ * selama lebih baru dari alert di database, agar notifikasinya tidak terkirim
+ * ulang setiap siklus, lalu disimpan ulang tanpa notifikasi pada siklus berikutnya
+ * (ADR-047). Dikosongkan setelah alert berhasil disimpan.
+ */
+let unsavedAlert: AlertRecord | null = null;
+
+/** Mengosongkan alert yang belum tersimpan di memori (dipakai tes). */
+export function resetUnsavedAlert(): void {
+    unsavedAlert = null;
+}
+
+const toUnsavedAlert = (
+    result: DecisionResult,
+    referenceMagnitude: number | null,
+    createdAt: Date = new Date()
+): AlertRecord => {
+    const sequence = result.sequence;
+    const eventTime = sequence?.eventTime ?? result.sourceEventTime;
+    return {
+        id: UNSAVED_ALERT_ID,
+        level: result.level,
+        source: result.source,
+        description: result.description,
+        reviewStatus: "Belum Diverifikasi",
+        reviewedBy: null,
+        reviewedAt: null,
+        eventTime: eventTime ? new Date(eventTime) : null,
+        referenceMagnitude: sequence ? referenceMagnitude : null,
+        episodeStartedAt: sequence ? new Date(sequence.startedAt) : null,
+        episodeEventCount: sequence?.eventCount ?? null,
+        episodeMaxMagnitude: sequence?.maxMagnitude ?? null,
+        createdAt,
+        updatedAt: new Date(),
+    };
+};
+
+/**
+ * Notifikasi kembali aman: dikirim sekali saat tidak ada ancaman aktif, data BMKG
+ * terbaca, dan notifikasi terakhir berlevel SIAGA atau AWAS (ADR-047).
+ */
+async function sendAllClearIfDue(tsunami: TsunamiStatusInfo): Promise<void> {
+    try {
+        if (tsunami.status === "UNKNOWN") return;
+        if (!(await EarthquakeService.isLiveDataAvailable())) return;
+        if (!(await NotificationService.isAllClearDue())) return;
+        const dispatchResult = await NotificationService.dispatch(
+            NotificationService.buildAllClearNotification()
+        );
+        console.log(
+            `[AlertScheduler] Notifikasi kembali aman terkirim ke ${dispatchResult.sent}/${dispatchResult.total} subscriber, gagal: ${dispatchResult.failed}`
+        );
+    } catch (error) {
+        console.error("[AlertScheduler] Notifikasi kembali aman gagal:", error);
+    }
+}
 
 /**
  * Jalankan satu siklus pengecekan alert BMKG.
@@ -82,6 +147,7 @@ async function runCycle(): Promise<AlertCheckResult> {
     // jangan simpan ke riwayat alert verifikasi. Alert verifikasi khusus mencatat
     // kejadian darurat nyata (WASPADA, SIAGA, AWAS) untuk ditinjau admin.
     if (result.level === "GREEN") {
+        await sendAllClearIfDue(tsunami);
         return { ...result, saved: false, ok: true };
     }
 
@@ -97,14 +163,20 @@ async function runCycle(): Promise<AlertCheckResult> {
             dbError instanceof Error ? dbError.message : dbError
         );
     }
-    const action = decideAlertAction(result, latestAlert);
+    // Alert yang gagal disimpan menjadi pembanding selama lebih baru dari alert di database.
+    const reference =
+        unsavedAlert && (!latestAlert || unsavedAlert.createdAt > latestAlert.createdAt)
+            ? unsavedAlert
+            : latestAlert;
+    const pending = reference !== null && reference === unsavedAlert ? unsavedAlert : null;
+    const action = decideAlertAction(result, reference);
 
-    if (action.type === "skip") {
+    if (action.type === "skip" && !pending) {
         console.log(`[AlertScheduler] Skipped duplicate alert (${result.level})`);
         return { ...result, saved: false, ok: true };
     }
 
-    if (action.type === "extend" && latestAlert && result.sequence) {
+    if (action.type === "extend" && !pending && latestAlert && result.sequence) {
         let extendedOk = true;
         try {
             await AlertService.extendSequence(
@@ -124,21 +196,30 @@ async function runCycle(): Promise<AlertCheckResult> {
         return { ...result, saved: false, extended: extendedOk, ok: extendedOk };
     }
 
-    // Simpan ke database jika DB tersedia
-    let isSaved = false;
+    // Simpan ke database jika DB tersedia. Alert yang belum tersimpan dari siklus
+    // sebelumnya disimpan ulang di sini tanpa notifikasi.
+    const notify = action.type === "save" && action.notify;
+    const referenceMagnitude =
+        action.type === "skip" ? (pending?.referenceMagnitude ?? null) : action.referenceMagnitude;
+    let saved: Awaited<ReturnType<typeof AlertService.saveAlert>> | null = null;
     try {
-        await AlertService.saveAlert(
+        saved = await AlertService.saveAlert(
             result.level,
             result.source,
             result.description,
-            result.sequence && action.type === "save"
-                ? { details: result.sequence, referenceMagnitude: action.referenceMagnitude }
-                : undefined,
+            result.sequence ? { details: result.sequence, referenceMagnitude } : undefined,
             result.sourceEventTime
         );
+        unsavedAlert = null;
         console.log(`[AlertScheduler] Alert saved (${result.level}) - ${result.description}`);
-        isSaved = true;
     } catch (dbError) {
+        // Alert baru menggantikan pembanding; perpanjangan mempertahankan waktu awalnya;
+        // alert yang tidak berubah dibiarkan.
+        if (action.type === "save") {
+            unsavedAlert = toUnsavedAlert(result, referenceMagnitude);
+        } else if (action.type === "extend" && pending) {
+            unsavedAlert = toUnsavedAlert(result, referenceMagnitude, pending.createdAt);
+        }
         console.warn(
             `[AlertScheduler] Gagal menyimpan alert ke database (kuota/koneksi). Pemrosesan notifikasi tetap dilanjutkan:`,
             dbError instanceof Error ? dbError.message : dbError
@@ -147,17 +228,22 @@ async function runCycle(): Promise<AlertCheckResult> {
 
     // Kirim push notification otomatis bila aturan rentetan mengizinkan.
     // Penurunan level gempa tidak dikirim (ADR-046). shouldNotify() menjamin GREEN
-    // tidak dikirim, hanya YELLOW/ORANGE/RED (Waspada/Siaga/Awas).
-    const notify = action.type === "save" && action.notify;
-    if (notify && NotificationService.shouldNotify(result.level as never)) {
+    // tidak dikirim, hanya YELLOW/ORANGE/RED (Waspada/Siaga/Awas). Isi notifikasi
+    // dibangun dari alert yang baru disimpan, atau dari hasil evaluasi bila gagal
+    // disimpan (alertId kosong).
+    if (notify && NotificationService.shouldNotify(result.level)) {
         try {
-            const payload = await NotificationService.getLatestPayload();
-            if (payload) {
-                const dispatchResult = await NotificationService.dispatch(payload);
-                console.log(
-                    `[AlertScheduler] Push notification sent — ${dispatchResult.sent}/${dispatchResult.total} subscribers, failed: ${dispatchResult.failed}`
-                );
-            }
+            const alert = toNotifiableAlert(
+                saved ?? { ...toUnsavedAlert(result, referenceMagnitude), id: null, level: result.level }
+            );
+            const notification = NotificationService.buildNotification(
+                alert,
+                findDeterminingEarthquake(alert, earthquakes)
+            );
+            const dispatchResult = await NotificationService.dispatch(notification);
+            console.log(
+                `[AlertScheduler] Push notification sent — ${dispatchResult.sent}/${dispatchResult.total} subscribers, failed: ${dispatchResult.failed}`
+            );
         } catch (notifError) {
             // Gagal kirim notifikasi tidak boleh membatalkan penyimpanan alert.
             // Log saja, scheduler tetap jalan normal di siklus berikutnya.
@@ -165,7 +251,7 @@ async function runCycle(): Promise<AlertCheckResult> {
         }
     }
 
-    return { ...result, saved: isSaved, ok: isSaved };
+    return { ...result, saved: saved !== null, ok: saved !== null };
 }
 
 const HEARTBEAT_TIMEOUT_MS = 5_000;

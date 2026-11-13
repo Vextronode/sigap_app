@@ -163,9 +163,9 @@ export class NotificationController {
    */
   static async dispatch(_req: Request, res: Response) {
     try {
-      const payload = await NotificationService.getLatestPayload();
+      const notification = await NotificationService.getLatestNotification();
 
-      if (!payload) {
+      if (!notification) {
         const response: ApiErrorResponse = {
           success: false,
           message: "Tidak ada alert untuk dikirim.",
@@ -174,7 +174,7 @@ export class NotificationController {
         return res.status(404).json(response);
       }
 
-      if (!NotificationService.shouldNotify(payload.level)) {
+      if (!NotificationService.shouldNotify(notification.payload.level)) {
         const response: ApiSuccessResponse<null> = {
           success: true,
           message: "Level saat ini AMAN — notifikasi tidak dikirim.",
@@ -184,7 +184,7 @@ export class NotificationController {
       }
 
       const result = await NotificationService.dispatch(
-        payload,
+        notification,
         "ADMIN_DISPATCH"
       );
 

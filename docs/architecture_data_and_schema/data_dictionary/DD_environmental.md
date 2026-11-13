@@ -56,8 +56,8 @@ Subscription tidak terikat ke akun pengguna.
 | Field | Tipe Data | Deskripsi | Contoh Nilai |
 |---|---|---|---|
 | id | TEXT | Primary key | - |
-| alert_id | TEXT, NULLABLE, FK ke `alerts.id`, set null | Alert terkait | - |
-| level | ENUM `AlertLevel` | Level saat dikirim | `ORANGE` |
+| alert_id | TEXT, NULLABLE, FK ke `alerts.id`, set null | Alert terkait. Kosong untuk notifikasi kembali aman dan alert yang gagal disimpan | - |
+| level | ENUM `AlertLevel` | Level saat dikirim. `GREEN` untuk notifikasi kembali aman | `ORANGE` |
 | title | TEXT | Judul notifikasi | - |
 | body | TEXT | Isi notifikasi | - |
 | triggered_by | TEXT, default `CRON_SCHEDULER` | Pemicu pengiriman | `ADMIN_DISPATCH` |

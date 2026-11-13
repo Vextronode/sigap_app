@@ -6,6 +6,9 @@ export const ALERT_ACTIVE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** Sumber alert yang berasal dari status tsunami resmi (BMKG_TSUNAMI_STATUS). */
 export const OFFICIAL_TSUNAMI_SOURCE = "BMKG InaTEWS";
 
+/** Sumber alert yang berasal dari estimasi tsunami dari field Potensi gempa. */
+export const ESTIMATED_TSUNAMI_SOURCE = "BMKG (estimasi dari data gempa)";
+
 export const ALERT_RULES = {
   tsunami: {
     AWAS: "RED",
