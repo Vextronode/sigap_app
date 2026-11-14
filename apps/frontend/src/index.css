@@ -1,6 +1,28 @@
 @import "tailwindcss";
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, .dark, .dark *));
 
+@theme {
+  --color-sigap-primary: #00247d;
+  --color-sigap-primary-hover: #001d66;
+  --color-sigap-primary-light: #eef4ff;
+
+  --color-sigap-safe: #10b981;
+  --color-sigap-safe-bg: #d1fae5;
+
+  --color-sigap-warning: #ffc642;
+  --color-sigap-warning-bg: #fef3c7;
+
+  --color-sigap-orange: #f97316;
+  --color-sigap-orange-bg: #ffedd5;
+
+  --color-sigap-danger: #dc2626;
+  --color-sigap-danger-bg: #fee2e2;
+
+  --color-sigap-dark-surface: #171c22;
+  --color-sigap-dark-border: #2c3642;
+  --color-sigap-dark-bg: #101418;
+}
+
 @keyframes radarPulse {
   0% {
     transform: scale(0.95);
