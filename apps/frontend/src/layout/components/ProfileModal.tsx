@@ -115,7 +115,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
               className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                 isAdminRole
                   ? "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/50"
-                  : "bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/50"
+                  : "bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/50"
               }`}
             >
               {isAdminRole ? (
@@ -182,7 +182,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                   Administrator (Akses Penuh)
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/70 text-[#00247D] dark:text-blue-300 border border-blue-200/90 dark:border-blue-800/80">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sigap-primary-light dark:bg-blue-950/70 text-sigap-primary dark:text-blue-300 border border-blue-200/90 dark:border-blue-800/80">
                   Petugas Lapangan (Operasional)
                 </span>
               )}
@@ -242,7 +242,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full h-9 pl-3 pr-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#00247D] focus:ring-1 focus:ring-[#00247D]"
+                    className="w-full h-9 pl-3 pr-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sigap-primary focus:ring-1 focus:ring-sigap-primary"
                   />
                   <button
                     type="button"
@@ -264,7 +264,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full h-9 pl-3 pr-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#00247D] focus:ring-1 focus:ring-[#00247D]"
+                    className="w-full h-9 pl-3 pr-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sigap-primary focus:ring-1 focus:ring-sigap-primary"
                   />
                   <button
                     type="button"
@@ -286,7 +286,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full h-9 pl-3 pr-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#00247D] focus:ring-1 focus:ring-[#00247D]"
+                    className="w-full h-9 pl-3 pr-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sigap-primary focus:ring-1 focus:ring-sigap-primary"
                   />
                   <button
                     type="button"
@@ -302,7 +302,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                 <button
                   type="submit"
                   disabled={pwLoading}
-                  className="w-full py-2 bg-[#00247D] hover:bg-[#001c61] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="w-full py-2 bg-sigap-primary hover:bg-sigap-primary-hover text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   {pwLoading ? (
                     <>

@@ -24,7 +24,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
         {/* Header Modal */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-400 flex items-center justify-center shrink-0">
               <ShieldCheck size={18} />
             </div>
             <div>
@@ -49,7 +49,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
         {/* Konten Kebijakan */}
         <div className="px-5 py-4 overflow-y-auto space-y-3.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
           <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-            <EyeOff size={16} className="text-[#00247D] dark:text-blue-400 shrink-0 mt-0.5" />
+            <EyeOff size={16} className="text-sigap-primary dark:text-blue-400 shrink-0 mt-0.5" />
             <div>
               <strong className="block text-slate-900 dark:text-white font-semibold mb-0.5">
                 Bebas Registrasi Warga
@@ -61,7 +61,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
           </div>
 
           <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-            <MapPin size={16} className="text-[#00247D] dark:text-blue-400 shrink-0 mt-0.5" />
+            <MapPin size={16} className="text-sigap-primary dark:text-blue-400 shrink-0 mt-0.5" />
             <div>
               <strong className="block text-slate-900 dark:text-white font-semibold mb-0.5">
                 Privasi Lokasi GPS Lokal
@@ -73,7 +73,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
           </div>
 
           <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-            <Database size={16} className="text-[#00247D] dark:text-blue-400 shrink-0 mt-0.5" />
+            <Database size={16} className="text-sigap-primary dark:text-blue-400 shrink-0 mt-0.5" />
             <div>
               <strong className="block text-slate-900 dark:text-white font-semibold mb-0.5">
                 Sumber Data Resmi & Kredibel
@@ -85,7 +85,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
           </div>
 
           <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-            <Server size={16} className="text-[#00247D] dark:text-blue-400 shrink-0 mt-0.5" />
+            <Server size={16} className="text-sigap-primary dark:text-blue-400 shrink-0 mt-0.5" />
             <div>
               <strong className="block text-slate-900 dark:text-white font-semibold mb-0.5">
                 Akses Terbatas Staf Desa
@@ -102,7 +102,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-[#00247D] hover:bg-[#001d66] text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
+            className="px-4 py-2 bg-sigap-primary hover:bg-sigap-primary-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
           >
             Saya Mengerti
           </button>

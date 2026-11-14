@@ -198,15 +198,15 @@ export default function LoginPage() {
     <main
       data-theme="light"
       style={{ colorScheme: "light" }}
-      className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden text-slate-800"
+      className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden text-slate-800"
     >
       {/* elemen latar dekoratif halus */}
       <div
-        className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-[#00247D]/5 blur-3xl pointer-events-none"
+        className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-sigap-primary/5 blur-3xl pointer-events-none"
         aria-hidden="true"
       />
       <div
-        className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-[#00247D]/5 blur-3xl pointer-events-none"
+        className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-sigap-primary/5 blur-3xl pointer-events-none"
         aria-hidden="true"
       />
 
@@ -298,7 +298,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 placeholder="admin@cibenda.desa.id"
                 {...register("email")}
-                className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 bg-slate-50/60 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#00247D] focus:ring-2 focus:ring-[#00247D]/15 transition-all"
+                className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 bg-slate-50/60 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-sigap-primary focus:ring-2 focus:ring-sigap-primary/15 transition-all"
               />
             </div>
             {errors.email?.message && (
@@ -320,7 +320,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 placeholder="••••••••"
                 {...register("password")}
-                className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 bg-slate-50/60 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#00247D] focus:ring-2 focus:ring-[#00247D]/15 transition-all"
+                className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 bg-slate-50/60 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-sigap-primary focus:ring-2 focus:ring-sigap-primary/15 transition-all"
               />
               <button
                 type="button"
@@ -349,7 +349,7 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-[#00247D] focus:ring-[#00247D] cursor-pointer"
+                className="w-4 h-4 rounded border-slate-300 text-sigap-primary focus:ring-sigap-primary cursor-pointer"
               />
               <span className="text-xs text-slate-600">Ingat saya</span>
             </label>
@@ -357,7 +357,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="text-xs font-medium text-[#00247D] hover:underline focus:outline-none"
+              className="text-xs font-medium text-sigap-primary hover:underline focus:outline-none"
             >
               Lupa sandi?
             </button>
@@ -367,7 +367,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting || remainingAttempts <= 0}
-            className="group w-full h-11 sm:h-12 mt-2 rounded-xl bg-[#00247D] hover:bg-[#001c61] active:bg-[#00174f] text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-md shadow-[#00247D]/25 hover:shadow-lg hover:shadow-[#00247D]/35 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md cursor-pointer"
+            className="group w-full h-11 sm:h-12 mt-2 rounded-xl bg-sigap-primary hover:bg-sigap-primary-hover active:bg-sigap-primary-hover active:opacity-90 text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-md shadow-sigap-primary/25 hover:shadow-lg hover:shadow-sigap-primary/35 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md cursor-pointer"
           >
             {isSubmitting ? (
               <>
@@ -387,9 +387,9 @@ export default function LoginPage() {
         <div className="mt-8 pt-4 border-t border-slate-200 text-center">
           <Link
             to="/?view=warga"
-            className="group inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-[#00247D] py-1.5 px-3 rounded-xl hover:bg-slate-100/90 transition-all duration-200 cursor-pointer"
+            className="group inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-sigap-primary py-1.5 px-3 rounded-xl hover:bg-slate-100/90 transition-all duration-200 cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 text-slate-500 transition-all duration-200 group-hover:-translate-x-1 group-hover:text-[#00247D]" />
+            <ArrowLeft className="w-4 h-4 text-slate-500 transition-all duration-200 group-hover:-translate-x-1 group-hover:text-sigap-primary" />
             <span className="transition-colors duration-200 group-hover:underline underline-offset-4">
               Kembali ke Portal Informasi Warga
             </span>

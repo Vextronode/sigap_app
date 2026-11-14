@@ -239,7 +239,7 @@ export const Sidebar = () => {
               tone="neutral"
               className={
                 isOperator
-                  ? "!bg-blue-100 !text-[#00247D] dark:!bg-blue-950/70 dark:!text-blue-300"
+                  ? "!bg-sigap-primary-light !text-sigap-primary dark:!bg-blue-950/70 dark:!text-blue-300"
                   : "!bg-rose-100 !text-rose-700 dark:!bg-rose-950/70 dark:!text-rose-300"
               }
             >
@@ -461,7 +461,7 @@ export const Sidebar = () => {
                 className={`w-full mt-2 min-h-[38px] px-3.5 py-2 rounded-xl flex items-center justify-center gap-2 font-semibold text-xs tracking-wide transition-all shadow-xs cursor-pointer ${
                   isAdminRole
                     ? "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white"
-                    : "bg-[#00247D] hover:bg-[#001d66] active:bg-[#00174f] text-white"
+                    : "bg-sigap-primary hover:bg-sigap-primary-hover active:bg-sigap-primary-hover active:opacity-90 text-white"
                 }`}
               >
                 <LogOut size={16} />
