@@ -123,7 +123,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                             {user.name}
                           </span>
                           {isSelf && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/80 text-[#00247D] dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sigap-primary-light dark:bg-blue-950/80 text-sigap-primary dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
                               Anda
                             </span>
                           )}
@@ -143,7 +143,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                         <span>Administrator</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60">
                         <UserCheck size={14} />
                         <span>Petugas Lapangan</span>
                       </span>
@@ -237,7 +237,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                         onClick={() => onEdit(user)}
                         aria-label={`Edit pengguna ${user.name}`}
                         title="Edit pengguna"
-                        className="p-2 rounded-xl text-slate-600 hover:text-[#00247D] dark:text-slate-300 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        className="p-2 rounded-xl text-slate-600 hover:text-sigap-primary dark:text-slate-300 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       >
                         <Pencil size={16} />
                       </button>
