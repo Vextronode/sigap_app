@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap, useMapEven
 import { MapPin, Navigation, ShieldCheck, Mountain, ZoomIn, Layers, Map as MapIcon } from "lucide-react";
 import type { EvacuationPoint } from "../../../types/dashboard";
 import { CIBENDA_CENTER } from "../../../utils/map";
+import { SIGAP_THEME } from "../../../constants/theme";
 
 interface EvacuationOverviewMapProps {
   points: EvacuationPoint[];
@@ -71,7 +72,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
   const createMarkerIcon = (point: EvacuationPoint) => {
     const isSelected = selectedPointId === point.id;
     const isCore = point.isCore;
-    const bgColor = isSelected ? "#F59E0B" : isCore ? "#00247D" : "#0D9488";
+    const bgColor = isSelected ? "#F59E0B" : isCore ? SIGAP_THEME.primary : "#0D9488";
 
     return L.divIcon({
       className: "overview-map-pin",
@@ -166,7 +167,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
                 >
                   <div className="flex items-center gap-1 flex-wrap">
                     {point.isCore && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-[#00247D]">
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-sigap-primary-light text-sigap-primary">
                         <ShieldCheck size={10} /> Utama
                       </span>
                     )}
@@ -200,7 +201,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: "#ffffff" }}
-                      className="group inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-[#00247D] hover:bg-[#001D66] !text-white rounded-lg text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
+                      className="group inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-sigap-primary hover:bg-sigap-primary-hover !text-white rounded-lg text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
                     >
                       <span className="!text-white font-bold">Buka Rute Maps</span>
                       <Navigation
@@ -223,7 +224,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
           onClick={() => setMapType("streets")}
           className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
             mapType === "streets"
-              ? "bg-[#00247D] text-white shadow-xs"
+              ? "bg-sigap-primary text-white shadow-xs"
               : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
           title="Tampilan Peta Jalan Google Maps (Kontras Jelas)"
@@ -236,7 +237,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
           onClick={() => setMapType("satellite")}
           className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
             mapType === "satellite"
-              ? "bg-[#00247D] text-white shadow-xs"
+              ? "bg-sigap-primary text-white shadow-xs"
               : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
           title="Tampilan Foto Citra Satelit Bumi Nyata"
@@ -256,7 +257,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
 
       {/* Tag Total / Sebaran Titik Evakuasi - Pojok Kiri Atas */}
       <div className="absolute top-2.5 left-2.5 z-1000 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 shadow-xs flex items-center gap-1.5 pointer-events-none">
-        <MapPin size={13} className="text-[#00247D] dark:text-blue-400" />
+        <MapPin size={13} className="text-sigap-primary dark:text-blue-400" />
         <span>Total {points.length} Titik Evakuasi</span>
       </div>
     </div>

@@ -168,7 +168,7 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
               <h4 className="font-bold text-sm text-slate-900 dark:text-white">
                 {selectedContact.institution}
               </h4>
-              <p className="font-mono text-xl font-black text-[#00247D] dark:text-blue-400 tracking-wide">
+              <p className="font-mono text-xl font-black text-sigap-primary dark:text-blue-400 tracking-wide">
                 {selectedPhone || "Nomor belum tersedia"}
               </p>
             </div>
@@ -191,7 +191,7 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
                     setSelectedContact(null);
                   }
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00247D] hover:bg-[#001b5e] text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-900/20 transition active:scale-98 cursor-pointer disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sigap-primary hover:bg-sigap-primary-hover text-white text-xs sm:text-sm font-bold shadow-md shadow-sigap-primary/20 transition active:scale-98 cursor-pointer disabled:opacity-50"
               >
                 <PhoneCall size={15} />
                 <span>Ya, Hubungi</span>

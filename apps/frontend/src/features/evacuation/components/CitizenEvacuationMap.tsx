@@ -22,6 +22,7 @@ import {
 import type { EvacuationPoint } from "../../../types/dashboard";
 import type { PointWithDistance, UserCoordinates } from "../hooks/useCitizenLocation";
 import { CIBENDA_CENTER } from "../../../utils/map";
+import { SIGAP_THEME } from "../../../constants/theme";
 
 interface CitizenEvacuationMapProps {
   points: PointWithDistance[];
@@ -132,7 +133,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
       : isSelected
         ? "#2563EB"
         : isCore
-          ? "#00247D"
+          ? SIGAP_THEME.primary
           : "#0D9488";
 
     const pulseRing = isNearest
@@ -293,7 +294,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
                       </span>
                     )}
                     {point.isCore && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-[#00247D]">
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-sigap-primary-light text-sigap-primary">
                         <ShieldCheck size={10} /> Utama
                       </span>
                     )}
@@ -332,7 +333,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: "#ffffff" }}
-                      className="group inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-[#00247D] hover:bg-[#001D66] !text-white rounded-lg text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
+                      className="group inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-sigap-primary hover:bg-sigap-primary-hover !text-white rounded-lg text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
                     >
                       <span className="!text-white font-bold">Buka Rute Maps</span>
                       <Navigation
@@ -355,7 +356,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
           onClick={() => setMapType("streets")}
           className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
             mapType === "streets"
-              ? "bg-[#00247D] text-white shadow-xs"
+              ? "bg-sigap-primary text-white shadow-xs"
               : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
           title="Tampilan Peta Jalan Google Maps (Kontras Jelas)"
@@ -368,7 +369,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
           onClick={() => setMapType("satellite")}
           className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
             mapType === "satellite"
-              ? "bg-[#00247D] text-white shadow-xs"
+              ? "bg-sigap-primary text-white shadow-xs"
               : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
           title="Tampilan Foto Citra Satelit Bumi Nyata"

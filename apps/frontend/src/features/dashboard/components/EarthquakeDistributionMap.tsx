@@ -365,7 +365,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
                       <div className="flex items-center gap-2 text-[11.5px] text-slate-700 dark:text-slate-200">
                         <IoIosTimer
                           size={16}
-                          className="text-[#00247D] dark:text-blue-400 shrink-0"
+                          className="text-sigap-primary dark:text-blue-400 shrink-0"
                         />
                         <span className="font-semibold text-slate-800 dark:text-slate-100">
                           {dt.date} • {dt.time}
@@ -375,7 +375,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
                       <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 border-t border-slate-200/60 dark:border-slate-700/60 pt-1.5">
                         <VscArrowSwap
                           size={15}
-                          className="text-[#00247D] dark:text-blue-400 shrink-0"
+                          className="text-sigap-primary dark:text-blue-400 shrink-0"
                         />
                         <span>
                           <strong className="text-slate-900 dark:text-white font-extrabold text-[12.5px]">
@@ -396,13 +396,13 @@ export const EarthquakeDistributionMap: React.FC = () => {
                           className="group inline-flex items-center justify-between w-full px-3 py-2 bg-blue-50/90 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/70 rounded-xl text-xs font-bold transition-all border border-blue-200/80 dark:border-blue-900/60 cursor-pointer shadow-2xs"
                           title="Buka gambar shakemap ukuran penuh di tab baru"
                         >
-                          <span className="flex items-center gap-2 text-[#00247D] dark:text-[#7da2ff] font-bold">
-                            <MapPin size={15} className="text-[#00247D] dark:text-[#7da2ff] shrink-0" />
+                          <span className="flex items-center gap-2 text-sigap-primary dark:text-blue-400 font-bold">
+                            <MapPin size={15} className="text-sigap-primary dark:text-blue-400 shrink-0" />
                             Lihat Peta Shakemap BMKG
                           </span>
                           <ExternalLink
                             size={13}
-                            className="text-[#00247D] dark:text-[#7da2ff] shrink-0 group-hover:translate-x-0.5 transition-transform"
+                            className="text-sigap-primary dark:text-blue-400 shrink-0 group-hover:translate-x-0.5 transition-transform"
                           />
                         </a>
                       ) : (

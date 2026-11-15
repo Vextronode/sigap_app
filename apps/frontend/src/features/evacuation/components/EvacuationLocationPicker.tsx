@@ -3,6 +3,7 @@ import L from "leaflet";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import { Navigation, Crosshair, MapPin, Layers, Map as MapIcon } from "lucide-react";
 import { CIBENDA_CENTER } from "../../../utils/map";
+import { SIGAP_THEME } from "../../../constants/theme";
 
 type EvacuationLocationPickerProps = {
   latitude: number;
@@ -54,7 +55,7 @@ export const EvacuationLocationPicker = ({
   }, [latitude, longitude]);
 
   const customPinIcon = useMemo(() => {
-    const primaryColor = isCore ? "#00247D" : "#0284C7";
+    const primaryColor = isCore ? SIGAP_THEME.primary : "#0284C7";
     return L.divIcon({
       className: "evacuation-pin-picker",
       html: `
@@ -133,7 +134,7 @@ export const EvacuationLocationPicker = ({
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5 font-medium">
-          <MapPin size={14} className="text-[#00247D] dark:text-blue-400" />
+          <MapPin size={14} className="text-sigap-primary dark:text-blue-400" />
           Klik peta atau geser pin marker ke titik shelter:
         </span>
         <div className="flex items-center gap-2">
@@ -141,7 +142,7 @@ export const EvacuationLocationPicker = ({
             type="button"
             onClick={handleGetCurrentLocation}
             disabled={isLocating}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/80 transition-colors disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/80 transition-colors disabled:opacity-50 cursor-pointer"
           >
             <Navigation size={12} className={isLocating ? "animate-spin" : ""} />
             {isLocating ? "Mencari GPS..." : "Gunakan Lokasi Saya"}
@@ -207,7 +208,7 @@ export const EvacuationLocationPicker = ({
             onClick={() => setMapType("streets")}
             className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
               mapType === "streets"
-                ? "bg-[#00247D] text-white shadow-xs"
+                ? "bg-sigap-primary text-white shadow-xs"
                 : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
             title="Tampilan Peta Jalan Google Maps"
@@ -220,7 +221,7 @@ export const EvacuationLocationPicker = ({
             onClick={() => setMapType("satellite")}
             className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
               mapType === "satellite"
-                ? "bg-[#00247D] text-white shadow-xs"
+                ? "bg-sigap-primary text-white shadow-xs"
                 : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
             title="Tampilan Foto Citra Satelit Bumi Nyata"
