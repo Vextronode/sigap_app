@@ -235,7 +235,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
         {/* Header Modal */}
         <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-300 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-300 flex items-center justify-center">
               <MapPin size={20} />
             </div>
             <div>
@@ -294,7 +294,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                 className={`w-full px-3 py-2 text-xs font-mono rounded-xl border bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 ${
                   errors.latitude
                     ? "border-rose-500 focus:ring-rose-500/20"
-                    : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                    : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary/20 dark:focus:ring-blue-500/30"
                 }`}
                 placeholder="-7.678957"
               />
@@ -317,7 +317,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                 className={`w-full px-3 py-2 text-xs font-mono rounded-xl border bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 ${
                   errors.longitude
                     ? "border-rose-500 focus:ring-rose-500/20"
-                    : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                    : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary/20 dark:focus:ring-blue-500/30"
                 }`}
                 placeholder="108.549459"
               />
@@ -343,7 +343,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                 className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 ${
                   errors.name
                     ? "border-rose-500 focus:ring-rose-500/20"
-                    : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                    : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary/20 dark:focus:ring-blue-500/30"
                 }`}
                 placeholder="Contoh: Kantor Pemerintahan Desa Cibenda, SDN 1 Cibenda"
               />
@@ -366,7 +366,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                 className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 ${
                   errors.address
                     ? "border-rose-500 focus:ring-rose-500/20"
-                    : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                    : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary/20 dark:focus:ring-blue-500/30"
                 }`}
                 placeholder="Contoh: Jl. Raya Cijulang, Dusun Cikubang RT 02 / RW 01"
               />
@@ -394,7 +394,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                   className={`w-full pl-3.5 pr-14 py-2.5 text-xs sm:text-sm rounded-xl border bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 ${
                     errors.elevation
                       ? "border-rose-500 focus:ring-rose-500/20"
-                      : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                      : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary/20 dark:focus:ring-blue-500/30"
                   }`}
                   placeholder="Contoh: 25"
                 />
@@ -427,7 +427,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                   className={`w-full pl-3.5 pr-14 py-2.5 text-xs sm:text-sm rounded-xl border bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 ${
                     errors.capacity
                       ? "border-rose-500 focus:ring-rose-500/20"
-                      : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                      : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary/20 dark:focus:ring-blue-500/30"
                   }`}
                   placeholder="Contoh: 500"
                 />
@@ -456,7 +456,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                     onClick={() => toggleFacility(facility)}
                     className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-[#00247D] dark:bg-blue-600 text-white shadow-2xs"
+                        ? "bg-sigap-primary dark:bg-blue-600 text-white shadow-2xs"
                         : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                     }`}
                   >
@@ -510,15 +510,10 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
                 setDescription(e.target.value);
                 if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }));
               }}
-              style={{
-                backgroundColor: "#f8fafc",
-                color: "#0f172a",
-                fontFamily: "var(--font-sans, inherit)",
-              }}
-              className={`w-full px-3.5 py-2.5 font-sans text-xs sm:text-sm font-normal rounded-xl border !bg-[#f8fafc] dark:!bg-slate-800/60 !text-slate-900 dark:!text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 min-h-[105px] resize-y leading-relaxed transition-colors ${
+              className={`w-full px-3.5 py-2.5 font-sans text-xs sm:text-sm font-normal rounded-xl border bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 min-h-[105px] resize-y leading-relaxed transition-colors ${
                 errors.description
                   ? "border-rose-500 focus:ring-rose-500/20"
-                  : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]/20 dark:focus:ring-blue-500/30"
+                  : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary/20 dark:focus:ring-blue-500/30"
               }`}
               placeholder="Contoh: Akses jalan dapat dilalui kendaraan roda empat dan ambulans via Jl. Raya Cijulang."
             />
@@ -534,7 +529,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
               id="isCore"
               checked={isCore}
               onChange={(e) => setIsCore(e.target.checked)}
-              className="w-4 h-4 rounded-sm text-[#00247D] focus:ring-[#00247D] border-slate-300 dark:border-slate-600 cursor-pointer"
+              className="w-4 h-4 rounded-sm text-sigap-primary focus:ring-sigap-primary border-slate-300 dark:border-slate-600 cursor-pointer"
             />
             <label
               htmlFor="isCore"
@@ -559,7 +554,7 @@ const EvacuationPointFormModalContent: React.FC<EvacuationPointFormModalProps> =
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-[#00247D] hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-sigap-primary hover:bg-sigap-primary-hover dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting && <Loader2 size={14} className="animate-spin" />}
             {isEdit ? "Simpan Perubahan" : "Simpan Titik Evakuasi"}

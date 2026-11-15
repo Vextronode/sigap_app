@@ -129,7 +129,7 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                   {guide.sourceLabel && (
                     <span className="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                      <Building2 size={12} className="text-[#00247D] dark:text-blue-400" />
+                      <Building2 size={12} className="text-sigap-primary dark:text-blue-400" />
                       {guide.sourceLabel}
                     </span>
                   )}
@@ -142,7 +142,7 @@ export const PreparednessGuideCards: React.FC<PreparednessGuideCardsProps> = ({
                 </div>
 
                 {/* Judul di Bawah Foto (Warna Biru Khas SIGAP, Ukuran Proporsional) */}
-                <h3 className="text-xs sm:text-sm font-bold text-[#00247D] dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 line-clamp-2 leading-snug transition-colors">
+                <h3 className="text-xs sm:text-sm font-bold text-sigap-primary dark:text-blue-400 group-hover:text-sigap-primary-hover dark:group-hover:text-blue-300 line-clamp-2 leading-snug transition-colors">
                   {guide.title}
                 </h3>
 

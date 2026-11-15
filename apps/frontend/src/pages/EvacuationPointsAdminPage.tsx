@@ -136,7 +136,7 @@ export default function EvacuationPointsAdminPage() {
         <button
           type="button"
           onClick={handleOpenCreateEvacuation}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00247D] hover:bg-[#001d66] text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sigap-primary hover:bg-sigap-primary-hover text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
         >
           <Plus size={16} />
           <span>Tambah Titik Evakuasi</span>
@@ -154,7 +154,7 @@ export default function EvacuationPointsAdminPage() {
         {/* Quick Stats Banner - Ukuran Ramping & Proporsional */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-300 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-300 flex items-center justify-center shrink-0">
               <ShieldCheck size={20} />
             </div>
             <div>
@@ -201,7 +201,7 @@ export default function EvacuationPointsAdminPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <MapPin size={20} className="text-[#00247D] dark:text-blue-400" />
+                <MapPin size={20} className="text-sigap-primary dark:text-blue-400" />
                 Peta Sebaran Titik Evakuasi Desa Cibenda
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
