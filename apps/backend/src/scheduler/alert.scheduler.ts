@@ -8,6 +8,8 @@ import {
     findDeterminingEarthquake,
     toNotifiableAlert,
 } from "../services/notification.service.js";
+import { SidIntegrationService } from "../services/sidIntegration.service.js";
+import { mapToSidAlertInput } from "../services/sidPayloadMapper.js";
 import type { AlertRecord, DecisionResult, TsunamiStatusInfo } from "../types/alert.types.js";
 import type { EarthquakeInfo } from "../types/earthquake.types.js";
 import { markCycleFinished, markCycleStarted } from "./schedulerStatus.js";
@@ -68,6 +70,14 @@ async function sendAllClearIfDue(tsunami: TsunamiStatusInfo): Promise<void> {
         console.log(
             `[AlertScheduler] Notifikasi kembali aman terkirim ke ${dispatchResult.sent}/${dispatchResult.total} subscriber, gagal: ${dispatchResult.failed}`
         );
+
+        // Beritahu SID bahwa ancaman bencana telah berakhir (POST /alerts/{external_id}/end)
+        if (SidIntegrationService.isConfigured()) {
+            const latestAlert = await AlertService.getLatestRecord();
+            if (latestAlert) {
+                SidIntegrationService.enqueueEndAlert(`sigap-alert-${latestAlert.id}`);
+            }
+        }
     } catch (error) {
         console.error("[AlertScheduler] Notifikasi kembali aman gagal:", error);
     }
@@ -186,6 +196,27 @@ async function runCycle(): Promise<AlertCheckResult> {
                 action.referenceMagnitude
             );
             console.log(`[AlertScheduler] Alert diperpanjang (${result.level}) - ${result.description}`);
+
+            // Kirim pembaruan ke SID (PUT /alerts/{external_id})
+            if (SidIntegrationService.isConfigured()) {
+                const determiningEq = findDeterminingEarthquake(
+                    {
+                        ...latestAlert,
+                        description: result.description,
+                        level: result.level,
+                        id: latestAlert.id,
+                        activeUntil: null,
+                    },
+                    earthquakes
+                );
+                const sidPayload = mapToSidAlertInput({
+                    alertRecord: latestAlert,
+                    decisionResult: result,
+                    determiningEarthquake: determiningEq,
+                    externalId: `sigap-alert-${latestAlert.id}`,
+                });
+                SidIntegrationService.enqueueAlert(`sigap-alert-${latestAlert.id}`, sidPayload);
+            }
         } catch (dbError) {
             extendedOk = false;
             console.warn(
@@ -236,14 +267,27 @@ async function runCycle(): Promise<AlertCheckResult> {
             const alert = toNotifiableAlert(
                 saved ?? { ...toUnsavedAlert(result, referenceMagnitude), id: null, level: result.level }
             );
+            const determiningEq = findDeterminingEarthquake(alert, earthquakes);
             const notification = NotificationService.buildNotification(
                 alert,
-                findDeterminingEarthquake(alert, earthquakes)
+                determiningEq
             );
             const dispatchResult = await NotificationService.dispatch(notification);
             console.log(
                 `[AlertScheduler] Push notification sent — ${dispatchResult.sent}/${dispatchResult.total} subscribers, failed: ${dispatchResult.failed}`
             );
+
+            // Antrekan pengiriman peringatan baru ke SID (PUT /alerts/{external_id})
+            if (SidIntegrationService.isConfigured()) {
+                const externalId = `sigap-alert-${alert.id ?? "current"}`;
+                const sidPayload = mapToSidAlertInput({
+                    alertRecord: alert,
+                    decisionResult: result,
+                    determiningEarthquake: determiningEq,
+                    externalId,
+                });
+                SidIntegrationService.enqueueAlert(externalId, sidPayload);
+            }
         } catch (notifError) {
             // Gagal kirim notifikasi tidak boleh membatalkan penyimpanan alert.
             // Log saja, scheduler tetap jalan normal di siklus berikutnya.

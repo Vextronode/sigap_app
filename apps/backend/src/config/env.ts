@@ -84,6 +84,21 @@ const formatSchema = z.object({
   JWT_AUDIENCE: optionalNonBlank,
   VAPID_SUBJECT: optionalNonBlank,
   LOG_FORMAT: optionalNonBlank,
+
+  // Integrasi SIDUTama (sid-sigap.md)
+  SID_INTEGRATION_ENABLED: z.preprocess(
+    blankToUndefined,
+    z.enum(["true", "false", "1", "0"], { message: "harus berupa boolean ('true' atau 'false')" }).optional()
+  ),
+  SID_API_BASE_URL: z.preprocess(
+    blankToUndefined,
+    z.string().url("harus berupa URL valid (mis. https://sid-cibenda.id/api/integrations/v1)").optional()
+  ),
+  SID_API_TOKEN: optionalNonBlank,
+  SIGAP_PUBLIC_BASE_URL: z.preprocess(
+    blankToUndefined,
+    z.string().url("harus berupa URL valid (mis. https://sigap-berdampak.widyatama.ac.id)").optional()
+  ),
 });
 
 const REQUIRED_ALWAYS = ["DATABASE_URL", "JWT_SECRET", "CRON_SECRET"] as const;
