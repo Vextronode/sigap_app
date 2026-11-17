@@ -32,6 +32,10 @@ import { getStaleSince } from "../../../utils/queryFreshness";
 const DEFAULT_MAP_CENTER: [number, number] = [-7.6838, 108.561]; // Koordinat Desa Cibenda / Jawa Barat
 const DEFAULT_MAP_ZOOM = 6;
 
+// Atribusi peta resmi dengan logo BMKG (ukuran proporsional 16px)
+const MAP_ATTRIBUTION =
+  '&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a> | <a href="https://www.bmkg.go.id" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><img src="/assets/image/logo-bmkg.webp" alt="BMKG" style="height:15px;width:auto;vertical-align:-2px;margin-right:4px;display:inline-block;" />Data BMKG</a>';
+
 // Pengatur kontrol zoom & klik interaktif agar tidak menjebak scroll jari di HP
 const MapInteractionController: React.FC<{
   isInteractive: boolean;
@@ -181,9 +185,8 @@ export const EarthquakeDistributionMap: React.FC = () => {
     );
 
     const icon = L.divIcon({
-      className: `overview-map-pin leaflet-interactive earthquake-map-pin ${
-        isToday ? "has-pulse is-today" : ""
-      }`,
+      className: `overview-map-pin leaflet-interactive earthquake-map-pin ${isToday ? "has-pulse is-today" : ""
+        }`,
       html: `
         ${isToday ? '<div class="pin-pulse"></div>' : ""}
         <div class="pin-circle">
@@ -261,7 +264,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
           {mapType === "streets" ? (
             <TileLayer
               key="google-streets"
-              attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a> | Data BMKG'
+              attribution={MAP_ATTRIBUTION}
               url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
               subdomains={["0", "1", "2", "3"]}
               maxZoom={18}
@@ -269,7 +272,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
           ) : (
             <TileLayer
               key="google-satellite"
-              attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a> | Data BMKG'
+              attribution={MAP_ATTRIBUTION}
               url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
               subdomains={["0", "1", "2", "3"]}
               maxZoom={18}
@@ -330,13 +333,12 @@ export const EarthquakeDistributionMap: React.FC = () => {
 
                       {daysAgoInfo && (
                         <span
-                          className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            daysAgoInfo.tone === "today"
-                              ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
-                              : daysAgoInfo.tone === "recent"
+                          className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${daysAgoInfo.tone === "today"
+                            ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
+                            : daysAgoInfo.tone === "recent"
                               ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800"
                               : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                          }`}
+                            }`}
                         >
                           {daysAgoInfo.text}
                         </span>
