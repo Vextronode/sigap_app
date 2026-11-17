@@ -29,6 +29,7 @@ tags:
   - name: Users
   - name: System
   - name: Health
+  - name: Integrasi
 
 security:
   - bearerAuth: []
@@ -186,6 +187,12 @@ paths:
     $ref: './paths/system.yaml#/system-health'
   /public/internal/run-scheduler:
     $ref: './paths/system.yaml#/run-scheduler'
+
+  # -- Integrasi SIDUTama -------------------------------------------------
+  /protected/integrations/sid/status:
+    $ref: './paths/integrations.yaml#/sid-status'
+  /protected/integrations/sid/ping:
+    $ref: './paths/integrations.yaml#/sid-ping'
 
   # -- Health untuk orchestrator ------------------------------------------
   /healthz:
