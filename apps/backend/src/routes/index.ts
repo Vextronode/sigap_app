@@ -20,7 +20,10 @@ import {
   publicEvacuationPointRouter,
   protectedEvacuationPointRouter,
 } from "./evacuationPoint.route.js";
-import { systemHealthRouter } from "./systemHealth.route.js";
+import {
+  systemHealthRouter,
+  protectedSystemHealthRouter,
+} from "./systemHealth.route.js";
 import { protectedUserManagementRouter } from "./userManagement.route.js";
 import { protectedSidIntegrationRouter } from "./sidIntegration.route.js";
 
@@ -85,7 +88,8 @@ protectedRouter.use("/notifications", protectedNotificationRouter);
 protectedRouter.use("/emergency-contacts", protectedEmergencyContactRouter);
 protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
 protectedRouter.use("/evacuation-points", protectedEvacuationPointRouter);
-protectedRouter.use("/system-health", systemHealthRouter);
+protectedRouter.use("/system-health", protectedSystemHealthRouter);
+protectedRouter.use("/system", protectedSystemHealthRouter);
 protectedRouter.use("/users", protectedUserManagementRouter);
 protectedRouter.use("/integrations/sid", protectedSidIntegrationRouter);
 
