@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { randomBytes } from "node:crypto";
 import { prisma } from "../src/config/prisma.js";
 import bcrypt from "bcrypt";
 
