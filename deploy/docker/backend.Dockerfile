@@ -35,11 +35,11 @@ FROM deps AS build
 COPY apps/backend apps/backend
 RUN npm run build --workspace=apps/backend
 
-# Migrasi skema: dijalankan sekali sebelum backend start (lihat compose).
+# Migrasi skema & seed otomatis: dijalankan sekali sebelum backend start (lihat compose).
 FROM build AS migrate
 WORKDIR /app/apps/backend
 USER node
-CMD ["npx", "prisma", "migrate", "deploy"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts"]
 
 # Dependency produksi saja. `--omit=optional` ikut dipakai karena Prisma CLI
 # berstatus devOptional (devDependency + peer opsional @prisma/client); npm hanya

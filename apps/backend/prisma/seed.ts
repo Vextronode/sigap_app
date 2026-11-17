@@ -13,7 +13,7 @@ import bcrypt from "bcrypt";
  *                         (10 record gempa dan 10 alert gempa) agar tidak dikira kejadian nyata.
  */
 const DEFAULT_ADMIN_EMAIL = "admin@cibenda.desa.id";
-const DEV_ADMIN_PASSWORD = "ChangeMe123!";
+const DEFAULT_ADMIN_PASSWORD = "admin123";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function readSeedOptions() {
@@ -90,41 +90,29 @@ async function main() {
   const existingAdmin = await prisma.user.findUnique({ where: { email: options.email } });
   let adminUser;
   let adminSummary: string;
-  let generatedPassword: string | null = null;
+  const adminPasswordToSet = options.password ?? DEFAULT_ADMIN_PASSWORD;
 
   if (!existingAdmin) {
-    const password =
-      options.password ?? (options.isProduction ? randomBytes(15).toString("base64url") : DEV_ADMIN_PASSWORD);
     adminUser = await prisma.user.create({
       data: {
         name: "Administrator",
         email: options.email,
-        password: await bcrypt.hash(password, 10),
+        password: await bcrypt.hash(adminPasswordToSet, 10),
       },
     });
-    if (options.password) {
-      adminSummary = `Akun admin ${options.email} dibuat dengan password dari SEED_ADMIN_PASSWORD.`;
-    } else {
-      generatedPassword = password;
-      adminSummary = `Akun admin ${options.email} dibuat.`;
-    }
-  } else if (options.password) {
+    adminSummary = `Akun admin ${options.email} dibuat dengan password: ${adminPasswordToSet}`;
+  } else {
     adminUser = await prisma.user.update({
       where: { id: existingAdmin.id },
       data: {
-        password: await bcrypt.hash(options.password, 10),
+        name: "Administrator",
+        password: await bcrypt.hash(adminPasswordToSet, 10),
         failedLoginCount: 0,
         lockedUntil: null,
         tokenVersion: { increment: 1 },
       },
     });
-    adminSummary = `Akun admin ${options.email} sudah ada; password di-reset ke SEED_ADMIN_PASSWORD dan lockout dibuka.`;
-  } else {
-    adminUser = await prisma.user.update({
-      where: { id: existingAdmin.id },
-      data: { name: "Administrator" },
-    });
-    adminSummary = `Akun admin ${options.email} sudah ada; password tidak diubah (isi SEED_ADMIN_PASSWORD untuk me-reset).`;
+    adminSummary = `Akun admin ${options.email} diperbarui; password dipastikan '${adminPasswordToSet}' dan lockout dibuka.`;
   }
 
   const adminRole = await prisma.role.findUniqueOrThrow({ where: { name: "admin" } });
@@ -151,12 +139,12 @@ async function main() {
 
   // kontak darurat inti desa cibenda
   const coreContacts = [
-    { institution: "Ambulans / PSC 119 Pangandaran", phoneNumber: "119" },
-    { institution: "Pemadam Kebakaran (Damkar) Pangandaran", phoneNumber: "0265-639113" },
-    { institution: "Kepolisian (Polsek Parigi)", phoneNumber: "0265-639110" },
-    { institution: "Puskesmas Parigi", phoneNumber: "0265-639345" },
-    { institution: "BPBD Kabupaten Pangandaran", phoneNumber: "0265-639733" },
-    { institution: "Kantor Pemerintah Desa Cibenda", phoneNumber: "0812-2345-6789" },
+    { institution: "Ambulans / PSC 119 Pangandaran", phoneNumber: "119", icon: "ambulance" },
+    { institution: "Pemadam Kebakaran (Damkar) Pangandaran", phoneNumber: "0265-639113", icon: "damkar" },
+    { institution: "Kepolisian (Polsek Parigi)", phoneNumber: "0265-639110", icon: "polisi" },
+    { institution: "Puskesmas Parigi", phoneNumber: "0265-639345", icon: "puskesmas" },
+    { institution: "BPBD Kabupaten Pangandaran", phoneNumber: "0265-639733", icon: "bpbd" },
+    { institution: "Kantor Pemerintah Desa Cibenda", phoneNumber: "0812-2345-6789", icon: "desa" },
   ];
 
   for (const contact of coreContacts) {
@@ -170,6 +158,16 @@ async function main() {
           institution: contact.institution,
           phoneNumber: contact.phoneNumber,
           isCore: true,
+          icon: contact.icon,
+        },
+      });
+    } else {
+      await prisma.emergencyContact.update({
+        where: { id: existing.id },
+        data: {
+          phoneNumber: contact.phoneNumber,
+          isCore: true,
+          icon: contact.icon,
         },
       });
     }
@@ -305,19 +303,11 @@ async function main() {
   console.log("Seed selesai.");
   console.log(adminSummary);
 
-  // Password hanya dicetak ke stdout (terminal), tidak pernah ditulis ke file atau log aplikasi.
-  if (generatedPassword && options.isProduction) {
-    console.log("");
-    console.log("==================== KREDENSIAL ADMIN AWAL ====================");
-    console.log(`Email    : ${options.email}`);
-    console.log(`Password : ${generatedPassword}`);
-    console.log("Password acak ini HANYA ditampilkan sekali dan tidak disimpan di mana pun.");
-    console.log("Catat sekarang, lalu ganti setelah login pertama.");
-    console.log("===============================================================");
-  } else if (generatedPassword) {
-    console.log(`Placeholder admin (development) -> email: ${options.email} | password: ${generatedPassword}`);
-    console.log("WAJIB diganti di luar lingkungan development.");
-  }
+  console.log("");
+  console.log("==================== KREDENSIAL ADMIN SIGAP ====================");
+  console.log(`Email    : ${options.email}`);
+  console.log(`Password : ${adminPasswordToSet}`);
+  console.log("===============================================================");
 }
 
 /**
