@@ -122,6 +122,7 @@ const { NotificationService } = await import("../src/services/notification.servi
 const { runAlertCheck, resetUnsavedAlert } = await import("../src/scheduler/alert.scheduler.js");
 const { AlertController } = await import("../src/controllers/alert.controller.js");
 const { decideAlertAction } = await import("../src/services/alertSequence.service.js");
+const { SidIntegrationService } = await import("../src/services/sidIntegration.service.js");
 const schedulerStatus = await import("../src/scheduler/schedulerStatus.js");
 
 // Skenario memakai scheduler internal aktif yang baru dimulai (MEMULAI).
@@ -821,4 +822,145 @@ test("notifikasi dari evaluasi langsung tidak mencatat alertId (TK-06)", async (
   const payload = await NotificationService.getLatestPayload();
   assert.equal(payload?.level, "ORANGE");
   assert.equal(payload?.alertId, null);
+});
+
+type SidCall = { method: string; url: string; body: Record<string, unknown> | null };
+
+/**
+ * Menjalankan skenario dengan integrasi SID aktif. fetch diganti tiruan yang
+ * mencatat request dan membalas dengan `status`, sehingga tes tidak menyentuh jaringan.
+ */
+const withSid = async (status: number, run: (calls: SidCall[]) => Promise<void>) => {
+  const originalFetch = globalThis.fetch;
+  const calls: SidCall[] = [];
+  process.env.SID_INTEGRATION_ENABLED = "true";
+  process.env.SID_API_BASE_URL = "https://mock-sid.test/api/integrations/v1";
+  process.env.SID_API_TOKEN = "mock-token";
+  SidIntegrationService.clearQueueForTest();
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    calls.push({
+      method: init?.method ?? "GET",
+      url: String(input),
+      body: init?.body ? JSON.parse(String(init.body)) : null,
+    });
+    return new Response(
+      JSON.stringify({
+        data: {
+          external_id: "x",
+          status: "active",
+          level: "siaga",
+          expires_at: new Date().toISOString(),
+          received_at: new Date().toISOString(),
+        },
+      }),
+      { status, headers: { "Content-Type": "application/json" } }
+    );
+  }) as typeof fetch;
+  try {
+    await run(calls);
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.SID_INTEGRATION_ENABLED;
+    delete process.env.SID_API_BASE_URL;
+    delete process.env.SID_API_TOKEN;
+    SidIntegrationService.clearQueueForTest();
+  }
+};
+
+/** Memberi kesempatan antrean SID (setTimeout 0) memproses item. */
+const flushSid = async () => {
+  for (let i = 0; i < 5; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+};
+
+const endCalls = (calls: SidCall[]) => calls.filter((call) => call.url.endsWith("/end"));
+
+test("integrasi SID: alur scheduler lengkap (kirim baru, perpanjang, turun level, dan /end saat GREEN)", async () => {
+  // SID membalas 503 agar item tetap di antrean (dicoba ulang) dan dapat diperiksa.
+  await withSid(503, async () => {
+    const main = quake(3, null, FELT, 5.6); // dirasakan -> ORANGE (siaga)
+    const aftershock = quake(1, null, FELT, 4.0); // level sama -> extend
+    const unfeltAftershock = quake(1, null, "", 4.0); // tidak dirasakan -> YELLOW (waspada, level turun)
+
+    // 1. Alert baru (SIAGA)
+    await arrange({ quakes: [main] });
+    const firstCheck = await runAlertCheck();
+    assert.equal(firstCheck.saved, true);
+    assert.equal(firstCheck.level, "ORANGE");
+
+    const sidStatus1 = SidIntegrationService.getStatus();
+    assert.equal(sidStatus1.queueSize, 1);
+    const firstItem = sidStatus1.items[0];
+    assert.equal(firstItem.action, "upsert");
+    assert.ok(firstItem.externalId.startsWith("gempa-"));
+    const stableExternalId = firstItem.externalId;
+
+    // 2. Perpanjang -> external_id yang sama
+    const extendCheck = await nextCycle([main, aftershock]);
+    assert.equal(extendCheck.extended, true);
+    assert.ok(SidIntegrationService.getActiveExternalIds().includes(stableExternalId));
+    const extendItem = SidIntegrationService.getStatus().items.find(
+      (i) => i.externalId === stableExternalId
+    );
+    assert.ok(extendItem);
+    assert.equal(extendItem.action, "upsert");
+
+    // 3. Turun level (SIAGA -> WASPADA): gempa utama sudah lewat 24 jam
+    const oldMain = quake(25, null, FELT, 5.6);
+    const downCheck = await nextCycle([oldMain, unfeltAftershock]);
+    assert.equal(downCheck.level, "YELLOW");
+    assert.ok(SidIntegrationService.getStatus().items.length > 0);
+
+    // 4. Siklus GREEN dengan data BMKG terbaca -> /end untuk semua alert aktif
+    const greenCheck = await nextCycle([]);
+    assert.equal(greenCheck.level, "GREEN");
+    assert.equal(SidIntegrationService.getActiveExternalIds().length, 0);
+    const endItem = SidIntegrationService.getStatus().items.find((i) => i.action === "end");
+    assert.ok(endItem, "Harus mengantrekan aksi end ke SID saat siklus kembali GREEN");
+  });
+});
+
+test("integrasi SID: GREEN tanpa data BMKG tidak mengakhiri alert, dan /end hanya dikirim sekali", async () => {
+  await withSid(200, async (calls) => {
+    await arrange({ quakes: [quake(3, null, FELT, 5.6)] });
+    await runAlertCheck();
+    await flushSid();
+    assert.equal(SidIntegrationService.getActiveExternalIds().length, 1);
+
+    // Data BMKG gagal diambil: GREEN bukan kondisi aman, /end tidak boleh dikirim
+    // karena bersifat final di SID.
+    assert.equal((await nextCycle([], { bmkgUp: false })).level, "GREEN");
+    await flushSid();
+    assert.equal(endCalls(calls).length, 0);
+    assert.equal(SidIntegrationService.getActiveExternalIds().length, 1);
+
+    // Aman terkonfirmasi: /end dikirim sekali, siklus GREEN berikutnya tidak mengulang.
+    await nextCycle([]);
+    await flushSid();
+    await nextCycle([]);
+    await flushSid();
+    assert.equal(endCalls(calls).length, 1);
+    assert.equal(SidIntegrationService.getActiveExternalIds().length, 0);
+  });
+});
+
+test("integrasi SID: perpanjangan menggeser expires_at mengikuti gempa terbaru", async () => {
+  await withSid(200, async (calls) => {
+    const main = quake(3, null, FELT, 5.6);
+    const aftershock = quake(1, null, FELT, 4.0);
+
+    await arrange({ quakes: [main] });
+    await runAlertCheck();
+    await flushSid();
+    await nextCycle([main, aftershock]);
+    await flushSid();
+
+    const puts = calls.filter((call) => call.method === "PUT");
+    assert.equal(puts.length, 2);
+    assert.equal(puts[0].url, puts[1].url);
+    const shiftMs =
+      new Date(String(puts[1].body?.expires_at)).getTime() -
+      new Date(String(puts[0].body?.expires_at)).getTime();
+    // Gempa susulan terjadi 2 jam setelah gempa utama.
+    assert.ok(Math.abs(shiftMs - 2 * 3_600_000) < 60_000, `pergeseran ${shiftMs} ms`);
+  });
 });

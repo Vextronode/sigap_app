@@ -22,6 +22,7 @@ import {
 } from "./evacuationPoint.route.js";
 import { systemHealthRouter } from "./systemHealth.route.js";
 import { protectedUserManagementRouter } from "./userManagement.route.js";
+import { protectedSidIntegrationRouter } from "./sidIntegration.route.js";
 
 export const publicRouter = Router();
 
@@ -86,6 +87,7 @@ protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
 protectedRouter.use("/evacuation-points", protectedEvacuationPointRouter);
 protectedRouter.use("/system-health", systemHealthRouter);
 protectedRouter.use("/users", protectedUserManagementRouter);
+protectedRouter.use("/integrations/sid", protectedSidIntegrationRouter);
 
 
 

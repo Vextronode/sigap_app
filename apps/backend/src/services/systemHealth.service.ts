@@ -2,6 +2,7 @@ import axios from "axios";
 import { pingDatabase } from "../repositories/health.repository.js";
 import { OPEN_METEO_BASE_URL, OPEN_METEO_COORDINATES } from "./openmeteo.service.js";
 import { DEFAULT_ADM4_CODE } from "./weather.service.js";
+import { SidIntegrationService } from "./sidIntegration.service.js";
 import {
   getSchedulerStatus,
   isSchedulerHealthy,
@@ -170,18 +171,35 @@ export class SystemHealthService {
     const scheduler = getSchedulerStatus();
     const schedulerHealthy = isSchedulerHealthy();
     const hasVapid = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+    const sidConfigured = SidIntegrationService.isConfigured();
+    const sidDispatch = SidIntegrationService.getLastDispatchResult();
+    let sidStatus: ServiceStatus = "STANDBY";
+    let sidMessage = "Integrasi SIDUTama dalam mode siaga (menunggu kredensial resmi).";
+
+    if (sidConfigured) {
+      if (sidDispatch === null) {
+        sidStatus = "STANDBY";
+        sidMessage = "Integrasi SIDUTama terkonfigurasi dan dalam mode siaga (belum ada transmisi).";
+      } else if (sidDispatch.ok) {
+        sidStatus = "ONLINE";
+        sidMessage = "Koneksi ke endpoint peringatan darurat SIDUTama aktif dan normal.";
+      } else {
+        sidStatus = "OFFLINE";
+        sidMessage = `Transmisi terakhir ke SIDUTama gagal${sidDispatch.error ? `: ${sidDispatch.error}` : ""}.`;
+      }
+    }
 
     const services: ServiceHealthItem[] = [
       network.weather,
       network.earthquake,
       {
-        name: "Gateway Integrasi OpenSID",
+        name: "Integrasi Peringatan Bencana SIDUTama",
         category: "sid",
-        status: "STANDBY",
-        provider: "SIGAP Notification Gateway",
+        status: sidStatus,
+        provider: "SIDUTama Integration API",
         latencyMs: null,
-        message: "Integrasi SID belum tersedia.",
-        lastChecked: network.checkedAt,
+        message: sidMessage,
+        lastChecked: sidDispatch?.timestamp ?? network.checkedAt,
       },
       {
         name: "Web Push Notification Service",

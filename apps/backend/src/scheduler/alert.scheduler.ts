@@ -1,6 +1,6 @@
 import { EarthquakeService } from "../services/earthquake.service.js";
 import { DecisionEngineService } from "../services/decisionEngine.service.js";
-import { AlertService } from "../services/alert.service.js";
+import { AlertService, alertActiveUntil } from "../services/alert.service.js";
 import { decideAlertAction } from "../services/alertSequence.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
 import {
@@ -8,8 +8,11 @@ import {
     findDeterminingEarthquake,
     toNotifiableAlert,
 } from "../services/notification.service.js";
+import { SidIntegrationService } from "../services/sidIntegration.service.js";
+import { buildSidExternalId, mapToSidAlertInput, sidTypeOf } from "../services/sidPayloadMapper.js";
 import type { AlertRecord, DecisionResult, TsunamiStatusInfo } from "../types/alert.types.js";
 import type { EarthquakeInfo } from "../types/earthquake.types.js";
+import type { NotifiableAlert, OutgoingNotification } from "../types/notification.types.js";
 import { markCycleFinished, markCycleStarted } from "./schedulerStatus.js";
 
 /** Id alert yang notifikasinya sudah diproses tetapi belum tersimpan ke database. */
@@ -54,13 +57,24 @@ const toUnsavedAlert = (
 };
 
 /**
- * Notifikasi kembali aman: dikirim sekali saat tidak ada ancaman aktif, data BMKG
- * terbaca, dan notifikasi terakhir berlevel SIAGA atau AWAS (ADR-047).
+ * Kondisi aman terkonfirmasi: status tsunami terbaca dan data gempa BMKG tersedia.
+ * Hasil GREEN karena data gagal diambil tidak dianggap aman (ADR-043).
  */
-async function sendAllClearIfDue(tsunami: TsunamiStatusInfo): Promise<void> {
+async function isSafeConditionConfirmed(tsunami: TsunamiStatusInfo): Promise<boolean> {
+    if (tsunami.status === "UNKNOWN") return false;
     try {
-        if (tsunami.status === "UNKNOWN") return;
-        if (!(await EarthquakeService.isLiveDataAvailable())) return;
+        return await EarthquakeService.isLiveDataAvailable();
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Notifikasi kembali aman: dikirim sekali saat kondisi aman terkonfirmasi dan
+ * notifikasi terakhir berlevel SIAGA atau AWAS (ADR-047).
+ */
+async function sendAllClearIfDue(): Promise<void> {
+    try {
         if (!(await NotificationService.isAllClearDue())) return;
         const dispatchResult = await NotificationService.dispatch(
             NotificationService.buildAllClearNotification()
@@ -70,6 +84,64 @@ async function sendAllClearIfDue(tsunami: TsunamiStatusInfo): Promise<void> {
         );
     } catch (error) {
         console.error("[AlertScheduler] Notifikasi kembali aman gagal:", error);
+    }
+}
+
+/**
+ * Mengirim atau memperbarui peringatan di SIDUTama secara aman dan terisolasi.
+ * Mengikuti spesifikasi integrasi:
+ * - external_id stabil berbasis kejadian (gempa-<episodeStartedAt> / tsunami-<eventTime>).
+ * - Judul dan pesan sama persis dengan notifikasi push SIGAP.
+ * - Kegagalan pengiriman tidak menghentikan scheduler atau push notification SIGAP.
+ */
+function publishToSid(
+    alert: NotifiableAlert,
+    notification: OutgoingNotification,
+    determiningEarthquake: EarthquakeInfo | null,
+    options?: {
+        episodeStartedAt?: Date | string | null;
+        eventTime?: Date | string | null;
+    }
+): void {
+    if (!SidIntegrationService.isConfigured()) {
+        return;
+    }
+
+    try {
+        const sidType = sidTypeOf(alert.source);
+
+        const timeValue =
+            sidType === "gempa"
+                ? (options?.episodeStartedAt ?? alert.updatedAt)
+                : (options?.eventTime ?? alert.updatedAt);
+
+        const externalId = buildSidExternalId(sidType, timeValue);
+
+        const sidPayload = mapToSidAlertInput({
+            alert: {
+                ...alert,
+                episodeStartedAt: options?.episodeStartedAt ? new Date(options.episodeStartedAt) : null,
+                eventTime: options?.eventTime ? new Date(options.eventTime) : null,
+            },
+            notification,
+            determiningEarthquake,
+            externalId,
+            publicBaseUrl: process.env.SIGAP_PUBLIC_BASE_URL,
+        });
+
+        if (!sidPayload) {
+            console.warn(
+                `[AlertScheduler] Peringatan SID (${externalId}) tidak dikirim karena masa aktif telah lewat.`
+            );
+            return;
+        }
+
+        SidIntegrationService.enqueueAlert(externalId, sidPayload);
+    } catch (sidError) {
+        console.error(
+            "[AlertScheduler] Gagal mengirim peringatan ke SID:",
+            sidError instanceof Error ? sidError.message : sidError
+        );
     }
 }
 
@@ -147,7 +219,13 @@ async function runCycle(): Promise<AlertCheckResult> {
     // jangan simpan ke riwayat alert verifikasi. Alert verifikasi khusus mencatat
     // kejadian darurat nyata (WASPADA, SIAGA, AWAS) untuk ditinjau admin.
     if (result.level === "GREEN") {
-        await sendAllClearIfDue(tsunami);
+        if (await isSafeConditionConfirmed(tsunami)) {
+            await sendAllClearIfDue();
+            // /end bersifat final di SID, jadi hanya dikirim saat aman terkonfirmasi.
+            // Setiap external_id keluar dari daftar aktif setelah diantrekan, sehingga
+            // siklus GREEN berikutnya tidak mengirim /end ulang.
+            SidIntegrationService.endAllActiveAlerts();
+        }
         return { ...result, saved: false, ok: true };
     }
 
@@ -193,6 +271,28 @@ async function runCycle(): Promise<AlertCheckResult> {
                 dbError instanceof Error ? dbError.message : dbError
             );
         }
+
+        // Perbarui masa aktif dan data peringatan di SID (PUT /alerts/{external_id})
+        const alertForSid: NotifiableAlert = {
+            id: latestAlert.id,
+            level: result.level,
+            source: result.source,
+            description: result.description,
+            // Masa aktif bergeser mengikuti gempa terbaru pada rentetan (ADR-046).
+            activeUntil: alertActiveUntil({
+                source: result.source,
+                eventTime: new Date(result.sequence.eventTime),
+                createdAt: latestAlert.createdAt,
+            }),
+            updatedAt: new Date(),
+        };
+        const determiningEq = findDeterminingEarthquake(alertForSid, earthquakes);
+        const notification = NotificationService.buildNotification(alertForSid, determiningEq);
+        publishToSid(alertForSid, notification, determiningEq, {
+            episodeStartedAt: latestAlert.episodeStartedAt ?? result.sequence.startedAt,
+            eventTime: result.sequence.eventTime,
+        });
+
         return { ...result, saved: false, extended: extendedOk, ok: extendedOk };
     }
 
@@ -226,29 +326,36 @@ async function runCycle(): Promise<AlertCheckResult> {
         );
     }
 
+    const alertRecord = saved ?? toUnsavedAlert(result, referenceMagnitude);
+    const alert = toNotifiableAlert(
+        saved ?? { ...alertRecord, id: null, level: result.level }
+    );
+    const determiningEq = findDeterminingEarthquake(alert, earthquakes);
+    const notification = NotificationService.buildNotification(alert, determiningEq);
+
     // Kirim push notification otomatis bila aturan rentetan mengizinkan.
-    // Penurunan level gempa tidak dikirim (ADR-046). shouldNotify() menjamin GREEN
-    // tidak dikirim, hanya YELLOW/ORANGE/RED (Waspada/Siaga/Awas). Isi notifikasi
-    // dibangun dari alert yang baru disimpan, atau dari hasil evaluasi bila gagal
-    // disimpan (alertId kosong).
+    // Penurunan level gempa tidak dikirim ke warga via push (ADR-046).
     if (notify && NotificationService.shouldNotify(result.level)) {
         try {
-            const alert = toNotifiableAlert(
-                saved ?? { ...toUnsavedAlert(result, referenceMagnitude), id: null, level: result.level }
-            );
-            const notification = NotificationService.buildNotification(
-                alert,
-                findDeterminingEarthquake(alert, earthquakes)
-            );
             const dispatchResult = await NotificationService.dispatch(notification);
             console.log(
                 `[AlertScheduler] Push notification sent — ${dispatchResult.sent}/${dispatchResult.total} subscribers, failed: ${dispatchResult.failed}`
             );
         } catch (notifError) {
-            // Gagal kirim notifikasi tidak boleh membatalkan penyimpanan alert.
-            // Log saja, scheduler tetap jalan normal di siklus berikutnya.
             console.error("[AlertScheduler] Push notification dispatch failed:", notifError);
         }
+    }
+
+    // Kirim atau perbarui peringatan ke SID (PUT /alerts/{external_id}):
+    // Dipanggil untuk semua aksi save (level naik, alert baru, maupun level turun).
+    // Memakai helper mandiri terpisah dari try push notification.
+    if (action.type === "save") {
+        publishToSid(alert, notification, determiningEq, {
+            episodeStartedAt:
+                alertRecord.episodeStartedAt ??
+                (result.sequence ? new Date(result.sequence.startedAt) : null),
+            eventTime: alertRecord.eventTime,
+        });
     }
 
     return { ...result, saved: saved !== null, ok: saved !== null };
