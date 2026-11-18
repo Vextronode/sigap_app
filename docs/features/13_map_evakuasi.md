@@ -8,7 +8,7 @@
 
 ## 1. Ringkasan
 
-Peta interaktif berbasis Leaflet dengan tile Google Maps yang menampilkan titik evakuasi di wilayah Desa Cibenda. Warga dapat menekan "Arahkan ke sini" pada titik pilihan untuk dialihkan ke Google Maps, yang menghitung rute dari lokasi mereka menggunakan GPS perangkat sendiri - SIGAP tidak membangun routing/navigasi sendiri. Dilengkapi pengurutan titik terdekat berbasis lokasi browser sebagai bantuan tambahan, dan daftar teks alternatif untuk aksesibilitas.
+Peta interaktif berbasis Leaflet dengan peta dasar self-host (data OpenStreetMap) yang menampilkan titik evakuasi di wilayah Desa Cibenda. Warga dapat menekan "Arahkan ke sini" pada titik pilihan untuk dialihkan ke Google Maps, yang menghitung rute dari lokasi mereka menggunakan GPS perangkat sendiri - SIGAP tidak membangun routing/navigasi sendiri. Dilengkapi pengurutan titik terdekat berbasis lokasi browser sebagai bantuan tambahan, dan daftar teks alternatif untuk aksesibilitas.
 
 ## 2. Actor & Akses
 
@@ -25,7 +25,7 @@ Seluruh pengunjung publik (warga, wisatawan) - tidak memerlukan login (kategori 
 
 ## 4. Functional Requirements
 
-- FR1: Menampilkan peta wilayah desa (Leaflet dengan tile Google Maps) dengan marker untuk setiap titik evakuasi aktif.
+- FR1: Menampilkan peta wilayah desa (Leaflet dengan peta dasar self-host, `architecture/07_integration_architecture.md` bagian 7.4) dengan marker untuk setiap titik evakuasi aktif.
 - FR2: Menyediakan daftar teks alternatif seluruh titik evakuasi (nama, deskripsi) di luar peta, agar informasi tidak bergantung sepenuhnya pada interaksi peta (selaras NFR 5.3 - informasi kritis tidak boleh bergantung hanya pada satu modalitas).
 - FR3: Setiap titik (di peta maupun daftar) memiliki tombol/aksi "Arahkan ke sini" yang membuka Google Maps dengan koordinat titik sebagai tujuan (`https://www.google.com/maps/dir/?api=1&destination={lat},{lng}`), tanpa memaksa asal (origin) - origin ditentukan Google Maps sendiri dari GPS pengguna.
 - FR4: Jika browser mengizinkan akses lokasi, sistem menghitung jarak lurus (Haversine) dari posisi pengguna ke setiap titik, mengurutkan daftar dari terdekat, dan menandai titik terdekat secara visual di peta.
@@ -55,4 +55,4 @@ Seluruh pengunjung publik (warga, wisatawan) - tidak memerlukan login (kategori 
 
 ## 8. Dependency
 
-Akurasi navigasi bergantung pada Google Maps dan konektivitas data pengguna. Offline capability SIGAP berlaku untuk informasi titik evakuasi di dalam aplikasi.
+Akurasi navigasi bergantung pada Google Maps dan konektivitas data pengguna. Offline capability SIGAP berlaku untuk informasi titik evakuasi dan peta dasar wilayah Pangandaran, setelah perangkat pernah membuka SIGAP dan file peta tersimpan.

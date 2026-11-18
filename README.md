@@ -145,6 +145,20 @@ Prasyarat: Docker Engine dengan Docker Compose ≥ 2.20, git, dan curl.
 
 Bantuan lengkap: `bash deploy/sigap.sh help`.
 
+### Memperbarui Peta Dasar
+
+Peta dasar (PMTiles dari data OpenStreetMap) diperbarui beberapa bulan sekali, atau setelah data OSM di sekitar desa dilengkapi:
+
+1. Bangun file dari build harian Protomaps (CLI `pmtiles` dari github.com/protomaps/go-pmtiles):
+   ```bash
+   bash scripts/maps/build-basemap.sh <YYYYMMDD>
+   ```
+2. Unggah kedua file `.pmtiles` sebagai aset GitHub Release `basemap-<YYYYMMDD>` (bukan rilis terbaru):
+   ```bash
+   gh release create basemap-<YYYYMMDD> apps/frontend/public/maps/*.pmtiles --latest=false
+   ```
+3. Commit `apps/frontend/public/maps/manifest.json` lewat pull request. Image web berikutnya memakai versi baru, dan cache peta versi lama di browser warga dihapus otomatis.
+
 ### Contoh Reverse Proxy (Nginx di Server)
 ```nginx
 server {
@@ -183,9 +197,10 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    ```bash
    VITE_API_BASE_URL=http://localhost:3000/api
    ```
-2. Install dependensi semua workspace dari root:
+2. Install dependensi semua workspace dari root, lalu unduh file peta dasar (sekitar 15 MiB, diverifikasi sha256):
    ```bash
    npm ci
+   node scripts/maps/fetch-basemap.mjs
    ```
 3. Jalankan migrasi database dan seed data awal (role, permission, akun admin placeholder, data inti desa). Tambahkan `SEED_SAMPLE_DATA=true` untuk data contoh gempa dan alert:
    ```bash

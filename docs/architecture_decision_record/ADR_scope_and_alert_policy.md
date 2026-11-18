@@ -370,3 +370,41 @@ Membangun isi dari alert yang disimpan menjamin notifikasi sama dengan rekaman y
 - Alert yang belum tersimpan hilang saat backend dimulai ulang.
 - Rentetan yang diperpanjang lebih dari 48 jam setelah notifikasi terakhir tidak diikuti notifikasi kembali aman.
 - Memperluas ADR-046. Pengingat status tsunami resmi tetap mengikuti ADR-045.
+
+---
+
+## ADR-051: Peta Dasar Self-Host dari Data OpenStreetMap
+
+### Latar Belakang Keputusan
+ADR-032 menetapkan peta Leaflet dengan tile Google Maps. Tile tersebut diambil langsung dari endpoint `mt*.google.com/vt` tanpa API key, yang bukan layanan resmi untuk aplikasi pihak ketiga dan bertentangan dengan ketentuan layanan Google Maps Platform (larangan ekstraksi dan unduhan massal konten di luar layanan). Endpoint dapat diblokir tanpa pemberitahuan, termasuk saat lonjakan akses ketika bencana, dan peta kosong saat internet putus. SIGAP adalah proyek pengabdian non-komersial tanpa anggaran layanan peta, dan Desa Cibenda berada di pesisir dengan sinyal yang tidak merata.
+
+### Alternatif yang Dipertimbangkan
+1. Google Map Tiles API resmi: memerlukan akun billing; kuota gratis 100.000 event per bulan dan sekitar 15.000 per hari terlampaui saat lonjakan akses.
+2. Penyedia tile berbasis OpenStreetMap (MapTiler, Stadia): kuota gratis non-komersial sekitar 100.000-200.000 request per bulan dan layanan berhenti saat kuota habis.
+3. Server tile OpenStreetMap resmi: kebijakan penggunaan melarang penggunaan berat tanpa izin.
+4. Esri ArcGIS Location Platform: kuota besar dan citra satelit, tetapi tetap bergantung pada internet dan memerlukan akun.
+5. Peta dasar self-host (PMTiles) dari data OpenStreetMap, dengan citra satelit Esri sebagai lapisan opsional.
+
+### Keputusan yang Dipilih
+Opsi 5:
+- Peta dasar berupa dua file PMTiles: Indonesia zoom 0-8 untuk konteks peta gempa, dan Kabupaten Pangandaran zoom 0-15 (memuat bangunan dan tempat bernama) untuk peta evakuasi.
+- File disajikan oleh container web SIGAP, digambar di browser dengan `protomaps-leaflet` dan gaya yang mengikuti palet SIGAP.
+- File didistribusikan sebagai aset GitHub Release dengan sha256 tercatat di repositori.
+- File Pangandaran disimpan otomatis di browser setelah data dashboard dimuat, sehingga peta evakuasi tampil saat offline.
+- Citra satelit memakai Esri Static Basemap Tiles dengan API key, hanya saat online, dan tidak tampil bila key tidak diisi.
+- Navigasi ke titik evakuasi tetap melalui tautan Google Maps.
+
+### Alasan Pemilihan
+- Tidak ada kuota maupun biaya untuk peta jalan, dan membuka peta tidak memanggil pihak ketiga, sehingga peta tidak dapat diblokir atau habis kuota saat lonjakan akses.
+- Peta evakuasi tetap tampil saat internet putus, yang dibutuhkan wilayah pesisir dengan sinyal tidak merata.
+- Data OpenStreetMap di sekitar Desa Cibenda memuat bangunan, jalan permukiman, nama dusun, dan fasilitas umum.
+- Zoom 15 dipilih dibanding zoom 14 (2,7 MiB) karena zoom 14 tidak memuat bangunan individual, sehingga peta permukiman tampak kosong.
+- Citra satelit tetap tersedia sebagai pilihan tampilan tanpa mengulang pemakaian endpoint tidak resmi.
+
+### Dampak Terhadap Sistem
+- Menggantikan bagian tile peta pada ADR-032; cakupan titik evakuasi dan navigasi Google Maps tetap berlaku.
+- Perangkat warga mengunduh sekitar 8,7 MiB sekali per versi peta untuk offline. Di Safari iOS, data situs yang tidak dibuka selama 7 hari dapat dihapus, sehingga ketersediaan offline di iPhone tidak terjamin.
+- Rendering peta dilakukan di perangkat, sehingga beban CPU lebih tinggi dibanding tile gambar pada perangkat lama.
+- Peta perlu diperbarui berkala dengan `scripts/maps/build-basemap.sh` dan rilis `basemap-<versi>`; build image web memerlukan akses ke GitHub.
+- Atribusi OpenStreetMap contributors (ODbL) dan Protomaps wajib tampil; atribusi Esri tampil saat mode satelit.
+- API key Esri terlihat di browser dan wajib dibatasi ke domain SIGAP.

@@ -25,7 +25,7 @@ ADR dikelompokkan per domain dalam satu file. Nomor ADR sekuensial lintas file d
 | `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029 |
 | `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 |
 | `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025, 049 |
-| `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038, 040, 041, 042, 043, 044, 045, 046, 047 |
+| `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038, 040, 041, 042, 043, 044, 045, 046, 047, 051 |
 
 Integrasi SID mengikuti kontrak integrasi SIDUTama v1 yang disepakati Tim SIDUTama (ADR-049).
 
@@ -64,7 +64,7 @@ Integrasi SID mengikuti kontrak integrasi SIDUTama v1 yang disepakati Tim SIDUTa
 | ADR-029 | Granularitas `siren_action_log` - Satu Baris per Sirine | Berlaku, belum diimplementasikan | - |
 | ADR-030 | Rekonsiliasi Nilai ENUM terhadap Implementasi | Berlaku | - |
 | ADR-031 | Sumber Data Eksternal BMKG dan Open-Meteo | Berlaku | - |
-| ADR-032 | Cakupan Evakuasi - Titik dan Navigasi Google Maps | Berlaku | - |
+| ADR-032 | Cakupan Evakuasi - Titik dan Navigasi Google Maps | Berlaku sebagian | ADR-051 (tile peta) |
 | ADR-033 | Data Historis dan Alert Cuaca Dipindahkan ke Roadmap | Berlaku | - |
 | ADR-034 | Web Push Langsung ke Seluruh Subscriber | Berlaku | - |
 | ADR-035 | Filter Relevansi 100 km dan 7 Hari, Masa Aktif Alert 24 Jam | Berlaku | - |
@@ -83,6 +83,7 @@ Integrasi SID mengikuti kontrak integrasi SIDUTama v1 yang disepakati Tim SIDUTa
 | ADR-048 | Batas Baca Publik Terpisah untuk Akses Bersamaan dari Satu IP | Berlaku | - |
 | ADR-049 | Peringatan Bencana SIGAP Dikirim ke SIDUTama Mengikuti Kontrak Integrasi v1 | Berlaku | - |
 | ADR-050 | Batas Subscribe Notifikasi dan Pembatasan Dispatch Web Push | Berlaku | - |
+| ADR-051 | Peta Dasar Self-Host dari Data OpenStreetMap | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 

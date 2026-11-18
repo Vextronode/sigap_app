@@ -37,7 +37,7 @@ flowchart TB
     Admin -- login, kelola konten, klasifikasi alert --> Core
     Core -- tarik data --> BMKG
     Core -- tarik data --> OpenMeteo
-    Warga -- tile peta, navigasi --> GMaps
+    Warga -- navigasi --> GMaps
     UnitUtama -- baca level, heartbeat --> Core
 ```
 
