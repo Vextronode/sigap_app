@@ -24,10 +24,10 @@ ADR dikelompokkan per domain dalam satu file. Nomor ADR sekuensial lintas file d
 | `ADR_security_access_control.md` | Keamanan dan Kontrol Akses | ADR-005, 006, 007, 008, 009, 010, 026, 039, 048 |
 | `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029 |
 | `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 |
-| `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025 |
+| `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025, 049 |
 | `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038, 040, 041, 042, 043, 044, 045, 046, 047 |
 
-Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID serta Architecture Working Group.
+Integrasi SID mengikuti kontrak integrasi SIDUTama v1 yang disepakati Tim SIDUTama (ADR-049).
 
 ## 4. Indeks
 
@@ -54,9 +54,9 @@ Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID ser
 | ADR-019 | Struktur URL Berbasis Kategori Akses | Berlaku | - |
 | ADR-020 | Endpoint Agregasi Dashboard dan Domain Cuaca Granular | Berlaku sebagian; endpoint agregasi tidak dibangun | - |
 | ADR-021 | Segmentasi Spesifikasi API per Domain | Berlaku | - |
-| ADR-022 | Arah Integrasi - SIGAP sebagai Event Producer | Usulan, belum diimplementasikan | - |
-| ADR-023 | Deep-Link Notifikasi ke Dashboard SIGAP | Usulan, belum diimplementasikan | - |
-| ADR-024 | Autentikasi Lintas Sistem - API Key Statis | Usulan, belum diimplementasikan | - |
+| ADR-022 | Arah Integrasi - SIGAP sebagai Event Producer | Digantikan | ADR-049 |
+| ADR-023 | Deep-Link Notifikasi ke Dashboard SIGAP | Digantikan | ADR-049 |
+| ADR-024 | Autentikasi Lintas Sistem - API Key Statis | Digantikan | ADR-049 |
 | ADR-025 | Dashboard dan Indikator Fisik Sumber Kebenaran Utama | Berlaku | - |
 | ADR-026 | Revisi Permission Operator - Menambahkan `content.manage` | Berlaku | - |
 | ADR-027 | Reversal Envelope Response ke `{success, message, data}` | Berlaku | - |
@@ -81,6 +81,7 @@ Domain integrasi SID disetujui dari sisi SIGAP dan menunggu sign-off Tim SID ser
 | ADR-046 | Penyatuan Data Gempa per Kejadian dan Aturan Rentetan Gempa | Berlaku | - |
 | ADR-047 | Konsistensi Isi dan Pengiriman Notifikasi Push | Berlaku | - |
 | ADR-048 | Batas Baca Publik Terpisah untuk Akses Bersamaan dari Satu IP | Berlaku | - |
+| ADR-049 | Peringatan Bencana SIGAP Dikirim ke SIDUTama Mengikuti Kontrak Integrasi v1 | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 

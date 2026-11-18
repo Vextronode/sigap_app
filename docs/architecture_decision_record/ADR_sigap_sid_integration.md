@@ -100,3 +100,38 @@ Opsi 2.
 ### Dampak Terhadap Sistem
 - SIGAP tetap mencatat seluruh event (`alert_log`, `device_status_log`, `siren_action_log`) secara independen dari status keberhasilan pengiriman ke SID - kegagalan pengiriman notifikasi tidak boleh menghasilkan pengecualian (exception) yang mengganggu proses pencatatan inti.
 - Retry policy pengiriman ke SID belum ditentukan angkanya (didiskusikan bersama Tim SID berdasarkan kapasitas layanan mereka) - dicatat sebagai pertanyaan terbuka pada proposal integrasi, bukan diasumsikan sepihak oleh SIGAP.
+
+---
+
+## ADR-049: Peringatan Bencana SIGAP Dikirim ke SIDUTama Mengikuti Kontrak Integrasi v1
+
+### Latar Belakang Keputusan
+ADR-022 sampai ADR-024 disusun sebelum kontrak API SID tersedia dan sebelum SIGAP memiliki Web Push sendiri (ADR-034). Tim SIDUTama kemudian menetapkan kontrak integrasi v1: `PUT /alerts/{external_id}` untuk membuat atau memperbarui peringatan, `POST /alerts/{external_id}/end` untuk mengakhiri, dan `GET /ping` untuk tes koneksi, dengan Bearer token Sanctum ber-ability `alerts:write` dan batas 60 request per menit. SID menampilkan peringatan sebagai bar di halaman publik dan mengirim notifikasi ke akun warga hanya untuk peringatan baru dan kenaikan level; SID tidak mengubah isi peringatan. Warga yang memakai SID perlu menerima peringatan yang sama dengan subscriber Web Push SIGAP.
+
+### Alternatif yang Dipertimbangkan
+1. Mengikuti ADR-022 sampai ADR-024 apa adanya: SID sebagai satu-satunya kanal notifikasi, payload `deep_link`, dan header `X-API-Key`.
+2. SID sebagai kanal tambahan di samping Web Push, mengikuti kontrak v1, dengan isi dan siklus peringatan diturunkan dari keputusan alert SIGAP.
+3. Peringatan ke SID disusun dengan judul dan arahan tersendiri yang berbeda dari notifikasi push SIGAP.
+
+### Keputusan yang Dipilih
+Opsi 2:
+- Scheduler meneruskan setiap keputusan alert ke SID melalui antrean, terpisah dari pengiriman Web Push.
+- Judul dan pesan sama persis dengan notifikasi push SIGAP.
+- Satu `external_id` per kejadian: `gempa-<awal rentetan>` dan `tsunami-<waktu kejadian>`. Alert baru, level naik, level turun, dan perpanjangan dikirim sebagai `PUT` ke id yang sama.
+- `expires_at` mengikuti masa aktif alert SIGAP; status tsunami resmi yang tidak memiliki batas masa aktif dikirim dengan `expires_at` 24 jam sejak dikirim.
+- `/end` dikirim satu kali per id saat kondisi aman terkonfirmasi, dengan syarat yang sama dengan notifikasi kembali aman (ADR-043, ADR-047).
+- Pengulangan: timeout 10 detik, jeda 30 detik, 2 menit, dan 5 menit. 401, 403, dan 422 tidak diulang; 404 pada `/end` dianggap selesai; 429 mengikuti `Retry-After`.
+- `link_url` mengarah ke dashboard warga SIGAP pada domain `SIGAP_PUBLIC_BASE_URL`.
+
+### Alasan Pemilihan
+- Opsi 1 tidak sesuai kontrak yang disepakati Tim SIDUTama dan menghapus Web Push SIGAP yang sudah berjalan.
+- Opsi 3 menghasilkan dua versi pesan untuk satu kejadian dan menambah aturan isi yang tidak ditetapkan di `Rules_Alerts.md`.
+- Isi yang sama dan id per kejadian menjaga SIGAP sebagai sumber kebenaran (ADR-023, ADR-025): SID hanya menampilkan dan meneruskan.
+- `/end` bersifat final di SID, sehingga hasil `GREEN` karena data BMKG gagal diambil tidak boleh mengakhiri peringatan.
+
+### Dampak Terhadap Sistem
+- ADR-022, ADR-023, dan ADR-024 digantikan ADR ini. ADR-025 tetap berlaku; pertanyaan terbuka tentang retry policy terjawab oleh nilai di atas.
+- Integrasi aktif bila `SID_INTEGRATION_ENABLED`, `SID_API_BASE_URL`, dan `SID_API_TOKEN` terisi; token hanya disimpan di environment backend.
+- Notifikasi di SID tidak selalu sama dengan push SIGAP: kenaikan magnitudo pada level yang sama dan kembali aman tidak menghasilkan notifikasi SID, karena aturan notifikasi ditentukan SID.
+- Antrean dan daftar `external_id` aktif disimpan di memori proses. Setelah restart, peringatan yang belum diakhiri berhenti tampil di SID saat `expires_at` habis.
+- Status tsunami resmi masih mendapat id baru setiap pengingat harian (ADR-045); id tetap ditetapkan saat integrasi InaTEWS diaktifkan.
