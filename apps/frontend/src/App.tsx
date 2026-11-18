@@ -3,23 +3,32 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "./router";
 import { useTheme } from "./hooks/useTheme";
 import { cacheBasemapForOffline } from "./components/map/basemap";
+import { queryClient } from "./services/queryClient";
 
 export default function App() {
   useTheme();
 
-  // Unduh peta dasar untuk offline di latar belakang setelah halaman selesai dimuat.
+  // Unduh peta dasar untuk offline di latar belakang, setelah data dashboard dan alert
+  // selesai dimuat agar tidak berebut jaringan pada sinyal lemah.
   useEffect(() => {
-    const run = () => {
+    let started = false;
+    let unsubscribe: (() => void) | undefined;
+    const start = () => {
+      if (started || queryClient.isFetching() > 0) return;
+      started = true;
+      unsubscribe?.();
       cacheBasemapForOffline().catch((error) =>
         console.warn("[Basemap] Gagal menyimpan peta untuk offline:", error)
       );
     };
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(run, { timeout: 10_000 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const timer = setTimeout(run, 3_000);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      unsubscribe = queryClient.getQueryCache().subscribe(start);
+      start();
+    }, 3_000);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe?.();
+    };
   }, []);
 
   return <RouterProvider router={router} />;

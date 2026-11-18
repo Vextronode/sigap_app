@@ -34,6 +34,30 @@ export const BASEMAP_ATTRIBUTION =
 
 export const basemapUrl = (layer: BasemapLayer) => `/maps/${layer.file}`;
 
+/** API key ArcGIS Location Platform untuk lapisan satelit; tanpa key, satelit tidak tersedia. */
+export const ESRI_API_KEY: string = import.meta.env.VITE_ESRI_API_KEY ?? "";
+
+export const SATELLITE_TILE_URL =
+  "https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/arcgis/imagery/static/tile/{z}/{y}/{x}";
+
+export const SATELLITE_ATTRIBUTION =
+  'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a> &middot; Citra &copy; Esri dan penyedia datanya';
+
+/**
+ * Prototipe Fase 0: zoom maksimum data detail Pangandaran yang dipakai (14 bawaan,
+ * `?peta=z15` untuk membandingkan). Hanya varian ini yang disimpan untuk offline.
+ */
+const selectedDetailZoom = (): number => {
+  const param = new URLSearchParams(window.location.search).get("peta");
+  return param === "z15" ? 15 : 14;
+};
+
+/** Lapisan detail Pangandaran yang dipakai; null bila manifest tidak memuatnya. */
+export const detailLayerOf = (manifest: BasemapManifest): BasemapLayer | null => {
+  const variants = manifest.layers.filter((layer) => layer.name === "pangandaran");
+  return variants.find((layer) => layer.maxzoom === selectedDetailZoom()) ?? variants[0] ?? null;
+};
+
 let manifestRequest: Promise<BasemapManifest | null> | null = null;
 
 /** Manifest dibaca sekali per halaman; null bila tidak tersedia (mis. offline tanpa cache). */
@@ -44,18 +68,24 @@ export const loadBasemapManifest = (): Promise<BasemapManifest | null> => {
   return manifestRequest;
 };
 
+/** Mode hemat data (Chrome Android); browser lain tidak menyediakan informasi ini. */
+const isSaveDataEnabled = (): boolean =>
+  Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
+
 /**
- * Menyimpan file peta versi terbaru secara utuh di cache agar peta tampil saat offline,
- * lalu menghapus file versi lama. Permintaan potongan (range) dari protomaps-leaflet
- * kemudian dilayani service worker dari salinan utuh ini.
+ * Menyimpan file detail Pangandaran versi terbaru secara utuh di cache agar peta evakuasi
+ * tampil saat offline, lalu menghapus file lain (versi lama atau varian lain). Lapisan
+ * Indonesia tidak disimpan; peta gempa memuatnya online. Permintaan potongan (range)
+ * dari protomaps-leaflet kemudian dilayani service worker dari salinan utuh ini.
  */
 export const cacheBasemapForOffline = async (): Promise<void> => {
-  if (typeof caches === "undefined") return;
+  if (typeof caches === "undefined" || isSaveDataEnabled()) return;
   const manifest = await loadBasemapManifest();
-  if (!manifest) return;
+  const detail = manifest ? detailLayerOf(manifest) : null;
+  if (!detail) return;
 
   const cache = await caches.open(BASEMAP_CACHE);
-  const wanted = new Set(manifest.layers.map(basemapUrl));
+  const wanted = new Set([basemapUrl(detail)]);
 
   for (const request of await cache.keys()) {
     const path = new URL(request.url).pathname;
