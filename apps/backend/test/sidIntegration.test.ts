@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AlertLevel } from "../generated/prisma/enums.js";
-import { OFFICIAL_TSUNAMI_SOURCE } from "../src/config/alertRules.js";
+import { ESTIMATED_TSUNAMI_SOURCE, OFFICIAL_TSUNAMI_SOURCE } from "../src/config/alertRules.js";
 import {
   mapAlertLevelToSid,
   parseDepthKm,
   sanitizeExternalId,
   buildSidExternalId,
   mapToSidAlertInput,
+  sidTypeOf,
 } from "../src/services/sidPayloadMapper.js";
 import { SidIntegrationService } from "../src/services/sidIntegration.service.js";
 
@@ -17,6 +18,12 @@ test("SID Mapper: mapAlertLevelToSid mapping akurat ke enum openapi", () => {
   assert.equal(mapAlertLevelToSid(AlertLevel.YELLOW), "waspada");
   assert.equal(mapAlertLevelToSid(AlertLevel.GREEN), "info");
   assert.equal(mapAlertLevelToSid("UNKNOWN"), "info");
+});
+
+test("SID Mapper: sidTypeOf menentukan jenis dari sumber alert", () => {
+  assert.equal(sidTypeOf(OFFICIAL_TSUNAMI_SOURCE), "tsunami");
+  assert.equal(sidTypeOf(ESTIMATED_TSUNAMI_SOURCE), "tsunami");
+  assert.equal(sidTypeOf("BMKG"), "gempa");
 });
 
 test("SID Mapper: parseDepthKm mengekstrak angka kedalaman", () => {

@@ -4,7 +4,7 @@
  */
 
 import { AlertLevel } from "../../generated/prisma/enums.js";
-import { OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
+import { ESTIMATED_TSUNAMI_SOURCE, OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
 import { alertActiveUntil } from "./alert.service.js";
 import type { EarthquakeInfo } from "../types/earthquake.types.js";
 import type {
@@ -40,6 +40,19 @@ export function mapAlertLevelToSid(level: AlertLevel | string): SidAlertLevel {
     default:
       return "info";
   }
+}
+
+const TSUNAMI_SOURCES: ReadonlySet<string> = new Set([
+  OFFICIAL_TSUNAMI_SOURCE,
+  ESTIMATED_TSUNAMI_SOURCE,
+]);
+
+/**
+ * Jenis peringatan SID dari sumber alert SIGAP: status tsunami resmi dan estimasi
+ * tsunami menjadi "tsunami", selain itu "gempa".
+ */
+export function sidTypeOf(source: string): SidAlertType {
+  return TSUNAMI_SOURCES.has(source) ? "tsunami" : "gempa";
 }
 
 /**
@@ -130,10 +143,7 @@ export function mapToSidAlertInput(options: MapToSidAlertOptions): SidAlertInput
 
   const sidLevel = mapAlertLevelToSid(alert.level);
 
-  const isTsunami =
-    /tsunami/i.test(alert.source) ||
-    /tsunami/i.test(alert.description ?? "");
-  const sidType: SidAlertType = isTsunami ? "tsunami" : "gempa";
+  const sidType = sidTypeOf(alert.source);
 
   // Waktu kejadian fisik
   const occurredAt = toIsoDateTime(
@@ -166,19 +176,11 @@ export function mapToSidAlertInput(options: MapToSidAlertOptions): SidAlertInput
       });
     }
 
-    if (untilDate) {
-      if (untilDate.getTime() <= now.getTime()) {
-        return null; // Sudah lewat, jangan kirim!
-      }
-      expiresAt = untilDate.toISOString();
-    } else {
-      // Fallback 6 jam sejak occurredAt bila alertActiveUntil null
-      const fallbackUntil = new Date(new Date(occurredAt).getTime() + 6 * 60 * 60 * 1000);
-      if (fallbackUntil.getTime() <= now.getTime()) {
-        return null;
-      }
-      expiresAt = fallbackUntil.toISOString();
+    // alertActiveUntil hanya null untuk tsunami resmi, yang sudah ditangani di atas.
+    if (!untilDate || untilDate.getTime() <= now.getTime()) {
+      return null; // Sudah lewat, jangan kirim (SID membalas 422).
     }
+    expiresAt = untilDate.toISOString();
   }
 
   // Pesan sama persis dengan notifikasi SIGAP (NotificationService.buildNotification)

@@ -1,6 +1,6 @@
 import { EarthquakeService } from "../services/earthquake.service.js";
 import { DecisionEngineService } from "../services/decisionEngine.service.js";
-import { AlertService, alertActiveUntil, isAlertRecordActive } from "../services/alert.service.js";
+import { AlertService, alertActiveUntil } from "../services/alert.service.js";
 import { decideAlertAction } from "../services/alertSequence.service.js";
 import { BmkgService } from "../services/bmkg.service.js";
 import {
@@ -9,8 +9,7 @@ import {
     toNotifiableAlert,
 } from "../services/notification.service.js";
 import { SidIntegrationService } from "../services/sidIntegration.service.js";
-import { buildSidExternalId, mapToSidAlertInput } from "../services/sidPayloadMapper.js";
-import { AlertLevel } from "../../generated/prisma/enums.js";
+import { buildSidExternalId, mapToSidAlertInput, sidTypeOf } from "../services/sidPayloadMapper.js";
 import type { AlertRecord, DecisionResult, TsunamiStatusInfo } from "../types/alert.types.js";
 import type { EarthquakeInfo } from "../types/earthquake.types.js";
 import type { NotifiableAlert, OutgoingNotification } from "../types/notification.types.js";
@@ -58,13 +57,24 @@ const toUnsavedAlert = (
 };
 
 /**
- * Notifikasi kembali aman: dikirim sekali saat tidak ada ancaman aktif, data BMKG
- * terbaca, dan notifikasi terakhir berlevel SIAGA atau AWAS (ADR-047).
+ * Kondisi aman terkonfirmasi: status tsunami terbaca dan data gempa BMKG tersedia.
+ * Hasil GREEN karena data gagal diambil tidak dianggap aman (ADR-043).
  */
-async function sendAllClearIfDue(tsunami: TsunamiStatusInfo): Promise<void> {
+async function isSafeConditionConfirmed(tsunami: TsunamiStatusInfo): Promise<boolean> {
+    if (tsunami.status === "UNKNOWN") return false;
     try {
-        if (tsunami.status === "UNKNOWN") return;
-        if (!(await EarthquakeService.isLiveDataAvailable())) return;
+        return await EarthquakeService.isLiveDataAvailable();
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Notifikasi kembali aman: dikirim sekali saat kondisi aman terkonfirmasi dan
+ * notifikasi terakhir berlevel SIAGA atau AWAS (ADR-047).
+ */
+async function sendAllClearIfDue(): Promise<void> {
+    try {
         if (!(await NotificationService.isAllClearDue())) return;
         const dispatchResult = await NotificationService.dispatch(
             NotificationService.buildAllClearNotification()
@@ -98,10 +108,7 @@ function publishToSid(
     }
 
     try {
-        const isTsunami =
-            /tsunami/i.test(alert.source) ||
-            /tsunami/i.test(alert.description ?? "");
-        const sidType = isTsunami ? "tsunami" : "gempa";
+        const sidType = sidTypeOf(alert.source);
 
         const timeValue =
             sidType === "gempa"
@@ -212,24 +219,12 @@ async function runCycle(): Promise<AlertCheckResult> {
     // jangan simpan ke riwayat alert verifikasi. Alert verifikasi khusus mencatat
     // kejadian darurat nyata (WASPADA, SIAGA, AWAS) untuk ditinjau admin.
     if (result.level === "GREEN") {
-        await sendAllClearIfDue(tsunami);
-        // Akhiri semua peringatan yang masih aktif di SID
-        if (SidIntegrationService.isConfigured()) {
+        if (await isSafeConditionConfirmed(tsunami)) {
+            await sendAllClearIfDue();
+            // /end bersifat final di SID, jadi hanya dikirim saat aman terkonfirmasi.
+            // Setiap external_id keluar dari daftar aktif setelah diantrekan, sehingga
+            // siklus GREEN berikutnya tidak mengirim /end ulang.
             SidIntegrationService.endAllActiveAlerts();
-            try {
-                const latest = await AlertService.getLatestRecord();
-                if (latest && isAlertRecordActive(latest) && latest.level !== AlertLevel.GREEN) {
-                    const sidType = /tsunami/i.test(latest.source) ? "tsunami" : "gempa";
-                    const timeVal =
-                        sidType === "gempa"
-                            ? (latest.episodeStartedAt ?? latest.createdAt)
-                            : (latest.eventTime ?? latest.createdAt);
-                    const id = buildSidExternalId(sidType, timeVal);
-                    SidIntegrationService.enqueueEndAlert(id);
-                }
-            } catch {
-                // Abaikan bila DB tidak dapat diakses saat ini
-            }
         }
         return { ...result, saved: false, ok: true };
     }
@@ -283,9 +278,10 @@ async function runCycle(): Promise<AlertCheckResult> {
             level: result.level,
             source: result.source,
             description: result.description,
+            // Masa aktif bergeser mengikuti gempa terbaru pada rentetan (ADR-046).
             activeUntil: alertActiveUntil({
                 source: result.source,
-                eventTime: latestAlert.eventTime,
+                eventTime: new Date(result.sequence.eventTime),
                 createdAt: latestAlert.createdAt,
             }),
             updatedAt: new Date(),
@@ -294,7 +290,7 @@ async function runCycle(): Promise<AlertCheckResult> {
         const notification = NotificationService.buildNotification(alertForSid, determiningEq);
         publishToSid(alertForSid, notification, determiningEq, {
             episodeStartedAt: latestAlert.episodeStartedAt ?? result.sequence.startedAt,
-            eventTime: latestAlert.eventTime,
+            eventTime: result.sequence.eventTime,
         });
 
         return { ...result, saved: false, extended: extendedOk, ok: extendedOk };
