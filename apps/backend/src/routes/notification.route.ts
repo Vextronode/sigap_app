@@ -2,6 +2,7 @@ import { Router } from "express";
 import { NotificationController } from "../controllers/notification.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { requireRole } from "../middleware/rbac.middleware.js";
+import { subscriptionRateLimiter } from "../middleware/rateLimit.middleware.js";
 
 export const publicNotificationRouter = Router();
 export const protectedNotificationRouter = Router();
@@ -21,6 +22,7 @@ publicNotificationRouter.get(
  */
 publicNotificationRouter.post(
   "/subscribe",
+  subscriptionRateLimiter,
   NotificationController.subscribe
 );
 
@@ -30,6 +32,7 @@ publicNotificationRouter.post(
  */
 publicNotificationRouter.post(
   "/unsubscribe",
+  subscriptionRateLimiter,
   NotificationController.unsubscribe
 );
 

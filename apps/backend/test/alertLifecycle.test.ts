@@ -119,7 +119,9 @@ mock.module(src("config/webPush.ts"), {
 const { AlertService } = await import("../src/services/alert.service.js");
 const { BmkgService } = await import("../src/services/bmkg.service.js");
 const { NotificationService } = await import("../src/services/notification.service.js");
-const { runAlertCheck, resetUnsavedAlert } = await import("../src/scheduler/alert.scheduler.js");
+const { runAlertCheck, resetUnsavedAlert, CycleInProgressError } = await import(
+  "../src/scheduler/alert.scheduler.js"
+);
 const { AlertController } = await import("../src/controllers/alert.controller.js");
 const { decideAlertAction } = await import("../src/services/alertSequence.service.js");
 const { SidIntegrationService } = await import("../src/services/sidIntegration.service.js");
@@ -822,6 +824,21 @@ test("notifikasi dari evaluasi langsung tidak mencatat alertId (TK-06)", async (
   const payload = await NotificationService.getLatestPayload();
   assert.equal(payload?.level, "ORANGE");
   assert.equal(payload?.alertId, null);
+});
+
+test("siklus kedua ditolak selama siklus pertama berjalan, lalu dapat berjalan lagi", async () => {
+  await arrange({ quakes: [quake(3, null, FELT, 5.6)], subscribers: 1 });
+
+  const first = runAlertCheck();
+  await assert.rejects(runAlertCheck(), CycleInProgressError);
+  assert.equal((await first).saved, true);
+
+  // Satu alert tersimpan dan satu push terkirim, bukan dua.
+  assert.equal(state.saved.length, 1);
+  assert.equal(state.sent.length, 1);
+
+  // Setelah selesai, siklus berikutnya kembali diterima.
+  await nextCycle([quake(3, null, FELT, 5.6)]);
 });
 
 type SidCall = { method: string; url: string; body: Record<string, unknown> | null };

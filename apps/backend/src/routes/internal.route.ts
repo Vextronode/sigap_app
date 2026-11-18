@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { timingSafeEqual, createHash } from "crypto";
-import { runAlertCheck } from "../scheduler/alert.scheduler.js";
+import { CycleInProgressError, runAlertCheck } from "../scheduler/alert.scheduler.js";
 import type { ApiSuccessResponse, ApiErrorResponse } from "../types/weather.types.js";
 
 // SEC-01: Wajibkan CRON_SECRET dari environment variable, tolak fallback hardcoded
@@ -86,6 +86,15 @@ const handleScheduler = async (req: Request, res: Response): Promise<void> => {
 
         res.json(response);
     } catch (error) {
+        if (error instanceof CycleInProgressError) {
+            const busy: ApiErrorResponse = {
+                success: false,
+                message: "Siklus scheduler sedang berjalan.",
+                errors: ["Siklus lain belum selesai. Coba lagi setelah siklus tersebut selesai."],
+            };
+            res.status(409).json(busy);
+            return;
+        }
         console.error("[InternalRoute] run-scheduler error:", error);
 
         const response: ApiErrorResponse = {

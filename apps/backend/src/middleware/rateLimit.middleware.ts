@@ -96,4 +96,22 @@ export const healthRateLimiter = rateLimit({
     message: "Terlalu banyak permintaan pemantauan sistem.",
     errors: ["Batas frekuensi pengecekan sistem terlampaui. Silakan coba lagi dalam 1 menit."],
   },
-});
+});
+
+/**
+ * ADR-050: batas mengaktifkan dan mematikan notifikasi (subscribe/unsubscribe) per IP.
+ * Subscribe dipanggil sekali per perangkat saat warga mengaktifkan notifikasi, jadi
+ * 300 per 15 menit cukup untuk 250 warga di belakang satu IP publik (ADR-048), sekaligus
+ * membatasi pertumbuhan subscription palsu. Pengiriman push tidak dibatasi limiter ini.
+ */
+export const subscriptionRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Terlalu banyak permintaan notifikasi.",
+    errors: ["Batas pengaturan notifikasi dari jaringan ini terlampaui. Silakan coba lagi dalam 15 menit."],
+  },
+});

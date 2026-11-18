@@ -21,7 +21,7 @@ ADR dikelompokkan per domain dalam satu file. Nomor ADR sekuensial lintas file d
 | File | Domain | Rentang ADR |
 |---|---|---|
 | `ADR_data_architecture.md` | Arsitektur Data dan Skema | ADR-001, 002, 003, 004, 030 |
-| `ADR_security_access_control.md` | Keamanan dan Kontrol Akses | ADR-005, 006, 007, 008, 009, 010, 026, 039, 048 |
+| `ADR_security_access_control.md` | Keamanan dan Kontrol Akses | ADR-005, 006, 007, 008, 009, 010, 026, 039, 048, 050 |
 | `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029 |
 | `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 |
 | `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025, 049 |
@@ -82,6 +82,7 @@ Integrasi SID mengikuti kontrak integrasi SIDUTama v1 yang disepakati Tim SIDUTa
 | ADR-047 | Konsistensi Isi dan Pengiriman Notifikasi Push | Berlaku | - |
 | ADR-048 | Batas Baca Publik Terpisah untuk Akses Bersamaan dari Satu IP | Berlaku | - |
 | ADR-049 | Peringatan Bencana SIGAP Dikirim ke SIDUTama Mengikuti Kontrak Integrasi v1 | Berlaku | - |
+| ADR-050 | Batas Subscribe Notifikasi dan Pembatasan Dispatch Web Push | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 

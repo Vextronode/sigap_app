@@ -165,7 +165,24 @@ export interface AlertCheckResult {
     ok: boolean;
 }
 
+/** Ditolak karena siklus lain (scheduler internal atau pemicu manual) masih berjalan. */
+export class CycleInProgressError extends Error {
+    constructor() {
+        super("Siklus scheduler lain sedang berjalan.");
+        this.name = "CycleInProgressError";
+    }
+}
+
+/**
+ * Kunci siklus di memori proses: hanya satu siklus berjalan dalam satu waktu, agar
+ * pemicu manual dan scheduler internal tidak menyimpan alert atau mengirim push ganda.
+ * Cukup di memori karena backend berjalan satu replika.
+ */
+let cycleInProgress = false;
+
 export async function runAlertCheck(): Promise<AlertCheckResult> {
+    if (cycleInProgress) throw new CycleInProgressError();
+    cycleInProgress = true;
     markCycleStarted();
     try {
         const result = await runCycle();
@@ -178,6 +195,8 @@ export async function runAlertCheck(): Promise<AlertCheckResult> {
     } catch (error) {
         markCycleFinished(false);
         throw error;
+    } finally {
+        cycleInProgress = false;
     }
 }
 
@@ -417,6 +436,10 @@ export function startAlertScheduler({
             // Heartbeat hanya untuk siklus sukses, agar kegagalan terlihat dari luar server.
             if (!result.ok) return;
         } catch (error) {
+            if (error instanceof CycleInProgressError) {
+                console.log("[AlertScheduler] Siklus dari pemicu manual masih berjalan, dilewati");
+                return;
+            }
             console.error("[AlertScheduler] Error:", error);
             return;
         }

@@ -29,6 +29,8 @@ subscribe:
     summary: Mendaftarkan push subscription browser
     description: >
       Endpoint harus HTTPS dan berada pada host push gateway yang diizinkan.
+      `keys.p256dh` harus 65 byte dan `keys.auth` 16 byte dalam base64url.
+      Dibatasi 300 request per 15 menit per IP, bersama unsubscribe.
     security: []
     requestBody:
       required: true
@@ -45,6 +47,8 @@ subscribe:
               $ref: '../schemas/shared.yaml#/SuccessEnvelope'
       '400':
         $ref: './shared.yaml#/BadRequest'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
       '500':
         $ref: './shared.yaml#/InternalError'
 
@@ -52,6 +56,8 @@ unsubscribe:
   post:
     tags: [Notifications]
     summary: Membatalkan push subscription
+    description: >
+      Dibatasi 300 request per 15 menit per IP, bersama subscribe.
     security: []
     requestBody:
       required: true
@@ -68,6 +74,8 @@ unsubscribe:
               $ref: '../schemas/shared.yaml#/SuccessEnvelope'
       '400':
         $ref: './shared.yaml#/BadRequest'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
 
 latest:
   get:

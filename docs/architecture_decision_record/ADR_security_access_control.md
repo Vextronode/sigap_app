@@ -214,3 +214,35 @@ Endpoint yang dipisahkan dilayani dari cache backend, sehingga batas yang lebih 
 - Penyimpanan penghitung tetap di memori proses; backend tetap satu replika.
 - Ketepatan batas per IP bergantung pada `TRUST_PROXY` yang sesuai topologi proxy.
 - ADR-039 tetap berlaku untuk batas umum, login, kesehatan sistem, dan lockout akun.
+
+---
+
+## ADR-050: Batas Subscribe Notifikasi dan Pembatasan Dispatch Web Push
+
+### Latar Belakang Keputusan
+`POST /notifications/subscribe` bersifat publik dan hanya dibatasi limiter umum 300 request per menit per IP. Endpoint palsu pada host push gateway yang diizinkan lolos validasi, dan hanya subscription yang dibalas 404 atau 410 yang dihapus. Satu IP dapat menambah sekitar 432.000 baris per hari, sementara setiap baris ikut dikirimi push saat dispatch. Dispatch mengirim ke seluruh subscription sekaligus tanpa batas konkurensi dan tanpa batas waktu, sehingga subscription palsu memperlambat pengiriman ke warga tepat saat kejadian bencana. Subscribe dipanggil sekali per perangkat saat warga mengaktifkan notifikasi, dan banyak warga dapat berbagi satu IP publik (ADR-048).
+
+### Alternatif yang Dipertimbangkan
+1. Tanpa limiter khusus; hanya validasi kunci dan pembersihan subscription yang ditolak.
+2. Limiter khusus per menit yang ketat, mis. 20 atau 60 request per menit per IP.
+3. Limiter khusus berdasarkan jumlah perangkat sah di belakang satu IP: 300 request per 15 menit per IP.
+4. Batas jumlah total subscription.
+
+### Keputusan yang Dipilih
+Opsi 3, ditambah:
+- Validasi kunci Web Push: `p256dh` 65 byte dan `auth` 16 byte dalam base64url.
+- Subscription yang dibalas 400 atau 403 dihapus bila ada pengiriman lain yang berhasil pada dispatch yang sama; 404 dan 410 tetap selalu dihapus.
+- Dispatch paling banyak 50 pengiriman bersamaan dengan batas waktu 10 detik per pengiriman.
+
+Limiter berlaku untuk subscribe dan unsubscribe dengan satu penghitung, dan tidak membatasi pengiriman push.
+
+### Alasan Pemilihan
+- 300 per 15 menit menampung 250 warga di belakang satu IP yang mengaktifkan notifikasi bersamaan (target ADR-048), dan menurunkan pertumbuhan subscription palsu dari sekitar 432.000 menjadi sekitar 28.800 baris per hari per IP.
+- Opsi 1 tetap membiarkan pertumbuhan baris yang cepat di antara dua dispatch. Opsi 2 dapat menolak warga di belakang CGNAT saat mengaktifkan notifikasi bersamaan. Opsi 4 menolak warga sah setelah batas tercapai, termasuk saat kejadian bencana.
+- Syarat ada pengiriman berhasil mencegah seluruh subscription terhapus bila request SIGAP sendiri yang salah.
+- Batas konkurensi dan waktu menjaga siklus scheduler tidak tertahan oleh endpoint yang lambat.
+
+### Dampak Terhadap Sistem
+- `rateLimit.middleware.ts` memiliki `subscriptionRateLimiter`; request subscribe dan unsubscribe juga tetap dihitung limiter umum.
+- Penghitung tersimpan di memori proses; backend tetap satu replika.
+- Subscription palsu yang lolos validasi bertahan sampai dispatch berikutnya.

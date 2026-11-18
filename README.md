@@ -117,12 +117,12 @@ Prasyarat: Docker Engine dengan Docker Compose ≥ 2.20, git, dan curl.
    ```bash
    bash deploy/sigap.sh deploy <tag-rilis> --migrate
    ```
-4. Seed data awal (sekali, pada database baru): role, permission, akun admin, kontak darurat, titik evakuasi, panduan, dan data contoh:
+4. Seed data awal (sekali, pada database baru; tidak dijalankan otomatis saat deploy): role, permission, akun admin, kontak darurat, titik evakuasi, dan panduan. Seed hanya membuat data yang belum ada dan tidak menimpa data yang sudah diedit admin:
    ```bash
    bash deploy/sigap.sh seed
    ```
    - Password admin acak ditampilkan **sekali** di terminal (tidak disimpan di file atau log). Catat, lalu ganti setelah login pertama di `/admin/login`.
-   - Opsi lewat environment shell: `SEED_ADMIN_EMAIL` (default `admin@cibenda.desa.id`), `SEED_ADMIN_PASSWORD` (8–128 karakter; bila akun sudah ada, password-nya di-reset ke nilai ini), dan `SEED_SAMPLE_DATA=false` untuk melewati data contoh (10 record gempa dan 10 alert gempa bertanggal tetap) agar tidak dikira kejadian nyata oleh penguji. Contoh: `SEED_SAMPLE_DATA=false bash deploy/sigap.sh seed`.
+   - Opsi lewat environment shell: `SEED_ADMIN_EMAIL` (default `admin@cibenda.desa.id`) dan `SEED_ADMIN_PASSWORD` (8–128 karakter). Akun admin yang sudah ada hanya di-reset bila `SEED_ADMIN_PASSWORD` diisi, untuk memulihkan akses admin. `SEED_SAMPLE_DATA=true` (data contoh 10 gempa dan 10 alert bertanggal tetap) ditolak di production.
 5. Cek status dan kesehatan:
    ```bash
    bash deploy/sigap.sh status
@@ -138,7 +138,7 @@ Prasyarat: Docker Engine dengan Docker Compose ≥ 2.20, git, dan curl.
 | `down` / `restart [service]` | Hentikan (volume data tetap) / restart stack |
 | `logs [service]` / `status` | Ikuti log / lihat tag aktif, status container, dan riwayat deploy |
 | `migrate` | Backup DB, tampilkan migrasi pending, konfirmasi, lalu jalankan |
-| `seed` | Isi data awal (role, permission, akun admin, data contoh); opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_SAMPLE_DATA` |
+| `seed` | Isi data awal yang belum ada (role, permission, akun admin, data inti desa); opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_SAMPLE_DATA` |
 | `health` / `smoke` | Cek `/api/healthz` dan `/api/readyz` / smoke test endpoint publik dan halaman SPA |
 | `backup [label]` / `restore <file.dump>` | `pg_dump` ke `deploy/backups/` (+ checksum) / restore dengan verifikasi checksum |
 | `shell <service>` / `reset` | Shell ke container / hapus stack beserta volume DB (dengan konfirmasi) |
@@ -187,7 +187,7 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    ```bash
    npm ci
    ```
-3. Jalankan migrasi database dan seed data awal (role, permission, akun admin placeholder, data contoh):
+3. Jalankan migrasi database dan seed data awal (role, permission, akun admin placeholder, data inti desa). Tambahkan `SEED_SAMPLE_DATA=true` untuk data contoh gempa dan alert:
    ```bash
    cd apps/backend
    npx prisma migrate deploy
