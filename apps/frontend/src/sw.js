@@ -1,6 +1,7 @@
 import { precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
-import { NetworkFirst } from "workbox-strategies";
+import { CacheFirst, NetworkFirst } from "workbox-strategies";
+import { RangeRequestsPlugin } from "workbox-range-requests";
 
 precacheAndRoute(self.__WB_MANIFEST);
 
@@ -12,6 +13,20 @@ registerRoute(
     cacheName: "sigap-dashboard-cache",
     networkTimeoutSeconds: 5,
   })
+);
+
+// Peta dasar self-host. Manifest selalu dicek ke server dulu agar versi baru terdeteksi.
+// File .pmtiles disimpan utuh oleh cacheBasemapForOffline() (components/map/basemap.ts);
+// permintaan potongan (Range) dari protomaps-leaflet dilayani dari salinan utuh itu,
+// sehingga peta tetap tampil saat offline.
+const BASEMAP_CACHE = "sigap-basemap";
+registerRoute(
+  ({ url }) => url.pathname === "/maps/manifest.json",
+  new NetworkFirst({ cacheName: BASEMAP_CACHE, networkTimeoutSeconds: 5 })
+);
+registerRoute(
+  ({ url }) => url.pathname.startsWith("/maps/") && url.pathname.endsWith(".pmtiles"),
+  new CacheFirst({ cacheName: BASEMAP_CACHE, plugins: [new RangeRequestsPlugin()] })
 );
 
 self.addEventListener("push", (event) => {

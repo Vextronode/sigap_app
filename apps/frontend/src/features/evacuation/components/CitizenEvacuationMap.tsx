@@ -22,6 +22,11 @@ import {
 import type { EvacuationPoint } from "../../../types/dashboard";
 import type { PointWithDistance, UserCoordinates } from "../hooks/useCitizenLocation";
 import { CIBENDA_CENTER } from "../../../utils/map";
+import { BaseMapLayers } from "../../../components/map/BaseMapLayers";
+import { PANGANDARAN_BOUNDS } from "../../../components/map/basemap";
+
+// Prototipe Fase 0: VITE_BASEMAP=google menampilkan tile Google lama untuk perbandingan.
+const USE_SELF_HOSTED_BASEMAP = import.meta.env.VITE_BASEMAP !== "google";
 import { SIGAP_THEME } from "../../../constants/theme";
 
 interface CitizenEvacuationMapProps {
@@ -208,9 +213,14 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         scrollWheelZoom={false}
         touchZoom={true}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
+        {...(USE_SELF_HOSTED_BASEMAP
+          ? { maxBounds: PANGANDARAN_BOUNDS, maxBoundsViscosity: 1, minZoom: 11, maxZoom: 18 }
+          : {})}
       >
         <ZoomControl position="bottomleft" />
-        {mapType === "streets" ? (
+        {USE_SELF_HOSTED_BASEMAP ? (
+          <BaseMapLayers coverage="pangandaran" />
+        ) : mapType === "streets" ? (
           <TileLayer
             key="google-streets"
             attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
@@ -350,6 +360,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
       </MapContainer>
 
       {/* Kontrol Pilihan Mode Peta: Jalan (Kontras Jelas) / Satelit (Foto Udara Nyata) - Pojok Kanan Atas Super Ringkas (~70%) */}
+      {!USE_SELF_HOSTED_BASEMAP && (
       <div className="absolute top-2 right-2 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-0.5 select-none pointer-events-auto">
         <button
           type="button"
@@ -378,10 +389,11 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
           <span>Satelit</span>
         </button>
       </div>
+      )}
 
       {/* Indikator Proteksi Zoom (klik 1x untuk zoom) - Pojok Kanan Atas di bawah tag Jalan/Satelit */}
       {!isZoomActive && (
-        <div className="absolute top-[46px] right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <div className={`absolute ${USE_SELF_HOSTED_BASEMAP ? "top-2" : "top-[46px]"} right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none`}>
           <ZoomIn size={12} className="text-amber-400 shrink-0" />
           <span>Klik aktifkan zoom</span>
         </div>
