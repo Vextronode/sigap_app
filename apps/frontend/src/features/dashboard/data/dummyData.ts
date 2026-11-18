@@ -1,6 +1,5 @@
 import type {
   AiSummary,
-  Announcement,
   CurrentAlert,
   CurrentWeather,
   Earthquake,
@@ -78,32 +77,6 @@ export const dummyTsunami: TsunamiStatus = {
   source: "BMKG InaTEWS",
   updatedAt: "2026-07-18T07:45:00+07:00",
 };
-
-export const dummyAnnouncements: Announcement[] = [
-  {
-    id: "ann-1",
-    title: "Latihan simulasi evakuasi warga",
-    content:
-      "Pemerintah Desa Cibenda akan mengadakan simulasi evakuasi pada pekan depan bersama relawan siaga bencana.",
-    publishedAt: "2026-07-18",
-    priority: "HIGH",
-  },
-  {
-    id: "ann-2",
-    title: "Pengecekan jalur aman dusun",
-    content:
-      "Tim desa sedang meninjau titik kumpul dan akses jalan menuju area aman untuk pembaruan peta evakuasi.",
-    publishedAt: "2026-07-17",
-    priority: "MEDIUM",
-  },
-  {
-    id: "ann-3",
-    title: "Imbauan pantau informasi resmi",
-    content: "Warga diimbau memantau kanal resmi SIGAP dan BMKG ketika cuaca mulai berubah cepat.",
-    publishedAt: "2026-07-16",
-    priority: "LOW",
-  },
-];
 
 export const dummyContacts: EmergencyContact[] = [
   { id: "dummy-1", institution: "Ambulans / PSC 119 Pangandaran", phoneNumber: "119", isCore: true, icon: "ambulance" },

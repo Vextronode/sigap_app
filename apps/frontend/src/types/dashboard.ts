@@ -77,14 +77,6 @@ export type AiSummary = {
   summary: string;
 };
 
-export type Announcement = {
-  id: string | number;
-  title: string;
-  content?: string;
-  publishedAt: string;
-  priority: PriorityLevel;
-};
-
 import type { EmergencyContactRecord } from "./emergencyContact";
 
 export type EmergencyContact = EmergencyContactRecord;
@@ -134,7 +126,6 @@ export type DashboardData = {
   tsunami: TsunamiStatus | null;
   alert: CurrentAlert | null;
   summary: AiSummary | null;
-  announcement: Announcement[];
   contacts: EmergencyContact[];
   evacuation: EvacuationPoint[];
   evacuationRoutes?: EvacuationRoute[];

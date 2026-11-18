@@ -22,7 +22,6 @@ tags:
   - name: Alerts
   - name: Device Gateway
   - name: Notifications
-  - name: Announcements
   - name: Evacuation
   - name: Emergency Contacts
   - name: Preparedness Guides
@@ -135,8 +134,6 @@ paths:
     $ref: './paths/notifications.yaml#/subscribers-count'
 
   # -- Konten -------------------------------------------------------------
-  /public/announcements:
-    $ref: './paths/content-admin.yaml#/announcements-public'
   /public/evacuation-routes:
     $ref: './paths/content-admin.yaml#/evacuation-routes-public'
   /public/evacuation-points:

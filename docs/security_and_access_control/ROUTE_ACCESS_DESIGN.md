@@ -68,7 +68,6 @@ Nilai `x-device-token` dibandingkan dengan satu kunci bersama `DEVICE_SHARED_KEY
 | Baca panduan | GET `/api/public/preparedness-guides`, `/:id` | Public | - |
 | Baca panduan untuk staf | GET `/api/protected/preparedness-guides`, `/:id` | Protected | Token valid |
 | Ubah panduan | POST, PUT, DELETE `/api/protected/preparedness-guides` | Protected | `content.manage` |
-| Pengumuman | GET `/api/public/announcements` | Public | - |
 | Jalur evakuasi | GET `/api/public/evacuation-routes` | Public | - |
 
 ### 2.5 Notifikasi dan Sistem

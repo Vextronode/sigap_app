@@ -1,20 +1,7 @@
 # =====================================================================
-# schemas/content-admin.yaml - schema domain Pengumuman, Titik Evakuasi,
+# schemas/content-admin.yaml - schema domain Titik Evakuasi,
 # Kontak Darurat, Panduan Kesiapsiagaan
 # =====================================================================
-
-Announcement:
-  type: object
-  properties:
-    id:
-      type: string
-    title:
-      type: string
-    description:
-      type: string
-    publishedAt:
-      type: string
-      format: date-time
 
 EvacuationPoint:
   type: object

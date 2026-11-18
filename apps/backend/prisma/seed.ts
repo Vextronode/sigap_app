@@ -42,7 +42,7 @@ function readSeedOptions() {
 }
 
 const PERMISSIONS = [
-  { code: "content.manage", description: "Mengelola pengumuman, kontak darurat, titik & jalur evakuasi" },
+  { code: "content.manage", description: "Mengelola kontak darurat, titik & jalur evakuasi" },
   { code: "alert.validate", description: "Validasi alert yang masuk" },
   { code: "device.view", description: "Melihat data lengkap perangkat IoT" },
   { code: "device.manage", description: "Mengelola perangkat IoT" },

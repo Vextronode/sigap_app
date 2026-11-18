@@ -1,26 +1,6 @@
 # =====================================================================
-# paths/content-admin.yaml - path domain Pengumuman, Evakuasi, Kontak Darurat, Panduan
+# paths/content-admin.yaml - path domain Evakuasi, Kontak Darurat, Panduan
 # =====================================================================
-
-announcements-public:
-  get:
-    tags: [Announcements]
-    summary: Daftar pengumuman desa
-    security: []
-    responses:
-      '200':
-        description: OK
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items:
-                        $ref: '../schemas/content-admin.yaml#/Announcement'
 
 evacuation-routes-public:
   get:

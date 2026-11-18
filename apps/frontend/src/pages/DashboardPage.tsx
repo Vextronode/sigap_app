@@ -1,4 +1,3 @@
-import { Announcements } from "../features/dashboard/components/Announcements";
 import { CurrentAlertCard } from "../features/dashboard/components/CurrentAlertCard";
 import { NotificationPrompt } from "../features/dashboard/components/NotificationPrompt";
 import { EarthquakeDistributionMap } from "../features/dashboard/components/EarthquakeDistributionMap";
@@ -9,7 +8,6 @@ import { EvacuationRoutes } from "../features/dashboard/components/EvacuationRou
 import { PreparednessGuide } from "../features/dashboard/components/PreparednessGuide";
 import { TsunamiCard } from "../features/dashboard/components/TsunamiCard";
 import { WeatherSection } from "../features/dashboard/components/WeatherSection";
-import { dummyAnnouncements } from "../features/dashboard/data/dummyData";
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { useIndonesiaEarthquake } from "../features/dashboard/hooks/useIndonesiaEarthquake";
 import { useEmergencyContacts } from "../features/dashboard/hooks/useEmergencyContacts";
@@ -161,9 +159,6 @@ export default function DashboardPage() {
           isError={contactsQuery.isError}
         />
         <PreparednessGuide />
-        <Announcements
-          announcements={dummyAnnouncements}
-        />
       </div>
     </div>
   );

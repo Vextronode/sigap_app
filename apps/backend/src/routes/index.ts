@@ -47,15 +47,6 @@ publicRouter.use("/preparedness-guides", publicPreparednessGuideRouter);
 // titik evakuasi desa
 publicRouter.use("/evacuation-points", publicEvacuationPointRouter);
 
-// pengumuman desa (fallback SSOT agar tidak 404 di dashboard publik sebelum CMS pengumuman aktif)
-publicRouter.get("/announcements", (_req, res) => {
-  res.json({
-    success: true,
-    data: [],
-    message: "Daftar pengumuman desa",
-  });
-});
-
 // rute jalur evakuasi (fallback SSOT rute jalur evakuasi)
 publicRouter.get("/evacuation-routes", (_req, res) => {
   res.json({

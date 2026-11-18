@@ -37,7 +37,6 @@ const sectionLinks = [
   { label: "Jalur Evakuasi", href: "#evacuation", icon: GrMapLocation },
   { label: "Kontak Darurat", href: "#contacts", icon: Contact },
   { label: "Panduan", href: "#preparedness", icon: BookOpen },
-  // { label: "Pengumuman", href: "#announcements", icon: Megaphone }, // Dinonaktifkan sementara
 ];
 
 // daftar tautan utilitas khusus admin dalam bahasa indonesia
