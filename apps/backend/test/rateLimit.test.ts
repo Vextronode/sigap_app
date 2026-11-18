@@ -32,15 +32,18 @@ app.use("/api/protected", generalRateLimiter, stubRouter);
 app.use("/api", publicRateLimiter, stubRouter);
 
 let baseUrl = "";
-const server = app.listen(0, "127.0.0.1");
+let server: ReturnType<typeof app.listen>;
 
 before(async () => {
-  await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+  server = app.listen(0, "127.0.0.1");
+  if (!server.listening) {
+    await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+  }
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
 after(() => {
-  server.close();
+  server?.close();
 });
 
 const request = async (path: string, ip: string, method = "GET") => {
@@ -55,8 +58,9 @@ const request = async (path: string, ip: string, method = "GET") => {
 /** Mengirim `count` request dalam gelombang paralel, lalu mengembalikan seluruh status. */
 const burst = async (paths: string[], count: number, ip: string, method = "GET") => {
   const statuses: number[] = [];
-  for (let start = 0; start < count; start += 100) {
-    const batch = Array.from({ length: Math.min(100, count - start) }, (_, offset) =>
+  const BATCH_SIZE = 25;
+  for (let start = 0; start < count; start += BATCH_SIZE) {
+    const batch = Array.from({ length: Math.min(BATCH_SIZE, count - start) }, (_, offset) =>
       request(paths[(start + offset) % paths.length], ip, method)
     );
     statuses.push(...(await Promise.all(batch)));
