@@ -43,19 +43,13 @@ export const SATELLITE_TILE_URL =
 export const SATELLITE_ATTRIBUTION =
   'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a> &middot; Citra &copy; Esri dan penyedia datanya';
 
-/**
- * Prototipe Fase 0: zoom maksimum data detail Pangandaran yang dipakai (14 bawaan,
- * `?peta=z15` untuk membandingkan). Hanya varian ini yang disimpan untuk offline.
- */
-const selectedDetailZoom = (): number => {
-  const param = new URLSearchParams(window.location.search).get("peta");
-  return param === "z15" ? 15 : 14;
-};
+/** Zoom data detail Pangandaran yang dipakai: 15 memuat bangunan dan tempat bernama. */
+const DETAIL_ZOOM = 15;
 
 /** Lapisan detail Pangandaran yang dipakai; null bila manifest tidak memuatnya. */
 export const detailLayerOf = (manifest: BasemapManifest): BasemapLayer | null => {
   const variants = manifest.layers.filter((layer) => layer.name === "pangandaran");
-  return variants.find((layer) => layer.maxzoom === selectedDetailZoom()) ?? variants[0] ?? null;
+  return variants.find((layer) => layer.maxzoom === DETAIL_ZOOM) ?? variants[0] ?? null;
 };
 
 let manifestRequest: Promise<BasemapManifest | null> | null = null;

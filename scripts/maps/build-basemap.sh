@@ -4,8 +4,8 @@
 # Hanya potongan wilayah yang diunduh (HTTP range request), bukan file dunia.
 # Hasil:
 #   <OUT_DIR>/indonesia-<versi>.pmtiles   seluruh Indonesia, zoom 0-8 (konteks peta gempa)
-#   <OUT_DIR>/pangandaran-z<N>-<versi>.pmtiles  Kabupaten Pangandaran, zoom 0-N (peta evakuasi),
-#                                     satu file per nilai di PANGANDARAN_MAXZOOMS
+#   <OUT_DIR>/pangandaran-z<N>-<versi>.pmtiles  Kabupaten Pangandaran, zoom 0-N (peta evakuasi);
+#                                     zoom 15 memuat bangunan dan tempat bernama
 #   <OUT_DIR>/manifest.json               versi, nama file, ukuran, dan sha256
 #
 # Pemakaian:
@@ -26,7 +26,7 @@ INDONESIA_BBOX="94.9,-11.2,141.1,6.2"
 INDONESIA_MAXZOOM=8
 PANGANDARAN_BBOX="108.30,-7.90,108.90,-7.45"
 # Beberapa nilai dipisah spasi menghasilkan beberapa varian (untuk perbandingan).
-PANGANDARAN_MAXZOOMS="${PANGANDARAN_MAXZOOMS:-14}"
+PANGANDARAN_MAXZOOMS="${PANGANDARAN_MAXZOOMS:-15}"
 
 [[ "$SOURCE_DATE" =~ ^[0-9]{8}$ ]] || { echo "TANGGAL_BUILD harus YYYYMMDD" >&2; exit 1; }
 command -v pmtiles >/dev/null || { echo "CLI pmtiles tidak ditemukan" >&2; exit 1; }
