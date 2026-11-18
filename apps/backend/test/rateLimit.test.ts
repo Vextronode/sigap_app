@@ -8,6 +8,7 @@ const {
   isCachedPublicRead,
   loginRateLimiter,
   publicRateLimiter,
+  subscriptionRateLimiter,
 } = await import("../src/middleware/rateLimit.middleware.js");
 
 /**
@@ -161,4 +162,35 @@ test("batas login tetap 15 percobaan gagal per 15 menit (TK-07 AC2)", async () =
   const statuses = await burst(["/api/public/auth/login"], 15, ip, "POST");
   assert.deepEqual([...new Set(statuses)], [401]);
   assert.equal(await request("/api/public/auth/login", ip, "POST"), 429);
+});
+
+test("subscribe dibatasi 300 per 15 menit per IP, terpisah dari pengiriman push (ADR-050)", async () => {
+  // Aplikasi terpisah tanpa limiter umum, agar yang teruji hanya limiter subscribe.
+  const subApp = express();
+  subApp.set("trust proxy", "loopback");
+  subApp.post("/subscribe", subscriptionRateLimiter, ok);
+  const subServer = subApp.listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => subServer.once("listening", () => resolve()));
+  const subUrl = `http://127.0.0.1:${(subServer.address() as AddressInfo).port}/subscribe`;
+  const send = async (ip: string) => {
+    const res = await fetch(subUrl, { method: "POST", headers: { "X-Forwarded-For": ip } });
+    await res.arrayBuffer();
+    return res.status;
+  };
+
+  try {
+    // 300 warga di belakang satu IP mengaktifkan notifikasi bersamaan: tidak ada 429.
+    const ip = "203.0.113.40";
+    const statuses: number[] = [];
+    for (let start = 0; start < 300; start += 100) {
+      statuses.push(...(await Promise.all(Array.from({ length: 100 }, () => send(ip)))));
+    }
+    assert.equal(statuses.filter((status) => status === 429).length, 0);
+
+    // Request ke-301 dari IP yang sama ditolak; IP lain tidak ikut terblok.
+    assert.equal(await send(ip), 429);
+    assert.equal(await send("203.0.113.41"), 200);
+  } finally {
+    subServer.close();
+  }
 });

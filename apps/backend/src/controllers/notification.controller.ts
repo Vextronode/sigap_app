@@ -7,6 +7,14 @@ import type {
 } from "../types/weather.types.js";
 import type { PushSubscriptionInput } from "../types/notification.types.js";
 
+const P256DH_BYTES = 65;
+const AUTH_SECRET_BYTES = 16;
+const BASE64URL = /^[A-Za-z0-9_-]+={0,2}$/;
+
+/** Panjang hasil decode base64url, atau -1 bila bukan string base64url. */
+const decodedLength = (value: unknown): number =>
+  typeof value === "string" && BASE64URL.test(value) ? Buffer.from(value, "base64url").length : -1;
+
 export class NotificationController {
   /**
    * GET /api/public/notifications/vapid-public-key
@@ -67,6 +75,14 @@ export class NotificationController {
 
       if (!isTrustedHost) {
         throw new Error(`Host push endpoint tidak diizinkan: ${url.hostname}`);
+      }
+
+      // Kunci Web Push (RFC 8291): p256dh titik P-256 tak terkompresi 65 byte, auth 16 byte.
+      if (decodedLength(subscription.keys.p256dh) !== P256DH_BYTES) {
+        throw new Error("keys.p256dh tidak valid.");
+      }
+      if (decodedLength(subscription.keys.auth) !== AUTH_SECRET_BYTES) {
+        throw new Error("keys.auth tidak valid.");
       }
     } catch (err) {
       const response: ApiErrorResponse = {

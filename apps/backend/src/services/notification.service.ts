@@ -50,6 +50,44 @@ const DEFAULT_TTL_SECONDS = ALERT_ACTIVE_MAX_AGE_MS / 1000;
 
 const ICON = "/assets/icons/icon-192.png";
 
+/** Jumlah pengiriman Web Push yang berjalan bersamaan saat dispatch. */
+const DISPATCH_CONCURRENCY = 50;
+
+/** Batas waktu satu pengiriman ke layanan push, agar endpoint lambat tidak menahan dispatch. */
+const PUSH_TIMEOUT_MS = 10_000;
+
+/** Subscription kedaluwarsa (404, 410): selalu dihapus. */
+const EXPIRED_STATUS = new Set([404, 410]);
+
+/**
+ * Subscription ditolak layanan push (400, 403), mis. endpoint palsu atau kunci VAPID
+ * berbeda. Hanya dihapus bila ada pengiriman lain yang berhasil pada dispatch yang sama,
+ * sehingga kesalahan pada request SIGAP sendiri tidak menghapus seluruh subscription.
+ */
+const REJECTED_STATUS = new Set([400, 403]);
+
+/** Menjalankan `task` untuk setiap item dengan paling banyak `limit` berjalan bersamaan. */
+async function settleWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  task: (item: T) => Promise<R>
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next++;
+      try {
+        results[index] = { status: "fulfilled", value: await task(items[index]) };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 const ALL_CLEAR_BODY =
   "Tidak ada gempa aktif maupun status tsunami yang berlaku. Tetap pantau informasi resmi BMKG.";
 
@@ -306,13 +344,12 @@ export class NotificationService {
     const { payload } = notification;
     const subscriptions = await prisma.pushSubscription.findMany();
 
-    const results = await Promise.allSettled(
-      subscriptions.map((sub) =>
-        webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          JSON.stringify(payload),
-          { TTL: notification.ttlSeconds, urgency: notification.urgency }
-        )
+    const body = JSON.stringify(payload);
+    const results = await settleWithConcurrency(subscriptions, DISPATCH_CONCURRENCY, (sub) =>
+      webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        body,
+        { TTL: notification.ttlSeconds, urgency: notification.urgency, timeout: PUSH_TIMEOUT_MS }
       )
     );
 
@@ -328,17 +365,20 @@ export class NotificationService {
       }`;
       errors.push(errMsg);
 
-      if (statusCode === 404 || statusCode === 410) return;
+      if (statusCode !== undefined && (EXPIRED_STATUS.has(statusCode) || REJECTED_STATUS.has(statusCode))) return;
       console.error(`[NotificationService.dispatch] Gagal kirim: ${errMsg}`);
     });
 
-    // Cleanup expired subscriptions (404/410)
+    // Hapus subscription kedaluwarsa (404/410), serta yang ditolak (400/403) bila ada
+    // pengiriman yang berhasil pada dispatch ini.
+    const anyDelivered = results.some((result) => result.status === "fulfilled");
     const expiredEndpoints = subscriptions
       .filter((_, index) => {
         const result = results[index];
         if (result.status !== "rejected") return false;
         const statusCode = (result.reason as { statusCode?: number })?.statusCode;
-        return statusCode === 404 || statusCode === 410;
+        if (statusCode === undefined) return false;
+        return EXPIRED_STATUS.has(statusCode) || (anyDelivered && REJECTED_STATUS.has(statusCode));
       })
       .map((sub) => sub.endpoint);
 
