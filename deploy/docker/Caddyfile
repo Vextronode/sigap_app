@@ -32,8 +32,9 @@
 		# Hanya file ber-hash Vite (/assets/<nama>-<hash8>.js|css) yang immutable.
 		# Selain itu no-cache, termasuk sw.js, manifest, ikon, dan index.html yang
 		# disajikan untuk deep link lewat try_files (matcher dievaluasi pada path asli).
-		@hashed path_regexp ^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$
-		@notHashed not path_regexp ^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$
+		# File peta (.pmtiles) bernama versi, jadi juga immutable; manifest.json tetap no-cache.
+		@hashed path_regexp ^/(assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)|maps/[^/]+\.pmtiles)$
+		@notHashed not path_regexp ^/(assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)|maps/[^/]+\.pmtiles)$
 		header @hashed Cache-Control "public, max-age=31536000, immutable"
 		header @notHashed Cache-Control "no-cache"
 
