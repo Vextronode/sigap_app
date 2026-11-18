@@ -1,6 +1,16 @@
 import { prisma } from "../config/prisma.js";
 
-let cachedDeviceStatus: { data: any; expiresAt: number } | null = null;
+export type DeviceOverviewResult = {
+    status: "ONLINE" | "OFFLINE";
+    tone: "safe" | "danger";
+    label: string;
+    description: string;
+    totalDevices: number;
+    activeDevices: number;
+    lastSeen: string | null;
+};
+
+let cachedDeviceStatus: { data: DeviceOverviewResult; expiresAt: number } | null = null;
 const DEVICE_STATUS_CACHE_TTL_MS = 30_000;
 
 export class DeviceService {
@@ -80,7 +90,7 @@ export class DeviceService {
         const devices = await prisma.device.findMany();
 
         if (devices.length === 0) {
-            const result = {
+            const result: DeviceOverviewResult = {
                 status: "OFFLINE",
                 tone: "danger",
                 label: "Koneksi Alat Terputus",
@@ -112,7 +122,7 @@ export class DeviceService {
             return !latest || d > latest ? d : latest;
         }, null);
 
-        const result = {
+        const result: DeviceOverviewResult = {
             status: isOnline ? "ONLINE" : "OFFLINE",
             tone: isOnline ? "safe" : "danger",
             label: isOnline ? "Alat Terhubung" : "Koneksi Alat Terputus",

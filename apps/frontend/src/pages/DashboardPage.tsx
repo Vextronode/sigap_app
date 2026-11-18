@@ -86,13 +86,6 @@ export default function DashboardPage() {
         />
         <NotificationPrompt />
         <EarthquakeDistributionMap />
-        {/* Fitur Ringkasan AI dinonaktifkan sementara:
-        <AISummaryCard
-          summary={summaryQuery.data ?? null}
-          isLoading={summaryQuery.isLoading}
-          isError={summaryQuery.isError}
-        />
-        */}
         <WeatherSection
           weather={weatherQuery.data ?? null}
           forecast={forecastQuery.data ?? []}

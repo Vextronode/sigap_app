@@ -100,7 +100,7 @@ export const usePushNotification = () => {
     } finally {
       setLoading(false);
     }
-  }, [supported, needsIosInstall]);
+  }, [supported, needsIosInstall, queryClient]);
 
   const unsubscribe = useCallback(async () => {
     setLoading(true);
@@ -123,7 +123,7 @@ export const usePushNotification = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   return {
     supported,

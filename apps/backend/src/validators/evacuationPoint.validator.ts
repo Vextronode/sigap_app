@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 
-function validateEvacuationFields(body: any, isUpdate: boolean = false): Record<string, string> {
+function validateEvacuationFields(body: Record<string, unknown> | null | undefined, isUpdate: boolean = false): Record<string, string> {
   const { name, latitude, longitude, elevation, capacity, facilities, address, description } = body ?? {};
   const errors: Record<string, string> = {};
 

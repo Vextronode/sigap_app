@@ -73,9 +73,6 @@ export type CurrentAlert = {
   updatedAt: string;
 };
 
-export type AiSummary = {
-  summary: string;
-};
 
 import type { EmergencyContactRecord } from "./emergencyContact";
 
@@ -125,7 +122,6 @@ export type DashboardData = {
   earthquake: Earthquake | null;
   tsunami: TsunamiStatus | null;
   alert: CurrentAlert | null;
-  summary: AiSummary | null;
   contacts: EmergencyContact[];
   evacuation: EvacuationPoint[];
   evacuationRoutes?: EvacuationRoute[];
