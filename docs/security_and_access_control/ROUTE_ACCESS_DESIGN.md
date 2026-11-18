@@ -81,6 +81,8 @@ Nilai `x-device-token` dibandingkan dengan satu kunci bersama `DEVICE_SHARED_KEY
 | Kirim manual | POST `/api/protected/notifications/dispatch` | Protected | Role `admin` |
 | Riwayat pengiriman | GET `/api/protected/notifications/logs` | Protected | Token valid |
 | Jumlah subscriber | GET `/api/protected/notifications/subscribers/count` | Protected | Token valid |
+| Status integrasi SID | GET `/api/protected/integrations/sid/status` | Protected | Token valid |
+| Tes koneksi SID | POST `/api/protected/integrations/sid/ping` | Protected | Token valid |
 | Kesehatan sistem | GET `/api/public/system-health`, `/system/health`, `/api/protected/system-health` | Public | - |
 | Pemicu scheduler | GET, POST `/api/public/internal/run-scheduler` | Internal | `CRON_SECRET` |
 
@@ -117,4 +119,4 @@ Implementasi memakai `express-rate-limit` dengan penyimpanan memori per proses, 
 
 ## 6. Notifikasi
 
-SIGAP mengirim Web Push langsung ke seluruh subscriber (VAPID). Integrasi notifikasi dengan SID belum tersedia.
+SIGAP mengirim Web Push langsung ke seluruh subscriber (VAPID), dan meneruskan peringatan ke SIDUTama dengan Bearer token client integrasi (`SID_API_TOKEN`) yang hanya disimpan di environment backend (ADR-049).

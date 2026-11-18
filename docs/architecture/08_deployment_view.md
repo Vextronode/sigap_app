@@ -79,5 +79,7 @@ Daftar lengkap berada di `apps/backend/.env.example` dan `deploy/sigap.env.examp
 | `TRUST_PROXY` | Hop proxy yang dipercaya | Sesuai topologi |
 | `ENABLE_LOCAL_SCHEDULER` | Mengaktifkan scheduler | Staging: `true` |
 | `SCHEDULER_HEARTBEAT_URL` | Heartbeat ke monitoring eksternal | Opsional |
+| `SID_INTEGRATION_ENABLED`, `SID_API_BASE_URL`, `SID_API_TOKEN` | Pengiriman peringatan ke SIDUTama | Opsional; ketiganya wajib bila integrasi diaktifkan |
+| `SIGAP_PUBLIC_BASE_URL` | Domain `link_url` pada peringatan SID | Opsional |
 
 Variabel frontend: `VITE_API_BASE_URL`, `VITE_API_URL`, `VITE_ALERT_REFETCH_INTERVAL_MS`, dan `VITE_PWA_DEV`.

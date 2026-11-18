@@ -16,7 +16,7 @@
 | Area 1 - Data Contract | Forecast, gempa per wilayah, `preparedness_guides` | Selesai |
 | Area 2 - Otomasi Notifikasi | Web Push otomatis dari scheduler | Selesai untuk Web Push (ADR-034) |
 | Area 3 - Peta Evakuasi | Peta Leaflet, titik dari API, urutan terdekat, navigasi Google Maps | Selesai (ADR-032) |
-| Area 4 - Integrasi SID | Notifikasi SIGAP ke SID dan pengumuman SID ke SIGAP | Belum dimulai; menunggu kontrak API SID |
+| Area 4 - Integrasi SID | Notifikasi SIGAP ke SID dan pengumuman SID ke SIGAP | Sebagian selesai: peringatan SIGAP ke SID berjalan (ADR-049); pengumuman SID ke SIGAP belum dimulai |
 | Area 5 - Admin-Side | Fitur pada Bagian 2 | Sebagian selesai |
 | Area 6 - Data Historis dan Alert Cuaca | Bagian 3 | Belum dimulai |
 | Area 7 - Perangkat dan Sirine | Manajemen perangkat, riwayat, trigger sirine | Belum dimulai; menunggu ketetapan kontrak perangkat |
@@ -101,6 +101,6 @@ Dashboard saat ini memakai polling (`architecture/09_cross_cutting_concerns.md`)
 | Isu | Area | Pemilik |
 |---|---|---|
 | Kontrak perangkat: autentikasi, endpoint, interval | 7 | Tech Lead |
-| Kontrak API SID | 4 | Tech Lead SIGAP dan SID |
+| Kontrak pengumuman SID ke SIGAP | 4 | Tech Lead SIGAP dan SID |
 | Sumber klasifikasi alert cuaca | 6 | Tech Lead |
 | Hosting production | 9 | Tim DevOps |

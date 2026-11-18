@@ -8,6 +8,7 @@
 | BMKG `data.bmkg.go.id` | SIGAP ke BMKG | HTTPS | Data gempa dan shakemap |
 | Open-Meteo `api.open-meteo.com` | SIGAP ke Open-Meteo | HTTPS | Cuaca terkini dan prakiraan harian |
 | Layanan push browser | SIGAP ke layanan push | Web Push (VAPID) | Notifikasi ke warga |
+| SIDUTama `/api/integrations/v1` | SIGAP ke SID | HTTPS, Bearer token | Peringatan bencana di halaman publik dan notifikasi akun warga SID |
 | Google Maps | Browser ke Google | HTTPS | Tile peta dan navigasi |
 
 Permintaan ke BMKG dan Open-Meteo memakai timeout dan retry yang dapat dikonfigurasi (`HTTP_TIMEOUT_MS`, `HTTP_RETRY_COUNT`, `HTTP_RETRY_DELAY_MS`).
@@ -44,4 +45,37 @@ Notifikasi dikirim untuk alert baru pada level naik, rentetan baru, atau kenaika
 
 ## 7.3 Integrasi SID
 
-Integrasi dengan SID belum tersedia di kode. Halaman kesehatan sistem menampilkan entri SID berstatus `STANDBY`. Keputusan arah integrasi tercatat pada ADR-022 sampai ADR-025.
+SIGAP mengirim peringatan gempa dan tsunami ke SIDUTama mengikuti kontrak integrasi SIDUTama v1 (ADR-049). SIGAP menentukan kejadian, isi, dan siklus peringatan; SID menampilkan peringatan sebagai bar di halaman publiknya dan mengirim notifikasi ke akun warga SID.
+
+```mermaid
+sequenceDiagram
+    participant S as Scheduler
+    participant Q as Antrean SID
+    participant D as SIDUTama
+
+    S->>Q: Antrekan PUT setelah keputusan alert (terpisah dari Web Push)
+    Q->>D: PUT /alerts/{external_id}
+    alt 200 atau 201
+        D-->>Q: Peringatan dibuat atau diperbarui
+    else 5xx, timeout, atau 429
+        Q->>Q: Ulang setelah 30 detik, 2 menit, 5 menit atau Retry-After
+    else 401, 403, atau 422
+        Q->>Q: Dihentikan tanpa pengulangan
+    end
+    opt GREEN dengan data BMKG terbaca
+        S->>Q: Antrekan /end untuk setiap peringatan aktif
+        Q->>D: POST /alerts/{external_id}/end
+    end
+```
+
+| Endpoint SID | Fungsi |
+|---|---|
+| `GET /ping` | Tes koneksi dan token |
+| `PUT /alerts/{external_id}` | Membuat atau memperbarui peringatan |
+| `POST /alerts/{external_id}/end` | Mengakhiri peringatan; final, pembaruan berikutnya untuk id yang sama diabaikan SID |
+
+- Autentikasi: Bearer token Sanctum milik client integrasi SIGAP dengan ability `alerts:write`, disimpan di `SID_API_TOKEN`. Batas SID 60 request per menit.
+- Integrasi aktif bila `SID_INTEGRATION_ENABLED`, `SID_API_BASE_URL`, dan `SID_API_TOKEN` terisi.
+- Isi, `external_id`, masa tayang, dan kapan peringatan diakhiri mengikuti `Rules_Alerts.md` bagian 10.1.
+- Admin dan operator dapat memeriksa status integrasi dan isi antrean melalui `GET /api/protected/integrations/sid/status`, serta menguji koneksi melalui `POST /api/protected/integrations/sid/ping`.
+- Kegagalan pengiriman ke SID tidak menghentikan siklus scheduler maupun Web Push (ADR-025).

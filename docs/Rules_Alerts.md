@@ -171,6 +171,32 @@ Gempa penentu level adalah gempa aktif dengan magnitudo terbesar pada level aler
 - Setiap pengiriman dicatat pada tabel `notification_logs`. `alert_id` kosong untuk notifikasi kembali aman dan alert yang gagal disimpan.
 - Selama `BMKG_TSUNAMI_STATUS` terisi selain `NORMAL`, alert baru dan notifikasi terbit setiap 24 jam.
 
+## 10.1 Peringatan ke SIDUTama
+
+Bila integrasi SID aktif, scheduler meneruskan setiap keputusan alert ke SIDUTama melalui antrean, terpisah dari Web Push (ADR-049). SID menampilkan peringatan di halaman publiknya dan mengirim notifikasi ke akun warganya; isi peringatan tidak diubah SID.
+
+| Kejadian di SIGAP | Dikirim ke SID |
+|---|---|
+| Alert baru, level naik, level turun, atau magnitudo naik pada level yang sama | `PUT /alerts/{external_id}` |
+| Rentetan diperpanjang | `PUT /alerts/{external_id}` dengan masa tayang baru |
+| `GREEN` dengan data gempa dan status tsunami BMKG terbaca | `POST /alerts/{external_id}/end` untuk setiap peringatan aktif, satu kali |
+| `GREEN` karena data BMKG gagal diambil, atau `UNKNOWN` | Tidak ada |
+
+| Field | Nilai |
+|---|---|
+| `external_id` | `gempa-<awal rentetan>` untuk gempa, `tsunami-<waktu kejadian>` untuk tsunami; tetap selama kejadian yang sama |
+| `type` | `tsunami` untuk status tsunami resmi dan estimasi tsunami, `gempa` untuk lainnya |
+| `level` | `YELLOW`, `ORANGE`, `RED` menjadi `waspada`, `siaga`, `awas` |
+| `title`, `message` | Judul dan isi notifikasi Web Push untuk alert yang sama |
+| `expires_at` | Batas masa aktif alert (bagian 8); status tsunami resmi 24 jam sejak dikirim. Alert yang masa aktifnya sudah lewat tidak dikirim |
+| `magnitude`, `depth_km`, `location` | Dari gempa penentu level |
+| `link_url` | Dashboard warga pada `SIGAP_PUBLIC_BASE_URL` |
+
+- SID mengirim notifikasi hanya untuk peringatan baru dan kenaikan level. Kenaikan magnitudo pada level yang sama dan kembali aman tidak menghasilkan notifikasi di SID.
+- Notifikasi manual admin dan `simulate:alert` tidak dikirim ke SID.
+- Pengiriman yang gagal diulang setelah 30 detik, 2 menit, dan 5 menit dengan timeout 10 detik. Respons 401, 403, dan 422 tidak diulang, 404 pada `/end` dianggap selesai, dan 429 diulang setelah `Retry-After`.
+- Antrean dan daftar peringatan aktif disimpan di memori proses backend. Setelah backend dimulai ulang, peringatan yang belum diakhiri berhenti tampil di SID saat `expires_at` habis.
+
 # 11. Parameter Konfigurasi
 
 | Variabel | Default | Fungsi |

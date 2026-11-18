@@ -72,6 +72,7 @@ Status: **Berjalan** tersedia di kode, **Sebagian** tersedia dengan batasan yang
 | Kesiapsiagaan | Kontak darurat | Berjalan |
 | Kesiapsiagaan | Panduan kesiapsiagaan (artikel atau tautan eksternal) | Berjalan |
 | Notifikasi | Web Push ke seluruh subscriber untuk level Waspada, Siaga, dan Awas | Berjalan |
+| Notifikasi | Peringatan gempa dan tsunami ke SIDUTama untuk ditampilkan dan diteruskan ke akun warga SID | Berjalan |
 | Decision Support | Ringkasan cuaca dan gempa berbasis AI serta rekomendasi aktivitas | Belum; kartu dashboard tersedia dengan konten sementara |
 | Dashboard Admin | Riwayat alert dan catatan tinjauan, kontak darurat, titik evakuasi, panduan | Berjalan |
 | Dashboard Admin | Manajemen akun dan role, pengaturan sistem, ringkasan operasional | Berjalan |

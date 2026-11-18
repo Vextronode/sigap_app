@@ -42,7 +42,7 @@ Level kesiapsiagaan ditampilkan dengan teks dan ikon, tidak hanya warna. Kartu a
 |---|---|
 | `/api/healthz` | Liveness tanpa akses database |
 | `/api/readyz` | Readiness dengan `SELECT 1`, batas 2 detik |
-| `/api/public/system-health` | Status data gempa BMKG, prakiraan BMKG dan Open-Meteo, Web Push, SID, database, dan scheduler untuk dashboard admin. Pengecekan jaringan di-cache 120 detik; status scheduler dihitung setiap permintaan |
+| `/api/public/system-health` | Status data gempa BMKG, prakiraan BMKG dan Open-Meteo, Web Push, SID, database, dan scheduler untuk dashboard admin. Pengecekan jaringan di-cache 120 detik; status scheduler dihitung setiap permintaan. Status SID: `STANDBY` bila belum dikonfigurasi atau belum ada pengiriman, selain itu `ONLINE` atau `OFFLINE` sesuai hasil pengiriman terakhir |
 
 ## 9.6 Zona Waktu
 
