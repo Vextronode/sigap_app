@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect } from "react";
 import L from "leaflet";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
   CircleMarker,
@@ -16,21 +15,16 @@ import {
   Sparkles,
   ShieldCheck,
   ZoomIn,
-  Layers,
-  Map as MapIcon,
 } from "lucide-react";
 import type { EvacuationPoint } from "../../../types/dashboard";
 import type { PointWithDistance, UserCoordinates } from "../hooks/useCitizenLocation";
 import { CIBENDA_CENTER } from "../../../utils/map";
-import { BaseMapLayers } from "../../../components/map/BaseMapLayers";
-import { ESRI_API_KEY, PANGANDARAN_BOUNDS } from "../../../components/map/basemap";
-import { useOnlineStatus } from "../../../hooks/useOnlineStatus";
 
-// Prototipe Fase 0: VITE_BASEMAP=google menampilkan tile Google lama untuk perbandingan.
-const USE_SELF_HOSTED_BASEMAP = import.meta.env.VITE_BASEMAP !== "google";
-// Tombol Jalan/Satelit hanya ada bila lapisan satelit tersedia (peta lama, atau key Esri terisi).
-const SHOW_MAP_TYPE_TOGGLE = !USE_SELF_HOSTED_BASEMAP || ESRI_API_KEY !== "";
 import { SIGAP_THEME } from "../../../constants/theme";
+import { BaseMapLayers } from "../../../components/map/BaseMapLayers";
+import { PANGANDARAN_BOUNDS } from "../../../components/map/basemap";
+import { MapTypeToggle } from "../../../components/map/MapTypeToggle";
+import { SATELLITE_AVAILABLE, useBaseMapMode } from "../../../components/map/useBaseMapMode";
 
 interface CitizenEvacuationMapProps {
   points: PointWithDistance[];
@@ -118,10 +112,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
   heightClass = "h-[440px] sm:h-[480px]",
 }) => {
   const [isZoomActive, setIsZoomActive] = useState(false);
-  const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
-  const isOnline = useOnlineStatus();
-  // Citra satelit butuh internet; saat offline peta kembali ke peta jalan yang tersimpan.
-  const effectiveMapType = isOnline ? mapType : "streets";
+  const { mapType, setMapType, isOnline } = useBaseMapMode();
 
   const defaultCenter = useMemo<[number, number]>(() => {
     if (userCoords) {
@@ -219,30 +210,13 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         scrollWheelZoom={false}
         touchZoom={true}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
-        {...(USE_SELF_HOSTED_BASEMAP
-          ? { maxBounds: PANGANDARAN_BOUNDS, maxBoundsViscosity: 1, minZoom: 11, maxZoom: 18 }
-          : {})}
+        maxBounds={PANGANDARAN_BOUNDS}
+        maxBoundsViscosity={1}
+        minZoom={11}
+        maxZoom={18}
       >
         <ZoomControl position="bottomleft" />
-        {USE_SELF_HOSTED_BASEMAP ? (
-          <BaseMapLayers coverage="pangandaran" mode={effectiveMapType} />
-        ) : mapType === "streets" ? (
-          <TileLayer
-            key="google-streets"
-            attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
-            url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-            subdomains={["0", "1", "2", "3"]}
-            maxZoom={20}
-          />
-        ) : (
-          <TileLayer
-            key="google-satellite"
-            attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
-            url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-            subdomains={["0", "1", "2", "3"]}
-            maxZoom={20}
-          />
-        )}
+        <BaseMapLayers coverage="pangandaran" mode={mapType} />
 
         <MapZoomController
           isInteractive={isZoomActive}
@@ -365,42 +339,13 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         })}
       </MapContainer>
 
-      {/* Kontrol Pilihan Mode Peta: Jalan (Kontras Jelas) / Satelit (Foto Udara Nyata) - Pojok Kanan Atas Super Ringkas (~70%) */}
-      {SHOW_MAP_TYPE_TOGGLE && (
-      <div className="absolute top-2 right-2 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-0.5 select-none pointer-events-auto">
-        <button
-          type="button"
-          onClick={() => setMapType("streets")}
-          className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-            effectiveMapType === "streets"
-              ? "bg-sigap-primary text-white shadow-xs"
-              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-          }`}
-          title="Tampilan Peta Jalan (Kontras Jelas)"
-        >
-          <MapIcon size={10} />
-          <span>Jalan</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMapType("satellite")}
-          disabled={!isOnline}
-          className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-            effectiveMapType === "satellite"
-              ? "bg-sigap-primary text-white shadow-xs"
-              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-          }`}
-          title={isOnline ? "Tampilan Foto Citra Satelit Bumi Nyata" : "Citra satelit tidak tersedia saat offline"}
-        >
-          <Layers size={10} />
-          <span>Satelit</span>
-        </button>
-      </div>
-      )}
+      {/* Kontrol Pilihan Mode Peta: Jalan / Satelit (tampil bila satelit tersedia) */}
+
+      <MapTypeToggle value={mapType} onChange={setMapType} isOnline={isOnline} />
 
       {/* Indikator Proteksi Zoom (klik 1x untuk zoom) - Pojok Kanan Atas di bawah tag Jalan/Satelit */}
       {!isZoomActive && (
-        <div className={`absolute ${SHOW_MAP_TYPE_TOGGLE ? "top-[46px]" : "top-2"} right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none`}>
+        <div className={`absolute ${SATELLITE_AVAILABLE ? "top-[46px]" : "top-2"} right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none`}>
           <ZoomIn size={12} className="text-amber-400 shrink-0" />
           <span>Klik aktifkan zoom</span>
         </div>

@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect } from "react";
 import L from "leaflet";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
   useMap,
@@ -27,14 +26,17 @@ import type { Earthquake } from "../../../types/dashboard";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import { getStaleSince } from "../../../utils/queryFreshness";
+import { BaseMapLayers, type BaseMapMode } from "../../../components/map/BaseMapLayers";
+import { SATELLITE_AVAILABLE, useBaseMapMode } from "../../../components/map/useBaseMapMode";
 
 // Titik tengah default kepulauan Jawa / Indonesia bagian barat
 const DEFAULT_MAP_CENTER: [number, number] = [-7.6838, 108.561]; // Koordinat Desa Cibenda / Jawa Barat
 const DEFAULT_MAP_ZOOM = 6;
 
-// Atribusi peta resmi dengan logo BMKG (ukuran proporsional 16px)
-const MAP_ATTRIBUTION =
-  '&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a> | <a href="https://www.bmkg.go.id" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><img src="/assets/image/logo-bmkg.webp" alt="BMKG" style="height:15px;width:auto;vertical-align:-2px;margin-right:4px;display:inline-block;" />Data BMKG</a>';
+// Atribusi data gempa dengan logo BMKG (ukuran proporsional 16px); atribusi peta dasar
+// ditambahkan oleh BaseMapLayers.
+const BMKG_ATTRIBUTION =
+  '<a href="https://www.bmkg.go.id" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><img src="/assets/image/logo-bmkg.webp" alt="BMKG" style="height:15px;width:auto;vertical-align:-2px;margin-right:4px;display:inline-block;" />Data BMKG</a>';
 
 // Pengatur kontrol zoom & klik interaktif agar tidak menjebak scroll jari di HP
 const MapInteractionController: React.FC<{
@@ -92,12 +94,25 @@ const MapInteractionController: React.FC<{
   return null;
 };
 
+// Menambahkan atribusi sumber data ke kontrol atribusi Leaflet.
+const DataAttribution: React.FC<{ html: string }> = ({ html }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.attributionControl?.addAttribution(html);
+    return () => {
+      map.attributionControl?.removeAttribution(html);
+    };
+  }, [map, html]);
+  return null;
+};
+
 // Komponen tombol zoom dan navigasi kustom
 const CustomMapControls: React.FC<{
   onReset: () => void;
-  mapType: "streets" | "satellite";
+  mapType: BaseMapMode;
+  isOnline: boolean;
   onToggleMapType: () => void;
-}> = ({ onReset, mapType, onToggleMapType }) => {
+}> = ({ onReset, mapType, isOnline, onToggleMapType }) => {
   const map = useMap();
 
   return (
@@ -133,15 +148,22 @@ const CustomMapControls: React.FC<{
         <RotateCcw size={18} />
       </button>
 
-      <button
-        type="button"
-        onClick={onToggleMapType}
-        aria-label="Ganti mode peta satelit atau jalan"
-        title={`Ganti ke mode ${mapType === "streets" ? "Satelit" : "Jalan"}`}
-        className="p-2.5 rounded-xl shadow-md bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-      >
-        <Layers size={18} />
-      </button>
+      {SATELLITE_AVAILABLE && (
+        <button
+          type="button"
+          onClick={onToggleMapType}
+          disabled={!isOnline}
+          aria-label="Ganti mode peta satelit atau jalan"
+          title={
+            isOnline
+              ? `Ganti ke mode ${mapType === "streets" ? "Satelit" : "Jalan"}`
+              : "Citra satelit tidak tersedia saat offline"
+          }
+          className="p-2.5 rounded-xl shadow-md bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Layers size={18} />
+        </button>
+      )}
     </div>
   );
 };
@@ -153,7 +175,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
   const mapQuery = useEarthquakeMapPoints();
   const { data: earthquakes = [], isLoading, isError } = mapQuery;
   const [isZoomActive, setIsZoomActive] = useState(false);
-  const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
+  const { mapType, setMapType, isOnline } = useBaseMapMode();
   const [resetTrigger, setResetTrigger] = useState(0);
 
   // Saring gempa yang memiliki koordinat valid di kawasan Indonesia & palung tektonik sekitarnya
@@ -260,24 +282,10 @@ export const EarthquakeDistributionMap: React.FC = () => {
           scrollWheelZoom={false}
           touchZoom={true}
           style={{ height: "100%", width: "100%", zIndex: 0 }}
+          maxZoom={18}
         >
-          {mapType === "streets" ? (
-            <TileLayer
-              key="google-streets"
-              attribution={MAP_ATTRIBUTION}
-              url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-              subdomains={["0", "1", "2", "3"]}
-              maxZoom={18}
-            />
-          ) : (
-            <TileLayer
-              key="google-satellite"
-              attribution={MAP_ATTRIBUTION}
-              url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-              subdomains={["0", "1", "2", "3"]}
-              maxZoom={18}
-            />
-          )}
+          <BaseMapLayers coverage="national" mode={mapType} />
+          <DataAttribution html={BMKG_ATTRIBUTION} />
 
           <MapInteractionController
             isInteractive={isZoomActive}
@@ -289,6 +297,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
           <CustomMapControls
             onReset={() => setResetTrigger((prev) => prev + 1)}
             mapType={mapType}
+            isOnline={isOnline}
             onToggleMapType={() =>
               setMapType((prev) => (prev === "streets" ? "satellite" : "streets"))
             }
