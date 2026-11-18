@@ -91,7 +91,7 @@ Magnitudo tidak dipakai sebagai penentu level. Magnitudo hanya dipakai pada atur
 
 # 7. Penyimpanan Alert
 
-Scheduler menjalankan evaluasi di dalam proses backend saat `ENABLE_LOCAL_SCHEDULER=true`, dengan interval `ALERT_SCHEDULER_INTERVAL_MS` (default 60 detik). Evaluasi juga dapat dipicu melalui `/api/public/internal/run-scheduler`.
+Scheduler menjalankan evaluasi di dalam proses backend saat `ENABLE_LOCAL_SCHEDULER=true`, dengan interval `ALERT_SCHEDULER_INTERVAL_MS` (default 60 detik). Evaluasi juga dapat dipicu melalui `/api/public/internal/run-scheduler`. Hanya satu siklus berjalan dalam satu waktu; pemicu manual saat siklus lain berjalan dibalas `409`.
 
 - Hasil `GREEN` tidak disimpan.
 - Hasil yang levelnya berasal dari status tsunami resmi disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman terakhir yang berumur paling lama 24 jam.
@@ -167,7 +167,8 @@ Gempa penentu level adalah gempa aktif dengan magnitudo terbesar pada level aler
 | Urgency | `high` untuk `ORANGE` dan `RED`, `normal` untuk lainnya |
 
 - Admin dapat mengirim notifikasi manual untuk alert yang berlaku melalui `/api/protected/notifications/dispatch`, dengan isi dan aturan pengiriman yang sama.
-- Subscription yang dibalas 404 atau 410 oleh layanan push dihapus.
+- Web Push dikirim paling banyak 50 bersamaan, dengan batas waktu 10 detik per pengiriman.
+- Subscription yang dibalas 404 atau 410 oleh layanan push dihapus. Subscription yang dibalas 400 atau 403 dihapus bila ada pengiriman lain yang berhasil pada dispatch yang sama.
 - Setiap pengiriman dicatat pada tabel `notification_logs`. `alert_id` kosong untuk notifikasi kembali aman dan alert yang gagal disimpan.
 - Selama `BMKG_TSUNAMI_STATUS` terisi selain `NORMAL`, alert baru dan notifikasi terbit setiap 24 jam.
 
