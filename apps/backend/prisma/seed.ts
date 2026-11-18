@@ -1,18 +1,25 @@
 import "dotenv/config";
 import { prisma } from "../src/config/prisma.js";
 import bcrypt from "bcrypt";
+import { randomBytes } from "node:crypto";
 
 /**
- * Opsi seed (hanya dibaca script ini, tidak oleh aplikasi):
+ * Seed data awal. Dijalankan manual (`deploy/sigap.sh seed` atau `npm run seed`), tidak
+ * pernah otomatis saat deploy. Aman diulang: hanya membuat data yang belum ada dan tidak
+ * menimpa data yang sudah diedit admin.
+ *
+ * Opsi (hanya dibaca script ini, tidak oleh aplikasi):
  * - SEED_ADMIN_EMAIL    : email akun admin awal. Default: admin@cibenda.desa.id.
- * - SEED_ADMIN_PASSWORD : password admin (8-128 karakter). Bila akun sudah ada, password-nya
- *                         di-reset ke nilai ini. Bila kosong: NODE_ENV=production → password
- *                         acak yang hanya ditampilkan sekali di output; selain itu ChangeMe123!.
- * - SEED_SAMPLE_DATA    : true|false (default true). false = lewati data contoh bertanggal tetap
- *                         (10 record gempa dan 10 alert gempa) agar tidak dikira kejadian nyata.
+ * - SEED_ADMIN_PASSWORD : password admin (8-128 karakter). Akun baru dibuat dengan nilai ini.
+ *                         Akun yang sudah ada hanya di-reset bila variabel ini diisi (pemulihan
+ *                         akses admin). Bila kosong dan akun belum ada: NODE_ENV=production →
+ *                         password acak yang hanya ditampilkan sekali di output; selain itu
+ *                         ChangeMe123!. Password dari variabel ini tidak pernah dicetak.
+ * - SEED_SAMPLE_DATA    : true|false (default false). true = tambah data contoh bertanggal tetap
+ *                         (10 record gempa dan 10 alert gempa). Ditolak saat NODE_ENV=production.
  */
 const DEFAULT_ADMIN_EMAIL = "admin@cibenda.desa.id";
-const DEFAULT_ADMIN_PASSWORD = "admin123";
+const DEV_ADMIN_PASSWORD = "ChangeMe123!";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function readSeedOptions() {
@@ -33,12 +40,13 @@ function readSeedOptions() {
     throw new Error("SEED_SAMPLE_DATA: harus true atau false");
   }
 
-  return {
-    email,
-    password,
-    sampleData: sampleRaw !== "false",
-    isProduction: process.env.NODE_ENV === "production",
-  };
+  const isProduction = process.env.NODE_ENV === "production";
+  const sampleData = sampleRaw === "true";
+  if (sampleData && isProduction) {
+    throw new Error("SEED_SAMPLE_DATA: data contoh tidak boleh dimasukkan saat NODE_ENV=production");
+  }
+
+  return { email, password, sampleData, isProduction };
 }
 
 const PERMISSIONS = [
@@ -84,34 +92,43 @@ async function main() {
     }
   }
 
-  // Akun admin awal. Akun yang sudah ada tidak disentuh password-nya kecuali
-  // SEED_ADMIN_PASSWORD diisi, supaya seed ulang tidak mencetak password baru yang tidak berlaku.
+  // Akun admin awal. Akun yang sudah ada tidak disentuh kecuali SEED_ADMIN_PASSWORD diisi,
+  // supaya seed ulang tidak mengganti password yang sedang dipakai.
   const existingAdmin = await prisma.user.findUnique({ where: { email: options.email } });
   let adminUser;
   let adminSummary: string;
-  const adminPasswordToSet = options.password ?? DEFAULT_ADMIN_PASSWORD;
+  let generatedPassword: string | null = null;
 
   if (!existingAdmin) {
+    const password =
+      options.password ?? (options.isProduction ? randomBytes(15).toString("base64url") : DEV_ADMIN_PASSWORD);
     adminUser = await prisma.user.create({
       data: {
         name: "Administrator",
         email: options.email,
-        password: await bcrypt.hash(adminPasswordToSet, 10),
+        password: await bcrypt.hash(password, 10),
       },
     });
-    adminSummary = `Akun admin ${options.email} dibuat dengan password: ${adminPasswordToSet}`;
-  } else {
+    if (options.password) {
+      adminSummary = `Akun admin ${options.email} dibuat dengan password dari SEED_ADMIN_PASSWORD.`;
+    } else {
+      generatedPassword = password;
+      adminSummary = `Akun admin ${options.email} dibuat.`;
+    }
+  } else if (options.password) {
     adminUser = await prisma.user.update({
       where: { id: existingAdmin.id },
       data: {
-        name: "Administrator",
-        password: await bcrypt.hash(adminPasswordToSet, 10),
+        password: await bcrypt.hash(options.password, 10),
         failedLoginCount: 0,
         lockedUntil: null,
         tokenVersion: { increment: 1 },
       },
     });
-    adminSummary = `Akun admin ${options.email} diperbarui; password dipastikan '${adminPasswordToSet}' dan lockout dibuka.`;
+    adminSummary = `Akun admin ${options.email} sudah ada; password di-reset ke SEED_ADMIN_PASSWORD, lockout dibuka, dan sesi lama dicabut.`;
+  } else {
+    adminUser = existingAdmin;
+    adminSummary = `Akun admin ${options.email} sudah ada; password tidak diubah (isi SEED_ADMIN_PASSWORD untuk me-reset).`;
   }
 
   const adminRole = await prisma.role.findUniqueOrThrow({ where: { name: "admin" } });
@@ -160,14 +177,11 @@ async function main() {
           icon: contact.icon,
         },
       });
-    } else {
+    } else if (!existing.icon) {
+      // Kontak yang dibuat sebelum kolom ikon ada hanya dilengkapi ikonnya; isi lain tidak ditimpa.
       await prisma.emergencyContact.update({
         where: { id: existing.id },
-        data: {
-          phoneNumber: contact.phoneNumber,
-          isCore: true,
-          icon: contact.icon,
-        },
+        data: { icon: contact.icon },
       });
     }
   }
@@ -201,18 +215,13 @@ async function main() {
       await prisma.preparednessGuide.create({
         data: guide,
       });
-    } else {
-      await prisma.preparednessGuide.update({
-        where: { id: existing.id },
-        data: guide,
-      });
     }
   }
 
   if (options.sampleData) {
     await seedSampleEarthquakes(adminUser.id);
   } else {
-    console.log("SEED_SAMPLE_DATA=false: data contoh gempa & alert gempa dilewati.");
+    console.log("Data contoh gempa & alert gempa dilewati (SEED_SAMPLE_DATA bukan true).");
   }
 
   // 7. Seeding Titik Evakuasi Strategis Desa Cibenda & Sekitarnya (Sesuai Peta Resmi)
@@ -277,12 +286,6 @@ async function main() {
         data: point,
       });
       console.log(`Titik evakuasi "${point.name}" berhasil di-seed.`);
-    } else {
-      await prisma.evacuationPoint.update({
-        where: { id: existing.id },
-        data: point,
-      });
-      console.log(`Titik evakuasi "${point.name}" diperbarui.`);
     }
   }
 
@@ -302,11 +305,19 @@ async function main() {
   console.log("Seed selesai.");
   console.log(adminSummary);
 
-  console.log("");
-  console.log("==================== KREDENSIAL ADMIN SIGAP ====================");
-  console.log(`Email    : ${options.email}`);
-  console.log(`Password : ${adminPasswordToSet}`);
-  console.log("===============================================================");
+  // Hanya password acak yang baru dibuat yang dicetak, ke stdout terminal saja.
+  if (generatedPassword && options.isProduction) {
+    console.log("");
+    console.log("==================== KREDENSIAL ADMIN AWAL ====================");
+    console.log(`Email    : ${options.email}`);
+    console.log(`Password : ${generatedPassword}`);
+    console.log("Password acak ini HANYA ditampilkan sekali dan tidak disimpan di mana pun.");
+    console.log("Catat sekarang, lalu ganti setelah login pertama.");
+    console.log("===============================================================");
+  } else if (generatedPassword) {
+    console.log(`Placeholder admin (development) -> email: ${options.email} | password: ${generatedPassword}`);
+    console.log("WAJIB diganti di luar lingkungan development.");
+  }
 }
 
 /**
