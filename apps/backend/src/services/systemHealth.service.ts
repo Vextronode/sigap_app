@@ -172,6 +172,22 @@ export class SystemHealthService {
     const schedulerHealthy = isSchedulerHealthy();
     const hasVapid = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
     const sidConfigured = SidIntegrationService.isConfigured();
+    const sidDispatch = SidIntegrationService.getLastDispatchResult();
+    let sidStatus: ServiceStatus = "STANDBY";
+    let sidMessage = "Integrasi SIDUTama dalam mode siaga (menunggu kredensial resmi).";
+
+    if (sidConfigured) {
+      if (sidDispatch === null) {
+        sidStatus = "STANDBY";
+        sidMessage = "Integrasi SIDUTama terkonfigurasi dan dalam mode siaga (belum ada transmisi).";
+      } else if (sidDispatch.ok) {
+        sidStatus = "ONLINE";
+        sidMessage = "Koneksi ke endpoint peringatan darurat SIDUTama aktif dan normal.";
+      } else {
+        sidStatus = "OFFLINE";
+        sidMessage = `Transmisi terakhir ke SIDUTama gagal${sidDispatch.error ? `: ${sidDispatch.error}` : ""}.`;
+      }
+    }
 
     const services: ServiceHealthItem[] = [
       network.weather,
@@ -179,13 +195,11 @@ export class SystemHealthService {
       {
         name: "Integrasi Peringatan Bencana SIDUTama",
         category: "sid",
-        status: sidConfigured ? "ONLINE" : "STANDBY",
+        status: sidStatus,
         provider: "SIDUTama Integration API",
         latencyMs: null,
-        message: sidConfigured
-          ? "Koneksi ke endpoint peringatan darurat SIDUTama siap digunakan."
-          : "Integrasi SIDUTama dalam mode siaga (menunggu kredensial resmi).",
-        lastChecked: network.checkedAt,
+        message: sidMessage,
+        lastChecked: sidDispatch?.timestamp ?? network.checkedAt,
       },
       {
         name: "Web Push Notification Service",

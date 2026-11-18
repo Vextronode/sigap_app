@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AlertLevel } from "../generated/prisma/enums.js";
+import { OFFICIAL_TSUNAMI_SOURCE } from "../src/config/alertRules.js";
 import {
   mapAlertLevelToSid,
   parseDepthKm,
-  buildAlertTitle,
-  buildActionMessage,
   sanitizeExternalId,
+  buildSidExternalId,
   mapToSidAlertInput,
 } from "../src/services/sidPayloadMapper.js";
 import { SidIntegrationService } from "../src/services/sidIntegration.service.js";
@@ -28,27 +28,6 @@ test("SID Mapper: parseDepthKm mengekstrak angka kedalaman", () => {
   assert.equal(parseDepthKm("tidak diketahui"), null);
 });
 
-test("SID Mapper: buildAlertTitle tidak melebihi batas 150 karakter", () => {
-  const shortTitle = buildAlertTitle("waspada", "gempa", 5.2, "23 km Barat Daya Cibenda");
-  assert.ok(shortTitle.includes("[WASPADA]"));
-  assert.ok(shortTitle.includes("M5.2"));
-  assert.ok(shortTitle.length <= 150);
-
-  const longLocation = "A".repeat(200);
-  const cappedTitle = buildAlertTitle("awas", "gempa", 7.0, longLocation);
-  assert.ok(cappedTitle.length <= 150);
-});
-
-test("SID Mapper: buildActionMessage membatasi panjang teks <= 1000 karakter", () => {
-  const normalMsg = buildActionMessage("siaga", "gempa", "Guncangan terasa nyata.");
-  assert.ok(normalMsg.length <= 1000);
-  assert.ok(normalMsg.includes("Guncangan terasa nyata."));
-
-  const veryLongDesc = "Bencana ".repeat(200);
-  const cappedMsg = buildActionMessage("awas", "tsunami", veryLongDesc);
-  assert.ok(cappedMsg.length <= 1000);
-});
-
 test("SID Mapper: sanitizeExternalId mematuhi regex ^[A-Za-z0-9._:-]{1,100}$", () => {
   const valid = sanitizeExternalId("gempa-881_sub.01:id");
   assert.equal(valid, "gempa-881_sub.01:id");
@@ -58,40 +37,110 @@ test("SID Mapper: sanitizeExternalId mematuhi regex ^[A-Za-z0-9._:-]{1,100}$", (
   assert.ok(/^[A-Za-z0-9._:-]{1,100}$/.test(dirty));
 });
 
-test("SID Mapper: mapToSidAlertInput menghasilkan payload lengkap sesuai spesifikasi", () => {
+test("SID Mapper: buildSidExternalId konsisten berdasarkan jenis dan waktu kejadian", () => {
+  const time = "2026-11-18T04:45:00.000Z";
+  const gempaId = buildSidExternalId("gempa", time);
+  assert.equal(gempaId, "gempa-2026-11-18T04:45:00.000Z");
+
+  const tsunamiId = buildSidExternalId("tsunami", new Date("2026-11-18T05:00:00.000Z"));
+  assert.equal(tsunamiId, "tsunami-2026-11-18T05:00:00.000Z");
+});
+
+test("SID Mapper: mapToSidAlertInput menggunakan title dan message dari notification SIGAP", () => {
+  const now = new Date("2026-11-18T10:00:00.000Z");
   const mapped = mapToSidAlertInput({
-    externalId: "gempa-123",
-    alertRecord: {
-      id: "alert-uuid-1",
+    externalId: "gempa-2026-11-18T09:00:00.000Z",
+    alert: {
+      id: "alert-1",
       level: AlertLevel.ORANGE,
       source: "BMKG",
-      description: "Gempa M5.6 dirasakan warga di sekitar Desa Cibenda (III Pangandaran).",
-      eventTime: new Date("2026-11-16T14:02:00Z"),
-      referenceMagnitude: 5.6,
+      description: "Gempa M5.6 dirasakan di sekitar Desa Cibenda (III Pangandaran).",
+      createdAt: new Date("2026-11-18T09:00:00.000Z"),
+      eventTime: new Date("2026-11-18T09:00:00.000Z"),
+      activeUntil: new Date("2026-11-19T09:00:00.000Z"),
+    },
+    notification: {
+      payload: {
+        title: "[SIAGA] Gempa M5.6 dirasakan di sekitar Desa Cibenda",
+        body: "Gempa M5.6 dirasakan di sekitar Desa Cibenda (III Pangandaran). Hindari bangunan retak.",
+      },
     },
     determiningEarthquake: {
       magnitude: 5.6,
       depth: "18 km",
       location: "23 km barat daya Pangandaran",
-      updatedAt: "2026-11-16T14:02:00Z",
+      updatedAt: "2026-11-18T09:00:00.000Z",
     },
     publicBaseUrl: "https://sigap-berdampak.widyatama.ac.id",
+    now,
   });
 
+  assert.ok(mapped);
   assert.equal(mapped.type, "gempa");
   assert.equal(mapped.level, "siaga");
+  assert.equal(mapped.title, "[SIAGA] Gempa M5.6 dirasakan di sekitar Desa Cibenda");
+  assert.equal(
+    mapped.message,
+    "Gempa M5.6 dirasakan di sekitar Desa Cibenda (III Pangandaran). Hindari bangunan retak."
+  );
   assert.equal(mapped.magnitude, 5.6);
   assert.equal(mapped.depth_km, 18);
   assert.equal(mapped.location, "23 km barat daya Pangandaran");
-  assert.ok(mapped.title.length <= 150);
-  assert.ok(mapped.message && mapped.message.length <= 1000);
-  assert.equal(mapped.occurred_at, "2026-11-16T14:02:00.000Z");
-  assert.ok(mapped.sent_at);
-  assert.ok(mapped.expires_at);
-  assert.equal(
-    mapped.link_url,
-    "https://sigap-berdampak.widyatama.ac.id/?view=warga#alert-gempa-123"
-  );
+  assert.equal(mapped.link_url, "https://sigap-berdampak.widyatama.ac.id/?view=warga");
+  assert.equal(mapped.occurred_at, "2026-11-18T09:00:00.000Z");
+  assert.equal(mapped.sent_at, "2026-11-18T10:00:00.000Z");
+  assert.equal(mapped.expires_at, "2026-11-19T09:00:00.000Z");
+});
+
+test("SID Mapper: mapToSidAlertInput untuk tsunami resmi berlaku 24 jam ke depan", () => {
+  const now = new Date("2026-11-18T10:00:00.000Z");
+  const mapped = mapToSidAlertInput({
+    externalId: "tsunami-2026-11-18T09:50:00.000Z",
+    alert: {
+      id: "alert-tsunami",
+      level: AlertLevel.RED,
+      source: OFFICIAL_TSUNAMI_SOURCE,
+      description: "Peringatan Dini Tsunami BMKG InaTEWS untuk wilayah pesisir selatan.",
+      createdAt: now,
+      activeUntil: null,
+    },
+    notification: {
+      payload: {
+        title: "[AWAS] Status tsunami dari BMKG",
+        body: "Peringatan Dini Tsunami BMKG InaTEWS. Segera evakuasi menjauhi pesisir.",
+      },
+    },
+    now,
+  });
+
+  assert.ok(mapped);
+  assert.equal(mapped.type, "tsunami");
+  assert.equal(mapped.level, "awas");
+  assert.equal(mapped.expires_at, new Date("2026-11-19T10:00:00.000Z").toISOString());
+});
+
+test("SID Mapper: mapToSidAlertInput mengembalikan null bila alert sudah expired", () => {
+  const now = new Date("2026-11-19T12:00:00.000Z");
+  const mapped = mapToSidAlertInput({
+    externalId: "gempa-expired",
+    alert: {
+      id: "alert-old",
+      level: AlertLevel.YELLOW,
+      source: "BMKG",
+      description: "Gempa lama.",
+      createdAt: new Date("2026-11-18T08:00:00.000Z"),
+      activeUntil: new Date("2026-11-19T08:00:00.000Z"), // 4 jam yang lalu
+    },
+    notification: {
+      payload: {
+        title: "[WASPADA] Gempa lama",
+        body: "Gempa lama",
+      },
+    },
+    now,
+  });
+
+  assert.equal(mapped, null, "Harus mengembalikan null agar tidak mengirim alert kedaluwarsa ke SID (422)");
 });
 
 test("SidIntegrationService: isConfigured mengembalikan false bila variabel env kosong", () => {
@@ -112,20 +161,80 @@ test("SidIntegrationService: isConfigured mengembalikan false bila variabel env 
   }
 });
 
-test("SidIntegrationService: Antrean aman dan getStatus memberikan snapshot terkini", () => {
+test("SidIntegrationService: Lifecycle Antrean, tracking active IDs, dan pembatalan upsert saat /end", () => {
+  const oldEnabled = process.env.SID_INTEGRATION_ENABLED;
+  const oldUrl = process.env.SID_API_BASE_URL;
+  const oldToken = process.env.SID_API_TOKEN;
+
+  try {
+    process.env.SID_INTEGRATION_ENABLED = "true";
+    process.env.SID_API_BASE_URL = "https://mock-sid.test/api/integrations/v1";
+    process.env.SID_API_TOKEN = "valid-mock-token";
+
+    SidIntegrationService.clearQueueForTest();
+
+    // 1. Enqueue Alert Baru
+    const extId = "gempa-test-01";
+    SidIntegrationService.enqueueAlert(extId, {
+      type: "gempa",
+      level: "siaga",
+      title: "Gempa M5.6",
+      message: "Arahan",
+      occurred_at: new Date().toISOString(),
+      sent_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 3600_000).toISOString(),
+    });
+
+    assert.deepEqual(SidIntegrationService.getActiveExternalIds(), [extId]);
+    let status = SidIntegrationService.getStatus();
+    assert.equal(status.queueSize, 1);
+    assert.equal(status.items[0].id, `upsert-${extId}`);
+
+    // 2. Enqueue End Alert -> upsert yang pending harus dibuang, active IDs dihapus
+    SidIntegrationService.enqueueEndAlert(extId);
+    assert.deepEqual(SidIntegrationService.getActiveExternalIds(), []);
+    status = SidIntegrationService.getStatus();
+    assert.equal(status.queueSize, 1);
+    assert.equal(status.items[0].id, `end-${extId}`);
+
+    // 3. endAllActiveAlerts mengakhiri semua id yang tersisa
+    const extId2 = "gempa-test-02";
+    SidIntegrationService.enqueueAlert(extId2, {
+      type: "gempa",
+      level: "waspada",
+      title: "Gempa M4.8",
+      occurred_at: new Date().toISOString(),
+      sent_at: new Date().toISOString(),
+    });
+    assert.ok(SidIntegrationService.getActiveExternalIds().includes(extId2));
+
+    SidIntegrationService.endAllActiveAlerts();
+    assert.equal(SidIntegrationService.getActiveExternalIds().length, 0);
+
+    const endItem = SidIntegrationService.getStatus().items.find((i) => i.id === `end-${extId2}`);
+    assert.ok(endItem, "Item end untuk extId2 harus terdaftar di antrean");
+  } finally {
+    process.env.SID_INTEGRATION_ENABLED = oldEnabled;
+    process.env.SID_API_BASE_URL = oldUrl;
+    process.env.SID_API_TOKEN = oldToken;
+    SidIntegrationService.clearQueueForTest();
+  }
+});
+
+test("SidIntegrationService: System Health mencerminkan hasil pengiriman terakhir", () => {
   SidIntegrationService.clearQueueForTest();
-  const statusBefore = SidIntegrationService.getStatus();
-  assert.equal(statusBefore.queueSize, 0);
 
-  // Jika tidak aktif, enqueue tidak menambahkan item ke antrean
-  SidIntegrationService.enqueueAlert("test-alert", {
-    type: "gempa",
-    level: "waspada",
-    title: "Test",
-    occurred_at: new Date().toISOString(),
-    sent_at: new Date().toISOString(),
-  });
+  // Sebelum ada transmisi: null
+  assert.equal(SidIntegrationService.getLastDispatchResult(), null);
 
-  const statusAfter = SidIntegrationService.getStatus();
-  assert.equal(statusAfter.queueSize, 0);
+  // Simulasi pengiriman sukses
+  SidIntegrationService.recordDispatchResult(true);
+  const okResult = SidIntegrationService.getLastDispatchResult();
+  assert.equal(okResult?.ok, true);
+
+  // Simulasi kegagalan transmisi
+  SidIntegrationService.recordDispatchResult(false, "HTTP 500: Server Error");
+  const failResult = SidIntegrationService.getLastDispatchResult();
+  assert.equal(failResult?.ok, false);
+  assert.equal(failResult?.error, "HTTP 500: Server Error");
 });

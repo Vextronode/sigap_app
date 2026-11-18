@@ -18,8 +18,14 @@ const RETRY_DELAYS_MS = [30_000, 120_000, 300_000]; // Jeda bertahap: 30s, 2m, 5
 
 export class SidIntegrationService {
   private static queue: Map<string, SidQueueItem> = new Map();
+  private static activeExternalIds: Set<string> = new Set();
   private static isProcessing = false;
   private static timer: NodeJS.Timeout | null = null;
+  private static lastDispatchResult: {
+    ok: boolean;
+    timestamp: string;
+    error?: string;
+  } | null = null;
 
   /**
    * Cek apakah integrasi SID sedang aktif dan memiliki kredensial
@@ -31,6 +37,24 @@ export class SidIntegrationService {
     const baseUrl = process.env.SID_API_BASE_URL?.trim();
     const token = process.env.SID_API_TOKEN?.trim();
     return Boolean(enabled && baseUrl && token);
+  }
+
+  /**
+   * Catat hasil transmisi terakhir untuk indikator SystemHealth
+   */
+  public static recordDispatchResult(ok: boolean, error?: string): void {
+    this.lastDispatchResult = {
+      ok,
+      timestamp: new Date().toISOString(),
+      error: ok ? undefined : error,
+    };
+  }
+
+  /**
+   * Baca hasil transmisi terakhir
+   */
+  public static getLastDispatchResult(): { ok: boolean; timestamp: string; error?: string } | null {
+    return this.lastDispatchResult;
   }
 
   /**
@@ -90,6 +114,7 @@ export class SidIntegrationService {
       }
 
       if (response.ok && parsedJson.data) {
+        this.recordDispatchResult(true);
         return {
           ok: true,
           statusCode: response.status,
@@ -98,15 +123,19 @@ export class SidIntegrationService {
         };
       }
 
+      const errMsg = parsedJson.message || `HTTP ${response.status}: ${response.statusText}`;
+      this.recordDispatchResult(false, errMsg);
+
       return {
         ok: false,
         statusCode: response.status,
-        error: parsedJson.message || `HTTP ${response.status}: ${response.statusText}`,
+        error: errMsg,
         code: parsedJson.code,
         retryable: response.status >= 500,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.recordDispatchResult(false, message);
       return {
         ok: false,
         statusCode: 0,
@@ -225,7 +254,8 @@ export class SidIntegrationService {
         // non-json response
       }
 
-      if (response.ok) {
+      // 200 sukses diakhiri, 404 dianggap sukses karena alert memang sudah tiada di SID
+      if (response.ok || response.status === 404) {
         return {
           ok: true,
           statusCode: response.status,
@@ -234,7 +264,7 @@ export class SidIntegrationService {
         };
       }
 
-      // 404 pada /end berarti peringatan memang tidak dikenal / sudah hilang, jangan retry
+      // 429 dan 5xx boleh diulang
       const isRetryable = response.status === 429 || response.status >= 500;
 
       return {
@@ -263,6 +293,8 @@ export class SidIntegrationService {
       return;
     }
 
+    this.activeExternalIds.add(externalId);
+
     const item: SidQueueItem = {
       id: `upsert-${externalId}`,
       externalId,
@@ -280,11 +312,16 @@ export class SidIntegrationService {
 
   /**
    * Antrekan pengakhiran peringatan secara asinkron (non-blocking)
+   * Sekaligus membuang item upsert pending untuk externalId ini jika masih ada di antrean
    */
   public static enqueueEndAlert(externalId: string): void {
     if (!this.isConfigured()) {
       return;
     }
+
+    // Buang item upsert untuk externalId ini bila masih ada di antrean
+    this.queue.delete(`upsert-${externalId}`);
+    this.activeExternalIds.delete(externalId);
 
     const item: SidQueueItem = {
       id: `end-${externalId}`,
@@ -298,6 +335,22 @@ export class SidIntegrationService {
 
     this.queue.set(item.id, item);
     this.scheduleProcessQueue(0);
+  }
+
+  /**
+   * Mengambil daftar externalId yang tercatat aktif di SID
+   */
+  public static getActiveExternalIds(): string[] {
+    return Array.from(this.activeExternalIds);
+  }
+
+  /**
+   * Mengakhiri semua peringatan yang tercatat aktif di SID
+   */
+  public static endAllActiveAlerts(): void {
+    for (const externalId of Array.from(this.activeExternalIds)) {
+      this.enqueueEndAlert(externalId);
+    }
   }
 
   /**
@@ -342,7 +395,9 @@ export class SidIntegrationService {
             console.warn(
               `[SidIntegration] Peringatan ${item.externalId} dibatalkan dari antrean karena telah lewat masa tayang (expired).`
             );
-            this.queue.delete(id);
+            if (this.queue.get(id) === item) {
+              this.queue.delete(id);
+            }
             continue;
           }
         }
@@ -369,7 +424,10 @@ export class SidIntegrationService {
           console.log(
             `[SidIntegration] Sukses mengirim ${item.action} ke SID (${item.externalId}). Status: HTTP ${result.statusCode}`
           );
-          this.queue.delete(id);
+          this.recordDispatchResult(true);
+          if (this.queue.get(id) === item) {
+            this.queue.delete(id);
+          }
         } else {
           item.lastError = result.error;
           item.lastStatusCode = result.statusCode;
@@ -385,7 +443,10 @@ export class SidIntegrationService {
                 !result.retryable ? "Error permanen (non-retryable)" : "Batas percobaan terlampaui"
               }`
             );
-            this.queue.delete(id);
+            this.recordDispatchResult(false, result.error);
+            if (this.queue.get(id) === item) {
+              this.queue.delete(id);
+            }
           } else {
             // Tentukan jeda percobaan berikutnya
             let delayMs = RETRY_DELAYS_MS[item.attempts - 1] ?? 300_000;
@@ -402,8 +463,16 @@ export class SidIntegrationService {
       }
     } finally {
       this.isProcessing = false;
-      if (nextCheckDelayMs !== null) {
-        this.scheduleProcessQueue(nextCheckDelayMs);
+      if (this.queue.size > 0) {
+        const currentTime = Date.now();
+        let earliestDelay = nextCheckDelayMs;
+        for (const queued of this.queue.values()) {
+          const delay = Math.max(0, queued.nextRetryAt - currentTime);
+          if (earliestDelay === null || delay < earliestDelay) {
+            earliestDelay = delay;
+          }
+        }
+        this.scheduleProcessQueue(earliestDelay ?? 0);
       }
     }
   }
@@ -414,6 +483,8 @@ export class SidIntegrationService {
   public static getStatus() {
     return {
       enabled: this.isConfigured(),
+      activeExternalIds: Array.from(this.activeExternalIds),
+      lastDispatchResult: this.lastDispatchResult,
       queueSize: this.queue.size,
       items: Array.from(this.queue.values()).map((q) => ({
         id: q.id,
@@ -437,6 +508,8 @@ export class SidIntegrationService {
       this.timer = null;
     }
     this.queue.clear();
+    this.activeExternalIds.clear();
     this.isProcessing = false;
+    this.lastDispatchResult = null;
   }
 }
