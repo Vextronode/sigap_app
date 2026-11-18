@@ -213,7 +213,7 @@ SIGAP meneruskan data BMKG, sehingga menolak data tersebut bukan peran operator.
 
 ### Dampak Terhadap Sistem
 - Operator tidak memiliki cara menurunkan alert secara manual. Alert berakhir mengikuti masa aktif 24 jam.
-- Komponen `DoubleConfirmationModal` tidak lagi ditampilkan dan tetap disimpan di kode, tanpa opsi sirine.
+- Komponen `DoubleConfirmationModal` lama telah dihapus dari basis kode dan digantikan sepenuhnya oleh `AlertReviewModal`.
 - Kontrol sirine dari aplikasi tetap mengikuti FS-09 dan belum tersedia.
 
 ---
