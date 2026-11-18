@@ -16,13 +16,41 @@ import {
 
 export { ConflictError, NotFoundError, ValidationError };
 
-function formatUserSummary(user: any): UserSummaryDTO {
+interface UserRolePermissionJoin {
+  permission: {
+    code: string;
+  };
+}
+
+interface UserRoleJoin {
+  role: {
+    id: string;
+    name: string;
+    rolePermissions: UserRolePermissionJoin[];
+  };
+}
+
+interface UserWithRolesInput {
+  id: string;
+  name: string;
+  email: string;
+  isActive?: boolean;
+  lockedUntil?: Date | null;
+  failedLoginCount?: number | null;
+  lastLoginAt?: Date | null;
+  lastLoginIp?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  userRoles?: UserRoleJoin[];
+}
+
+function formatUserSummary(user: UserWithRolesInput): UserSummaryDTO {
   const roleName = user.userRoles?.[0]?.role?.name ?? "operator";
   const roleId = user.userRoles?.[0]?.role?.id ?? "";
   const permissions: string[] = Array.from(
     new Set(
-      user.userRoles?.flatMap((ur: any) =>
-        ur.role.rolePermissions.map((rp: any) => rp.permission.code)
+      user.userRoles?.flatMap((ur: UserRoleJoin) =>
+        ur.role.rolePermissions.map((rp: UserRolePermissionJoin) => rp.permission.code)
       ) || []
     )
   );
