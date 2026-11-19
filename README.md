@@ -196,6 +196,8 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    Buat `apps/frontend/.env.local`:
    ```bash
    VITE_API_BASE_URL=http://localhost:3000/api
+   # Opsional: mode satelit pada peta (API key ArcGIS yang referrer-nya mengizinkan localhost)
+   # VITE_ESRI_API_KEY=
    ```
 2. Install dependensi semua workspace dari root, lalu unduh file peta dasar (sekitar 15 MiB, diverifikasi sha256):
    ```bash
