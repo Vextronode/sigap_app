@@ -62,6 +62,9 @@ jobs:
       - name: Lint
         run: npm run lint --workspace=apps/frontend
 
+      - name: Peta dasar sesuai manifest
+        run: node scripts/maps/verify-basemap.mjs
+
       - name: Typecheck & build
         run: npm run build --workspace=apps/frontend
 

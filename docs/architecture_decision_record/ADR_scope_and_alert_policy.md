@@ -389,7 +389,7 @@ ADR-032 menetapkan peta Leaflet dengan tile Google Maps. Tile tersebut diambil l
 Opsi 5:
 - Peta dasar berupa dua file PMTiles: Indonesia zoom 0-8 untuk konteks peta gempa, dan Kabupaten Pangandaran zoom 0-15 (memuat bangunan dan tempat bernama) untuk peta evakuasi.
 - File disajikan oleh container web SIGAP, digambar di browser dengan `protomaps-leaflet` dan gaya yang mengikuti palet SIGAP.
-- File didistribusikan sebagai aset GitHub Release dengan sha256 tercatat di repositori.
+- File disimpan di repositori sebagai berkas biner dengan sha256 tercatat di manifest, sehingga build tidak bergantung pada layanan luar maupun visibilitas repositori.
 - File Pangandaran disimpan otomatis di browser setelah data dashboard dimuat, sehingga peta evakuasi tampil saat offline.
 - Citra satelit memakai tile World Imagery dari layanan basemap ArcGIS Location Platform (`ibasemaps-api.arcgis.com`) dengan API key berizin Basemaps, hanya saat online, dan tidak tampil bila key tidak diisi. Layanan Static Basemap Tiles tidak dipakai karena tidak menyediakan gaya citra tanpa label.
 - Navigasi ke titik evakuasi tetap melalui tautan Google Maps.
@@ -405,6 +405,6 @@ Opsi 5:
 - Menggantikan bagian tile peta pada ADR-032; cakupan titik evakuasi dan navigasi Google Maps tetap berlaku.
 - Perangkat warga mengunduh sekitar 8,7 MiB sekali per versi peta untuk offline. Di Safari iOS, data situs yang tidak dibuka selama 7 hari dapat dihapus, sehingga ketersediaan offline di iPhone tidak terjamin.
 - Rendering peta dilakukan di perangkat, sehingga beban CPU lebih tinggi dibanding tile gambar pada perangkat lama.
-- Peta perlu diperbarui berkala dengan `scripts/maps/build-basemap.sh` dan rilis `basemap-<versi>`; build image web memerlukan akses ke GitHub.
+- Peta perlu diperbarui berkala dengan `scripts/maps/build-basemap.sh`; setiap pembaruan menambah sekitar 15 MiB ke riwayat repositori.
 - Atribusi OpenStreetMap contributors (ODbL) dan Protomaps wajib tampil; atribusi Esri tampil saat mode satelit.
 - API key Esri terlihat di browser dan wajib dibatasi ke domain SIGAP.

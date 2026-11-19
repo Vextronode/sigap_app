@@ -153,11 +153,11 @@ Peta dasar (PMTiles dari data OpenStreetMap) diperbarui beberapa bulan sekali, a
    ```bash
    bash scripts/maps/build-basemap.sh <YYYYMMDD>
    ```
-2. Unggah kedua file `.pmtiles` sebagai aset GitHub Release `basemap-<YYYYMMDD>` (bukan rilis terbaru):
+2. Hapus file `.pmtiles` versi lama di `apps/frontend/public/maps/`, lalu pastikan file baru cocok dengan manifest:
    ```bash
-   gh release create basemap-<YYYYMMDD> apps/frontend/public/maps/*.pmtiles --latest=false
+   node scripts/maps/verify-basemap.mjs
    ```
-3. Commit `apps/frontend/public/maps/manifest.json` lewat pull request. Image web berikutnya memakai versi baru, dan cache peta versi lama di browser warga dihapus otomatis.
+3. Commit file `.pmtiles` baru dan `manifest.json` lewat pull request. Image web berikutnya memakai versi baru, dan cache peta versi lama di browser warga dihapus otomatis.
 
 ### Contoh Reverse Proxy (Nginx di Server)
 ```nginx
@@ -199,10 +199,9 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    # Opsional: mode satelit pada peta (API key ArcGIS yang referrer-nya mengizinkan localhost)
    # VITE_ESRI_API_KEY=
    ```
-2. Install dependensi semua workspace dari root, lalu unduh file peta dasar (sekitar 15 MiB, diverifikasi sha256):
+2. Install dependensi semua workspace dari root (file peta dasar sudah ada di repo):
    ```bash
    npm ci
-   node scripts/maps/fetch-basemap.mjs
    ```
 3. Jalankan migrasi database dan seed data awal (role, permission, akun admin placeholder, data inti desa). Tambahkan `SEED_SAMPLE_DATA=true` untuk data contoh gempa dan alert:
    ```bash
