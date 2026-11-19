@@ -10,7 +10,7 @@
 | Layanan push browser | SIGAP ke layanan push | Web Push (VAPID) | Notifikasi ke warga |
 | SIDUTama `/api/integrations/v1` | SIGAP ke SID | HTTPS, Bearer token | Peringatan bencana di halaman publik dan notifikasi akun warga SID |
 | Google Maps | Browser ke Google | HTTPS | Navigasi ke titik evakuasi |
-| Esri Static Basemap Tiles | Browser ke Esri | HTTPS, API key | Citra satelit (opsional, hanya bila `VITE_ESRI_API_KEY` diisi) |
+| Esri World Imagery (`ibasemaps-api.arcgis.com`) | Browser ke Esri | HTTPS, API key berizin Basemaps | Citra satelit (opsional, hanya bila `VITE_ESRI_API_KEY` diisi) |
 
 Permintaan ke BMKG dan Open-Meteo memakai timeout dan retry yang dapat dikonfigurasi (`HTTP_TIMEOUT_MS`, `HTTP_RETRY_COUNT`, `HTTP_RETRY_DELAY_MS`).
 

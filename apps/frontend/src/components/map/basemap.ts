@@ -37,11 +37,16 @@ export const basemapUrl = (layer: BasemapLayer) => `/maps/${layer.file}`;
 /** API key ArcGIS Location Platform untuk lapisan satelit; tanpa key, satelit tidak tersedia. */
 export const ESRI_API_KEY: string = import.meta.env.VITE_ESRI_API_KEY ?? "";
 
+/**
+ * Citra satelit World Imagery (tile raster 256 px) dari layanan basemap ArcGIS Location
+ * Platform; memerlukan API key dengan izin Basemaps. Static Basemap Tiles tidak dipakai
+ * karena tidak menyediakan gaya citra tanpa label.
+ */
 export const SATELLITE_TILE_URL =
-  "https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/arcgis/imagery/static/tile/{z}/{y}/{x}";
+  "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
 export const SATELLITE_ATTRIBUTION =
-  'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a> &middot; Citra &copy; Esri dan penyedia datanya';
+  'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a> &middot; Citra: Esri, Maxar, Earthstar Geographics, dan GIS User Community';
 
 /** Zoom data detail Pangandaran yang dipakai: 15 memuat bangunan dan tempat bernama. */
 const DETAIL_ZOOM = 15;

@@ -391,7 +391,7 @@ Opsi 5:
 - File disajikan oleh container web SIGAP, digambar di browser dengan `protomaps-leaflet` dan gaya yang mengikuti palet SIGAP.
 - File didistribusikan sebagai aset GitHub Release dengan sha256 tercatat di repositori.
 - File Pangandaran disimpan otomatis di browser setelah data dashboard dimuat, sehingga peta evakuasi tampil saat offline.
-- Citra satelit memakai Esri Static Basemap Tiles dengan API key, hanya saat online, dan tidak tampil bila key tidak diisi.
+- Citra satelit memakai tile World Imagery dari layanan basemap ArcGIS Location Platform (`ibasemaps-api.arcgis.com`) dengan API key berizin Basemaps, hanya saat online, dan tidak tampil bila key tidak diisi. Layanan Static Basemap Tiles tidak dipakai karena tidak menyediakan gaya citra tanpa label.
 - Navigasi ke titik evakuasi tetap melalui tautan Google Maps.
 
 ### Alasan Pemilihan
