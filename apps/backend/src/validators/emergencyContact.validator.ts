@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 
 const PHONE_REGEX = /^[+0-9\s-]{6,25}$/;
 
-function validateContactFields(body: any, isUpdate: boolean = false): Record<string, string> {
+function validateContactFields(body: Record<string, unknown> | null | undefined, isUpdate: boolean = false): Record<string, string> {
   const { institution, phoneNumber, icon } = body ?? {};
   const errors: Record<string, string> = {};
 

@@ -3,7 +3,7 @@
  * (https://api.bmkg.go.id/publik/prakiraan-cuaca).
  *
  * Ini HANYA merepresentasikan bentuk data dari BMKG apa adanya.
- * Untuk bentuk data yang disimpan ke DB, lihat `environmentalData.types.ts`
+ * Untuk bentuk data yang disimpan ke DB, lihat `weather.types.ts`
  * yang mengikuti kontrak resmi OpenAPI SIGAP.
  *
  * Catatan: sesuaikan lagi field-field ini kalau ternyata response asli
