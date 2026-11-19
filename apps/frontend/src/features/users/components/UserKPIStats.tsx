@@ -32,8 +32,8 @@ export const UserKPIStats: React.FC<UserKPIStatsProps> = ({ stats, isLoading }) 
       value: stats?.totalOperators ?? 0,
       description: "Validasi alert & monitoring sensor",
       icon: UserCheck,
-      bgColor: "bg-blue-50 dark:bg-blue-950/40",
-      textColor: "text-[#00247D] dark:text-blue-400",
+      bgColor: "bg-sigap-primary-light dark:bg-blue-950/40",
+      textColor: "text-sigap-primary dark:text-blue-400",
       borderColor: "border-blue-100 dark:border-blue-900/40",
     },
     {

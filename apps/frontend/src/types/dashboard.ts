@@ -1,4 +1,4 @@
-export type AlertLevel = "GREEN" | "YELLOW" | "ORANGE" | "RED";
+export type AlertLevel = "GREEN" | "YELLOW" | "ORANGE" | "RED" | "UNKNOWN";
 
 export type PriorityLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -32,16 +32,19 @@ export type Earthquake = {
   coordinates?: Coordinates;
   distanceToVillage: number;
   felt?: string;
+  feltAreas?: { area: string; mmi: string | null }[];
   potential: string;
+  tsunamiPotential?: "TIDAK_BERPOTENSI" | "INFORMASI_DIRASAKAN" | "BERPOTENSI" | "TIDAK_DIKENAL" | null;
   shakemap?: string;
   updatedAt: string;
 };
 
 export type TsunamiStatus = {
-  status: "NORMAL" | "WASPADA" | "SIAGA" | "AWAS";
+  status: "NORMAL" | "WASPADA" | "SIAGA" | "AWAS" | "UNKNOWN";
   description: string;
   source: string;
-  updatedAt: string;
+  /** Waktu data sumber; null bila data gempa BMKG belum pernah berhasil diambil. */
+  updatedAt: string | null;
 };
 
 export type CurrentAlert = {
@@ -60,21 +63,16 @@ export type CurrentAlert = {
     email: string;
     roles?: string[];
   } | null;
+  /** Rentetan gempa; kosong untuk alert status tsunami. */
+  eventTime?: string | null;
+  episodeStartedAt?: string | null;
+  episodeEventCount?: number | null;
+  episodeMaxMagnitude?: number | null;
+  activeUntil?: string | null;
   createdAt?: string;
   updatedAt: string;
 };
 
-export type AiSummary = {
-  summary: string;
-};
-
-export type Announcement = {
-  id: string | number;
-  title: string;
-  content?: string;
-  publishedAt: string;
-  priority: PriorityLevel;
-};
 
 import type { EmergencyContactRecord } from "./emergencyContact";
 
@@ -124,8 +122,6 @@ export type DashboardData = {
   earthquake: Earthquake | null;
   tsunami: TsunamiStatus | null;
   alert: CurrentAlert | null;
-  summary: AiSummary | null;
-  announcement: Announcement[];
   contacts: EmergencyContact[];
   evacuation: EvacuationPoint[];
   evacuationRoutes?: EvacuationRoute[];

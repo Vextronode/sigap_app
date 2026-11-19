@@ -1,31 +1,68 @@
-# Data Dictionary - Domain: Data Lingkungan & Alert
+# Data Dictionary - Domain: Alert, Gempa, dan Notifikasi
 
-> **Catatan:** entity `alerts` di bawah **sudah live** di database, dengan struktur yang berbeda signifikan dari versi dokumen sebelumnya (`alert_log`) - lihat riwayat revisi di `004_environmental.sql`. `environmental_data` masih murni desain, belum ada di database nyata.
-
-## Entity: `environmental_data` *(desain, belum live)*
+## Entity: `alerts`
 
 | Field | Tipe Data | Deskripsi | Contoh Nilai |
 |---|---|---|---|
-| id | UUID | Primary key | - |
-| source | VARCHAR(30) | Sumber data: `BMKG` / `USGS` / `OpenWeatherMap` | `"BMKG"` |
-| type | VARCHAR(30) | Jenis data | `"curah_hujan"`, `"seismik"` |
-| value | NUMERIC | Nilai terukur | `45.2` |
-| unit | VARCHAR(20) | Satuan | `"mm"`, `"magnitude"` |
-| recorded_at | TIMESTAMPTZ | Waktu data tercatat di sumber | `2026-07-09T08:00:00Z` |
+| id | TEXT | Primary key | - |
+| level | ENUM `AlertLevel` | Level kesiapsiagaan | `YELLOW` |
+| source | TEXT | Asal data | `BMKG (estimasi dari data gempa)` |
+| description | TEXT, NULLABLE | Pesan alert | - |
+| review_status | ENUM `alert_review_status`, default `Belum Ditinjau` | Catatan tinjauan pasca-kejadian; tidak memengaruhi level | `Dikonfirmasi` |
+| reviewed_by | TEXT, NULLABLE, FK ke `users.id`, set null | Peninjau terakhir | - |
+| reviewed_at | TIMESTAMP, NULLABLE | Waktu peninjauan terakhir | - |
+| event_time | TIMESTAMP, NULLABLE | Waktu kejadian gempa terbaru pada level alert, atau waktu gempa asal untuk alert estimasi tsunami; awal masa aktif 24 jam | - |
+| reference_magnitude | DOUBLE PRECISION, NULLABLE | Magnitudo yang terakhir dikirim notifikasi dalam rentetan | `5.6` |
+| episode_started_at | TIMESTAMP, NULLABLE | Waktu gempa aktif paling awal dalam rentetan | - |
+| episode_event_count | INTEGER, NULLABLE | Jumlah gempa aktif dalam rentetan | `6` |
+| episode_max_magnitude | DOUBLE PRECISION, NULLABLE | Magnitudo terbesar di antara gempa aktif | `5.6` |
+| createdAt / updatedAt | TIMESTAMP | Waktu dibuat dan diperbarui | - |
 
-## Entity: `alerts` *(live - koreksi total dari `alert_log`)*
+Nilai `source` yang dihasilkan sistem: `BMKG`, `BMKG InaTEWS`, `BMKG (estimasi dari data gempa)`. Kolom rentetan terisi untuk alert yang levelnya berasal dari gempa. Alert estimasi tsunami hanya mengisi `event_time`, dan alert status tsunami resmi mengosongkan seluruh kolom rentetan. Alert dapat diperbarui scheduler selama rentetan berlangsung. Aturan level berada di `Rules_Alerts.md`.
+
+## Entity: `earthquake_records`
 
 | Field | Tipe Data | Deskripsi | Contoh Nilai |
 |---|---|---|---|
-| id | UUID | Primary key | - |
-| level | ENUM `AlertLevel` | GREEN/YELLOW/ORANGE/RED - **bukan** `status_level` Indonesia | `"YELLOW"` |
-| source | VARCHAR(100) | Asal/provenance data, jujur soal sumbernya (lihat catatan) | `"BMKG"`, `"BMKG (estimasi dari data gempa)"` |
-| description | TEXT, NULLABLE | Deskripsi/pesan alert | `"Curah hujan tinggi terdeteksi"` |
-| review_status | ENUM `alert_review_status` | Klasifikasi administratif FS-02 - **tidak** menggerbang visibilitas publik maupun trigger sirine | `"Dikonfirmasi"` |
-| reviewed_by | UUID (FK → users.id), NULLABLE | Siapa yang mengklasifikasikan | - |
-| reviewed_at | TIMESTAMPTZ, NULLABLE | Kapan diklasifikasikan | - |
-| created_at / updated_at | TIMESTAMPTZ | Audit standar | - |
+| id | TEXT | Primary key | - |
+| eventTime | TEXT, UNIQUE | Waktu kejadian | - |
+| magnitude | DOUBLE PRECISION | Magnitudo | `5.6` |
+| depth | TEXT | Kedalaman | `18 km` |
+| location | TEXT | Wilayah | - |
+| latitude / longitude | DOUBLE PRECISION | Koordinat episentrum | - |
+| distanceToVillage | DOUBLE PRECISION | Jarak ke desa dalam kilometer | - |
+| felt | TEXT, NULLABLE | Field `Dirasakan` dari `autogempa` atau `gempadirasakan` | `III Pangandaran, II Ciamis` |
+| potential | TEXT, NULLABLE | Field `Potensi` dari `gempaterkini` atau `autogempa` | `Tidak berpotensi tsunami` |
+| shakemap | TEXT, NULLABLE | URL shakemap | - |
+| createdAt / updatedAt | TIMESTAMP | Waktu dibuat dan diperbarui | - |
 
-**Field yang DIHAPUS dari versi sebelumnya** (tidak ada padanannya di database nyata): `alert_type`, `source_rule`, `triggered_at` (digantikan `created_at`), `validated_by`/`validated_at` (digantikan `reviewed_by`/`reviewed_at` + `review_status`).
+Satu baris mewakili satu kejadian hasil penyatuan feed BMKG per `DateTime`. Nilai kosong dari satu feed tidak menimpa `felt`, `potential`, dan `shakemap` yang sudah tersimpan.
 
-**Catatan provenance (`source`):** field ini WAJIB jujur soal asal data - nilai `"BMKG (estimasi dari data gempa)"` menandakan hasil estimasi internal SIGAP (bukan status resmi InaTEWS), sesuai prinsip yang sudah ditegakkan di logika tsunami status (lihat catatan terkait di dokumen API_SPEC.md).
+## Entity: `push_subscriptions`
+
+| Field | Tipe Data | Deskripsi |
+|---|---|---|
+| id | TEXT | Primary key |
+| endpoint | TEXT, UNIQUE | Endpoint push browser |
+| p256dh | TEXT | Kunci publik subscription |
+| auth | TEXT | Secret autentikasi subscription |
+| userAgent | TEXT, NULLABLE | User agent saat berlangganan |
+| createdAt | TIMESTAMP | Waktu berlangganan |
+
+Subscription tidak terikat ke akun pengguna.
+
+## Entity: `notification_logs`
+
+| Field | Tipe Data | Deskripsi | Contoh Nilai |
+|---|---|---|---|
+| id | TEXT | Primary key | - |
+| alert_id | TEXT, NULLABLE, FK ke `alerts.id`, set null | Alert terkait. Kosong untuk notifikasi kembali aman dan alert yang gagal disimpan | - |
+| level | ENUM `AlertLevel` | Level saat dikirim. `GREEN` untuk notifikasi kembali aman | `ORANGE` |
+| title | TEXT | Judul notifikasi | - |
+| body | TEXT | Isi notifikasi | - |
+| triggered_by | TEXT, default `CRON_SCHEDULER` | Pemicu pengiriman | `ADMIN_DISPATCH` |
+| total_subscribers | INTEGER | Jumlah subscriber tujuan | - |
+| sent_count | INTEGER | Jumlah berhasil | - |
+| failed_count | INTEGER | Jumlah gagal | - |
+| error_details | TEXT, NULLABLE | Rincian kegagalan | - |
+| created_at | TIMESTAMP | Waktu pengiriman | - |

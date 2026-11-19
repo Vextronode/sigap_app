@@ -82,7 +82,7 @@ export const EvacuationRoutes: React.FC<EvacuationRoutesProps> = ({
           {/* 1. Header Toolbar: Kotak Daftar Shelter & Titik Kumpul Aman (di atas Map) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xs">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#00247D] dark:text-blue-400 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-sigap-primary-light dark:bg-blue-950/50 text-sigap-primary dark:text-blue-400 flex items-center justify-center shrink-0">
                 <MdShareLocation size={20} />
               </div>
               <div>

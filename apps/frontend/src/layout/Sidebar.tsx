@@ -22,8 +22,11 @@ import { MdContactPhone, MdOutlineManageAccounts } from "react-icons/md";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUiStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
+import { authService } from "../services/authService";
 import { useDeviceStatus } from "../features/dashboard/hooks/useDeviceStatus";
 import { Badge } from "../components/ui/Badge";
+import { StaleDataNotice } from "../components/common/StaleDataNotice";
+import { failedWithoutData, getStaleSince } from "../utils/queryFreshness";
 import { ProfileModal } from "./components/ProfileModal";
 
 // daftar tautan publik warga desa
@@ -34,13 +37,12 @@ const sectionLinks = [
   { label: "Jalur Evakuasi", href: "#evacuation", icon: GrMapLocation },
   { label: "Kontak Darurat", href: "#contacts", icon: Contact },
   { label: "Panduan", href: "#preparedness", icon: BookOpen },
-  // { label: "Pengumuman", href: "#announcements", icon: Megaphone }, // Dinonaktifkan sementara
 ];
 
 // daftar tautan utilitas khusus admin dalam bahasa indonesia
 const adminLinks = [
   { label: "Dashboard Admin", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Verifikasi Gempa", href: "/admin/alerts", icon: BiBarChartAlt },
+  { label: "Riwayat Alert", href: "/admin/alerts", icon: BiBarChartAlt },
   { label: "Kontak Darurat", href: "/admin/kontak-darurat", icon: MdContactPhone },
   { label: "Kelola Titik Evakuasi", href: "/admin/titik-evakuasi", icon: FaSearchLocation },
   { label: "Panduan Kesiapsiagaan", href: "/admin/panduan-kesiapsiagaan", icon: LuBookOpenCheck },
@@ -54,7 +56,9 @@ export const Sidebar = () => {
   const location = useLocation();
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const closeSidebar = useUiStore((state) => state.closeSidebar);
-  const { data: deviceStatus, isLoading: isDeviceLoading, isError: isDeviceError } = useDeviceStatus();
+  const deviceQuery = useDeviceStatus();
+  const { data: deviceStatus, isLoading: isDeviceLoading } = deviceQuery;
+  const isDeviceError = failedWithoutData(deviceQuery);
 
   // state autentikasi admin dan modal profil
   const { isAdmin, user, logout } = useAuthStore();
@@ -94,7 +98,13 @@ export const Sidebar = () => {
   // tampilkan menu admin jika role admin atau sedang di rute /admin/*
   const showAdminNav = isAdmin || location.pathname.startsWith("/admin");
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // cabut token di server; sesi lokal tetap dibersihkan bila server tidak terjangkau
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.warn("[Sidebar] Gagal mencabut token di server:", error);
+    }
     logout();
     closeSidebar();
     navigate("/admin/login");
@@ -228,7 +238,7 @@ export const Sidebar = () => {
               tone="neutral"
               className={
                 isOperator
-                  ? "!bg-blue-100 !text-[#00247D] dark:!bg-blue-950/70 dark:!text-blue-300"
+                  ? "!bg-sigap-primary-light !text-sigap-primary dark:!bg-blue-950/70 dark:!text-blue-300"
                   : "!bg-rose-100 !text-rose-700 dark:!bg-rose-950/70 dark:!text-rose-300"
               }
             >
@@ -414,12 +424,15 @@ export const Sidebar = () => {
 
         {/* kartu monitor status alat iot (khusus admin) */}
         {showAdminNav && (
-          <div className="sidebar__device-card">
-            <span className={`status-dot ${getDotClass()}`} />
-            <span className={getLabelClass()}>
-              {getStatusLabel()}
-            </span>
-          </div>
+          <>
+            <div className="sidebar__device-card">
+              <span className={`status-dot ${getDotClass()}`} />
+              <span className={getLabelClass()}>
+                {getStatusLabel()}
+              </span>
+            </div>
+            <StaleDataNotice since={getStaleSince(deviceQuery)} compact className="mt-2 rounded-lg" />
+          </>
         )}
 
         {/* menu profil dan logout langsung di paling bawah khusus admin */}
@@ -447,7 +460,7 @@ export const Sidebar = () => {
                 className={`w-full mt-2 min-h-[38px] px-3.5 py-2 rounded-xl flex items-center justify-center gap-2 font-semibold text-xs tracking-wide transition-all shadow-xs cursor-pointer ${
                   isAdminRole
                     ? "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white"
-                    : "bg-[#00247D] hover:bg-[#001d66] active:bg-[#00174f] text-white"
+                    : "bg-sigap-primary hover:bg-sigap-primary-hover active:bg-sigap-primary-hover active:opacity-90 text-white"
                 }`}
               >
                 <LogOut size={16} />

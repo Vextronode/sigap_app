@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { timingSafeEqual, createHash } from "crypto";
-import { runAlertCheck } from "../scheduler/alert.scheduler.js";
+import { CycleInProgressError, runAlertCheck } from "../scheduler/alert.scheduler.js";
 import type { ApiSuccessResponse, ApiErrorResponse } from "../types/weather.types.js";
 
 // SEC-01: Wajibkan CRON_SECRET dari environment variable, tolak fallback hardcoded
@@ -63,27 +63,47 @@ const handleScheduler = async (req: Request, res: Response): Promise<void> => {
     try {
         const result = await runAlertCheck();
 
+        // Siklus yang gagal menyimpan alert dilaporkan sebagai error agar cron eksternal tahu (TK-04).
+        if (!result.ok) {
+            const failure: ApiErrorResponse = {
+                success: false,
+                message: "Siklus scheduler gagal menyimpan alert.",
+                errors: ["Alert gagal disimpan atau diperpanjang. Periksa koneksi database."],
+            };
+            res.status(500).json(failure);
+            return;
+        }
+
         const response: ApiSuccessResponse<typeof result> = {
             success: true,
             message: result.saved
                 ? `Alert check selesai — level ${result.level} disimpan.`
-                : `Alert check selesai — level ${result.level} sudah sama, dilewati.`,
+                : result.extended
+                    ? `Alert check selesai — alert level ${result.level} diperpanjang.`
+                    : `Alert check selesai — level ${result.level} sudah sama, dilewati.`,
             data: result,
         };
 
         res.json(response);
     } catch (error) {
+        if (error instanceof CycleInProgressError) {
+            const busy: ApiErrorResponse = {
+                success: false,
+                message: "Siklus scheduler sedang berjalan.",
+                errors: ["Siklus lain belum selesai. Coba lagi setelah siklus tersebut selesai."],
+            };
+            res.status(409).json(busy);
+            return;
+        }
         console.error("[InternalRoute] run-scheduler error:", error);
 
-        const response: ApiSuccessResponse<{ error: string }> = {
-            success: true,
-            message: "Pengecekan alert selesai dengan catatan degradasi layanan.",
-            data: {
-                error: error instanceof Error ? error.message : String(error),
-            },
+        const response: ApiErrorResponse = {
+            success: false,
+            message: "Siklus scheduler gagal.",
+            errors: ["Terjadi kesalahan saat menjalankan siklus scheduler."],
         };
 
-        res.status(200).json(response);
+        res.status(500).json(response);
     }
 };
 

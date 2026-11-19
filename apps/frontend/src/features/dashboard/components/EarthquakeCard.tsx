@@ -3,6 +3,7 @@ import { IoIosArrowRoundBack, IoIosArrowRoundForward } from "react-icons/io";
 import { useState, type ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import type { Earthquake } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
@@ -27,6 +28,7 @@ type EarthquakeCardProps = {
   isError?: boolean;
   historicalEarthquake?: Earthquake | null;
   showSourceLink?: boolean;
+  staleSince?: number;
 };
 
 const PANGANDARAN_FALLBACK_HISTORY: Earthquake = {
@@ -37,6 +39,7 @@ const PANGANDARAN_FALLBACK_HISTORY: Earthquake = {
   distanceToVillage: 83,
   felt: "II Pangandaran",
   potential: "Tidak berpotensi tsunami",
+  tsunamiPotential: "TIDAK_BERPOTENSI",
   shakemap: "https://data.bmkg.go.id/DataMKG/TEWS/20260826204343.mmi.jpg",
   updatedAt: "2026-08-26T13:43:43.000Z",
 };
@@ -127,12 +130,14 @@ const formatDistance = (distance: number) => `± ${Math.abs(distance)} KM`;
 
 type TsunamiBadge = { tone: "safe" | "danger"; text: string };
 
-const getTsunamiBadge = (potential: string | undefined): TsunamiBadge | null => {
-  const normalized = potential?.trim().toLowerCase();
-  if (normalized === "tidak berpotensi tsunami") {
+// Klasifikasi dari backend; teks Potensi yang belum terverifikasi tidak diberi badge.
+const getTsunamiBadge = (
+  potential: Earthquake["tsunamiPotential"]
+): TsunamiBadge | null => {
+  if (potential === "TIDAK_BERPOTENSI") {
     return { tone: "safe", text: "TIDAK BERPOTENSI TSUNAMI" };
   }
-  if (normalized === "berpotensi tsunami") {
+  if (potential === "BERPOTENSI") {
     return { tone: "danger", text: "BERPOTENSI TSUNAMI" };
   }
   return null;
@@ -181,6 +186,7 @@ export const EarthquakeCard = ({
   isError = false,
   historicalEarthquake,
   showSourceLink = false,
+  staleSince,
 }: EarthquakeCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
 
@@ -203,7 +209,7 @@ export const EarthquakeCard = ({
     : earthquake;
   const shakemapUrl = displayEarthquake?.shakemap;
   const tsunamiBadge =
-    variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.potential);
+    variant === "indonesia" ? null : getTsunamiBadge(displayEarthquake?.tsunamiPotential);
   const isDanger = tsunamiBadge?.tone === "danger";
 
   const cardBorderClass = isDanger ? "border-red-500/30" : config.accentBorder;
@@ -526,6 +532,7 @@ export const EarthquakeCard = ({
           </div>
         ) : null}
       </div>
+      <StaleDataNotice since={staleSince} />
     </Card>
   );
 };

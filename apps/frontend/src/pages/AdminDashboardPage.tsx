@@ -16,11 +16,7 @@ import { SystemConnectivitySection } from "../features/admin/components/SystemCo
 import { AdminKpiMetrics } from "../features/admin/components/AdminKpiMetrics";
 import { ActiveIncidentBar } from "../features/admin/components/ActiveIncidentBar";
 import { AdminQuickActionsPanel } from "../features/admin/components/AdminQuickActionsPanel";
-import { DoubleConfirmationModal } from "../features/admin/components/DoubleConfirmationModal";
-import {
-  AlertFeedbackBanner,
-  type AlertFeedback,
-} from "../features/alerts/components/AlertFeedbackBanner";
+import { SchedulerWarningBar } from "../features/admin/components/SchedulerWarningBar";
 
 import { useCurrentAlert } from "../features/dashboard/hooks/useCurrentAlert";
 import { usePangandaranEarthquake } from "../features/dashboard/hooks/usePangandaranEarthquake";
@@ -30,16 +26,19 @@ import { useWeather } from "../features/dashboard/hooks/useWeather";
 import { useForecast } from "../features/dashboard/hooks/useForecast";
 import { useDeviceStatus } from "../features/dashboard/hooks/useDeviceStatus";
 import { usePushSubscribers } from "../features/admin/hooks/usePushSubscribers";
-import {
-  useAlerts,
-  useAlertStats,
-  useReviewAlert,
-} from "../features/alerts/hooks/useAlertVerification";
+import { useAlertStats } from "../features/alerts/hooks/useAlertVerification";
 import { useAuthStore } from "../stores/authStore";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
-import type { AlertItem } from "../types/alert";
-import type { CurrentAlert } from "../types/dashboard";
 import { cn } from "../utils/cn";
+import { getAlertMeta } from "../utils/status";
+
+const STATUS_TONE_CLASSES = {
+  safe: { dot: "bg-emerald-500", ping: "bg-emerald-400", text: "text-emerald-700 dark:text-emerald-400" },
+  warning: { dot: "bg-yellow-500", ping: "bg-yellow-400", text: "text-yellow-700 dark:text-yellow-400" },
+  orange: { dot: "bg-orange-500", ping: "bg-orange-400", text: "text-orange-700 dark:text-orange-400" },
+  danger: { dot: "bg-red-500", ping: "bg-red-400", text: "text-red-700 dark:text-red-400" },
+  neutral: { dot: "bg-slate-500", ping: "bg-slate-400", text: "text-slate-600 dark:text-slate-400" },
+};
 
 export default function AdminDashboardPage() {
   useDocumentTitle("Command Center - SIGAP Desa Cibenda");
@@ -58,13 +57,6 @@ export default function AdminDashboardPage() {
   const deviceStatusQuery = useDeviceStatus();
   const alertStatsQuery = useAlertStats();
   const subscribersQuery = usePushSubscribers();
-  const latestAlertsQuery = useAlerts({ limit: 1 });
-
-  const reviewMutation = useReviewAlert();
-
-  // State modal konfirmasi ganda & feedback
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [feedback, setFeedback] = useState<AlertFeedback | null>(null);
 
   // Digital live clock WIB
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -87,7 +79,6 @@ export default function AdminDashboardPage() {
       deviceStatusQuery.refetch(),
       alertStatsQuery.refetch(),
       subscribersQuery.refetch(),
-      latestAlertsQuery.refetch(),
     ]);
   };
 
@@ -100,69 +91,15 @@ export default function AdminDashboardPage() {
     alertStatsQuery.isFetching,
   ].some(Boolean);
 
-  // Resolve alert aktif yang dapat diverifikasi
-  const activeAlertData: AlertItem | CurrentAlert | null =
-    (latestAlertsQuery.data?.data?.[0] as AlertItem) || alertQuery.data || null;
-
-  const handleOpenVerifyModal = () => {
-    setIsConfirmModalOpen(true);
-  };
-
-  const handleCloseVerifyModal = () => {
-    setIsConfirmModalOpen(false);
-  };
-
-  const handleExecuteReview = async (
-    id: string,
-    status: "Dikonfirmasi" | "Ditolak" | "Ditindaklanjuti",
-    options?: { triggerSiren?: boolean }
-  ) => {
-    try {
-      const targetId =
-        id && id !== "current-alert" && id !== "safe-fallback"
-          ? id
-          : latestAlertsQuery.data?.data?.[0]?.id || alertQuery.data?.id;
-
-      if (!targetId) {
-        throw new Error("ID alert tidak ditemukan untuk diproses verifikasi.");
-      }
-
-      await reviewMutation.mutateAsync({
-        id: targetId,
-        payload: { reviewStatus: status },
-      });
-
-      let successMsg = `Alert resmi berhasil diklasifikasikan sebagai "${status}". Tercatat atas nama ${user?.name || "Operator"}.`;
-      if (options?.triggerSiren) {
-        successMsg += " Perintah aktivasi Sirine Menara (Alat 2) berhasil dikirimkan via ESP-NOW.";
-      }
-
-      setFeedback({
-        type: "success",
-        message: successMsg,
-      });
-
-      // Refetch untuk memastikan tampilan tersinkronisasi instan
-      await Promise.all([alertQuery.refetch(), alertStatsQuery.refetch(), latestAlertsQuery.refetch()]);
-
-      setTimeout(() => {
-        setFeedback(null);
-      }, 7000);
-    } catch (err: unknown) {
-      setFeedback({
-        type: "error",
-        message:
-          err instanceof Error
-            ? err.message
-            : "Gagal menyimpan verifikasi alert resmi.",
-      });
-    }
-  };
+  // Sumber dan aturan sama dengan banner warga: saat gagal memuat, level terakhir tidak dipakai.
+  const statusMeta = getAlertMeta(alertQuery.isError ? null : alertQuery.data);
+  const statusTone = STATUS_TONE_CLASSES[statusMeta.tone];
 
   const formattedTimeWib = currentTime.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    timeZone: "Asia/Jakarta",
   });
 
   const formattedDateWib = currentTime.toLocaleDateString("id-ID", {
@@ -170,6 +107,7 @@ export default function AdminDashboardPage() {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Jakarta",
   });
 
   return (
@@ -179,13 +117,21 @@ export default function AdminDashboardPage() {
         <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500" />
-              </span>
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                Posko Bencana Standby
-              </span>
+              {alertQuery.isLoading ? (
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[color:var(--text-muted)]">
+                  Memuat status...
+                </span>
+              ) : (
+                <>
+                  <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
+                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", statusTone.ping)} />
+                    <span className={cn("relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5", statusTone.dot)} />
+                  </span>
+                  <span className={cn("text-[10px] sm:text-[11px] font-bold uppercase tracking-wider", statusTone.text)}>
+                    Status: {statusMeta.label}
+                  </span>
+                </>
+              )}
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
               <span className="text-[10px] sm:text-[11px] font-mono font-medium text-[color:var(--text-muted)]">
                 Desa Cibenda, Kab. Pangandaran
@@ -196,7 +142,7 @@ export default function AdminDashboardPage() {
               Command Center SIGAP
             </h1>
             <p className="text-xs sm:text-sm text-[color:var(--text-muted)] mt-0.5">
-              Pusat Kendali Operasional Kebencanaan, Telemetri Gempa & Validasi Siaga Desa
+              Pusat Kendali Operasional Kebencanaan & Telemetri Gempa
             </p>
           </div>
 
@@ -258,7 +204,7 @@ export default function AdminDashboardPage() {
                 onClick={handleRefreshAll}
                 disabled={isRefreshing}
                 className="flex h-10 w-10 sm:h-auto sm:w-auto sm:px-3 sm:py-2 items-center justify-center gap-1.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] text-xs font-bold text-[color:var(--text)] shadow-2xs hover:bg-[color:var(--surface-muted)] transition-all cursor-pointer shrink-0 disabled:opacity-50"
-                title="Segarkan seluruh data BMKG, IoT, dan Verifikasi"
+                title="Segarkan seluruh data BMKG, IoT, dan Riwayat Alert"
               >
                 <RefreshCw
                   size={14}
@@ -271,26 +217,25 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      {/* 2. Banner Notifikasi Feedback */}
-      <AlertFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
-
-      {/* 3. Active Incident Action Bar (Kondisional: muncul saat ada insiden aktif atau status belum diverifikasi) */}
+      {/* 2. Active Incident Bar (Kondisional: muncul saat ada insiden aktif) */}
       <ActiveIncidentBar
         alert={alertQuery.data ?? null}
         earthquake={pangandaranEarthquakeQuery.data ?? null}
-        onOpenVerify={handleOpenVerifyModal}
       />
 
-      {/* 4. 4 KPI Metrics Cards Command Center */}
+      {/* Peringatan saat scheduler alert tidak sehat (TK-04) */}
+      <SchedulerWarningBar />
+
+      {/* 3. 4 KPI Metrics Cards Command Center */}
       <AdminKpiMetrics
         alert={alertQuery.data ?? null}
         subscriberCount={subscribersQuery.data ?? 0}
         deviceStatus={deviceStatusQuery.data ?? null}
         alertStats={alertStatsQuery.data ?? null}
-        isLoading={alertQuery.isLoading && subscribersQuery.isLoading}
+        isLoading={alertQuery.isLoading || subscribersQuery.isLoading}
       />
 
-      {/* 5. Main Command Center Workspace (2 Kolom Desktop: 7 col kiri / 5 col kanan) */}
+      {/* 4. Main Command Center Workspace (2 Kolom Desktop: 7 col kiri / 5 col kanan) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
         {/* Kolom Kiri: Pemantauan Visual Telemetri (Col-span 7) */}
         <div className="space-y-6 lg:col-span-7">
@@ -333,12 +278,7 @@ export default function AdminDashboardPage() {
               icon={<Zap size={20} />}
             />
             <div className="mt-2">
-              <AdminQuickActionsPanel
-                alert={alertQuery.data ?? null}
-                pendingCount={alertStatsQuery.data?.pending ?? 0}
-                onOpenVerify={handleOpenVerifyModal}
-                onTriggerSiren={handleOpenVerifyModal}
-              />
+              <AdminQuickActionsPanel />
             </div>
           </section>
 
@@ -355,16 +295,6 @@ export default function AdminDashboardPage() {
           />
         </div>
       </div>
-
-      {/* 6. Modal Konfirmasi Ganda Verifikasi Gempa & Trigger Sirine */}
-      <DoubleConfirmationModal
-        isOpen={isConfirmModalOpen}
-        alert={activeAlertData}
-        earthquake={pangandaranEarthquakeQuery.data ?? null}
-        onClose={handleCloseVerifyModal}
-        onSubmit={handleExecuteReview}
-        isSubmitting={reviewMutation.isPending}
-      />
     </div>
   );
 }

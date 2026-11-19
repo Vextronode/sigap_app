@@ -135,7 +135,7 @@ Harap simpan kredensial ini dengan aman dan tidak membagikannya kepada pihak lai
               <button
                 type="button"
                 onClick={generateRandomPassword}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00247D] dark:text-blue-400 hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-sigap-primary dark:text-blue-400 hover:underline cursor-pointer"
               >
                 <RefreshCw size={12} />
                 <span>Acak Password Aman</span>
@@ -154,7 +154,7 @@ Harap simpan kredensial ini dengan aman dan tidak membagikannya kepada pihak lai
                   error
                     ? "border-rose-400 dark:border-rose-600"
                     : "border-slate-200 dark:border-slate-700"
-                } text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00247D] font-mono`}
+                } text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sigap-primary font-mono`}
               />
               <button
                 type="button"

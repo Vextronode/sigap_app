@@ -35,7 +35,8 @@ FROM deps AS build
 COPY apps/backend apps/backend
 RUN npm run build --workspace=apps/backend
 
-# Migrasi skema: dijalankan sekali sebelum backend start (lihat compose).
+# Migrasi skema: dijalankan sekali sebelum backend start (lihat compose). Seed tidak
+# dijalankan otomatis; gunakan `deploy/sigap.sh seed`.
 FROM build AS migrate
 WORKDIR /app/apps/backend
 USER node

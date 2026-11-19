@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect } from "react";
 import L from "leaflet";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
   useMap,
@@ -25,10 +24,23 @@ import { useEarthquakeMapPoints } from "../hooks/useEarthquakeMapPoints";
 import { formatDateTime, getDaysAgoInfo } from "../../../utils/date";
 import type { Earthquake } from "../../../types/dashboard";
 import { Skeleton } from "../../../components/ui/Skeleton";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
+import { getStaleSince } from "../../../utils/queryFreshness";
+import { BaseMapLayers, type BaseMapMode } from "../../../components/map/BaseMapLayers";
+import {
+  SATELLITE_AVAILABLE,
+  satelliteTitle,
+  useBaseMapMode,
+} from "../../../components/map/useBaseMapMode";
 
 // Titik tengah default kepulauan Jawa / Indonesia bagian barat
 const DEFAULT_MAP_CENTER: [number, number] = [-7.6838, 108.561]; // Koordinat Desa Cibenda / Jawa Barat
 const DEFAULT_MAP_ZOOM = 6;
+
+// Atribusi data gempa dengan logo BMKG (ukuran proporsional 16px); atribusi peta dasar
+// ditambahkan oleh BaseMapLayers.
+const BMKG_ATTRIBUTION =
+  '<a href="https://www.bmkg.go.id" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><img src="/assets/image/logo-bmkg.webp" alt="BMKG" style="height:15px;width:auto;vertical-align:-2px;margin-right:4px;display:inline-block;" />Data BMKG</a>';
 
 // Pengatur kontrol zoom & klik interaktif agar tidak menjebak scroll jari di HP
 const MapInteractionController: React.FC<{
@@ -86,12 +98,26 @@ const MapInteractionController: React.FC<{
   return null;
 };
 
+// Menambahkan atribusi sumber data ke kontrol atribusi Leaflet.
+const DataAttribution: React.FC<{ html: string }> = ({ html }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.attributionControl?.addAttribution(html);
+    return () => {
+      map.attributionControl?.removeAttribution(html);
+    };
+  }, [map, html]);
+  return null;
+};
+
 // Komponen tombol zoom dan navigasi kustom
 const CustomMapControls: React.FC<{
   onReset: () => void;
-  mapType: "streets" | "satellite";
+  mapType: BaseMapMode;
+  isOnline: boolean;
+  satelliteUsable: boolean;
   onToggleMapType: () => void;
-}> = ({ onReset, mapType, onToggleMapType }) => {
+}> = ({ onReset, mapType, isOnline, satelliteUsable, onToggleMapType }) => {
   const map = useMap();
 
   return (
@@ -127,15 +153,22 @@ const CustomMapControls: React.FC<{
         <RotateCcw size={18} />
       </button>
 
-      <button
-        type="button"
-        onClick={onToggleMapType}
-        aria-label="Ganti mode peta satelit atau jalan"
-        title={`Ganti ke mode ${mapType === "streets" ? "Satelit" : "Jalan"}`}
-        className="p-2.5 rounded-xl shadow-md bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-      >
-        <Layers size={18} />
-      </button>
+      {SATELLITE_AVAILABLE && (
+        <button
+          type="button"
+          onClick={onToggleMapType}
+          disabled={!satelliteUsable}
+          aria-label="Ganti mode peta satelit atau jalan"
+          title={
+            satelliteUsable
+              ? `Ganti ke mode ${mapType === "streets" ? "Satelit" : "Jalan"}`
+              : satelliteTitle(isOnline, satelliteUsable)
+          }
+          className="p-2.5 rounded-xl shadow-md bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Layers size={18} />
+        </button>
+      )}
     </div>
   );
 };
@@ -144,9 +177,10 @@ const CustomMapControls: React.FC<{
 const earthquakeIconCache = new Map<string, L.DivIcon>();
 
 export const EarthquakeDistributionMap: React.FC = () => {
-  const { data: earthquakes = [], isLoading, isError } = useEarthquakeMapPoints();
+  const mapQuery = useEarthquakeMapPoints();
+  const { data: earthquakes = [], isLoading, isError } = mapQuery;
   const [isZoomActive, setIsZoomActive] = useState(false);
-  const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
+  const { mapType, setMapType, isOnline, satelliteUsable, onSatelliteError } = useBaseMapMode();
   const [resetTrigger, setResetTrigger] = useState(0);
 
   // Saring gempa yang memiliki koordinat valid di kawasan Indonesia & palung tektonik sekitarnya
@@ -178,9 +212,8 @@ export const EarthquakeDistributionMap: React.FC = () => {
     );
 
     const icon = L.divIcon({
-      className: `overview-map-pin leaflet-interactive earthquake-map-pin ${
-        isToday ? "has-pulse is-today" : ""
-      }`,
+      className: `overview-map-pin leaflet-interactive earthquake-map-pin ${isToday ? "has-pulse is-today" : ""
+        }`,
       html: `
         ${isToday ? '<div class="pin-pulse"></div>' : ""}
         <div class="pin-circle">
@@ -254,24 +287,10 @@ export const EarthquakeDistributionMap: React.FC = () => {
           scrollWheelZoom={false}
           touchZoom={true}
           style={{ height: "100%", width: "100%", zIndex: 0 }}
+          maxZoom={18}
         >
-          {mapType === "streets" ? (
-            <TileLayer
-              key="google-streets"
-              attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a> | Data BMKG'
-              url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-              subdomains={["0", "1", "2", "3"]}
-              maxZoom={18}
-            />
-          ) : (
-            <TileLayer
-              key="google-satellite"
-              attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a> | Data BMKG'
-              url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-              subdomains={["0", "1", "2", "3"]}
-              maxZoom={18}
-            />
-          )}
+          <BaseMapLayers coverage="national" mode={mapType} onSatelliteError={onSatelliteError} />
+          <DataAttribution html={BMKG_ATTRIBUTION} />
 
           <MapInteractionController
             isInteractive={isZoomActive}
@@ -283,6 +302,8 @@ export const EarthquakeDistributionMap: React.FC = () => {
           <CustomMapControls
             onReset={() => setResetTrigger((prev) => prev + 1)}
             mapType={mapType}
+            isOnline={isOnline}
+            satelliteUsable={satelliteUsable}
             onToggleMapType={() =>
               setMapType((prev) => (prev === "streets" ? "satellite" : "streets"))
             }
@@ -327,13 +348,12 @@ export const EarthquakeDistributionMap: React.FC = () => {
 
                       {daysAgoInfo && (
                         <span
-                          className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            daysAgoInfo.tone === "today"
-                              ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
-                              : daysAgoInfo.tone === "recent"
+                          className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${daysAgoInfo.tone === "today"
+                            ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
+                            : daysAgoInfo.tone === "recent"
                               ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800"
                               : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                          }`}
+                            }`}
                         >
                           {daysAgoInfo.text}
                         </span>
@@ -362,7 +382,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
                       <div className="flex items-center gap-2 text-[11.5px] text-slate-700 dark:text-slate-200">
                         <IoIosTimer
                           size={16}
-                          className="text-[#00247D] dark:text-blue-400 shrink-0"
+                          className="text-sigap-primary dark:text-blue-400 shrink-0"
                         />
                         <span className="font-semibold text-slate-800 dark:text-slate-100">
                           {dt.date} • {dt.time}
@@ -372,7 +392,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
                       <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 border-t border-slate-200/60 dark:border-slate-700/60 pt-1.5">
                         <VscArrowSwap
                           size={15}
-                          className="text-[#00247D] dark:text-blue-400 shrink-0"
+                          className="text-sigap-primary dark:text-blue-400 shrink-0"
                         />
                         <span>
                           <strong className="text-slate-900 dark:text-white font-extrabold text-[12.5px]">
@@ -393,13 +413,13 @@ export const EarthquakeDistributionMap: React.FC = () => {
                           className="group inline-flex items-center justify-between w-full px-3 py-2 bg-blue-50/90 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/70 rounded-xl text-xs font-bold transition-all border border-blue-200/80 dark:border-blue-900/60 cursor-pointer shadow-2xs"
                           title="Buka gambar shakemap ukuran penuh di tab baru"
                         >
-                          <span className="flex items-center gap-2 text-[#00247D] dark:text-[#7da2ff] font-bold">
-                            <MapPin size={15} className="text-[#00247D] dark:text-[#7da2ff] shrink-0" />
+                          <span className="flex items-center gap-2 text-sigap-primary dark:text-blue-400 font-bold">
+                            <MapPin size={15} className="text-sigap-primary dark:text-blue-400 shrink-0" />
                             Lihat Peta Shakemap BMKG
                           </span>
                           <ExternalLink
                             size={13}
-                            className="text-[#00247D] dark:text-[#7da2ff] shrink-0 group-hover:translate-x-0.5 transition-transform"
+                            className="text-sigap-primary dark:text-blue-400 shrink-0 group-hover:translate-x-0.5 transition-transform"
                           />
                         </a>
                       ) : (
@@ -421,6 +441,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
           })}
         </MapContainer>
       </div>
+      <StaleDataNotice since={getStaleSince(mapQuery)} className="mt-2 rounded-lg" />
     </section>
   );
 };

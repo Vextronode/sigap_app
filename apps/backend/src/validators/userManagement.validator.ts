@@ -32,7 +32,7 @@ export function validateCreateUser(
     return res.status(422).json({
       success: false,
       message: "Validasi data pengguna gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 
@@ -51,9 +51,7 @@ export function validateUpdateUser(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors: {
-        body: "Minimal salah satu data nama, peran, atau status aktif harus dikirimkan.",
-      },
+      errors: ["Minimal salah satu data nama, peran, atau status aktif harus dikirimkan."],
     });
   }
 
@@ -79,7 +77,7 @@ export function validateUpdateUser(
     return res.status(422).json({
       success: false,
       message: "Validasi data pembaruan gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 
@@ -102,7 +100,7 @@ export function validateResetPassword(
     return res.status(422).json({
       success: false,
       message: "Validasi reset password gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 

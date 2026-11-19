@@ -48,7 +48,7 @@ Port yang hanya diakses reverse proxy di server dan tidak diekspos ke publik:
 | db | - | 5432 | PostgreSQL 18 (network internal, tanpa akses internet) |
 | migrate | - | - | Job sekali jalan `prisma migrate deploy` sebelum backend start |
 
-Catatan:
+Ketentuan:
 - Port host diatur lewat `SIGAP_HTTP_BIND` dan `SIGAP_HTTP_PORT` di `deploy/compose.env` (default `8200`). Port harus unik per sistem di server bersama: **hindari 8000, 8080 (CibendaMart) dan 8100 (SID)**.
 - Backend butuh akses keluar (HTTPS) ke `api.bmkg.go.id`, `data.bmkg.go.id`, `api.open-meteo.com`, dan layanan push browser (mis. `fcm.googleapis.com`, `updates.push.services.mozilla.com`).
 - Backend hanya boleh berjalan **1 replika**: scheduler, rate limiter, dan cache masih in-memory.
@@ -61,12 +61,12 @@ Catatan:
   - Status kesiapsiagaan desa (Aman/Waspada/Siaga/Awas) yang diperbarui otomatis dari data BMKG.
   - Peta sebaran gempa BMKG dan info gempa terkini (Pangandaran, Jawa Barat, Indonesia).
   - Status potensi tsunami dan cuaca terkini serta prakiraan cuaca desa.
-  - Peta titik dan jalur evakuasi beserta navigasi rute.
+  - Peta titik evakuasi beserta navigasi rute melalui Google Maps.
   - Kontak darurat dan panduan kesiapsiagaan bencana.
   - Notifikasi gempa via web push, serta dapat dipasang sebagai aplikasi (PWA).
 - **Admin & Operator (Dashboard Admin)**:
   - Command center: ringkasan alert, kesiapsiagaan, jumlah pelanggan web push, dan status perangkat IoT.
-  - Verifikasi alert (dikonfirmasi, ditindaklanjuti, atau ditolak).
+  - Riwayat alert dan catatan tinjauan (dikonfirmasi, ditindaklanjuti, atau ditolak) yang tidak mengubah level.
   - Kelola kontak darurat, titik evakuasi, dan panduan kesiapsiagaan.
   - Manajemen akun dan role (RBAC `admin`/`operator`).
   - Halaman kontrol sirine & IoT (modul masih dalam pengembangan, menunggu integrasi perangkat keras).
@@ -82,7 +82,7 @@ Catatan:
 
 ## Deployment Server (Staging)
 
-Deployment dijalankan dengan **Docker Compose** lewat satu script operasional, `deploy/sigap.sh`. Image di-build langsung di server dari git tag rilis. HTTPS ditangani reverse proxy di server.
+Staging berjalan di server organisasi (Akademik Kampus). Deployment dijalankan dengan **Docker Compose** lewat satu script operasional, `deploy/sigap.sh`. Image di-build langsung di server dari git tag rilis. HTTPS ditangani reverse proxy di server.
 
 ### Isi Folder `deploy/`
 
@@ -117,12 +117,12 @@ Prasyarat: Docker Engine dengan Docker Compose ≥ 2.20, git, dan curl.
    ```bash
    bash deploy/sigap.sh deploy <tag-rilis> --migrate
    ```
-4. Seed data awal (sekali, pada database baru): role, permission, akun admin, kontak darurat, titik evakuasi, panduan, dan data contoh:
+4. Seed data awal (sekali, pada database baru; tidak dijalankan otomatis saat deploy): role, permission, akun admin, kontak darurat, titik evakuasi, dan panduan. Seed hanya membuat data yang belum ada dan tidak menimpa data yang sudah diedit admin:
    ```bash
    bash deploy/sigap.sh seed
    ```
    - Password admin acak ditampilkan **sekali** di terminal (tidak disimpan di file atau log). Catat, lalu ganti setelah login pertama di `/admin/login`.
-   - Opsi lewat environment shell: `SEED_ADMIN_EMAIL` (default `admin@cibenda.desa.id`), `SEED_ADMIN_PASSWORD` (8–128 karakter; bila akun sudah ada, password-nya di-reset ke nilai ini), dan `SEED_SAMPLE_DATA=false` untuk melewati data contoh (10 record gempa dan 10 alert gempa bertanggal tetap) agar tidak dikira kejadian nyata oleh penguji. Contoh: `SEED_SAMPLE_DATA=false bash deploy/sigap.sh seed`.
+   - Opsi lewat environment shell: `SEED_ADMIN_EMAIL` (default `admin@cibenda.desa.id`) dan `SEED_ADMIN_PASSWORD` (8–128 karakter). Akun admin yang sudah ada hanya di-reset bila `SEED_ADMIN_PASSWORD` diisi, untuk memulihkan akses admin. `SEED_SAMPLE_DATA=true` (data contoh 10 gempa dan 10 alert bertanggal tetap) ditolak di production.
 5. Cek status dan kesehatan:
    ```bash
    bash deploy/sigap.sh status
@@ -138,12 +138,26 @@ Prasyarat: Docker Engine dengan Docker Compose ≥ 2.20, git, dan curl.
 | `down` / `restart [service]` | Hentikan (volume data tetap) / restart stack |
 | `logs [service]` / `status` | Ikuti log / lihat tag aktif, status container, dan riwayat deploy |
 | `migrate` | Backup DB, tampilkan migrasi pending, konfirmasi, lalu jalankan |
-| `seed` | Isi data awal (role, permission, akun admin, data contoh); opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_SAMPLE_DATA` |
+| `seed` | Isi data awal yang belum ada (role, permission, akun admin, data inti desa); opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_SAMPLE_DATA` |
 | `health` / `smoke` | Cek `/api/healthz` dan `/api/readyz` / smoke test endpoint publik dan halaman SPA |
 | `backup [label]` / `restore <file.dump>` | `pg_dump` ke `deploy/backups/` (+ checksum) / restore dengan verifikasi checksum |
 | `shell <service>` / `reset` | Shell ke container / hapus stack beserta volume DB (dengan konfirmasi) |
 
 Bantuan lengkap: `bash deploy/sigap.sh help`.
+
+### Memperbarui Peta Dasar
+
+Peta dasar (PMTiles dari data OpenStreetMap) diperbarui beberapa bulan sekali, atau setelah data OSM di sekitar desa dilengkapi:
+
+1. Bangun file dari build harian Protomaps (CLI `pmtiles` dari github.com/protomaps/go-pmtiles):
+   ```bash
+   bash scripts/maps/build-basemap.sh <YYYYMMDD>
+   ```
+2. Unggah kedua file `.pmtiles` sebagai aset GitHub Release `basemap-<YYYYMMDD>` (bukan rilis terbaru):
+   ```bash
+   gh release create basemap-<YYYYMMDD> apps/frontend/public/maps/*.pmtiles --latest=false
+   ```
+3. Commit `apps/frontend/public/maps/manifest.json` lewat pull request. Image web berikutnya memakai versi baru, dan cache peta versi lama di browser warga dihapus otomatis.
 
 ### Contoh Reverse Proxy (Nginx di Server)
 ```nginx
@@ -182,12 +196,15 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    Buat `apps/frontend/.env.local`:
    ```bash
    VITE_API_BASE_URL=http://localhost:3000/api
+   # Opsional: mode satelit pada peta (API key ArcGIS yang referrer-nya mengizinkan localhost)
+   # VITE_ESRI_API_KEY=
    ```
-2. Install dependensi semua workspace dari root:
+2. Install dependensi semua workspace dari root, lalu unduh file peta dasar (sekitar 15 MiB, diverifikasi sha256):
    ```bash
    npm ci
+   node scripts/maps/fetch-basemap.mjs
    ```
-3. Jalankan migrasi database dan seed data awal (role, permission, akun admin placeholder, data contoh):
+3. Jalankan migrasi database dan seed data awal (role, permission, akun admin placeholder, data inti desa). Tambahkan `SEED_SAMPLE_DATA=true` untuk data contoh gempa dan alert:
    ```bash
    cd apps/backend
    npx prisma migrate deploy
@@ -197,15 +214,18 @@ Untuk menjalankan project di lingkungan pengembangan lokal tanpa Docker.
    Kredensial admin placeholder ditampilkan di output seed. Segera ganti di luar lingkungan lokal. Opsi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, dan `SEED_SAMPLE_DATA` juga berlaku di sini.
 4. Jalankan layanan development (terminal terpisah):
    - Backend: `npm run dev --workspace=apps/backend` (Port 3000)
-   - Frontend: `npm run dev --workspace=apps/frontend` (Port 5173)
+   - Frontend: `npm run dev --workspace=apps/frontend` (Port 5173, dapat diganti lewat `PORT`)
+   - Preview build production: `npm run build --workspace=apps/frontend`, lalu `npm run preview --workspace=apps/frontend` (Port 4380, dapat diganti lewat `PREVIEW_PORT`). Request `/api` diteruskan ke backend `http://localhost:3000`, dapat diganti lewat `PREVIEW_API_TARGET`, sehingga backend harus berjalan lebih dulu.
 
-Perintah lain: `npm run lint --workspace=apps/frontend`, `npm run typecheck --workspace=apps/backend`, `npm run build --workspace=<apps/frontend|apps/backend>`.
+Perintah lain: `npm run lint --workspace=<apps/frontend|apps/backend>`, `npm run typecheck --workspace=apps/backend`, `npm run build --workspace=<apps/frontend|apps/backend>`, `npm test --workspace=apps/backend`, `npm run check:api-spec --workspace=apps/backend`, `node scripts/check-doc-links.mjs`.
 
 ---
 
 ## Dokumentasi Terkait
 
+- [`docs/README.md`](./docs/README.md) — jenis dokumen dan urutan acuan
 - [`docs/PRD.md`](./docs/PRD.md) — Product Requirement Document
+- [`docs/Rules_Alerts.md`](./docs/Rules_Alerts.md) — aturan level dan notifikasi
 - [`docs/architecture/`](./docs/architecture/) — dokumen arsitektur (termasuk [arsitektur IoT](./docs/architecture/05_iot_architecture.md) dan [deployment view](./docs/architecture/08_deployment_view.md))
 - [`docs/api_spec/`](./docs/api_spec/) — spesifikasi API (OpenAPI)
 - [`docs/architecture_data_and_schema/`](./docs/architecture_data_and_schema/) — data dictionary dan skema

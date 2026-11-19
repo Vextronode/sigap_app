@@ -5,6 +5,7 @@ export interface JwtPayload {
   roles: string[];
   permissions: string[];
   jti: string;
+  tokenVersion?: number;
   exp?: number;
 }
 

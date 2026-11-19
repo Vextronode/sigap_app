@@ -14,10 +14,10 @@ export const AlertHeader: React.FC<AlertHeaderProps> = ({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[color:var(--text)]">
-          Verifikasi & Validasi Status Gempa Pangandaran
+          Riwayat Alert
         </h1>
         <p className="text-xs sm:text-sm text-[color:var(--text-muted)] mt-1 max-w-3xl leading-relaxed">
-          Pantau data peringatan gempa BMKG, periksa lokasi titik gempa & peta shakemap, lalu konfirmasi atau tindak lanjuti sebagai arsip resmi kebencanaan Desa Cibenda.
+          Arsip alert gempa dan tsunami beserta catatan tinjauan admin dan operator. Catatan tidak mengubah level yang berlaku.
         </p>
       </div>
 

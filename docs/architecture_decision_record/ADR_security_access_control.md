@@ -8,7 +8,7 @@
 | **Version** | 1.0 |
 | **Date** | 20 July 2026 |
 | **Author** | Tech Lead, SIGAP |
-| **Applies To** | `api/`, `db/schema/006_rbac.sql`, `db/data-dictionary/DD_rbac.md` |
+| **Applies To** | `docs/api_spec/`, `docs/architecture_data_and_schema/`, `apps/backend/src/middleware/` |
 
 ---
 
@@ -168,3 +168,81 @@ Pembagian kerja lapangan operator ternyata mencakup pembaruan konten kesiapsiaga
 ### Dampak Terhadap Sistem
 - Seed data di `006_rbac.sql`/`DD_rbac.md` diperbarui untuk menyertakan `content.manage` pada baris `role_permissions` milik operator.
 - ADR-007 tetap dipertahankan apa adanya sebagai catatan historis keputusan awal - tidak diedit ulang. Perubahan didokumentasikan di sini (ADR-016) mengikuti prinsip immutable decision record.
+
+---
+
+## ADR-039: Rate Limiting Sesuai Implementasi
+
+### Latar Belakang Keputusan
+ADR-008, ADR-009, dan ADR-010 menetapkan Token Bucket, dua lapis pembatasan, dan batas 5 per 15 menit untuk login serta 100 per menit untuk data publik. Implementasi memakai `express-rate-limit` pada lapisan aplikasi dengan batas berbeda, ditambah lockout per akun. Batas 100 per menit dinilai terlalu ketat karena satu kali muat dashboard memanggil sekitar 9 endpoint dan warga dapat berbagi satu IP publik saat kondisi darurat.
+
+### Alternatif yang Dipertimbangkan
+1. Mengubah implementasi mengikuti ADR-008 sampai ADR-010.
+2. Menetapkan implementasi yang berjalan sebagai keputusan.
+
+### Keputusan yang Dipilih
+Opsi 2: `express-rate-limit` pada lapisan aplikasi dengan batas umum 300 per menit per IP, login 15 percobaan gagal per 15 menit per IP, kesehatan sistem 60 per menit per IP, dan lockout akun 15 menit setelah 5 kali gagal. Pembatasan pada reverse proxy mengikuti kebijakan pengelola server.
+
+### Alasan Pemilihan
+Implementasi yang berjalan mengakomodasi pola pemakaian dashboard, dan lockout per akun menutup percobaan yang memutar IP. Pendekatan ini konsisten dengan ADR-013 dan ADR-027.
+
+### Dampak Terhadap Sistem
+- Penyimpanan penghitung berada di memori proses, sehingga backend berjalan satu replika.
+- ADR-008, ADR-009, dan ADR-010 digantikan oleh keputusan ini dan tetap dipertahankan sebagai catatan historis.
+
+---
+
+## ADR-048: Batas Baca Publik Terpisah untuk Akses Bersamaan dari Satu IP
+
+### Latar Belakang Keputusan
+ADR-039 menetapkan satu batas umum 300 request per menit per IP untuk seluruh `/api/public` dan `/api/protected`. Dashboard warga melakukan polling sekitar 7 request per menit dan sekitar 12 request saat pertama dibuka. Operator seluler memakai CGNAT dan warga dapat berbagi Wi-Fi desa, sehingga sekitar 40 warga di belakang satu IP publik sudah mencapai batas. Saat kejadian bencana, ketika banyak warga membuka dashboard bersamaan, sebagian warga menerima `429` dan kartu dashboard kehilangan data terakhir.
+
+### Alternatif yang Dipertimbangkan
+1. Menaikkan batas umum untuk seluruh endpoint.
+2. Batas terpisah untuk GET publik yang dilayani dari cache backend, batas umum dan login tetap.
+3. Cache respons publik di reverse proxy.
+4. Endpoint gabungan dashboard yang mengurangi jumlah request per warga.
+
+### Keputusan yang Dipilih
+Opsi 2. GET `/alerts`, `/alerts/current`, `/earthquakes` beserta subpath-nya, `/tsunami`, `/tsunamis`, dan `/device/status` memakai limiter baca publik 3.000 request per menit per IP, dihitung dari target 250 warga di belakang satu IP publik dengan sekitar 12 request per warga per menit. Request publik lain dan `/api/protected` tetap memakai batas umum 300 per menit dengan satu penghitung bersama; login, kesehatan sistem, dan lockout akun tidak berubah. Request baca publik ter-cache tidak dihitung oleh batas umum. Frontend tetap menampilkan data terakhir dengan penanda saat pembaruan gagal, tidak mengulang request yang dibalas `429`, dan menunda GET publik ke URL yang sama sampai batas direset.
+
+### Alasan Pemilihan
+Endpoint yang dipisahkan dilayani dari cache backend, sehingga batas yang lebih longgar tidak menambah beban per request secara sebanding. Endpoint yang belum ter-cache (cuaca, riwayat alert, titik evakuasi, kontak, panduan) tetap dibatasi ketat agar lonjakan tidak diteruskan ke BMKG, Open-Meteo, dan database. Opsi 1 melonggarkan endpoint tulis dan Protected. Opsi 3 memerlukan modul cache yang tidak tersedia pada Caddy bawaan, dan service worker sudah memakai network first. Opsi 4 bergantung pada snapshot yang dibangun scheduler dan dikerjakan bersama sinkronisasi data dashboard.
+
+### Dampak Terhadap Sistem
+- `rateLimit.middleware.ts` memiliki `publicReadRateLimiter` dan `publicRateLimiter`; mount `/api/public` dan alias `/api` memakai `publicRateLimiter`.
+- Penyimpanan penghitung tetap di memori proses; backend tetap satu replika.
+- Ketepatan batas per IP bergantung pada `TRUST_PROXY` yang sesuai topologi proxy.
+- ADR-039 tetap berlaku untuk batas umum, login, kesehatan sistem, dan lockout akun.
+
+---
+
+## ADR-050: Batas Subscribe Notifikasi dan Pembatasan Dispatch Web Push
+
+### Latar Belakang Keputusan
+`POST /notifications/subscribe` bersifat publik dan hanya dibatasi limiter umum 300 request per menit per IP. Endpoint palsu pada host push gateway yang diizinkan lolos validasi, dan hanya subscription yang dibalas 404 atau 410 yang dihapus. Satu IP dapat menambah sekitar 432.000 baris per hari, sementara setiap baris ikut dikirimi push saat dispatch. Dispatch mengirim ke seluruh subscription sekaligus tanpa batas konkurensi dan tanpa batas waktu, sehingga subscription palsu memperlambat pengiriman ke warga tepat saat kejadian bencana. Subscribe dipanggil sekali per perangkat saat warga mengaktifkan notifikasi, dan banyak warga dapat berbagi satu IP publik (ADR-048).
+
+### Alternatif yang Dipertimbangkan
+1. Tanpa limiter khusus; hanya validasi kunci dan pembersihan subscription yang ditolak.
+2. Limiter khusus per menit yang ketat, mis. 20 atau 60 request per menit per IP.
+3. Limiter khusus berdasarkan jumlah perangkat sah di belakang satu IP: 300 request per 15 menit per IP.
+4. Batas jumlah total subscription.
+
+### Keputusan yang Dipilih
+Opsi 3, ditambah:
+- Validasi kunci Web Push: `p256dh` 65 byte dan `auth` 16 byte dalam base64url.
+- Subscription yang dibalas 400 atau 403 dihapus bila ada pengiriman lain yang berhasil pada dispatch yang sama; 404 dan 410 tetap selalu dihapus.
+- Dispatch paling banyak 50 pengiriman bersamaan dengan batas waktu 10 detik per pengiriman.
+
+Limiter berlaku untuk subscribe dan unsubscribe dengan satu penghitung, dan tidak membatasi pengiriman push.
+
+### Alasan Pemilihan
+- 300 per 15 menit menampung 250 warga di belakang satu IP yang mengaktifkan notifikasi bersamaan (target ADR-048), dan menurunkan pertumbuhan subscription palsu dari sekitar 432.000 menjadi sekitar 28.800 baris per hari per IP.
+- Opsi 1 tetap membiarkan pertumbuhan baris yang cepat di antara dua dispatch. Opsi 2 dapat menolak warga di belakang CGNAT saat mengaktifkan notifikasi bersamaan. Opsi 4 menolak warga sah setelah batas tercapai, termasuk saat kejadian bencana.
+- Syarat ada pengiriman berhasil mencegah seluruh subscription terhapus bila request SIGAP sendiri yang salah.
+- Batas konkurensi dan waktu menjaga siklus scheduler tidak tertahan oleh endpoint yang lambat.
+
+### Dampak Terhadap Sistem
+- `rateLimit.middleware.ts` memiliki `subscriptionRateLimiter`; request subscribe dan unsubscribe juga tetap dihitung limiter umum.
+- Penghitung tersimpan di memori proses; backend tetap satu replika.
+- Subscription palsu yang lolos validasi bertahan sampai dispatch berikutnya.

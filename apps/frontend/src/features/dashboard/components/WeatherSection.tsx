@@ -16,14 +16,16 @@ import { Card } from "../../../components/ui/Card";
 import { CardSkeleton, Skeleton } from "../../../components/ui/Skeleton";
 import { StateMessage } from "../../../components/ui/StateMessage";
 import { SectionHeader } from "../../../components/common/SectionHeader";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import type { CurrentWeather, WeatherForecastItem } from "../../../types/dashboard";
-import { formatShortDate } from "../../../utils/date";
+import { formatShortDate, wibHour } from "../../../utils/date";
 
 type WeatherSectionProps = {
   weather: CurrentWeather | null;
   forecast?: WeatherForecastItem[];
   isWeatherLoading?: boolean;
   isWeatherError?: boolean;
+  weatherStaleSince?: number;
   isForecastLoading?: boolean;
   isForecastError?: boolean;
   showForecast?: boolean;
@@ -84,7 +86,7 @@ const checkIsNight = (label?: string): boolean => {
     if (s.includes("pagi") || s.includes("siang") || s.includes("sore"))
       return false;
   }
-  const hour = new Date().getHours();
+  const hour = wibHour();
   return hour >= 18 || hour < 6;
 };
 
@@ -142,6 +144,7 @@ export const WeatherSection = ({
   forecast = [],
   isWeatherLoading = false,
   isWeatherError = false,
+  weatherStaleSince,
   isForecastLoading = false,
   isForecastError = false,
   showForecast = false,
@@ -220,6 +223,8 @@ export const WeatherSection = ({
               <WeatherIcon condition={weather.weather} size={40} />
             </div>
           </Card>
+
+          <StaleDataNotice since={weatherStaleSince} className="-mt-4 mb-6 rounded-lg" />
 
           {/* METRIC GRID */}
           <div className="weather-grid">

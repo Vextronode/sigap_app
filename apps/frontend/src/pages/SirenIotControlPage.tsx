@@ -33,7 +33,7 @@ export default function SirenIotControlPage() {
         </h3>
 
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mt-2 leading-relaxed">
-          Sistem sedang menunggu penyelarasan protokol komunikasi MQTT dan pengujian fisik aktuator sirine peringatan dini di titik-titik rawan Desa Cibenda.
+          Sistem sedang menunggu penyelarasan protokol komunikasi REST polling dan pengujian fisik aktuator sirine peringatan dini di titik-titik rawan Desa Cibenda.
         </p>
       </div>
     </div>

@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 5
+    groups:
+      minor-dan-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # TypeScript ditahan di 6.x oleh guard CI (DEPLOY-01 E8).
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "monthly"

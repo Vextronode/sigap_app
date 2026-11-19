@@ -1,9 +1,14 @@
 import React, { useMemo, useState, useEffect } from "react";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap, useMapEvents } from "react-leaflet";
-import { MapPin, Navigation, ShieldCheck, Mountain, ZoomIn, Layers, Map as MapIcon } from "lucide-react";
+import { MapContainer, Marker, Popup, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { MapPin, Navigation, ShieldCheck, Mountain, ZoomIn } from "lucide-react";
 import type { EvacuationPoint } from "../../../types/dashboard";
 import { CIBENDA_CENTER } from "../../../utils/map";
+import { SIGAP_THEME } from "../../../constants/theme";
+import { BaseMapLayers } from "../../../components/map/BaseMapLayers";
+import { PANGANDARAN_BOUNDS } from "../../../components/map/basemap";
+import { MapTypeToggle } from "../../../components/map/MapTypeToggle";
+import { SATELLITE_AVAILABLE, useBaseMapMode } from "../../../components/map/useBaseMapMode";
 
 interface EvacuationOverviewMapProps {
   points: EvacuationPoint[];
@@ -59,7 +64,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
   onSelectPoint,
 }) => {
   const [isZoomActive, setIsZoomActive] = useState(false);
-  const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
+  const { mapType, setMapType, isOnline, satelliteUsable, onSatelliteError } = useBaseMapMode();
 
   const defaultCenter = useMemo<[number, number]>(() => {
     if (points.length > 0) {
@@ -71,7 +76,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
   const createMarkerIcon = (point: EvacuationPoint) => {
     const isSelected = selectedPointId === point.id;
     const isCore = point.isCore;
-    const bgColor = isSelected ? "#F59E0B" : isCore ? "#00247D" : "#0D9488";
+    const bgColor = isSelected ? "#F59E0B" : isCore ? SIGAP_THEME.primary : "#0D9488";
 
     return L.divIcon({
       className: "overview-map-pin",
@@ -115,25 +120,13 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
         scrollWheelZoom={false}
         touchZoom={true}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
+        maxBounds={PANGANDARAN_BOUNDS}
+        maxBoundsViscosity={1}
+        minZoom={11}
+        maxZoom={18}
       >
         <ZoomControl position="bottomleft" />
-        {mapType === "streets" ? (
-          <TileLayer
-            key="google-streets"
-            attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
-            url="https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-            subdomains={["0", "1", "2", "3"]}
-            maxZoom={20}
-          />
-        ) : (
-          <TileLayer
-            key="google-satellite"
-            attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
-            url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-            subdomains={["0", "1", "2", "3"]}
-            maxZoom={20}
-          />
-        )}
+        <BaseMapLayers coverage="pangandaran" mode={mapType} onSatelliteError={onSatelliteError} />
 
         <MapZoomController
           isInteractive={isZoomActive}
@@ -166,7 +159,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
                 >
                   <div className="flex items-center gap-1 flex-wrap">
                     {point.isCore && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-[#00247D]">
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-sigap-primary-light text-sigap-primary">
                         <ShieldCheck size={10} /> Utama
                       </span>
                     )}
@@ -200,7 +193,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: "#ffffff" }}
-                      className="group inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-[#00247D] hover:bg-[#001D66] !text-white rounded-lg text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
+                      className="group inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-sigap-primary hover:bg-sigap-primary-hover !text-white rounded-lg text-[10.5px] font-bold transition-all shadow-xs cursor-pointer"
                     >
                       <span className="!text-white font-bold">Buka Rute Maps</span>
                       <Navigation
@@ -216,39 +209,18 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
         })}
       </MapContainer>
 
-      {/* Kontrol Pilihan Mode Peta: Jalan / Satelit - Pojok Kanan Atas Super Ringkas (~70%) */}
-      <div className="absolute top-2 right-2 z-1000 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-0.5 select-none pointer-events-auto">
-        <button
-          type="button"
-          onClick={() => setMapType("streets")}
-          className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-            mapType === "streets"
-              ? "bg-[#00247D] text-white shadow-xs"
-              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-          }`}
-          title="Tampilan Peta Jalan Google Maps (Kontras Jelas)"
-        >
-          <MapIcon size={10} />
-          <span>Jalan</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMapType("satellite")}
-          className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-            mapType === "satellite"
-              ? "bg-[#00247D] text-white shadow-xs"
-              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-          }`}
-          title="Tampilan Foto Citra Satelit Bumi Nyata"
-        >
-          <Layers size={10} />
-          <span>Satelit</span>
-        </button>
-      </div>
+      {/* Kontrol Pilihan Mode Peta: Jalan / Satelit (tampil bila satelit tersedia) */}
+
+      <MapTypeToggle
+        value={mapType}
+        onChange={setMapType}
+        isOnline={isOnline}
+        satelliteUsable={satelliteUsable}
+      />
 
       {/* Indikator Status Zoom Interaktif - Di bawah tag Jalan/Satelit di Kanan Atas */}
       {!isZoomActive && (
-        <div className="absolute top-[46px] right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm flex items-center gap-1.5 pointer-events-none opacity-90 transition-opacity">
+        <div className={`absolute ${SATELLITE_AVAILABLE ? "top-[46px]" : "top-2"} right-2 z-1000 bg-slate-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm flex items-center gap-1.5 pointer-events-none opacity-90 transition-opacity`}>
           <ZoomIn size={12} className="text-amber-400 shrink-0" />
           <span>Klik aktifkan zoom</span>
         </div>
@@ -256,7 +228,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
 
       {/* Tag Total / Sebaran Titik Evakuasi - Pojok Kiri Atas */}
       <div className="absolute top-2.5 left-2.5 z-1000 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 shadow-xs flex items-center gap-1.5 pointer-events-none">
-        <MapPin size={13} className="text-[#00247D] dark:text-blue-400" />
+        <MapPin size={13} className="text-sigap-primary dark:text-blue-400" />
         <span>Total {points.length} Titik Evakuasi</span>
       </div>
     </div>
