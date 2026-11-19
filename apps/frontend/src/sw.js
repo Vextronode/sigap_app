@@ -24,9 +24,22 @@ registerRoute(
   ({ url }) => url.pathname === "/maps/manifest.json",
   new NetworkFirst({ cacheName: BASEMAP_CACHE, networkTimeoutSeconds: 5 })
 );
+// Jangan simpan respons yang bukan file PMTiles, mis. index.html dari fallback SPA saat file
+// peta tidak ada di server; tanpa ini peta di perangkat rusak sampai versi peta berikutnya.
+const pmtilesOnlyPlugin = {
+  cacheWillUpdate: async ({ response }) => {
+    if (!response || response.status !== 200) return null;
+    if ((response.headers.get("content-type") || "").includes("text/html")) return null;
+    const head = new Uint8Array(await response.clone().arrayBuffer(), 0, 7);
+    return new TextDecoder().decode(head) === "PMTiles" ? response : null;
+  },
+};
 registerRoute(
   ({ url }) => url.pathname.startsWith("/maps/") && url.pathname.endsWith(".pmtiles"),
-  new CacheFirst({ cacheName: BASEMAP_CACHE, plugins: [new RangeRequestsPlugin()] })
+  new CacheFirst({
+    cacheName: BASEMAP_CACHE,
+    plugins: [pmtilesOnlyPlugin, new RangeRequestsPlugin()],
+  })
 );
 
 self.addEventListener("push", (event) => {

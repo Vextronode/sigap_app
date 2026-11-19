@@ -1,12 +1,15 @@
 import { Layers, Map as MapIcon } from "lucide-react";
 import type { BaseMapMode } from "./BaseMapLayers";
-import { SATELLITE_AVAILABLE } from "./useBaseMapMode";
+import { SATELLITE_AVAILABLE, satelliteTitle } from "./useBaseMapMode";
 
 interface MapTypeToggleProps {
   value: BaseMapMode;
   onChange: (mode: BaseMapMode) => void;
   isOnline: boolean;
+  /** false saat offline atau setelah tile satelit gagal dimuat. */
+  satelliteUsable: boolean;
 }
+
 
 const buttonClass = (active: boolean) =>
   `px-1.5 py-0.5 rounded-md text-[9.5px] font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -16,7 +19,7 @@ const buttonClass = (active: boolean) =>
   }`;
 
 /** Tombol Jalan/Satelit di pojok kanan atas peta; tidak tampil bila satelit tidak tersedia. */
-export const MapTypeToggle = ({ value, onChange, isOnline }: MapTypeToggleProps) => {
+export const MapTypeToggle = ({ value, onChange, isOnline, satelliteUsable }: MapTypeToggleProps) => {
   if (!SATELLITE_AVAILABLE) return null;
 
   return (
@@ -33,9 +36,9 @@ export const MapTypeToggle = ({ value, onChange, isOnline }: MapTypeToggleProps)
       <button
         type="button"
         onClick={() => onChange("satellite")}
-        disabled={!isOnline}
+        disabled={!satelliteUsable}
         className={buttonClass(value === "satellite")}
-        title={isOnline ? "Tampilan Citra Satelit" : "Citra satelit tidak tersedia saat offline"}
+        title={satelliteTitle(isOnline, satelliteUsable)}
       >
         <Layers size={10} />
         <span>Satelit</span>

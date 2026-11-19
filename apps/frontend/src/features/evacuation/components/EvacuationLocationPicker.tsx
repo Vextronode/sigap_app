@@ -50,7 +50,7 @@ export const EvacuationLocationPicker = ({
 }: EvacuationLocationPickerProps) => {
   const [isLocating, setIsLocating] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const { mapType, setMapType, isOnline } = useBaseMapMode();
+  const { mapType, setMapType, isOnline, satelliteUsable, onSatelliteError } = useBaseMapMode();
 
   const markerPosition = useMemo<[number, number]>(() => {
     const validLat = typeof latitude === "number" && !isNaN(latitude) ? latitude : CIBENDA_CENTER[0];
@@ -180,7 +180,7 @@ export const EvacuationLocationPicker = ({
           minZoom={11}
           maxZoom={18}
         >
-          <BaseMapLayers coverage="pangandaran" mode={mapType} />
+          <BaseMapLayers coverage="pangandaran" mode={mapType} onSatelliteError={onSatelliteError} />
           <MapController center={markerPosition} />
           <LocationEvents onLocationSelect={onChange} />
           <Marker
@@ -195,7 +195,12 @@ export const EvacuationLocationPicker = ({
 
         {/* Kontrol Pilihan Mode Peta: Jalan / Satelit (tampil bila satelit tersedia) */}
 
-        <MapTypeToggle value={mapType} onChange={setMapType} isOnline={isOnline} />
+        <MapTypeToggle
+          value={mapType}
+          onChange={setMapType}
+          isOnline={isOnline}
+          satelliteUsable={satelliteUsable}
+        />
 
         {/* Badge Koordinat Live di Pojok Bawah Peta */}
         <div className="absolute bottom-2 left-2 z-[400] bg-slate-900/85 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-lg shadow-md font-mono flex items-center gap-2 pointer-events-none">

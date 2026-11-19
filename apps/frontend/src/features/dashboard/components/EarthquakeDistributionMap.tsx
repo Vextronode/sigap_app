@@ -27,7 +27,11 @@ import { Skeleton } from "../../../components/ui/Skeleton";
 import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import { getStaleSince } from "../../../utils/queryFreshness";
 import { BaseMapLayers, type BaseMapMode } from "../../../components/map/BaseMapLayers";
-import { SATELLITE_AVAILABLE, useBaseMapMode } from "../../../components/map/useBaseMapMode";
+import {
+  SATELLITE_AVAILABLE,
+  satelliteTitle,
+  useBaseMapMode,
+} from "../../../components/map/useBaseMapMode";
 
 // Titik tengah default kepulauan Jawa / Indonesia bagian barat
 const DEFAULT_MAP_CENTER: [number, number] = [-7.6838, 108.561]; // Koordinat Desa Cibenda / Jawa Barat
@@ -111,8 +115,9 @@ const CustomMapControls: React.FC<{
   onReset: () => void;
   mapType: BaseMapMode;
   isOnline: boolean;
+  satelliteUsable: boolean;
   onToggleMapType: () => void;
-}> = ({ onReset, mapType, isOnline, onToggleMapType }) => {
+}> = ({ onReset, mapType, isOnline, satelliteUsable, onToggleMapType }) => {
   const map = useMap();
 
   return (
@@ -152,12 +157,12 @@ const CustomMapControls: React.FC<{
         <button
           type="button"
           onClick={onToggleMapType}
-          disabled={!isOnline}
+          disabled={!satelliteUsable}
           aria-label="Ganti mode peta satelit atau jalan"
           title={
-            isOnline
+            satelliteUsable
               ? `Ganti ke mode ${mapType === "streets" ? "Satelit" : "Jalan"}`
-              : "Citra satelit tidak tersedia saat offline"
+              : satelliteTitle(isOnline, satelliteUsable)
           }
           className="p-2.5 rounded-xl shadow-md bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -175,7 +180,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
   const mapQuery = useEarthquakeMapPoints();
   const { data: earthquakes = [], isLoading, isError } = mapQuery;
   const [isZoomActive, setIsZoomActive] = useState(false);
-  const { mapType, setMapType, isOnline } = useBaseMapMode();
+  const { mapType, setMapType, isOnline, satelliteUsable, onSatelliteError } = useBaseMapMode();
   const [resetTrigger, setResetTrigger] = useState(0);
 
   // Saring gempa yang memiliki koordinat valid di kawasan Indonesia & palung tektonik sekitarnya
@@ -284,7 +289,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
           style={{ height: "100%", width: "100%", zIndex: 0 }}
           maxZoom={18}
         >
-          <BaseMapLayers coverage="national" mode={mapType} />
+          <BaseMapLayers coverage="national" mode={mapType} onSatelliteError={onSatelliteError} />
           <DataAttribution html={BMKG_ATTRIBUTION} />
 
           <MapInteractionController
@@ -298,6 +303,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
             onReset={() => setResetTrigger((prev) => prev + 1)}
             mapType={mapType}
             isOnline={isOnline}
+            satelliteUsable={satelliteUsable}
             onToggleMapType={() =>
               setMapType((prev) => (prev === "streets" ? "satellite" : "streets"))
             }

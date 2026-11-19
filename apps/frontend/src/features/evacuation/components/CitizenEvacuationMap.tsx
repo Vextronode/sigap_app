@@ -112,7 +112,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
   heightClass = "h-[440px] sm:h-[480px]",
 }) => {
   const [isZoomActive, setIsZoomActive] = useState(false);
-  const { mapType, setMapType, isOnline } = useBaseMapMode();
+  const { mapType, setMapType, isOnline, satelliteUsable, onSatelliteError } = useBaseMapMode();
 
   const defaultCenter = useMemo<[number, number]>(() => {
     if (userCoords) {
@@ -216,7 +216,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         maxZoom={18}
       >
         <ZoomControl position="bottomleft" />
-        <BaseMapLayers coverage="pangandaran" mode={mapType} />
+        <BaseMapLayers coverage="pangandaran" mode={mapType} onSatelliteError={onSatelliteError} />
 
         <MapZoomController
           isInteractive={isZoomActive}
@@ -341,7 +341,12 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
 
       {/* Kontrol Pilihan Mode Peta: Jalan / Satelit (tampil bila satelit tersedia) */}
 
-      <MapTypeToggle value={mapType} onChange={setMapType} isOnline={isOnline} />
+      <MapTypeToggle
+        value={mapType}
+        onChange={setMapType}
+        isOnline={isOnline}
+        satelliteUsable={satelliteUsable}
+      />
 
       {/* Indikator Proteksi Zoom (klik 1x untuk zoom) - Pojok Kanan Atas di bawah tag Jalan/Satelit */}
       {!isZoomActive && (

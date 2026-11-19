@@ -59,13 +59,36 @@ export const detailLayerOf = (manifest: BasemapManifest): BasemapLayer | null =>
 
 let manifestRequest: Promise<BasemapManifest | null> | null = null;
 
-/** Manifest dibaca sekali per halaman; null bila tidak tersedia (mis. offline tanpa cache). */
+/**
+ * Manifest dibaca sekali per halaman bila berhasil; null bila tidak tersedia (mis. offline
+ * tanpa cache). Kegagalan tidak disimpan, sehingga pemanggilan berikutnya mencoba lagi.
+ */
 export const loadBasemapManifest = (): Promise<BasemapManifest | null> => {
   manifestRequest ??= fetch(MANIFEST_URL)
     .then((response) => (response.ok ? (response.json() as Promise<BasemapManifest>) : null))
-    .catch(() => null);
+    .catch(() => null)
+    .then((manifest) => {
+      if (!manifest) manifestRequest = null;
+      return manifest;
+    });
   return manifestRequest;
 };
+
+/** Awal setiap file PMTiles v3 ("PMTiles" + versi). */
+const PMTILES_MAGIC = "PMTiles";
+
+/**
+ * File peta valid: bukan HTML pengganti (fallback SPA saat file tidak ada), ukurannya sama
+ * dengan manifest, dan diawali magic number PMTiles.
+ */
+const isValidBasemapFile = (data: ArrayBuffer, expectedBytes: number): boolean =>
+  data.byteLength === expectedBytes &&
+  new TextDecoder().decode(new Uint8Array(data, 0, PMTILES_MAGIC.length)) === PMTILES_MAGIC;
+
+/** Cache lama yang berisi HTML atau ukurannya tidak sesuai manifest dianggap rusak. */
+const isCachedResponseValid = (response: Response, expectedBytes: number): boolean =>
+  !(response.headers.get("content-type") ?? "").includes("text/html") &&
+  Number(response.headers.get("content-length") ?? expectedBytes) === expectedBytes;
 
 /** Mode hemat data (Chrome Android); browser lain tidak menyediakan informasi ini. */
 const isSaveDataEnabled = (): boolean =>
@@ -84,18 +107,27 @@ export const cacheBasemapForOffline = async (): Promise<void> => {
   if (!detail) return;
 
   const cache = await caches.open(BASEMAP_CACHE);
-  const wanted = new Set([basemapUrl(detail)]);
+  const url = basemapUrl(detail);
 
   for (const request of await cache.keys()) {
     const path = new URL(request.url).pathname;
-    if (path.endsWith(".pmtiles") && !wanted.has(path)) {
+    if (path.endsWith(".pmtiles") && path !== url) {
       await cache.delete(request);
     }
   }
 
-  for (const url of wanted) {
-    if (!(await cache.match(url))) {
-      await cache.add(url);
-    }
+  const cached = await cache.match(url);
+  if (cached && isCachedResponseValid(cached, detail.bytes)) return;
+  // Salinan rusak dihapus lebih dulu agar fetch di bawah tidak dilayani service worker
+  // dari salinan itu.
+  if (cached) await cache.delete(url);
+
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status} untuk ${url}`);
+  const data = await response.arrayBuffer();
+  if (!isValidBasemapFile(data, detail.bytes)) {
+    await cache.delete(url);
+    throw new Error(`File peta ${url} tidak valid (bukan PMTiles atau ukuran tidak sesuai manifest)`);
   }
+  await cache.put(url, new Response(data, { status: 200, headers: response.headers }));
 };

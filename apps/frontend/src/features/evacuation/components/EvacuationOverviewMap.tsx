@@ -64,7 +64,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
   onSelectPoint,
 }) => {
   const [isZoomActive, setIsZoomActive] = useState(false);
-  const { mapType, setMapType, isOnline } = useBaseMapMode();
+  const { mapType, setMapType, isOnline, satelliteUsable, onSatelliteError } = useBaseMapMode();
 
   const defaultCenter = useMemo<[number, number]>(() => {
     if (points.length > 0) {
@@ -126,7 +126,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
         maxZoom={18}
       >
         <ZoomControl position="bottomleft" />
-        <BaseMapLayers coverage="pangandaran" mode={mapType} />
+        <BaseMapLayers coverage="pangandaran" mode={mapType} onSatelliteError={onSatelliteError} />
 
         <MapZoomController
           isInteractive={isZoomActive}
@@ -211,7 +211,12 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
 
       {/* Kontrol Pilihan Mode Peta: Jalan / Satelit (tampil bila satelit tersedia) */}
 
-      <MapTypeToggle value={mapType} onChange={setMapType} isOnline={isOnline} />
+      <MapTypeToggle
+        value={mapType}
+        onChange={setMapType}
+        isOnline={isOnline}
+        satelliteUsable={satelliteUsable}
+      />
 
       {/* Indikator Status Zoom Interaktif - Di bawah tag Jalan/Satelit di Kanan Atas */}
       {!isZoomActive && (

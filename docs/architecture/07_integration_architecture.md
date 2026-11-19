@@ -91,9 +91,10 @@ Peta pada dashboard gempa, peta evakuasi warga dan admin, serta pemilih lokasi t
 | `pangandaran-z15-<versi>.pmtiles` | Kabupaten Pangandaran | 0-15 | Peta sebaran gempa, peta evakuasi, pemilih lokasi |
 
 - File dibuat oleh `scripts/maps/build-basemap.sh` dari build harian Protomaps (data OpenStreetMap), diunggah sebagai aset GitHub Release `basemap-<versi>`, dan dicatat beserta sha256 pada `apps/frontend/public/maps/manifest.json`.
-- Image web mengunduh file tersebut saat build lewat `scripts/maps/fetch-basemap.mjs` dan gagal bila sha256 tidak cocok. Caddy menyajikan file `.pmtiles` sebagai immutable dan mendukung range request.
+- Image web mengunduh file tersebut saat build lewat `scripts/maps/fetch-basemap.mjs` dan gagal bila sha256 tidak cocok. Caddy menyajikan `/maps/*` tanpa fallback SPA (file yang tidak ada dibalas `404`), file `.pmtiles` sebagai immutable, dan mendukung range request.
 - Peta evakuasi dan pemilih lokasi dibatasi ke wilayah Kabupaten Pangandaran, zoom 11-18.
-- Setelah data dashboard selesai dimuat, browser menyimpan file Pangandaran utuh di cache `sigap-basemap` (sekali per versi, dilewati pada mode hemat data). Service worker melayani range request dari salinan itu, sehingga peta evakuasi tampil saat offline. Lapisan Indonesia tidak disimpan untuk offline.
-- Mode satelit menampilkan citra Esri dengan label dari peta dasar di atasnya, hanya saat online; tombol Jalan/Satelit tidak tampil bila `VITE_ESRI_API_KEY` kosong.
+- Setelah data dashboard selesai dimuat, browser menyimpan file Pangandaran utuh di cache `sigap-basemap` (sekali per versi, dilewati pada mode hemat data). Service worker melayani range request dari salinan itu, sehingga peta evakuasi tampil saat offline. Hanya respons yang ukurannya sesuai manifest dan diawali magic number PMTiles yang disimpan. Lapisan Indonesia tidak disimpan untuk offline.
+- Peta sebaran gempa memakai lapisan Indonesia sampai zoom 8 dan lapisan detail Pangandaran mulai zoom 9.
+- Mode satelit menampilkan citra Esri dengan label dari peta dasar di atasnya, hanya saat online; tombol Jalan/Satelit tidak tampil bila `VITE_ESRI_API_KEY` kosong. Bila tile citra gagal dimuat sebelum ada yang berhasil, peta kembali ke mode jalan sampai koneksi berganti.
 - Atribusi: OpenStreetMap contributors dan Protomaps; Esri saat mode satelit aktif.
 

@@ -19,6 +19,23 @@
 		reverse_proxy {$BACKEND_UPSTREAM:backend:3000}
 	}
 
+	# Peta dasar: file statis tanpa fallback SPA, sehingga file yang tidak ada dibalas 404
+	# (bukan index.html yang bisa tersimpan sebagai file peta). Hanya file .pmtiles yang
+	# benar-benar ada yang diberi cache immutable (nama file memuat versi).
+	handle /maps/* {
+		@pmtiles {
+			path *.pmtiles
+			file {
+				root /srv
+			}
+		}
+		header @pmtiles Cache-Control "public, max-age=31536000, immutable"
+		header /maps/manifest.json Cache-Control "no-cache"
+		header X-Content-Type-Options nosniff
+		root * /srv
+		file_server
+	}
+
 	handle {
 		# Header keamanan SPA (tanpa HSTS: keputusan pengelola di edge TLS).
 		header {
@@ -32,9 +49,8 @@
 		# Hanya file ber-hash Vite (/assets/<nama>-<hash8>.js|css) yang immutable.
 		# Selain itu no-cache, termasuk sw.js, manifest, ikon, dan index.html yang
 		# disajikan untuk deep link lewat try_files (matcher dievaluasi pada path asli).
-		# File peta (.pmtiles) bernama versi, jadi juga immutable; manifest.json tetap no-cache.
-		@hashed path_regexp ^/(assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)|maps/[^/]+\.pmtiles)$
-		@notHashed not path_regexp ^/(assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)|maps/[^/]+\.pmtiles)$
+		@hashed path_regexp ^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$
+		@notHashed not path_regexp ^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$
 		header @hashed Cache-Control "public, max-age=31536000, immutable"
 		header @notHashed Cache-Control "no-cache"
 
