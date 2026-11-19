@@ -64,7 +64,8 @@ Frontend
 Map
 
 - Leaflet
-- Google Maps tiles
+- Self-hosted PMTiles basemap (OpenStreetMap data) rendered with protomaps-leaflet, see ADR-051
+- Esri satellite imagery (optional, online only)
 
 External APIs
 
