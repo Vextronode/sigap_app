@@ -92,6 +92,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/docker/frontend.Dockerfile
+      args:
+        VITE_ESRI_API_KEY: ${VITE_ESRI_API_KEY:-}
     environment:
       BACKEND_UPSTREAM: backend:3000
     ports:

@@ -29,3 +29,8 @@ backend/prisma/dev.db-journal
 .env*
 !**/.env.example
 .direnv/
+
+# Peta dasar (PMTiles) diunduh dari GitHub Release lewat scripts/maps/fetch-basemap.mjs;
+# hanya manifest.json yang disimpan di repo.
+apps/frontend/public/maps/*.pmtiles
+apps/frontend/public/maps/*.part

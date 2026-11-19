@@ -23,12 +23,21 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspace=apps/frontend --include-workspace-root
 
 COPY apps/frontend apps/frontend
+COPY scripts/maps/fetch-basemap.mjs scripts/maps/fetch-basemap.mjs
+
+# Peta dasar self-host: unduh file PMTiles dari GitHub Release sesuai manifest dan
+# verifikasi sha256 (build gagal bila tidak cocok).
+RUN node scripts/maps/fetch-basemap.mjs
 
 # Hanya di stage build; tidak ikut ke image runtime.
 ARG VITE_API_BASE_URL=/api
 ARG VITE_ALERT_REFETCH_INTERVAL_MS=12000
+# Opsional: API key ArcGIS untuk citra satelit (ADR-051). Ikut ke bundle browser,
+# jadi wajib dibatasi referrer-nya di dashboard ArcGIS. Kosong = tanpa mode satelit.
+ARG VITE_ESRI_API_KEY=
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL} \
-    VITE_ALERT_REFETCH_INTERVAL_MS=${VITE_ALERT_REFETCH_INTERVAL_MS}
+    VITE_ALERT_REFETCH_INTERVAL_MS=${VITE_ALERT_REFETCH_INTERVAL_MS} \
+    VITE_ESRI_API_KEY=${VITE_ESRI_API_KEY}
 RUN npm run build --workspace=apps/frontend
 
 FROM caddy:${CADDY_VERSION}-alpine AS runtime

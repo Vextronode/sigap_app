@@ -19,6 +19,23 @@
 		reverse_proxy {$BACKEND_UPSTREAM:backend:3000}
 	}
 
+	# Peta dasar: file statis tanpa fallback SPA, sehingga file yang tidak ada dibalas 404
+	# (bukan index.html yang bisa tersimpan sebagai file peta). Hanya file .pmtiles yang
+	# benar-benar ada yang diberi cache immutable (nama file memuat versi).
+	handle /maps/* {
+		@pmtiles {
+			path *.pmtiles
+			file {
+				root /srv
+			}
+		}
+		header @pmtiles Cache-Control "public, max-age=31536000, immutable"
+		header /maps/manifest.json Cache-Control "no-cache"
+		header X-Content-Type-Options nosniff
+		root * /srv
+		file_server
+	}
+
 	handle {
 		# Header keamanan SPA (tanpa HSTS: keputusan pengelola di edge TLS).
 		header {

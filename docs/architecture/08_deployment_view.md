@@ -57,7 +57,7 @@ Status scheduler terlihat di dashboard admin dan `/api/public/system-health`. `S
 | `release/<versi>` | Dibuat `scripts/release.sh` dari isi `dev` tanpa path pada `.release-exclude` |
 | `main` | Isi rilis; versi ditandai dengan tag |
 
-Image di-build di server dari tag rilis.
+Image di-build di server dari tag rilis. Build image web mengunduh file peta dasar dari GitHub Release `basemap-<versi>` sesuai `apps/frontend/public/maps/manifest.json` (bagian 7.4), sehingga server build memerlukan akses ke GitHub.
 
 ## 8.5 Migrasi Database
 
@@ -82,4 +82,4 @@ Daftar lengkap berada di `apps/backend/.env.example` dan `deploy/sigap.env.examp
 | `SID_INTEGRATION_ENABLED`, `SID_API_BASE_URL`, `SID_API_TOKEN` | Pengiriman peringatan ke SIDUTama | Opsional; ketiganya wajib bila integrasi diaktifkan |
 | `SIGAP_PUBLIC_BASE_URL` | Domain `link_url` pada peringatan SID | Opsional |
 
-Variabel frontend: `VITE_API_BASE_URL`, `VITE_API_URL`, `VITE_ALERT_REFETCH_INTERVAL_MS`, dan `VITE_PWA_DEV`.
+Variabel frontend: `VITE_API_BASE_URL`, `VITE_API_URL`, `VITE_ALERT_REFETCH_INTERVAL_MS`, `VITE_PWA_DEV`, dan `VITE_ESRI_API_KEY` (opsional, API key ArcGIS Location Platform untuk citra satelit; terlihat di browser, sehingga wajib dibatasi ke domain SIGAP). Untuk image web, `VITE_ESRI_API_KEY` diisi di `deploy/compose.env` dan diteruskan sebagai build arg.

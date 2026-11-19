@@ -107,7 +107,7 @@ Kebutuhan berikut berada di `sigap-phase-2/ROADMAP_TAHAP_2.md`:
 | Frontend | React, TypeScript, Vite, Tailwind CSS, PWA |
 | Backend | Node.js, Express, TypeScript, Prisma |
 | Database | PostgreSQL |
-| Peta | Leaflet dengan tile Google Maps |
+| Peta | Leaflet dengan peta dasar self-host (PMTiles dari data OpenStreetMap); citra satelit Esri opsional |
 | Notifikasi | Web Push (VAPID) |
 | Komunikasi perangkat | REST polling ke backend |
 | Hosting | Staging di server organisasi (Akademik Kampus) dengan Docker Compose |
@@ -141,7 +141,9 @@ Kebutuhan berikut berada di `sigap-phase-2/ROADMAP_TAHAP_2.md`:
 |---|---|
 | BMKG | Prakiraan cuaca, gempa, potensi tsunami |
 | Open-Meteo | Cuaca terkini dan prakiraan harian |
-| Google Maps | Tile peta dan navigasi ke titik evakuasi |
+| Google Maps | Navigasi ke titik evakuasi |
+| OpenStreetMap (build Protomaps) | Data peta dasar, diambil saat file peta diperbarui |
+| Esri (opsional) | Citra satelit saat online, bila API key diisi |
 | Layanan push browser | Pengiriman Web Push |
 
 ## 7. Data Model

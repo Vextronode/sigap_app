@@ -9,7 +9,8 @@
 | Open-Meteo `api.open-meteo.com` | SIGAP ke Open-Meteo | HTTPS | Cuaca terkini dan prakiraan harian |
 | Layanan push browser | SIGAP ke layanan push | Web Push (VAPID) | Notifikasi ke warga |
 | SIDUTama `/api/integrations/v1` | SIGAP ke SID | HTTPS, Bearer token | Peringatan bencana di halaman publik dan notifikasi akun warga SID |
-| Google Maps | Browser ke Google | HTTPS | Tile peta dan navigasi |
+| Google Maps | Browser ke Google | HTTPS | Navigasi ke titik evakuasi |
+| Esri World Imagery (`ibasemaps-api.arcgis.com`) | Browser ke Esri | HTTPS, API key berizin Basemaps | Citra satelit (opsional, hanya bila `VITE_ESRI_API_KEY` diisi) |
 
 Permintaan ke BMKG dan Open-Meteo memakai timeout dan retry yang dapat dikonfigurasi (`HTTP_TIMEOUT_MS`, `HTTP_RETRY_COUNT`, `HTTP_RETRY_DELAY_MS`).
 
@@ -79,3 +80,21 @@ sequenceDiagram
 - Isi, `external_id`, masa tayang, dan kapan peringatan diakhiri mengikuti `Rules_Alerts.md` bagian 10.1.
 - Admin dan operator dapat memeriksa status integrasi dan isi antrean melalui `GET /api/protected/integrations/sid/status`, serta menguji koneksi melalui `POST /api/protected/integrations/sid/ping`.
 - Kegagalan pengiriman ke SID tidak menghentikan siklus scheduler maupun Web Push (ADR-025).
+
+## 7.4 Peta Dasar
+
+Peta pada dashboard gempa, peta evakuasi warga dan admin, serta pemilih lokasi titik evakuasi memakai peta dasar self-host (ADR-051). Peta digambar di browser oleh `protomaps-leaflet` dari file PMTiles yang disajikan SIGAP sendiri, sehingga membuka peta tidak memanggil penyedia tile pihak ketiga.
+
+| File | Cakupan | Zoom data | Dipakai oleh |
+|---|---|---|---|
+| `indonesia-<versi>.pmtiles` | Indonesia | 0-8 | Peta sebaran gempa |
+| `pangandaran-z15-<versi>.pmtiles` | Kabupaten Pangandaran | 0-15 | Peta sebaran gempa, peta evakuasi, pemilih lokasi |
+
+- File dibuat oleh `scripts/maps/build-basemap.sh` dari build harian Protomaps (data OpenStreetMap), diunggah sebagai aset GitHub Release `basemap-<versi>`, dan dicatat beserta sha256 pada `apps/frontend/public/maps/manifest.json`.
+- Image web mengunduh file tersebut saat build lewat `scripts/maps/fetch-basemap.mjs` dan gagal bila sha256 tidak cocok. Caddy menyajikan `/maps/*` tanpa fallback SPA (file yang tidak ada dibalas `404`), file `.pmtiles` sebagai immutable, dan mendukung range request.
+- Peta evakuasi dan pemilih lokasi dibatasi ke wilayah Kabupaten Pangandaran, zoom 11-18.
+- Setelah data dashboard selesai dimuat, browser menyimpan file Pangandaran utuh di cache `sigap-basemap` (sekali per versi, dilewati pada mode hemat data). Service worker melayani range request dari salinan itu, sehingga peta evakuasi tampil saat offline. Hanya respons yang ukurannya sesuai manifest dan diawali magic number PMTiles yang disimpan. Lapisan Indonesia tidak disimpan untuk offline.
+- Peta sebaran gempa memakai lapisan Indonesia sampai zoom 8 dan lapisan detail Pangandaran mulai zoom 9.
+- Mode satelit menampilkan citra Esri dengan label dari peta dasar di atasnya, hanya saat online; tombol Jalan/Satelit tidak tampil bila `VITE_ESRI_API_KEY` kosong. Bila tile citra gagal dimuat sebelum ada yang berhasil, peta kembali ke mode jalan sampai koneksi berganti.
+- Atribusi: OpenStreetMap contributors dan Protomaps; Esri saat mode satelit aktif.
+

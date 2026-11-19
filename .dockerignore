@@ -27,3 +27,6 @@ SIGAP Desain Admin
 flake.*
 *.zip
 **/*.log
+
+# Peta dasar diunduh dan diverifikasi di dalam image (scripts/maps/fetch-basemap.mjs)
+apps/frontend/public/maps/*.pmtiles
