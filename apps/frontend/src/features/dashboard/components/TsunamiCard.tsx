@@ -1,5 +1,6 @@
 import { GiBigWave } from "react-icons/gi";
 import { Card } from "../../../components/ui/Card";
+import { StaleDataNotice } from "../../../components/common/StaleDataNotice";
 import { CardSkeleton } from "../../../components/ui/Skeleton";
 import type { TsunamiStatus } from "../../../types/dashboard";
 import { cn } from "../../../utils/cn";
@@ -9,12 +10,15 @@ type TsunamiCardProps = {
   tsunami: TsunamiStatus | null;
   isLoading?: boolean;
   isError?: boolean;
+  staleSince?: number;
 };
 
-type TsunamiTone = "safe" | "warning" | "orange" | "danger";
+type TsunamiTone = "safe" | "warning" | "orange" | "danger" | "neutral";
 
 const getTone = (status?: TsunamiStatus["status"]): TsunamiTone | null => {
   switch (status) {
+    case "UNKNOWN":
+      return "neutral";
     case "AWAS":
       return "danger";
     case "SIAGA":
@@ -30,6 +34,8 @@ const getTone = (status?: TsunamiStatus["status"]): TsunamiTone | null => {
 
 const getStatusLabel = (status?: TsunamiStatus["status"]) => {
   switch (status) {
+    case "UNKNOWN":
+      return "DATA TIDAK TERSEDIA";
     case "AWAS":
       return "AWAS";
     case "SIAGA":
@@ -45,25 +51,30 @@ const getStatusLabel = (status?: TsunamiStatus["status"]) => {
 
 const toneConfig: Record<TsunamiTone, { dot: string; text: string }> = {
   safe: { dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
-  warning: { dot: "bg-[#ffc642]", text: "text-amber-700 dark:text-amber-300" },
+  warning: { dot: "bg-sigap-warning", text: "text-amber-700 dark:text-amber-300" },
   orange: { dot: "bg-orange-500", text: "text-orange-600 dark:text-orange-400" },
   danger: { dot: "bg-red-500", text: "text-red-600 dark:text-red-400" },
+  neutral: { dot: "bg-slate-400", text: "text-slate-500 dark:text-slate-400" },
 };
 
 export const TsunamiCard = ({
   tsunami,
   isLoading = false,
   isError = false,
+  staleSince,
 }: TsunamiCardProps) => {
   if (isLoading && !isError) return <CardSkeleton />;
 
   const displayTsunami = isError ? null : tsunami;
+  const isUnknown = displayTsunami?.status === "UNKNOWN";
   const tone = getTone(displayTsunami?.status);
   const statusLabel = getStatusLabel(displayTsunami?.status);
 
-  const formattedDate = displayTsunami
+  const formattedDate = displayTsunami?.updatedAt
     ? formatDateTime(displayTsunami.updatedAt)
     : null;
+  // Sumber hanya ditampilkan bila status berasal dari data; tanpa data tidak memakai sumber bawaan.
+  const sourceLabel = displayTsunami && !isUnknown ? displayTsunami.source : "-";
 
   return (
     <Card className="!p-0 overflow-hidden border border-[color:var(--border)] bg-card shadow-sm">
@@ -127,7 +138,7 @@ export const TsunamiCard = ({
           <div className="text-[color:var(--text-muted)]">Sumber</div>
 
           <div className="mt-1 text-sm font-semibold uppercase tracking-normal text-foreground">
-            {displayTsunami?.source ?? "BMKG InaTEWS"}
+            {sourceLabel}
           </div>
         </div>
 
@@ -138,7 +149,7 @@ export const TsunamiCard = ({
             {formattedDate ? (
               <>
                 <div className="text-xs font-semibold text-foreground">
-                  {formattedDate.time}
+                  {isUnknown ? `Terakhir berhasil ${formattedDate.time}` : formattedDate.time}
                 </div>
 
                 <div className="text-xs font-semibold text-foreground">
@@ -151,6 +162,7 @@ export const TsunamiCard = ({
           </div>
         </div>
       </div>
+      <StaleDataNotice since={staleSince} />
     </Card>
   );
 };

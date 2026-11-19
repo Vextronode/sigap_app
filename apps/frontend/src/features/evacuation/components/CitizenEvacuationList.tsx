@@ -53,7 +53,7 @@ export const CitizenEvacuationList: React.FC<CitizenEvacuationListProps> = ({
                     {index + 1}
                   </span>
                   <div className="min-w-0">
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug group-hover:text-[#00247D] dark:group-hover:text-blue-400 transition-colors truncate">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug group-hover:text-sigap-primary dark:group-hover:text-blue-400 transition-colors truncate">
                       {point.name}
                     </h3>
                     {point.address && (
@@ -67,7 +67,7 @@ export const CitizenEvacuationList: React.FC<CitizenEvacuationListProps> = ({
 
                 <div className="flex items-center gap-1 shrink-0">
                   {point.isCore && (
-                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40 uppercase tracking-wide">
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40 uppercase tracking-wide">
                       <ShieldCheck size={10} />
                       Shelter Utama
                     </span>
@@ -181,7 +181,7 @@ export const CitizenEvacuationList: React.FC<CitizenEvacuationListProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group/btn inline-flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-[#00247D] hover:bg-[#001D66] text-white text-xs font-bold shadow-2xs hover:shadow transition-all cursor-pointer"
+                className="group/btn inline-flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-sigap-primary hover:bg-sigap-primary-hover text-white text-xs font-bold shadow-2xs hover:shadow transition-all cursor-pointer"
                 style={{ color: "#ffffff", textDecoration: "none" }}
               >
                 <span style={{ color: "#ffffff", fontWeight: 700 }}>Rute Google Maps</span>

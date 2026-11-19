@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 
 const PHONE_REGEX = /^[+0-9\s-]{6,25}$/;
 
-function validateContactFields(body: any, isUpdate: boolean = false): Record<string, string> {
+function validateContactFields(body: Record<string, unknown> | null | undefined, isUpdate: boolean = false): Record<string, string> {
   const { institution, phoneNumber, icon } = body ?? {};
   const errors: Record<string, string> = {};
 
@@ -41,7 +41,7 @@ export function validateCreateEmergencyContact(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 
@@ -60,9 +60,7 @@ export function validateUpdateEmergencyContact(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors: {
-        body: "Minimal salah satu data institusi, nomor telepon, atau icon harus diisi.",
-      },
+      errors: ["Minimal salah satu data institusi, nomor telepon, atau icon harus diisi."],
     });
   }
 
@@ -72,7 +70,7 @@ export function validateUpdateEmergencyContact(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 

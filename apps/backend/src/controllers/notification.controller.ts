@@ -7,9 +7,17 @@ import type {
 } from "../types/weather.types.js";
 import type { PushSubscriptionInput } from "../types/notification.types.js";
 
+const P256DH_BYTES = 65;
+const AUTH_SECRET_BYTES = 16;
+const BASE64URL = /^[A-Za-z0-9_-]+={0,2}$/;
+
+/** Panjang hasil decode base64url, atau -1 bila bukan string base64url. */
+const decodedLength = (value: unknown): number =>
+  typeof value === "string" && BASE64URL.test(value) ? Buffer.from(value, "base64url").length : -1;
+
 export class NotificationController {
   /**
-   * GET /api/v1/public/notifications/vapid-public-key
+   * GET /api/public/notifications/vapid-public-key
    * Diperlukan frontend browser untuk melakukan subscribe Web Push API.
    */
   static getVapidPublicKey(_req: Request, res: Response) {
@@ -22,7 +30,7 @@ export class NotificationController {
   }
 
   /**
-   * POST /api/v1/public/notifications/subscribe
+   * POST /api/public/notifications/subscribe
    * Mendaftarkan token push browser ke database dengan validasi anti-SSRF (SEC-06).
    */
   static async subscribe(req: Request, res: Response) {
@@ -68,6 +76,14 @@ export class NotificationController {
       if (!isTrustedHost) {
         throw new Error(`Host push endpoint tidak diizinkan: ${url.hostname}`);
       }
+
+      // Kunci Web Push (RFC 8291): p256dh titik P-256 tak terkompresi 65 byte, auth 16 byte.
+      if (decodedLength(subscription.keys.p256dh) !== P256DH_BYTES) {
+        throw new Error("keys.p256dh tidak valid.");
+      }
+      if (decodedLength(subscription.keys.auth) !== AUTH_SECRET_BYTES) {
+        throw new Error("keys.auth tidak valid.");
+      }
     } catch (err) {
       const response: ApiErrorResponse = {
         success: false,
@@ -105,7 +121,7 @@ export class NotificationController {
   }
 
   /**
-   * POST /api/v1/public/notifications/unsubscribe
+   * POST /api/public/notifications/unsubscribe
    * Membatalkan langganan push endpoint tertentu.
    */
   static async unsubscribe(req: Request, res: Response) {
@@ -131,7 +147,7 @@ export class NotificationController {
   }
 
   /**
-   * GET /api/v1/public/notifications/latest
+   * GET /api/public/notifications/latest
    * Konten notifikasi terkini yang dibangun dari alert yang sama dengan dashboard.
    */
   static async getLatest(_req: Request, res: Response) {
@@ -158,14 +174,14 @@ export class NotificationController {
   }
 
   /**
-   * POST /api/v1/protected/notifications/dispatch
+   * POST /api/protected/notifications/dispatch
    * SEC-05: Dispatch manual notifikasi darurat massal hanya untuk Administrator.
    */
   static async dispatch(_req: Request, res: Response) {
     try {
-      const payload = await NotificationService.getLatestPayload();
+      const notification = await NotificationService.getLatestNotification();
 
-      if (!payload) {
+      if (!notification) {
         const response: ApiErrorResponse = {
           success: false,
           message: "Tidak ada alert untuk dikirim.",
@@ -174,7 +190,7 @@ export class NotificationController {
         return res.status(404).json(response);
       }
 
-      if (!NotificationService.shouldNotify(payload.level)) {
+      if (!NotificationService.shouldNotify(notification.payload.level)) {
         const response: ApiSuccessResponse<null> = {
           success: true,
           message: "Level saat ini AMAN — notifikasi tidak dikirim.",
@@ -184,7 +200,7 @@ export class NotificationController {
       }
 
       const result = await NotificationService.dispatch(
-        payload,
+        notification,
         "ADMIN_DISPATCH"
       );
 
@@ -206,7 +222,7 @@ export class NotificationController {
   }
 
   /**
-   * GET /api/v1/protected/notifications/logs
+   * GET /api/protected/notifications/logs
    * SEC-08: Riwayat audit log notifikasi — hanya admin yang terautentikasi.
    */
   static async getLogs(req: Request, res: Response) {
@@ -236,7 +252,7 @@ export class NotificationController {
   }
 
   /**
-   * GET /api/v1/protected/notifications/subscribers/count
+   * GET /api/protected/notifications/subscribers/count
    * Mengambil total subscriber warga penerima Web Push aktif — admin & operator.
    */
   static async getSubscriberCount(_req: Request, res: Response) {

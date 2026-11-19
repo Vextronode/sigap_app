@@ -1,6 +1,7 @@
 import { precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
-import { NetworkFirst } from "workbox-strategies";
+import { CacheFirst, NetworkFirst } from "workbox-strategies";
+import { RangeRequestsPlugin } from "workbox-range-requests";
 
 precacheAndRoute(self.__WB_MANIFEST);
 
@@ -11,6 +12,33 @@ registerRoute(
   new NetworkFirst({
     cacheName: "sigap-dashboard-cache",
     networkTimeoutSeconds: 5,
+  })
+);
+
+// Peta dasar self-host. Manifest selalu dicek ke server dulu agar versi baru terdeteksi.
+// File .pmtiles disimpan utuh oleh cacheBasemapForOffline() (components/map/basemap.ts);
+// permintaan potongan (Range) dari protomaps-leaflet dilayani dari salinan utuh itu,
+// sehingga peta tetap tampil saat offline.
+const BASEMAP_CACHE = "sigap-basemap";
+registerRoute(
+  ({ url }) => url.pathname === "/maps/manifest.json",
+  new NetworkFirst({ cacheName: BASEMAP_CACHE, networkTimeoutSeconds: 5 })
+);
+// Jangan simpan respons yang bukan file PMTiles, mis. index.html dari fallback SPA saat file
+// peta tidak ada di server; tanpa ini peta di perangkat rusak sampai versi peta berikutnya.
+const pmtilesOnlyPlugin = {
+  cacheWillUpdate: async ({ response }) => {
+    if (!response || response.status !== 200) return null;
+    if ((response.headers.get("content-type") || "").includes("text/html")) return null;
+    const head = new Uint8Array(await response.clone().arrayBuffer(), 0, 7);
+    return new TextDecoder().decode(head) === "PMTiles" ? response : null;
+  },
+};
+registerRoute(
+  ({ url }) => url.pathname.startsWith("/maps/") && url.pathname.endsWith(".pmtiles"),
+  new CacheFirst({
+    cacheName: BASEMAP_CACHE,
+    plugins: [pmtilesOnlyPlugin, new RangeRequestsPlugin()],
   })
 );
 

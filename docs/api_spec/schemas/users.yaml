@@ -1,6 +1,78 @@
 # =====================================================================
-# schemas/users.yaml — schema domain manajemen akun (FS-10)
+# schemas/users.yaml - schema domain manajemen akun
 # =====================================================================
+
+UserSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    email:
+      type: string
+      format: email
+    isActive:
+      type: boolean
+    role:
+      type: string
+    roleId:
+      type: string
+      format: uuid
+    permissions:
+      type: array
+      items:
+        type: string
+    isLocked:
+      type: boolean
+    lockedUntil:
+      type: string
+      format: date-time
+      nullable: true
+    failedLoginCount:
+      type: integer
+    lastLoginAt:
+      type: string
+      format: date-time
+      nullable: true
+    lastLoginIp:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+UserStatistics:
+  type: object
+  properties:
+    totalUsers:
+      type: integer
+    totalAdmins:
+      type: integer
+    totalOperators:
+      type: integer
+    totalInactiveOrLocked:
+      type: integer
+
+Role:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    description:
+      type: string
+      nullable: true
+    permissions:
+      type: array
+      items:
+        type: string
 
 UserCreateRequest:
   type: object
@@ -8,27 +80,32 @@ UserCreateRequest:
   properties:
     name:
       type: string
+      minLength: 2
+      maxLength: 100
     email:
       type: string
       format: email
     password:
       type: string
       format: password
+      minLength: 8
     role:
       type: string
       enum: [admin, operator]
 
 UserUpdateRequest:
   type: object
+  minProperties: 1
   properties:
     name:
       type: string
+      minLength: 2
+      maxLength: 100
     role:
       type: string
       enum: [admin, operator]
     isActive:
       type: boolean
-      description: Toggle aktif/nonaktif (FS-10 FR4) - TIDAK ada hard delete akun.
 
 ResetPasswordRequest:
   type: object
@@ -37,3 +114,4 @@ ResetPasswordRequest:
     newPassword:
       type: string
       format: password
+      minLength: 8

@@ -16,7 +16,7 @@
  */
 
 import { requestWithRetry } from "../utils/httpRetryWrapper.js";
-import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
+import type { ForecastItem } from "../types/weather.types.js";
 
 // ---------------------------------------------------------------------------
 // Koordinat & URL
@@ -25,7 +25,11 @@ import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 const LAT = parseFloat(process.env.VILLAGE_LAT ?? "-7.6838");
 const LON = parseFloat(process.env.VILLAGE_LON ?? "108.5610");
 
-const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+export const OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast";
+const BASE_URL = OPEN_METEO_BASE_URL;
+
+/** Koordinat desa yang dipakai Open-Meteo, juga untuk pengecekan kesehatan layanan. */
+export const OPEN_METEO_COORDINATES = { latitude: LAT, longitude: LON };
 
 // ---------------------------------------------------------------------------
 // Tipe respons Open-Meteo (subset yang dipakai)
@@ -117,8 +121,10 @@ const DAY_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"] as const;
 function buildDayLabel(dateStr: string, indexFromToday: number): string {
   if (indexFromToday === 0) return "Hari Ini";
   if (indexFromToday === 1) return "Besok";
-  const date = new Date(`${dateStr}T00:00:00+07:00`);
-  return DAY_ID[date.getDay()];
+  // dateStr adalah tanggal kalender WIB. Tengah hari UTC jatuh pada tanggal yang sama
+  // di zona mana pun, sehingga label tidak bergantung zona waktu server (TK-05).
+  const date = new Date(`${dateStr}T12:00:00Z`);
+  return DAY_ID[date.getUTCDay()];
 }
 
 // ---------------------------------------------------------------------------

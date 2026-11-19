@@ -5,8 +5,6 @@ import {
   ShieldCheck,
   Bell,
   ChevronRight,
-  CheckCircle2,
-  Clock,
   Radio,
 } from "lucide-react";
 import { BiBarChartAlt } from "react-icons/bi";
@@ -48,7 +46,7 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
   }
 
   // 1. Status Siaga Desa
-  const alertLevel = alert?.level || "GREEN";
+  const alertLevel = alert?.level || "UNKNOWN";
   const isEmergency = alertLevel === "ORANGE" || alertLevel === "RED";
   const isWarning = alertLevel === "YELLOW";
 
@@ -89,6 +87,15 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
       icon: ShieldAlert,
       iconBg: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
     },
+    UNKNOWN: {
+      label: "DATA TIDAK TERSEDIA",
+      shortLabel: "TIDAK TERSEDIA",
+      badgeClass: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30",
+      dotClass: "bg-slate-400",
+      desc: "Data peringatan tidak tersedia",
+      icon: ShieldAlert,
+      iconBg: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
+    },
   }[alertLevel];
 
   const LevelIcon = levelConfig.icon;
@@ -96,10 +103,7 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
   // 2. Metrik Subscriber Web Push
   const totalSubscribers = subscriberCount;
 
-  // 3. Metrik Antrean Verifikasi
-  const pendingCount = alertStats?.pending ?? 0;
-
-  // 4. Metrik IoT Perangkat
+  // 3. Metrik IoT Perangkat
   const isIotOnline = deviceStatus?.status === "ONLINE";
 
   return (
@@ -153,9 +157,6 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
 
         <div className="pt-2 sm:pt-2.5 border-t border-[color:var(--border)] flex items-center justify-between text-[10px] sm:text-[11px] text-[color:var(--text-muted)]">
           <span className="truncate">Sumber: BMKG</span>
-          <span className="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1">
-            {alert?.reviewStatus || "Terverifikasi"}
-          </span>
         </div>
       </Card>
 
@@ -197,66 +198,35 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
         </div>
       </Card>
 
-      {/* Kartu 3: Antrean Verifikasi Alert */}
-      <Card
-        className={cn(
-          "relative overflow-hidden flex flex-col justify-between p-3 sm:p-4.5 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
-          pendingCount > 0
-            ? "border-amber-500/40 bg-gradient-to-b from-amber-500/10 via-[color:var(--surface)] to-[color:var(--surface)]"
-            : "border-[color:var(--border)] bg-[color:var(--surface)] hover:border-emerald-500/40"
-        )}
-      >
+      {/* Kartu 3: Riwayat Alert */}
+      <Card className="relative overflow-hidden flex flex-col justify-between p-3 sm:p-4.5 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-blue-500/40">
         <div className="flex items-center justify-between gap-1.5">
           <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-[color:var(--text-muted)] truncate">
-            Verifikasi Gempa
+            Riwayat Alert
           </span>
-          {pendingCount > 0 ? (
-            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-amber-500" />
-            </span>
-          ) : (
-            <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-          )}
         </div>
 
         <div className="my-2 sm:my-2.5 flex items-center gap-2 sm:gap-3">
-          <div
-            className={cn(
-              "flex h-8 w-8 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border shadow-2xs",
-              pendingCount > 0
-                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-            )}
-          >
+          <div className="flex h-8 w-8 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
             <BiBarChartAlt className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-1">
-              <span
-                className={cn(
-                  "text-lg sm:text-2xl font-black tracking-tight",
-                  pendingCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-[color:var(--text)]"
-                )}
-              >
-                {pendingCount}
+              <span className="text-lg sm:text-2xl font-black tracking-tight text-[color:var(--text)]">
+                {alertStats?.total ?? 0}
               </span>
               <span className="text-[10px] sm:text-xs font-bold text-[color:var(--text-muted)]">
-                Antrean
+                Tercatat
               </span>
             </div>
             <p className="mt-0.5 text-[10px] sm:text-xs text-[color:var(--text-muted)] font-medium truncate">
-              {pendingCount > 0 ? "Perlu validasi" : "Semua tervalidasi"}
+              Arsip alert desa
             </p>
           </div>
         </div>
 
-        <div className="pt-2 sm:pt-2.5 border-t border-[color:var(--border)] flex items-center justify-between text-[10px] sm:text-[11px] text-[color:var(--text-muted)]">
-          <span className="flex items-center gap-0.5 truncate">
-            <Clock size={10} className="shrink-0" />
-            <span>{alertStats?.total ?? 0} tercatat</span>
-          </span>
+        <div className="pt-2 sm:pt-2.5 border-t border-[color:var(--border)] flex items-center justify-end text-[10px] sm:text-[11px] text-[color:var(--text-muted)]">
           <Link
             to="/admin/alerts"
             className="inline-flex items-center gap-0.5 font-bold text-[color:var(--primary)] hover:underline shrink-0 ml-1"
@@ -282,7 +252,7 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
             )}
           >
             <span className={cn("h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full", isIotOnline ? "bg-emerald-500" : "bg-slate-400")} />
-            {isIotOnline ? "Online" : "Standby"}
+            {isIotOnline ? "Online" : "Offline"}
           </span>
         </div>
 
@@ -296,14 +266,14 @@ export const AdminKpiMetrics: React.FC<AdminKpiMetricsProps> = ({
               Unit Posko
             </p>
             <p className="mt-0.5 text-[10px] sm:text-xs text-[color:var(--text-muted)] font-medium truncate">
-              {isIotOnline ? "ESP-NOW Radio Online" : "Jalur Radio Standby"}
+              {isIotOnline ? "Perangkat terhubung" : "Perangkat tidak terhubung"}
             </p>
           </div>
         </div>
 
         <div className="pt-2 sm:pt-2.5 border-t border-[color:var(--border)] flex items-center justify-between text-[10px] sm:text-[11px] text-[color:var(--text-muted)]">
-          <span className="truncate">Menara</span>
-          <span className="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1">Siap Picu</span>
+          <span className="truncate">Kontrol sirine</span>
+          <span className="font-semibold shrink-0 ml-1">Belum tersedia</span>
         </div>
       </Card>
     </div>

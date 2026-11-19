@@ -66,7 +66,7 @@ export const EvacuationPointCards: React.FC<EvacuationPointCardsProps> = ({
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {point.isCore ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#00247D] dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sigap-primary-light dark:bg-blue-950/60 text-sigap-primary dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
                       <ShieldCheck size={12} />
                       Shelter Utama
                     </span>
@@ -104,7 +104,7 @@ export const EvacuationPointCards: React.FC<EvacuationPointCardsProps> = ({
               </div>
 
               {/* Title & Address */}
-              <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug group-hover:text-[#00247D] dark:group-hover:text-blue-400 transition-colors">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug group-hover:text-sigap-primary dark:group-hover:text-blue-400 transition-colors">
                 {point.name}
               </h3>
 
@@ -157,7 +157,7 @@ export const EvacuationPointCards: React.FC<EvacuationPointCardsProps> = ({
                     type="button"
                     onClick={() => onHighlightMap(point)}
                     title="Sorot di Peta"
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-[#00247D] hover:bg-blue-50 dark:hover:bg-blue-950/60 dark:hover:text-blue-300 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-sigap-primary hover:bg-sigap-primary-light dark:hover:bg-blue-950/60 dark:hover:text-blue-300 transition-colors cursor-pointer"
                   >
                     <Layers size={14} />
                   </button>

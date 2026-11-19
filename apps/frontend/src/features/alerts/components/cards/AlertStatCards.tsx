@@ -15,7 +15,7 @@ export const AlertStatCards: React.FC<AlertStatCardsProps> = ({
   const cards = [
     {
       id: "pending",
-      title: "Menunggu Verifikasi",
+      title: "Belum Ditinjau",
       value: stats?.pending ?? 0,
       icon: Monitor,
       iconBgClass: "bg-[#EEF4FF] dark:bg-blue-950/40 text-[#1E40AF] dark:text-blue-400",

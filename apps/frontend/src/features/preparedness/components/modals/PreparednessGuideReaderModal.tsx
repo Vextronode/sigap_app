@@ -18,6 +18,7 @@ export const PreparednessGuideReaderModal: React.FC<
         day: "numeric",
         month: "long",
         year: "numeric",
+        timeZone: "Asia/Jakarta",
       })
     : null;
 

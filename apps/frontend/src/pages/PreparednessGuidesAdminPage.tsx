@@ -171,7 +171,7 @@ export default function PreparednessGuidesAdminPage() {
               ? "Batas kuota 5 panduan tercapai"
               : "Tambah Panduan Kesiapsiagaan Baru"
           }
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00247D] hover:bg-[#001d66] disabled:bg-slate-400 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sigap-primary hover:bg-sigap-primary-hover disabled:bg-slate-400 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
         >
           <Plus size={16} />
           <span>Tambah Panduan</span>

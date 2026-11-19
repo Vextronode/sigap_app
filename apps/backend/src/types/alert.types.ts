@@ -3,7 +3,14 @@ import type { EarthquakeInfo } from "./earthquake.types.js";
 
 export { AlertReviewStatus };
 
-export type TsunamiStatus = "NORMAL" | "WASPADA" | "SIAGA" | "AWAS";
+/**
+ * Level alert yang berlaku. UNKNOWN hanya menggambarkan kondisi saat data tidak
+ * tersedia dan tidak pernah disimpan ke database (ADR-037).
+ */
+export type CurrentAlertLevel = AlertLevel | "UNKNOWN";
+
+/** `UNKNOWN` saat data gempa BMKG gagal diambil dan status resmi kosong (ADR-043). */
+export type TsunamiStatus = "NORMAL" | "WASPADA" | "SIAGA" | "AWAS" | "UNKNOWN";
 
 /**
  * Hasil status tsunami lengkap dengan `source`/`description` yang jujur
@@ -17,17 +24,40 @@ export interface TsunamiStatusInfo {
   status: TsunamiStatus;
   source: string;
   description: string;
+  /** Waktu gempa asal estimasi; kosong untuk status resmi. */
+  eventTime?: string;
+  /**
+   * Waktu data sumber: konfigurasi status resmi dibaca, gempa asal estimasi, atau
+   * pengambilan data gempa BMKG sukses terakhir. null bila belum pernah berhasil.
+   */
+  updatedAt: string | null;
 }
 
 export interface DecisionInput {
-  earthquake?: EarthquakeInfo | null;
+  /** Gempa relevan; yang berumur lebih dari 24 jam diabaikan Decision Engine. */
+  earthquakes?: EarthquakeInfo[] | null;
   tsunami?: TsunamiStatusInfo | null;
+}
+
+/** Ringkasan rentetan gempa aktif yang menentukan level (ADR-046). */
+export interface EarthquakeSequence {
+  /** Kejadian terbaru pada level tertinggi; dasar masa aktif alert. */
+  eventTime: string;
+  /** Magnitudo terbesar pada level tertinggi; dasar deskripsi dan aturan notifikasi rentetan. */
+  levelMaxMagnitude: number;
+  startedAt: string;
+  eventCount: number;
+  maxMagnitude: number;
 }
 
 export interface DecisionResult {
   level: AlertLevel;
   source: string;
   description: string;
+  /** Terisi bila level berasal dari gempa. */
+  sequence?: EarthquakeSequence;
+  /** Waktu gempa asal estimasi tsunami; dasar duplikat dan masa aktif alert estimasi. */
+  sourceEventTime?: string;
 }
 
 // label status review dalam bahasa indonesia sesuai spesifikasi fs-02
@@ -53,7 +83,7 @@ export interface AlertReviewerInfo {
 
 export interface AlertRecord {
   id: string;
-  level: AlertLevel;
+  level: CurrentAlertLevel;
   source: string;
   description: string | null;
   location?: string | null;
@@ -62,6 +92,14 @@ export interface AlertRecord {
   reviewedBy: string | null;
   reviewedAt: Date | null;
   reviewer?: AlertReviewerInfo | null;
+  /** Rentetan gempa (ADR-046); kosong untuk alert status tsunami dan alert lama. */
+  eventTime?: Date | null;
+  referenceMagnitude?: number | null;
+  episodeStartedAt?: Date | null;
+  episodeEventCount?: number | null;
+  episodeMaxMagnitude?: number | null;
+  /** Batas masa aktif alert yang berlaku; null bila mengikuti BMKG_TSUNAMI_STATUS. */
+  activeUntil?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

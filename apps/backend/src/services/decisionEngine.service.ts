@@ -1,93 +1,124 @@
 /**
- * Decision Engine sederhana — menentukan level kesiapsiagaan berdasarkan
- * data gempa terkini.
+ * Decision Engine — menentukan level kesiapsiagaan dari status tsunami dan
+ * seluruh gempa relevan yang masih aktif.
  *
- * Sumber gempa (lihat alert.scheduler.ts): `EarthquakeService.getPangandaran()`,
- * bukan gempa nasional terbaru. Artinya radius & umur maksimum gempa yang
- * masuk ke sini SUDAH difilter relevansinya sebelum sampai ke engine ini
- * (lihat `findNearestEarthquake` di earthquake.service.ts).
+ * Sumber gempa (lihat alert.scheduler.ts): `EarthquakeService.getActiveEvents()`,
+ * yaitu gempa yang sudah lolos filter relevansi Desa Cibenda.
  *
- * Umur status alert aktif dipatok maksimal 24 Jam (1 Hari) sejak waktu gempa.
- * Jika gempa berusia > 24 jam, status kesiapsiagaan otomatis kembali ke GREEN (Aman).
+ * Setiap gempa aktif selama 24 jam sejak waktu kejadiannya. Level gempa adalah
+ * level tertinggi di antara gempa yang masih aktif, sehingga gempa susulan yang
+ * lebih kecil tidak menurunkan level selama gempa penentu masih aktif (ADR-046).
  */
 
 import { AlertLevel } from "../../generated/prisma/enums.js";
-import { ALERT_RULES } from "../config/alertRules.js";
+import { ALERT_ACTIVE_MAX_AGE_MS } from "../config/alertRules.js";
+import { isFeltNearVillage } from "../utils/bmkgEarthquake.util.js";
+import type { EarthquakeInfo } from "../types/earthquake.types.js";
 import type { DecisionInput, DecisionResult, TsunamiStatus } from "../types/alert.types.js";
 
-const ALERT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 jam (1 hari)
+export const LEVEL_RANK: Record<AlertLevel, number> = {
+  [AlertLevel.GREEN]: 0,
+  [AlertLevel.YELLOW]: 1,
+  [AlertLevel.ORANGE]: 2,
+  [AlertLevel.RED]: 3,
+};
 
-const isFeltNearVillage = (felt: string | undefined): boolean => {
-  if (!felt) return false;
+const eventTimeMs = (earthquake: EarthquakeInfo) => new Date(earthquake.updatedAt).getTime();
 
-  const normalized = felt.toLowerCase();
-  return ALERT_RULES.earthquake.feltAreaKeywords.some((keyword) =>
-    normalized.includes(keyword.toLowerCase())
+/**
+ * Status tsunami (resmi InaTEWS via override manual, ATAU estimasi
+ * SIGAP dari data gempa — lihat BmkgService.getTsunamiStatus()).
+ */
+// UNKNOWN tidak menaikkan level; ketersediaan data ditangani getCurrentAlert (ADR-043).
+const evaluateTsunami = (tsunami: DecisionInput["tsunami"]): DecisionResult | null => {
+  if (!tsunami || tsunami.status === "NORMAL" || tsunami.status === "UNKNOWN") return null;
+
+  const tsunamiLevelMap: Record<Exclude<TsunamiStatus, "NORMAL" | "UNKNOWN">, AlertLevel> = {
+    AWAS: AlertLevel.RED,
+    SIAGA: AlertLevel.ORANGE,
+    WASPADA: AlertLevel.YELLOW,
+  };
+
+  return {
+    level: tsunamiLevelMap[tsunami.status],
+    source: tsunami.source,
+    description: tsunami.description,
+    ...(tsunami.eventTime ? { sourceEventTime: tsunami.eventTime } : {}),
+  };
+};
+
+/** Level satu gempa, atau null bila sudah berumur lebih dari 24 jam. */
+const assessEarthquake = (earthquake: EarthquakeInfo): AlertLevel | null => {
+  const ageMs = Date.now() - eventTimeMs(earthquake);
+  if (!(ageMs <= ALERT_ACTIVE_MAX_AGE_MS)) return null;
+  return isFeltNearVillage(earthquake.feltAreas) ? AlertLevel.ORANGE : AlertLevel.YELLOW;
+};
+
+const describeEarthquake = (earthquake: EarthquakeInfo, level: AlertLevel): string =>
+  level === AlertLevel.ORANGE
+    ? `Gempa M${earthquake.magnitude} dirasakan warga di sekitar Desa Cibenda (${earthquake.felt}).`
+    : `Gempa M${earthquake.magnitude} terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.`;
+
+/**
+ * Rentetan gempa: level tertinggi di antara gempa aktif. Deskripsi memakai gempa
+ * terbesar pada level tersebut; masa aktif memakai kejadian terbaru pada level itu,
+ * sehingga gempa susulan dengan level sama memperpanjang alert.
+ */
+const evaluateEarthquakes = (earthquakes: DecisionInput["earthquakes"]): DecisionResult | null => {
+  const active = (earthquakes ?? [])
+    .map((event) => ({ event, level: assessEarthquake(event) }))
+    .filter((item): item is { event: EarthquakeInfo; level: AlertLevel } => item.level !== null);
+
+  if (active.length === 0) return null;
+
+  const topRank = Math.max(...active.map((item) => LEVEL_RANK[item.level]));
+  const atTopLevel = active.filter((item) => LEVEL_RANK[item.level] === topRank);
+  const latestAtTop = atTopLevel.reduce((latest, item) =>
+    eventTimeMs(item.event) > eventTimeMs(latest.event) ? item : latest
   );
+  const largestAtTop = atTopLevel.reduce((largest, item) =>
+    item.event.magnitude > largest.event.magnitude ||
+    (item.event.magnitude === largest.event.magnitude &&
+      eventTimeMs(item.event) > eventTimeMs(largest.event))
+      ? item
+      : largest
+  );
+  const startedAt = Math.min(...active.map((item) => eventTimeMs(item.event)));
+
+  return {
+    level: latestAtTop.level,
+    source: "BMKG",
+    description: describeEarthquake(largestAtTop.event, largestAtTop.level),
+    sequence: {
+      eventTime: latestAtTop.event.updatedAt,
+      levelMaxMagnitude: largestAtTop.event.magnitude,
+      startedAt: new Date(startedAt).toISOString(),
+      eventCount: active.length,
+      maxMagnitude: Math.max(...active.map((item) => item.event.magnitude)),
+    },
+  };
 };
 
 export class DecisionEngineService {
+  /**
+   * Level akhir = level tertinggi antara tsunami dan gempa (ADR-040).
+   * Bila sama tinggi, status tsunami yang dipakai. Bila gempa lebih tinggi,
+   * informasi tsunami tetap disertakan pada deskripsi.
+   */
   static evaluate(input: DecisionInput): DecisionResult {
-    const { earthquake, tsunami } = input;
+    const tsunami = evaluateTsunami(input.tsunami);
+    const earthquake = evaluateEarthquakes(input.earthquakes);
 
-    /**
-     * ============================
-     * PRIORITAS 1
-     * Status tsunami (resmi InaTEWS via override manual, ATAU estimasi
-     * SIGAP dari data gempa — lihat BmkgService.getTsunamiStatus()).
-     * ============================
-     */
-    if (tsunami && tsunami.status !== "NORMAL") {
-      const tsunamiLevelMap: Record<Exclude<TsunamiStatus, "NORMAL">, AlertLevel> = {
-        AWAS: AlertLevel.RED,
-        SIAGA: AlertLevel.ORANGE,
-        WASPADA: AlertLevel.YELLOW,
-      };
-
+    if (tsunami && earthquake && LEVEL_RANK[earthquake.level] > LEVEL_RANK[tsunami.level]) {
       return {
-        level: tsunamiLevelMap[tsunami.status as Exclude<TsunamiStatus, "NORMAL">],
-        source: tsunami.source,
-        description: tsunami.description,
+        ...earthquake,
+        description: `${earthquake.description} ${tsunami.description}`,
       };
     }
 
-    /**
-     * ============================
-     * PRIORITAS 2
-     * Gempa (sudah difilter relevan untuk Desa Cibenda oleh
-     * EarthquakeService.getPangandaran() sebelum sampai di sini).
-     *
-     * Umur aktif alert gempa = 24 Jam (1 Hari). Jika gempa lebih dari 24 jam,
-     * status alert otomatis kembali ke GREEN (Aman).
-     * ============================
-     */
-    if (earthquake) {
-      const { magnitude, felt, updatedAt } = earthquake;
-      const ageMs = Date.now() - new Date(updatedAt).getTime();
+    const result = tsunami ?? earthquake;
+    if (result) return result;
 
-      // Cek apakah gempa masih berusia <= 24 jam (1 hari)
-      if (ageMs <= ALERT_MAX_AGE_MS) {
-        if (isFeltNearVillage(felt)) {
-          return {
-            level: AlertLevel.ORANGE,
-            source: "BMKG",
-            description: `Gempa M${magnitude} dirasakan warga di sekitar Desa Cibenda (${felt}).`,
-          };
-        }
-
-        return {
-          level: AlertLevel.YELLOW,
-          source: "BMKG",
-          description: `Gempa M${magnitude} terdeteksi dalam radius pemantauan Desa Cibenda, namun belum ada laporan dirasakan warga. Tetap pantau informasi resmi BMKG.`,
-        };
-      }
-    }
-
-    /**
-     * ============================
-     * Default (Aman)
-     * ============================
-     */
     return {
       level: AlertLevel.GREEN,
       source: "BMKG",

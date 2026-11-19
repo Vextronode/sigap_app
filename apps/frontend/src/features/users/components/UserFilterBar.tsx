@@ -58,7 +58,7 @@ export const UserFilterBar: React.FC<UserFilterBarProps> = ({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Cari nama, email, atau peran..."
-          className="w-full pl-10 pr-9 py-2 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00247D]/30 dark:focus:ring-blue-500/30 transition-all shadow-2xs"
+          className="w-full pl-10 pr-9 py-2 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sigap-primary/30 dark:focus:ring-blue-500/30 transition-all shadow-2xs"
         />
         {search && (
           <button
@@ -83,14 +83,14 @@ export const UserFilterBar: React.FC<UserFilterBarProps> = ({
             aria-label="Buka opsi filter"
             className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all cursor-pointer shadow-2xs ${
               activeFilterCount > 0
-                ? "bg-blue-50 dark:bg-blue-950/60 border-[#00247D] text-[#00247D] dark:text-blue-300"
+                ? "bg-sigap-primary-light dark:bg-blue-950/60 border-sigap-primary text-sigap-primary dark:text-blue-300"
                 : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60"
             }`}
           >
             <RiFilter3Line size={16} className="shrink-0" />
             <span>Filter</span>
             {activeFilterCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-[#00247D] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-sigap-primary text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                 {activeFilterCount}
               </span>
             )}
@@ -127,7 +127,7 @@ export const UserFilterBar: React.FC<UserFilterBarProps> = ({
                   <select
                     value={role}
                     onChange={(e) => onRoleChange(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00247D]/30 cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sigap-primary/30 cursor-pointer"
                   >
                     <option value="ALL">Semua Peran</option>
                     <option value="admin">Administrator</option>
@@ -143,7 +143,7 @@ export const UserFilterBar: React.FC<UserFilterBarProps> = ({
                   <select
                     value={status}
                     onChange={(e) => onStatusChange(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00247D]/30 cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sigap-primary/30 cursor-pointer"
                   >
                     <option value="ALL">Semua Status</option>
                     <option value="active">Aktif</option>
@@ -157,7 +157,7 @@ export const UserFilterBar: React.FC<UserFilterBarProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFilterOpen(false)}
-                  className="w-full py-2 bg-[#00247D] hover:bg-[#001d66] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer text-center"
+                  className="w-full py-2 bg-sigap-primary hover:bg-sigap-primary-hover text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer text-center"
                 >
                   Terapkan Filter
                 </button>

@@ -3,6 +3,8 @@
  * dalam Bahasa Indonesia untuk SIGAP Desa Cibenda.
  */
 
+import { WIB_TIME_ZONE, wibDayDiff } from "../../../utils/date";
+
 export interface FormattedAlertTime {
   primary: string; // contoh: "Hari Ini, 14:23 WIB" atau "Kemarin, 22:45 WIB"
   relative: string; // contoh: "2 menit lalu" atau "4 jam lalu"
@@ -49,29 +51,24 @@ export function formatAlertTimestamp(value?: string | null): FormattedAlertTime 
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: WIB_TIME_ZONE,
   }).replace(".", ":");
 
-  const isToday =
-    date.getDate() === now.getDate() &&
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear();
-
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const isYesterday =
-    date.getDate() === yesterday.getDate() &&
-    date.getMonth() === yesterday.getMonth() &&
-    date.getFullYear() === yesterday.getFullYear();
+  // "Hari Ini" dan "Kemarin" mengikuti kalender WIB, bukan zona perangkat (TK-05).
+  const dayDiff = wibDayDiff(date, now);
 
   let primary: string;
-  if (isToday) {
+  if (dayDiff === 0) {
     primary = `Hari Ini, ${timeStr} WIB`;
-  } else if (isYesterday) {
+  } else if (dayDiff === 1) {
     primary = `Kemarin, ${timeStr} WIB`;
   } else {
-    const day = date.getDate();
-    const month = date.toLocaleDateString("id-ID", { month: "short" });
-    primary = `${day} ${month}, ${timeStr} WIB`;
+    const dayMonth = date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      timeZone: WIB_TIME_ZONE,
+    });
+    primary = `${dayMonth}, ${timeStr} WIB`;
   }
 
   return { primary, relative };

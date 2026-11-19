@@ -24,8 +24,12 @@ import type { BmkgApiResponse, BmkgCuacaItem } from "../types/bmkg.types.js";
 import type { CurrentWeather, ForecastItem } from "../types/weather.types.js";
 import type { TsunamiStatus, TsunamiStatusInfo } from "../types/alert.types.js";
 import { EarthquakeService } from "./earthquake.service.js";
+import { ESTIMATED_TSUNAMI_SOURCE, OFFICIAL_TSUNAMI_SOURCE } from "../config/alertRules.js";
 
 const BMKG_BASE_URL = "https://api.bmkg.go.id/publik/prakiraan-cuaca";
+
+/** Waktu proses backend dimulai, yaitu saat BMKG_TSUNAMI_STATUS terakhir dibaca. */
+const PROCESS_STARTED_AT = new Date().toISOString();
 
 export class BmkgService {
   /** Fetch mentah dari BMKG, dengan retry (lihat httpRetryWrapper.ts untuk SIG-122) */
@@ -90,14 +94,27 @@ export class BmkgService {
       configured === "WASPADA" ||
       configured === "NORMAL"
     ) {
+      // Perubahan BMKG_TSUNAMI_STATUS berlaku setelah restart (ADR-045).
       return {
         status: configured,
-        source: "BMKG InaTEWS",
+        source: OFFICIAL_TSUNAMI_SOURCE,
         description: this.buildOfficialTsunamiDescription(configured),
+        updatedAt: PROCESS_STARTED_AT,
       };
     }
 
     return this.estimateTsunamiStatus();
+  }
+
+  /** Status saat data gempa BMKG gagal diambil dan status resmi kosong (ADR-043). */
+  private static unavailableTsunamiStatus(): TsunamiStatusInfo {
+    return {
+      status: "UNKNOWN",
+      source: "SIGAP",
+      description:
+        "Data gempa BMKG sedang tidak dapat diambil. Pantau informasi resmi di bmkg.go.id.",
+      updatedAt: EarthquakeService.getLastFeedSuccessAt(),
+    };
   }
 
   private static buildOfficialTsunamiDescription(status: TsunamiStatus): string {
@@ -121,19 +138,28 @@ export class BmkgService {
    * untuk Desa Cibenda (radius + umur maksimum sama seperti yang dipakai
    * card gempa Pangandaran & Decision Engine — lihat EarthquakeService.getPangandaran).
    * Dibatasi maksimal WASPADA, tidak pernah otomatis jadi SIAGA/AWAS.
+   * Hanya berlaku selama masa aktif alert (24 jam), agar gempa yang sama tidak
+   * memicu alert dan notifikasi ulang setiap 24 jam (ADR-042).
    */
   private static async estimateTsunamiStatus(): Promise<TsunamiStatusInfo> {
     try {
-      const nearest = await EarthquakeService.getPangandaran();
+      // Tanpa data gempa BMKG, ketiadaan potensi tidak dapat dinyatakan (ADR-043).
+      if (!(await EarthquakeService.isLiveDataAvailable())) {
+        return this.unavailableTsunamiStatus();
+      }
 
-      const isPotentiallyTsunamigenic =
-        nearest?.potential?.trim().toLowerCase() === "berpotensi tsunami";
+      // Seluruh gempa aktif (24 jam), terbaru lebih dulu. Hanya teks Potensi yang
+      // terverifikasi yang dikenali (ADR-046).
+      const activeEvents = await EarthquakeService.getActiveEvents();
+      const potential = activeEvents.find((event) => event.tsunamiPotential === "BERPOTENSI");
 
-      if (isPotentiallyTsunamigenic && nearest) {
+      if (potential) {
         return {
           status: "WASPADA",
-          source: "BMKG (estimasi dari data gempa)",
-          description: `Estimasi awal dari gempa M${nearest.magnitude} di ${nearest.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+          source: ESTIMATED_TSUNAMI_SOURCE,
+          description: `Estimasi awal dari gempa M${potential.magnitude} di ${potential.location}: berpotensi tsunami menurut data BMKG. Tetap pantau kanal resmi BMKG untuk status lanjutan.`,
+          eventTime: potential.updatedAt,
+          updatedAt: potential.updatedAt,
         };
       }
 
@@ -142,18 +168,14 @@ export class BmkgService {
         source: "BMKG",
         description:
           "Tidak ada indikasi potensi tsunami dari data gempa terkini BMKG.",
+        updatedAt: EarthquakeService.getLastFeedSuccessAt(),
       };
     } catch (error) {
       console.warn(
         "[BmkgService] Gagal estimasi status tsunami dari data gempa:",
         error instanceof Error ? error.message : error
       );
-      return {
-        status: "NORMAL",
-        source: "BMKG (Fallback)",
-        description:
-          "Layanan data gempa BMKG sedang tidak stabil. Tidak terdapat indikasi tsunami yang terkonfirmasi.",
-      };
+      return this.unavailableTsunamiStatus();
     }
   }
 
@@ -192,7 +214,7 @@ export class BmkgService {
     const localHour = (item: BmkgCuacaItem): number =>
       item.local_datetime
         ? parseInt(item.local_datetime.slice(11, 13), 10)
-        : new Date(this.toUtcIso(item)).getUTCHours() + 7;
+        : (new Date(this.toUtcIso(item)).getUTCHours() + 7) % 24;
 
     const current = this.pickClosestToNow(items);
 
@@ -226,8 +248,10 @@ export class BmkgService {
     if (tomorrowForecast) {
       result.push({
         ...this.toForecastItem(tomorrowForecast),
+        // tomorrowWib sudah digeser ke WIB, sehingga diformat sebagai UTC (TK-05).
         label: new Intl.DateTimeFormat("id-ID", {
           weekday: "short",
+          timeZone: "UTC",
         }).format(tomorrowWib),
       });
     }
@@ -237,6 +261,7 @@ export class BmkgService {
         ...this.toForecastItem(dayAfterForecast),
         label: new Intl.DateTimeFormat("id-ID", {
           weekday: "short",
+          timeZone: "UTC",
         }).format(dayAfterWib),
       });
     }
@@ -264,7 +289,8 @@ export class BmkgService {
       windSpeed: item.ws,
       windDirection: item.wd ?? "",
       visibility: item.vs_text ?? "",
-      updatedAt: this.toIso(item.local_datetime ?? item.datetime),
+      // local_datetime adalah WIB tanpa offset; waktu UTC diambil dari utc_datetime (TK-05).
+      updatedAt: this.toUtcIso(item),
     };
   }
 
@@ -313,16 +339,6 @@ export class BmkgService {
     const raw = item.utc_datetime ?? item.datetime;
     if (!raw) return new Date().toISOString();
     const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
-    const withZ = normalized.endsWith("Z") ? normalized : `${normalized}Z`;
-    const date = new Date(withZ);
-    return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
-  }
-
-  /** @deprecated Gunakan toUtcIso() untuk perbandingan waktu. Fungsi ini hanya
-   * aman untuk display string yang sudah UTC (mis. field `datetime`). */
-  private static toIso(rawDatetime: string | undefined): string {
-    if (!rawDatetime) return new Date().toISOString();
-    const normalized = rawDatetime.includes("T") ? rawDatetime : rawDatetime.replace(" ", "T");
     const withZ = normalized.endsWith("Z") ? normalized : `${normalized}Z`;
     const date = new Date(withZ);
     return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();

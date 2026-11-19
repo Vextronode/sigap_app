@@ -1,18 +1,15 @@
 import type { Request, Response } from "express";
-import { AlertLevel } from "../../generated/prisma/enums.js";
-
-import { AlertService } from "../services/alert.service.js";
+import { AlertService, buildUnavailableAlert } from "../services/alert.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { UnauthorizedError } from "../errors/AppError.js";
-import type {
-  ApiErrorResponse,
-  ApiSuccessResponse,
-} from "../types/weather.types.js";
-import type {
-  AlertFilterQuery,
-  AlertListPagination,
-  AlertRecord,
-} from "../types/alert.types.js";
+import type { ApiSuccessResponse } from "../types/weather.types.js";
+import type { AlertFilterQuery, AlertRecord } from "../types/alert.types.js";
+
+// respons publik tidak memuat identitas staf peninjau (ADR-044) maupun acuan
+// internal aturan notifikasi rentetan (ADR-046)
+const toPublicAlert = ({ reviewer, reviewedBy, referenceMagnitude, ...alert }: AlertRecord) => alert;
+
+type PublicAlert = ReturnType<typeof toPublicAlert>;
 
 export class AlertController {
   // ambil alert terkini (public)
@@ -20,36 +17,25 @@ export class AlertController {
     try {
       const data = await AlertService.getCurrentAlert();
 
-      const response: ApiSuccessResponse<AlertRecord | null> = {
+      const response: ApiSuccessResponse<PublicAlert | null> = {
         success: true,
         message: data
           ? "Alert terbaru berhasil diambil."
           : "Belum ada alert yang tersedia.",
-        data,
+        data: data && toPublicAlert(data),
       };
 
       res.status(200).json(response);
     } catch (error) {
       console.error("[GET /alerts] error:", error);
 
-      // Respon fallback aman (GREEN/AMAN) agar dashboard warga tidak pernah crash atau berstatus error
-      const now = new Date();
-      const safeFallback: AlertRecord = {
-        id: "safe-fallback",
-        level: AlertLevel.GREEN,
-        source: "BMKG",
-        description: "Tidak terdapat peringatan resmi BMKG.",
-        reviewStatus: "Belum Diverifikasi",
-        reviewedBy: null,
-        reviewedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      };
+      // Data tidak dapat dibaca: jangan menyatakan aman (ADR-037)
+      const safeFallback = buildUnavailableAlert("safe-fallback");
 
       res.status(200).json({
         success: true,
         message: "Alert terbaru berhasil diambil (safe mode).",
-        data: safeFallback,
+        data: toPublicAlert(safeFallback),
       });
     }
   }
@@ -59,17 +45,17 @@ export class AlertController {
     try {
       const data = await AlertService.getAllAlerts();
 
-      const response: ApiSuccessResponse<AlertRecord[]> = {
+      const response: ApiSuccessResponse<PublicAlert[]> = {
         success: true,
         message: "Riwayat alert berhasil diambil.",
-        data,
+        data: data.map(toPublicAlert),
       };
 
       res.status(200).json(response);
     } catch (error) {
       console.error("[GET /alerts/history] error:", error);
 
-      const response: ApiSuccessResponse<AlertRecord[]> = {
+      const response: ApiSuccessResponse<PublicAlert[]> = {
         success: true,
         message: "Riwayat alert berhasil diambil.",
         data: [],
@@ -113,6 +99,18 @@ export class AlertController {
       });
     }
   }
+
+  // ambil detail satu entri alert untuk portal warga
+  static getPublicById = asyncHandler(async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const data = await AlertService.getAlertById(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Detail alert berhasil diambil.",
+      data: toPublicAlert(data),
+    });
+  });
 
   // ambil detail satu entri alert berdasarkan ID (FS-02 AC2)
   static getById = asyncHandler(async (req: Request, res: Response) => {

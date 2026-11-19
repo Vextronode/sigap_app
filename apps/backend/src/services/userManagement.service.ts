@@ -16,13 +16,41 @@ import {
 
 export { ConflictError, NotFoundError, ValidationError };
 
-function formatUserSummary(user: any): UserSummaryDTO {
+interface UserRolePermissionJoin {
+  permission: {
+    code: string;
+  };
+}
+
+interface UserRoleJoin {
+  role: {
+    id: string;
+    name: string;
+    rolePermissions: UserRolePermissionJoin[];
+  };
+}
+
+interface UserWithRolesInput {
+  id: string;
+  name: string;
+  email: string;
+  isActive?: boolean;
+  lockedUntil?: Date | null;
+  failedLoginCount?: number | null;
+  lastLoginAt?: Date | null;
+  lastLoginIp?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  userRoles?: UserRoleJoin[];
+}
+
+function formatUserSummary(user: UserWithRolesInput): UserSummaryDTO {
   const roleName = user.userRoles?.[0]?.role?.name ?? "operator";
   const roleId = user.userRoles?.[0]?.role?.id ?? "";
   const permissions: string[] = Array.from(
     new Set(
-      user.userRoles?.flatMap((ur: any) =>
-        ur.role.rolePermissions.map((rp: any) => rp.permission.code)
+      user.userRoles?.flatMap((ur: UserRoleJoin) =>
+        ur.role.rolePermissions.map((rp: UserRolePermissionJoin) => rp.permission.code)
       ) || []
     )
   );
@@ -212,21 +240,19 @@ export async function updateUser(
     newRoleId = role.id;
   }
 
+  // Jika akun dinonaktifkan atau role benar-benar berubah, gugurkan sesi aktif (AC3)
+  const isRoleChanged =
+    newRoleId !== undefined &&
+    !targetUser.userRoles.some((ur) => ur.roleId === newRoleId);
+  const isDeactivating = isTargetActive && payload.isActive === false;
+
   // Lakukan update
   const updatedUser = await userManagementRepo.updateUserWithRole(targetUserId, {
     name: payload.name?.trim(),
     isActive: payload.isActive,
     roleId: newRoleId,
+    revokeSessions: isRoleChanged || isDeactivating,
   });
-
-  // Jika akun dinonaktifkan atau role diubah, gugurkan sesi aktif (AC3)
-  if (payload.isActive === false || newRoleId) {
-    try {
-      await userManagementRepo.revokeActiveSessionsForUser(targetUserId);
-    } catch (e) {
-      console.warn("[UserManagement] Failed to revoke session:", e);
-    }
-  }
 
   return formatUserSummary(updatedUser);
 }
@@ -247,13 +273,6 @@ export async function resetPassword(
 
   const hashedPassword = await hashPassword(newPassword);
   await userManagementRepo.resetUserPassword(targetUserId, hashedPassword);
-
-  // Gugurkan sesi aktif akun tersebut (AC5)
-  try {
-    await userManagementRepo.revokeActiveSessionsForUser(targetUserId);
-  } catch (e) {
-    console.warn("[UserManagement] Failed to revoke session on password reset:", e);
-  }
 }
 
 export async function unlockUserAccount(targetUserId: string): Promise<UserSummaryDTO> {

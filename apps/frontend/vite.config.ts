@@ -8,6 +8,15 @@ export default defineConfig({
   server: {
     port: Number(process.env.PORT) || 5173,
   },
+  // Port bawaan Vite (4173) sering dipakai proyek lain. Service worker dan cache terikat
+  // pada origin, jadi port tidak boleh berpindah diam-diam saat sedang terpakai.
+  preview: {
+    port: Number(process.env.PREVIEW_PORT) || 4380,
+    strictPort: true,
+    proxy: {
+      "/api": process.env.PREVIEW_API_TARGET || "http://localhost:3000",
+    },
+  },
   plugins: [react(), tailwindcss(), VitePWA({
       registerType: 'autoUpdate',
       // Pindah dari generateSW (auto, tidak bisa disisipi kode custom) ke

@@ -154,7 +154,7 @@ const UserFormContent: React.FC<UserFormContentProps> = ({
               className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border ${
                 errors.name
                   ? "border-rose-400 dark:border-rose-600 focus:ring-rose-400"
-                  : "border-slate-200 dark:border-slate-700 focus:ring-[#00247D]"
+                  : "border-slate-200 dark:border-slate-700 focus:ring-sigap-primary"
               } text-slate-900 dark:text-white focus:outline-none focus:ring-2`}
             />
           </div>
@@ -186,7 +186,7 @@ const UserFormContent: React.FC<UserFormContentProps> = ({
                 errors.email
                   ? "border-rose-400 dark:border-rose-600"
                   : "border-slate-200 dark:border-slate-700"
-              } focus:outline-none focus:ring-2 focus:ring-[#00247D]`}
+              } focus:outline-none focus:ring-2 focus:ring-sigap-primary`}
             />
           </div>
           {isEditMode && (
@@ -209,7 +209,7 @@ const UserFormContent: React.FC<UserFormContentProps> = ({
               <button
                 type="button"
                 onClick={generateRandomPassword}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00247D] dark:text-blue-400 hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-sigap-primary dark:text-blue-400 hover:underline cursor-pointer"
               >
                 <RefreshCw size={12} />
                 <span>Acak Password Aman</span>
@@ -228,7 +228,7 @@ const UserFormContent: React.FC<UserFormContentProps> = ({
                   errors.password
                     ? "border-rose-400 dark:border-rose-600"
                     : "border-slate-200 dark:border-slate-700"
-                } text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00247D]`}
+                } text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sigap-primary`}
               />
               <button
                 type="button"
@@ -258,7 +258,7 @@ const UserFormContent: React.FC<UserFormContentProps> = ({
               onClick={() => setRole("operator")}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                 role === "operator"
-                  ? "border-[#00247D] dark:border-blue-500 ring-2 ring-[#00247D]/20 bg-blue-50/50 dark:bg-blue-950/20"
+                  ? "border-sigap-primary dark:border-blue-500 ring-2 ring-sigap-primary/20 bg-sigap-primary-light/50 dark:bg-blue-950/20"
                   : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
               } ${isSelf ? "opacity-60 cursor-not-allowed" : ""}`}
             >
@@ -267,7 +267,7 @@ const UserFormContent: React.FC<UserFormContentProps> = ({
                   size={18}
                   className={
                     role === "operator"
-                      ? "text-[#00247D] dark:text-blue-400"
+                      ? "text-sigap-primary dark:text-blue-400"
                       : "text-slate-400"
                   }
                 />
@@ -364,7 +364,7 @@ const UserFormContent: React.FC<UserFormContentProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00247D] hover:bg-[#001d66] text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sigap-primary hover:bg-sigap-primary-hover text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>

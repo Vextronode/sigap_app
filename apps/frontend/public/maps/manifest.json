@@ -1,0 +1,32 @@
+{
+  "version": "20261118",
+  "source": "https://build.protomaps.com/20261118.pmtiles",
+  "layers": [
+    {
+      "name": "indonesia",
+      "file": "indonesia-20261118.pmtiles",
+      "bbox": [
+        94.9,
+        -11.2,
+        141.1,
+        6.2
+      ],
+      "maxzoom": 8,
+      "bytes": 6744320,
+      "sha256": "614b18df1fb0db7006d68106d2c3590367ec8f447d37557313039172cd493dc7"
+    },
+    {
+      "name": "pangandaran",
+      "file": "pangandaran-z15-20261118.pmtiles",
+      "bbox": [
+        108.3,
+        -7.9,
+        108.9,
+        -7.45
+      ],
+      "maxzoom": 15,
+      "bytes": 9168529,
+      "sha256": "464ff5766ecf1dd15d20286a4af3086bc0de5d17d3bdbe55fd0780c6d0a1e4e6"
+    }
+  ]
+}

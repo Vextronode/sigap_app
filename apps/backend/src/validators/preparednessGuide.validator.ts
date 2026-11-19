@@ -49,7 +49,7 @@ export function validateCreatePreparednessGuide(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 
@@ -102,7 +102,7 @@ export function validateUpdatePreparednessGuide(
     return res.status(422).json({
       success: false,
       message: "Validasi gagal.",
-      errors,
+      errors: Object.values(errors),
     });
   }
 

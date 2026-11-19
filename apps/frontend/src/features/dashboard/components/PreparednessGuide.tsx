@@ -151,7 +151,7 @@ export const PreparednessGuide = () => {
                     <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                       <Building2
                         size={12}
-                        className="text-[#00247D] dark:text-blue-400 shrink-0"
+                        className="text-sigap-primary dark:text-blue-400 shrink-0"
                       />
                       <span className="truncate">
                         {guide.sourceLabel || "Pemerintah Desa Cibenda"}
@@ -159,7 +159,7 @@ export const PreparednessGuide = () => {
                     </div>
 
                     {/* Judul Panduan (Biru Khas SIGAP, Ukuran Proporsional & Rapi) */}
-                    <h3 className="text-xs sm:text-sm font-bold text-[#00247D] dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 leading-snug line-clamp-2 transition-colors">
+                    <h3 className="text-xs sm:text-sm font-bold text-sigap-primary dark:text-blue-400 group-hover:text-sigap-primary-hover dark:group-hover:text-blue-300 leading-snug line-clamp-2 transition-colors">
                       {guide.title}
                     </h3>
 

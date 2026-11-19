@@ -22,6 +22,7 @@ import {
 } from "./evacuationPoint.route.js";
 import { systemHealthRouter } from "./systemHealth.route.js";
 import { protectedUserManagementRouter } from "./userManagement.route.js";
+import { protectedSidIntegrationRouter } from "./sidIntegration.route.js";
 
 export const publicRouter = Router();
 
@@ -45,15 +46,6 @@ publicRouter.use("/preparedness-guides", publicPreparednessGuideRouter);
 
 // titik evakuasi desa
 publicRouter.use("/evacuation-points", publicEvacuationPointRouter);
-
-// pengumuman desa (fallback SSOT agar tidak 404 di dashboard publik sebelum CMS pengumuman aktif)
-publicRouter.get("/announcements", (_req, res) => {
-  res.json({
-    success: true,
-    data: [],
-    message: "Daftar pengumuman desa",
-  });
-});
 
 // rute jalur evakuasi (fallback SSOT rute jalur evakuasi)
 publicRouter.get("/evacuation-routes", (_req, res) => {
@@ -86,6 +78,7 @@ protectedRouter.use("/preparedness-guides", protectedPreparednessGuideRouter);
 protectedRouter.use("/evacuation-points", protectedEvacuationPointRouter);
 protectedRouter.use("/system-health", systemHealthRouter);
 protectedRouter.use("/users", protectedUserManagementRouter);
+protectedRouter.use("/integrations/sid", protectedSidIntegrationRouter);
 
 
 

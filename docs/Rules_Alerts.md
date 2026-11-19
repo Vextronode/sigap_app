@@ -1,333 +1,215 @@
 ﻿# Alert & Broadcast Rules
 
-> Project : SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda)
-> Version : 1.2
-> Status : Draft
-
-**Changelog v1.1 → v1.2 (implemented in `bmkg.service.ts`, branch `feat/tsunami-live-status`):** status tsunami tidak lagi hardcoded `NORMAL` selamanya. Selama InaTEWS resmi belum bisa diakses lewat API publik (kampus/tim sedang mengurus akses ini secara terpisah), status sekarang **diestimasi otomatis** dari field `Potensi` gempa BMKG terdekat, **dibatasi maksimal WASPADA** — tidak pernah otomatis jadi SIAGA/AWAS, karena `Potensi` cuma flag biner per-gempa, bukan status resmi InaTEWS yang bisa dikonfirmasi/dicabut seiring data gelombang nyata. SIAGA/AWAS tetap hanya bisa masuk lewat override manual. Lihat point 4, point 6 (WASPADA & AWAS), dan `docs/API_Spec.md` point 11 untuk penjelasan lengkap.
-
-**Changelog v1.0 → v1.1 (implemented in `decisionEngine.service.ts`):** severity untuk WASPADA vs SIAGA dulu direncanakan pakai ambang batas magnitudo/radius buatan tim sendiri. Setelah ditinjau ulang, ini diganti dengan **field `Dirasakan` (skala MMI — Modified Mercalli Intensity) resmi dari BMKG** — BMKG sudah menyediakan ukuran "apakah gempa ini dirasakan warga di suatu lokasi" secara resmi, jadi tim tidak perlu menebak skala severity sendiri. Lihat point 4, point 5, point 6, point 7 untuk detail yang sudah disesuaikan.
-
-**Status implementasi saat ini (penting untuk tim device/sirine):** yang sudah berjalan otomatis adalah penentuan level (GREEN/YELLOW/ORANGE/RED) dan penyimpanannya ke database setiap 60 detik. **Broadcast ke Kepala Desa/RT/RW/warga (point 8, point 9) belum diimplementasikan sama sekali** — belum ada kanal WhatsApp/SMS/push notification yang terhubung. Saat ini level hanya tersedia lewat dashboard dan (untuk perangkat) lewat REST polling ke backend. Jangan asumsikan broadcast di point 8/9 sudah aktif.
-
----
+| Field | Detail |
+|---|---|
+| Project | SIGAP (Sistem Informasi dan Kesiapsiagaan Bencana Desa Cibenda) |
+| Versi | 2.2 |
+| Tanggal | 13 November 2026 |
+| Status | Aktif |
+| Implementasi | `apps/backend/src/services/decisionEngine.service.ts`, `alertSequence.service.ts`, `alert.service.ts`, `bmkg.service.ts`, `earthquake.service.ts`, `notification.service.ts`, `utils/bmkgEarthquake.util.ts`, `scheduler/alert.scheduler.ts` |
 
 # 1. Tujuan
 
-Dokumen ini mendefinisikan aturan pengambilan keputusan (Decision Rules) yang digunakan SIGAP untuk menentukan status kesiapsiagaan serta mekanisme broadcast berdasarkan informasi resmi dari BMKG.
+Dokumen ini mendefinisikan aturan yang digunakan SIGAP untuk menentukan status kesiapsiagaan dan mendistribusikannya berdasarkan informasi BMKG. SIGAP tidak melakukan prediksi bencana maupun analisis kebencanaan mandiri.
 
-SIGAP **tidak melakukan prediksi bencana** maupun analisis kebencanaan secara mandiri.
+# 2. Sumber Data
 
-Seluruh keputusan sistem didasarkan pada data resmi BMKG yang kemudian diterjemahkan menjadi mekanisme distribusi informasi bagi masyarakat Desa Cibenda.
+| Data | Sumber |
+|---|---|
+| Gempa terbaru | BMKG `autogempa.json` |
+| Daftar gempa | BMKG `gempaterkini.json` dan `gempadirasakan.json` |
+| Potensi tsunami | Field `Potensi` pada data gempa BMKG |
+| Status tsunami resmi | Variabel `BMKG_TSUNAMI_STATUS`, diisi operator berwenang dari kanal resmi |
+| Riwayat gempa | Tabel `earthquake_records` |
 
----
+Ketiga feed gempa disatukan per kejadian (`DateTime` sama). `Dirasakan` diambil dari `autogempa.json` atau `gempadirasakan.json`, `Potensi` dari `gempaterkini.json` atau `autogempa.json`, dan Shakemap dari `autogempa.json`. Item dengan waktu, koordinat, atau magnitudo yang tidak valid tidak dipakai.
 
-# 2. Prinsip Dasar
+Open-Meteo hanya dipakai untuk informasi cuaca dan tidak memengaruhi level kesiapsiagaan.
 
-SIGAP berfungsi sebagai:
+# 3. Tingkat Status
 
-- Decision Support Dashboard
-- Emergency Information Distribution Platform
+| Level | Label | Warna |
+|---|---|---|
+| `GREEN` | Aman | Hijau |
+| `YELLOW` | Waspada | Kuning |
+| `ORANGE` | Siaga | Oranye |
+| `RED` | Awas | Merah |
+| `UNKNOWN` | Data Tidak Tersedia | Abu-abu |
 
-SIGAP bukan:
+`UNKNOWN` hanya muncul pada alert yang berlaku dan tidak disimpan ke database.
 
-- Sistem pendeteksi gempa
-- Sistem pendeteksi tsunami
-- Sistem Early Warning mandiri
+# 4. Filter Relevansi Gempa
 
----
+Gempa dianggap relevan untuk Desa Cibenda bila memenuhi salah satu syarat berikut:
 
-# 3. Sumber Data
+1. Episentrum berada dalam `PANGANDARAN_RADIUS_KM` (default 100 km).
+2. Field `Dirasakan` menyebut wilayah Cibenda, Parigi, atau Pangandaran, berapa pun jaraknya. Pencocokan dilakukan per nama wilayah, sehingga "Kecamatan Parigi" terhitung tetapi "Parigi Moutong" tidak.
 
-Seluruh informasi diperoleh dari:
+Kartu gempa Pangandaran menampilkan gempa relevan terbaru yang berumur paling lama `PANGANDARAN_MAX_AGE_DAYS` (default 7 hari). Radius adalah filter relevansi, bukan penentu tingkat bahaya. Jarak dihitung dengan rumus Haversine dari koordinat `VILLAGE_LAT` dan `VILLAGE_LON` (default `-7.6838`, `108.5610`) ke episentrum.
 
-- BMKG
-- BMKG Weather API (Prakiraan Cuaca)
-- BMKG Auto Gempa API (Gempa Terbaru)
-- BMKG / InaTEWS (Peringatan Dini Tsunami)
-- Leaflet atau OpenStreetMap (Peta)
-- Data Evakuasi Pemerintah Desa Cibenda (akan diintegrasikan pada tahap implementasi)
+# 5. Status Tsunami
 
-SIGAP tidak menghasilkan data kebencanaan sendiri.
+| Kondisi | Status | Sumber yang dicatat |
+|---|---|---|
+| `BMKG_TSUNAMI_STATUS` terisi | Nilai variabel: `NORMAL`, `WASPADA`, `SIAGA`, atau `AWAS` | `BMKG InaTEWS` |
+| Variabel kosong dan salah satu gempa aktif memiliki `Potensi` yang dikenali sebagai berpotensi tsunami | `WASPADA` | `BMKG (estimasi dari data gempa)` |
+| Variabel kosong dan data gempa BMKG gagal diambil | `UNKNOWN` | `SIGAP` |
+| Variabel kosong selain kondisi di atas | `NORMAL` | `BMKG` |
 
-> Apabila BMKG tidak mengeluarkan informasi resmi, maka SIGAP tidak akan membuat status bencana secara mandiri.
+Estimasi otomatis dibatasi sampai `WASPADA`. Status `SIAGA` dan `AWAS` hanya berasal dari `BMKG_TSUNAMI_STATUS`. Status `UNKNOWN` tidak memengaruhi level.
 
----
+Waktu pembaruan status tsunami mengikuti data sumbernya: saat backend membaca `BMKG_TSUNAMI_STATUS` untuk status resmi, waktu gempa asal untuk estimasi, dan waktu data gempa BMKG terakhir berhasil diambil untuk `NORMAL` dan `UNKNOWN`.
 
-# 4. Parameter Decision Engine
+Hanya teks `Potensi` yang terverifikasi dari feed BMKG yang dikenali:
 
-SIGAP menggunakan kombinasi beberapa parameter berikut.
+| Teks `Potensi` | Klasifikasi |
+|---|---|
+| `Tidak berpotensi tsunami` | `TIDAK_BERPOTENSI` |
+| `Gempa ini dirasakan untuk diteruskan pada masyarakat` | `INFORMASI_DIRASAKAN` |
+| Teks lain | `TIDAK_DIKENAL`, dicatat ke log |
 
-## Gempa Bumi
+Teks untuk gempa berpotensi tsunami belum terverifikasi, sehingga estimasi `WASPADA` belum dapat aktif sampai teks tersebut ditambahkan pada `TSUNAMI_POTENTIAL_TEXTS`.
 
-- Jarak episentrum terhadap Desa Cibenda — **filter relevansi** (lihat point 5), gempa di luar radius/umur maksimum tidak pernah sampai ke tahap evaluasi status.
-- Waktu kejadian — dipakai untuk filter umur maksimum di point 5 (BMKG hanya menyimpan 15 gempa M5+ nasional terakhir, jadi tanpa filter umur, gempa lama bisa nyangkut berminggu-minggu di daftar seolah baru terjadi).
-- **Status Dirasakan (skala MMI resmi BMKG)** — parameter penentu severity (WASPADA vs SIAGA). Lihat point 6.
-- Magnitudo — ditampilkan di setiap alert untuk konteks, tapi **tidak lagi dipakai sebagai ambang batas severity sendiri** (lihat catatan v1.1 di atas).
-- Potensi tsunami per-gempa (field `Potensi` BMKG) — **sudah dipakai**, tapi hanya untuk estimasi status tsunami itu sendiri (lihat bagian Tsunami di bawah dan point 11 di `docs/API_Spec.md`), **bukan** untuk memicu AWAS. Estimasi ini sengaja dibatasi maksimal WASPADA — RED/AWAS tidak bisa otomatis terpicu dari sini.
+# 6. Penentuan Level
 
-## Tsunami
+Level tsunami dan level gempa dievaluasi terpisah, lalu level akhir adalah yang tertinggi di antara keduanya.
 
-- Status resmi BMKG InaTEWS (NORMAL/WASPADA/SIAGA/AWAS) — **prioritas tertinggi**, dicek sebelum parameter gempa apa pun. Karena InaTEWS belum ada API publik (lihat `docs/API_Spec.md` point 11), status "resmi" ini praktiknya hanya bisa masuk lewat override manual (env `BMKG_TSUNAMI_STATUS`) oleh operator yang punya info resmi dari kanal lain — bukan otomatis dari BMKG.
-- Kalau tidak ada override manual, status **diestimasi otomatis** dari field `Potensi` gempa BMKG yang relevan untuk Desa Cibenda (`Potensi === "Berpotensi tsunami"` → WASPADA, selain itu → NORMAL). Estimasi ini **dibatasi maksimal WASPADA** — lihat penjelasan lengkap kenapa di `docs/API_Spec.md` point 11.
-- Estimasi tinggi gelombang, status pencabutan peringatan — masih belum tersedia sumber data publiknya, tidak dipakai dalam bentuk apa pun saat ini.
+| Sumber | Kondisi | Level |
+|---|---|---|
+| Tsunami | Status `AWAS` | `RED` |
+| Tsunami | Status `SIAGA` | `ORANGE` |
+| Tsunami | Status `WASPADA` | `YELLOW` |
+| Gempa | Aktif (berumur paling lama 24 jam) dan `Dirasakan` menyebut Cibenda, Parigi, atau Pangandaran | `ORANGE` |
+| Gempa | Aktif | `YELLOW` |
+| - | Tidak ada kondisi di atas | `GREEN` |
 
----
+Level gempa adalah level tertinggi di antara seluruh gempa aktif, sehingga gempa susulan yang lebih kecil tidak menurunkan level selama gempa penentu masih aktif. Deskripsi alert memakai gempa terbesar pada level tersebut.
 
-# 5. Radius Wilayah
+Bila level keduanya sama, alert memakai sumber dan deskripsi tsunami. Bila level gempa lebih tinggi, alert memakai sumber gempa dan deskripsinya menyertakan deskripsi tsunami.
 
-SIGAP menghitung jarak antara koordinat episentrum gempa dan koordinat Desa Cibenda menggunakan koordinat geografis (Latitude & Longitude).
+Magnitudo tidak dipakai sebagai penentu level. Magnitudo hanya dipakai pada aturan notifikasi rentetan gempa (bagian 7).
 
-Koordinat referensi:
+# 7. Penyimpanan Alert
 
-Desa Cibenda
-Latitude : -7.67472
-Longitude : 108.55444
+Scheduler menjalankan evaluasi di dalam proses backend saat `ENABLE_LOCAL_SCHEDULER=true`, dengan interval `ALERT_SCHEDULER_INTERVAL_MS` (default 60 detik). Evaluasi juga dapat dipicu melalui `/api/public/internal/run-scheduler`. Hanya satu siklus berjalan dalam satu waktu; pemicu manual saat siklus lain berjalan dibalas `409`.
 
-Apabila koordinat desa tidak tersedia, sistem dapat menggunakan titik referensi Kabupaten Pangandaran sebagai fallback.
+- Hasil `GREEN` tidak disimpan.
+- Hasil yang levelnya berasal dari status tsunami resmi disimpan ke tabel `alerts`, kecuali level, sumber, dan deskripsinya sama dengan rekaman terakhir yang berumur paling lama 24 jam.
+- Hasil yang levelnya berasal dari estimasi tsunami disimpan bersama waktu gempa asalnya, kecuali level, sumber, dan gempa asalnya sama dengan rekaman terakhir. Revisi data BMKG pada gempa asal yang sama tidak menerbitkan alert baru.
+- Hasil yang levelnya berasal dari gempa mengikuti aturan rentetan gempa di bawah.
 
-**Radius relevansi (implementasi saat ini):** gempa dianggap relevan untuk Desa Cibenda apabila berjarak ≤150 km dari desa **dan** terjadi dalam 14 hari terakhir (`PANGANDARAN_RADIUS_KM` / `PANGANDARAN_MAX_AGE_DAYS`, keduanya dapat dikonfigurasi lewat environment variable, lihat `earthquake.service.ts`). Filter umur diperlukan karena sumber data BMKG yang dipakai (`gempaterkini.json`) hanya berisi 15 gempa M5+ terakhir se-Indonesia — tanpa filter ini, satu gempa lama bisa tetap muncul seolah baru terjadi saat sedang sepi gempa besar secara nasional.
+## 7.1 Rentetan Gempa
 
-**Catatan penting — koreksi dari draft v1.0:** sebelumnya dokumen ini mencantumkan 3 kategori radius (Tinggi/Sedang/Rendah) yang secara implisit dipakai sebagai bagian dari penentuan severity. Ini **bertentangan** dengan prinsip yang sudah dinyatakan di paragraf terakhir bagian ini sejak awal — bahwa radius adalah filter relevansi, bukan penentu tingkat bahaya. Implementasi sekarang konsisten dengan prinsip tersebut: radius hanya dipakai sebagai **filter satu tahap** (relevan / tidak relevan) sebelum data gempa sampai ke Decision Engine. Begitu gempa dinyatakan relevan, severity (WASPADA vs SIAGA) ditentukan oleh status Dirasakan (MMI), bukan oleh seberapa dekat jaraknya.
+Rentetan gempa adalah gempa relevan yang masih aktif. Rentetan berlanjut bila masih ada gempa aktif yang terjadi selama alert rentetan sebelumnya berlaku. Hasil evaluasi dibandingkan dengan rekaman alert terakhir:
 
-Perhitungan radius digunakan sebagai filter relevansi informasi bagi masyarakat Desa Cibenda, bukan sebagai penentu tingkat bahaya bencana.
----
+| Kondisi | Tindakan | Notifikasi |
+|---|---|---|
+| Tidak ada alert aktif dan rentetan tidak berlanjut | Alert baru | Ya |
+| Level naik | Alert baru | Ya |
+| Level turun karena gempa penentu berakhir | Alert baru | Tidak |
+| Level sama dan magnitudo terbesar pada level itu paling sedikit 1,0 di atas magnitudo yang terakhir dikirim notifikasi | Alert baru | Ya |
+| Level sama selain kondisi di atas | Alert yang berlaku diperpanjang ke kejadian terbaru | Tidak |
+| Tidak ada perubahan | Tidak ada | Tidak |
 
-# 6. Tingkat Status Kesiapsiagaan
+Revisi magnitudo atau penambahan wilayah `Dirasakan` oleh BMKG pada kejadian yang sama diperlakukan sebagai kejadian yang sama. Alert menyimpan waktu kejadian terbaru pada levelnya, magnitudo acuan notifikasi, serta jumlah, awal, dan magnitudo terbesar gempa aktif.
 
-## 🟢 AMAN
+## 7.2 Database Gagal
 
-### Kondisi
+Bila alert gagal disimpan, notifikasinya tetap dikirim dan alert tersebut disimpan di memori proses backend. Selama lebih baru dari rekaman terakhir di database, alert di memori menjadi pembanding aturan bagian 7 dan 7.1, sehingga notifikasi tidak terkirim ulang setiap siklus. Pada siklus berikutnya alert disimpan ulang tanpa notifikasi, lalu dihapus dari memori setelah berhasil tersimpan. Memori ini hilang saat backend dimulai ulang.
 
-- Tidak terdapat peringatan dini tsunami resmi dari BMKG.
-- Tidak terdapat kejadian gempa yang memerlukan perhatian khusus berdasarkan informasi resmi BMKG.
-- Tidak terdapat kejadian gempa yang berada dalam radius prioritas SIGAP.
+# 8. Alert yang Berlaku
 
-### Tindakan Sistem
+Alert yang berlaku adalah rekaman terbaru pada tabel `alerts`, yang ditampilkan pada dashboard dan diberikan kepada perangkat, dengan ketentuan:
 
-- Dashboard diperbarui.
-- Tidak mengirim broadcast.
-- Menampilkan informasi terbaru kepada masyarakat.
+| Kondisi | Hasil |
+|---|---|
+| Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` sama dengan levelnya (alert aktif) | Ditampilkan apa adanya, tanpa batas umur |
+| Rekaman bersumber `BMKG InaTEWS` dan `BMKG_TSUNAMI_STATUS` berubah atau kosong, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
+| Rekaman lain dengan level selain `GREEN`, paling lama 24 jam sejak waktu kejadian gempa (atau sejak disimpan bila waktu kejadian kosong) (alert aktif) | Ditampilkan apa adanya, beserta batas masa aktifnya |
+| Rekaman lain yang melewati batas tersebut, serta data BMKG terbaca | Ditampilkan sebagai `GREEN` |
+| Scheduler terlambat, gagal, atau tidak aktif, dan tidak sedang menjalankan siklus | Dihitung langsung dari data BMKG terkini; bila BMKG juga gagal, memakai ketentuan lain pada tabel ini |
+| Tidak ada rekaman atau database gagal dibaca | Dihitung langsung dari data BMKG terkini |
+| Tidak ada alert aktif dan data BMKG gagal diambil | `UNKNOWN` |
 
----
+Hasil disimpan dalam cache memori selama 60 detik.
 
-## 🟡 WASPADA
+# 9. Review Alert
 
-### Kondisi
+Pengguna dengan permission `alert.validate` dapat mencatat tinjauan alert sebagai `Dikonfirmasi`, `Ditolak`, atau `Ditindaklanjuti`. Nilai awalnya adalah `Belum Ditinjau`, yang ditampilkan sebagai `Belum Diverifikasi`. Sistem mencatat peninjau dan waktu peninjauan terakhir.
 
-Salah satu kondisi berikut terpenuhi:
+Status review adalah catatan pasca-kejadian dan tidak memengaruhi level, notifikasi, maupun perangkat.
 
-- BMKG mengeluarkan Status WASPADA Tsunami (resmi lewat override manual, **atau otomatis** dari estimasi `Potensi` gempa terdekat — lihat point 4 & point 11 `docs/API_Spec.md`).
-- Terdapat gempa yang relevan untuk Desa Cibenda (lolos filter radius + umur di point 5), **namun BMKG belum melaporkan gempa tersebut dirasakan** di sekitar Desa Cibenda/Kecamatan Parigi/Kabupaten Pangandaran (field `Dirasakan` BMKG kosong atau tidak menyebut wilayah tersebut).
+# 10. Distribusi Notifikasi
 
-### Tindakan Sistem
+| Level | Tindakan |
+|---|---|
+| `UNKNOWN` | Tidak ada notifikasi |
+| `GREEN` | Notifikasi kembali aman, satu kali, bila notifikasi terakhir berlevel `ORANGE` atau `RED` dan paling lama 48 jam lalu, serta data gempa dan status tsunami BMKG terbaca |
+| `YELLOW`, `ORANGE`, `RED` | Web Push otomatis ke seluruh subscriber saat alert baru tercatat dengan notifikasi menurut bagian 7, tanpa validasi manual |
 
-- Membuat Alert baru.
-- Broadcast kepada:
-    - Kepala Desa
-    - RT/RW
-    - Relawan Desa
-- Menunggu validasi dari pihak berwenang.
-- Dashboard berubah menjadi status WASPADA.
+Penurunan level gempa dan perpanjangan rentetan tidak mengirim notifikasi. Berakhirnya peringatan `YELLOW` tidak mengirim notifikasi kembali aman.
 
----
+Isi notifikasi dibangun dari alert yang baru disimpan, atau dari hasil evaluasi bila alert gagal disimpan (bagian 7.2):
 
-## 🟠 SIAGA
+| Jenis | Judul | Gambar |
+|---|---|---|
+| Gempa `ORANGE` | `[SIAGA] Gempa M<magnitudo> dirasakan di sekitar Desa Cibenda` | Shakemap gempa penentu level |
+| Gempa `YELLOW` | `[WASPADA] Gempa M<magnitudo> terdeteksi di sekitar Desa Cibenda` | Shakemap gempa penentu level |
+| Status tsunami resmi | `[<STATUS>] Status tsunami dari BMKG` | Tidak ada |
+| Estimasi tsunami | `[<STATUS>] Estimasi potensi tsunami dari data gempa` | Tidak ada |
+| Kembali aman | `[AMAN] Peringatan telah berakhir` | Tidak ada |
 
-### Kondisi
+Gempa penentu level adalah gempa aktif dengan magnitudo terbesar pada level alert. Isi notifikasi adalah deskripsi alert. Isi notifikasi kembali aman: "Tidak ada gempa aktif maupun status tsunami yang berlaku. Tetap pantau informasi resmi BMKG."
 
-Salah satu kondisi berikut terpenuhi:
+| Aturan pengiriman Web Push | Nilai |
+|---|---|
+| TTL | Sisa masa aktif alert, minimal 60 detik. Status tsunami resmi dan kembali aman: 24 jam |
+| Urgency | `high` untuk `ORANGE` dan `RED`, `normal` untuk lainnya |
 
-- BMKG mengeluarkan Status SIAGA Tsunami.
-- Terdapat gempa yang relevan untuk Desa Cibenda (lolos filter radius + umur di point 5) **dan dilaporkan dirasakan** oleh BMKG di sekitar Desa Cibenda/Kecamatan Parigi/Kabupaten Pangandaran — dicek dari field `Dirasakan` (laporan skala MMI resmi BMKG per lokasi), bukan dari ambang batas magnitudo buatan sendiri.
+- Admin dapat mengirim notifikasi manual untuk alert yang berlaku melalui `/api/protected/notifications/dispatch`, dengan isi dan aturan pengiriman yang sama.
+- Web Push dikirim paling banyak 50 bersamaan, dengan batas waktu 10 detik per pengiriman.
+- Subscription yang dibalas 404 atau 410 oleh layanan push dihapus. Subscription yang dibalas 400 atau 403 dihapus bila ada pengiriman lain yang berhasil pada dispatch yang sama.
+- Setiap pengiriman dicatat pada tabel `notification_logs`. `alert_id` kosong untuk notifikasi kembali aman dan alert yang gagal disimpan.
+- Selama `BMKG_TSUNAMI_STATUS` terisi selain `NORMAL`, alert baru dan notifikasi terbit setiap 24 jam.
 
-### Tindakan Sistem
+## 10.1 Peringatan ke SIDUTama
 
-- Broadcast prioritas kepada:
-    - Kepala Desa
-    - RT/RW
-    - Relawan Desa
-- Dashboard berubah menjadi SIAGA.
-- Sistem menyiapkan broadcast kepada warga apabila status meningkat menjadi AWAS atau setelah validasi pihak berwenang.
+Bila integrasi SID aktif, scheduler meneruskan setiap keputusan alert ke SIDUTama melalui antrean, terpisah dari Web Push (ADR-049). SID menampilkan peringatan di halaman publiknya dan mengirim notifikasi ke akun warganya; isi peringatan tidak diubah SID.
 
----
+| Kejadian di SIGAP | Dikirim ke SID |
+|---|---|
+| Alert baru, level naik, level turun, atau magnitudo naik pada level yang sama | `PUT /alerts/{external_id}` |
+| Rentetan diperpanjang | `PUT /alerts/{external_id}` dengan masa tayang baru |
+| `GREEN` dengan data gempa dan status tsunami BMKG terbaca | `POST /alerts/{external_id}/end` untuk setiap peringatan aktif, satu kali |
+| `GREEN` karena data BMKG gagal diambil, atau `UNKNOWN` | Tidak ada |
 
-## 🔴 AWAS
+| Field | Nilai |
+|---|---|
+| `external_id` | `gempa-<awal rentetan>` untuk gempa, `tsunami-<waktu kejadian>` untuk tsunami; tetap selama kejadian yang sama |
+| `type` | `tsunami` untuk status tsunami resmi dan estimasi tsunami, `gempa` untuk lainnya |
+| `level` | `YELLOW`, `ORANGE`, `RED` menjadi `waspada`, `siaga`, `awas` |
+| `title`, `message` | Judul dan isi notifikasi Web Push untuk alert yang sama |
+| `expires_at` | Batas masa aktif alert (bagian 8); status tsunami resmi 24 jam sejak dikirim. Alert yang masa aktifnya sudah lewat tidak dikirim |
+| `magnitude`, `depth_km`, `location` | Dari gempa penentu level |
+| `link_url` | Dashboard warga pada `SIGAP_PUBLIC_BASE_URL` |
 
-### Kondisi
+- SID mengirim notifikasi hanya untuk peringatan baru dan kenaikan level. Kenaikan magnitudo pada level yang sama dan kembali aman tidak menghasilkan notifikasi di SID.
+- Notifikasi manual admin dan `simulate:alert` tidak dikirim ke SID.
+- Pengiriman yang gagal diulang setelah 30 detik, 2 menit, dan 5 menit dengan timeout 10 detik. Respons 401, 403, dan 422 tidak diulang, 404 pada `/end` dianggap selesai, dan 429 diulang setelah `Retry-After`.
+- Antrean dan daftar peringatan aktif disimpan di memori proses backend. Setelah backend dimulai ulang, peringatan yang belum diakhiri berhenti tampil di SID saat `expires_at` habis.
 
-Salah satu kondisi berikut terpenuhi:
+# 11. Parameter Konfigurasi
 
-- BMKG mengeluarkan Status AWAS Tsunami.
-- BMKG mengeluarkan peringatan resmi yang mengharuskan evakuasi masyarakat.
+| Variabel | Default | Fungsi |
+|---|---|---|
+| `PANGANDARAN_RADIUS_KM` | 100 | Radius relevansi gempa Pangandaran |
+| `PANGANDARAN_MAX_AGE_DAYS` | 7 | Umur maksimum gempa relevan |
+| `WEST_JAVA_RADIUS_KM` | 350 | Radius tampilan gempa Jawa Barat; kartu ini tidak memiliki batas umur |
+| `VILLAGE_LAT`, `VILLAGE_LON` | `-7.6838`, `108.5610` | Koordinat acuan desa |
+| `BMKG_TSUNAMI_STATUS` | kosong | Status tsunami resmi |
+| `ENABLE_LOCAL_SCHEDULER` | kosong | Mengaktifkan scheduler di dalam proses backend |
+| `ALERT_SCHEDULER_INTERVAL_MS` | 60000 | Interval scheduler, minimal 15000. Juga acuan batas terlambat (3 kali interval), termasuk untuk siklus dari pemicu eksternal |
 
-> Status AWAS hanya dapat berasal dari peringatan resmi BMKG atau keputusan resmi pemerintah yang berwenang.
+# 12. Batasan
 
-**Catatan implementasi:** kondisi AWAS di atas hari ini hanya bisa terpicu lewat override manual `BMKG_TSUNAMI_STATUS=AWAS` (point 8.4 di `docs/API_Spec.md`) — misalnya operator yang menerima info resmi InaTEWS dari kanal lain (media, BPBD) dan menginput manual, atau untuk keperluan demo. Field `Potensi` per-gempa ("berpotensi tsunami") **sengaja tidak pernah** dipakai untuk memicu AWAS secara otomatis, walau sekarang sudah dipakai untuk WASPADA (lihat bagian Tsunami di point 4 dan alasan lengkapnya di point 11 `docs/API_Spec.md`) — `Potensi` cuma flag biner otomatis per-gempa, bukan status resmi yang layak dipakai untuk level "evakuasi sekarang".
-
-### Tindakan Sistem
-
-- Broadcast otomatis kepada:
-    - Kepala Desa
-    - RT/RW
-    - Relawan Desa
-    - Seluruh Warga
-- Dashboard berubah menjadi AWAS.
-- Menampilkan jalur evakuasi.
-- Menampilkan titik evakuasi.
-- Menampilkan kontak darurat.
-- Menampilkan instruksi evakuasi.
-
-Status AWAS tidak memerlukan validasi manual karena merupakan keputusan resmi BMKG.
-
----
-
-# 7. Decision Flow
-
-Data BMKG
-
-↓
-
-SIGAP menerima event baru
-
-↓
-
-Validasi lokasi kejadian
-
-↓
-
-Filter relevansi: radius ≤150 km dari Desa Cibenda DAN umur ≤14 hari
-
-↓ (jika tidak relevan, berhenti di sini → AMAN)
-
-Cek Status Tsunami BMKG (prioritas tertinggi — AWAS/SIAGA/WASPADA/NORMAL)
-
-↓ (jika NORMAL, lanjut ke evaluasi gempa)
-
-Cek field Dirasakan (MMI) — apakah menyebut Cibenda/Parigi/Pangandaran?
-
-↓
-
-Menentukan Status:
-
-🟢 AMAN
-
-↓
-
-🟡 WASPADA
-
-↓
-
-🟠 SIAGA
-
-↓
-
-🔴 AWAS
-
-↓
-
-Menjalankan Broadcast sesuai aturan.
-
----
-
-# 8. Broadcast Rules
-
-## 🟢 AMAN
-
-Broadcast:
-
-Tidak ada.
-
----
-
-## 🟡 WASPADA
-
-Broadcast kepada:
-
-- Kepala Desa
-- RT/RW
-- Relawan Desa
-
-Status:
-
-Menunggu validasi.
-
----
-
-## 🟠 SIAGA
-
-Broadcast kepada:
-
-- Kepala Desa
-- RT/RW
-- Relawan Desa
-
-Status:
-
-Prioritas tinggi.
-
-Pihak berwenang dapat:
-
-- Mengubah menjadi AWAS.
-- Mengakhiri Alert jika BMKG memberikan pembaruan.
-> Semua broadcast yang dikirim SIGAP harus menyertakan sumber informasi resmi BMKG beserta waktu pembaruan data.
----
-
-## 🔴 AWAS
-
-Broadcast otomatis kepada:
-
-- Kepala Desa
-- RT/RW
-- Relawan Desa
-- Seluruh warga yang telah terdaftar pada Sistem Informasi Desa (SID).
-
-Tidak memerlukan validasi manual.
-
----
-
-# 9. Media Broadcast
-
-MVP
-
-- Dashboard SIGAP
-
-Pengembangan berikutnya
-
-- WhatsApp Broadcast
-- SMS Broadcast
-- Push Notification Mobile
-- Email
-
----
-
-# 10. Perhitungan Jarak Gempa
-
-SIGAP menghitung jarak antara koordinat episentrum gempa dan koordinat Desa Cibenda menggunakan rumus Haversine.
-
-Input:
-
-- Latitude episentrum
-- Longitude episentrum
-- Latitude Desa Cibenda
-- Longitude Desa Cibenda
-
-Output:
-
-- Jarak dalam kilometer
-
-Perhitungan ini hanya digunakan untuk menentukan relevansi informasi bagi masyarakat Desa Cibenda.
-
-Perhitungan ini bukan metode penentuan tingkat bahaya bencana.
-
----
-
-# 11. Catatan Penting
-
-SIGAP bukan sistem prediksi bencana, sistem peringatan dini mandiri, maupun sistem penentu tingkat bahaya.
-
-SIGAP hanya mengolah dan mendistribusikan informasi resmi yang diterbitkan BMKG agar dapat diterima oleh pemerintah desa dan masyarakat secara lebih cepat, sederhana, dan terstruktur.
-
-Seluruh keputusan evakuasi tetap mengikuti arahan resmi BMKG, BPBD, BNPB, dan Pemerintah Daerah.
-
-Semua broadcast yang dikirim SIGAP harus menyertakan sumber informasi resmi BMKG beserta waktu pembaruan data.
+SIGAP bukan sistem prediksi bencana maupun sistem peringatan dini mandiri. Keputusan evakuasi tetap mengikuti arahan resmi BMKG, BPBD, BNPB, dan Pemerintah Daerah.

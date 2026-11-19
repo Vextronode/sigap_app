@@ -1,0 +1,58 @@
+# =====================================================================
+# paths/integrations.yaml - path domain Integrasi Eksternal (SIDUTama)
+# =====================================================================
+
+sid-status:
+  get:
+    tags: [Integrasi]
+    summary: Status integrasi dan antrean peringatan ke SIDUTama
+    description: >
+      Mengembalikan status keaktifan integrasi SIDUTama dan daftar item antrean saat ini.
+    responses:
+      '200':
+        description: Status integrasi berhasil diambil
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        queueSize:
+                          type: integer
+                        items:
+                          type: array
+                          items:
+                            type: object
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '500':
+        $ref: './shared.yaml#/InternalError'
+
+sid-ping:
+  post:
+    tags: [Integrasi]
+    summary: Tes konektivitas dan token ke SIDUTama API
+    description: >
+      Memanggil endpoint GET /ping pada SIDUTama API untuk memeriksa validitas token.
+    responses:
+      '200':
+        description: Berhasil terhubung ke SIDUTama
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '502':
+        $ref: './shared.yaml#/InternalError'

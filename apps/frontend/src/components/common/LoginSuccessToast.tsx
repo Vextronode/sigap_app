@@ -113,7 +113,7 @@ export const LoginSuccessToast: React.FC<LoginSuccessToastProps> = ({
             <div
               className={`relative w-10 h-10 rounded-full flex items-center justify-center border shadow-2xs ${
                 isOperator
-                  ? "bg-blue-50 dark:bg-blue-950/70 border-blue-200 dark:border-blue-800 text-[#00247D] dark:text-blue-400"
+                  ? "bg-sigap-primary-light dark:bg-blue-950/70 border-blue-200 dark:border-blue-800 text-sigap-primary dark:text-blue-400"
                   : "bg-rose-50 dark:bg-rose-950/70 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400"
               }`}
             >
@@ -133,7 +133,7 @@ export const LoginSuccessToast: React.FC<LoginSuccessToastProps> = ({
               <span
                 className={`font-semibold ${
                   isOperator
-                    ? "text-[#00247D] dark:text-blue-400"
+                    ? "text-sigap-primary dark:text-blue-400"
                     : "text-rose-600 dark:text-rose-400"
                 }`}
               >
@@ -158,7 +158,7 @@ export const LoginSuccessToast: React.FC<LoginSuccessToastProps> = ({
           <div
             className={`h-full animate-login-progress ${
               isOperator
-                ? "bg-[#00247D] dark:bg-blue-500"
+                ? "bg-sigap-primary dark:bg-blue-500"
                 : "bg-rose-600 dark:bg-rose-500"
             }`}
             style={

@@ -16,7 +16,7 @@ import { AlertReviewModal } from "../features/alerts/components/AlertReviewModal
 import type { AlertItem } from "../types/alert";
 
 export default function AlertVerificationPage() {
-  useDocumentTitle("Verifikasi Alert - SIGAP Desa Cibenda");
+  useDocumentTitle("Riwayat Alert - SIGAP Desa Cibenda");
 
   // State filter & pagination
   const [page, setPage] = useState<number>(1);
@@ -67,7 +67,7 @@ export default function AlertVerificationPage() {
       });
       setFeedback({
         type: "success",
-        message: `Alert #${id.slice(0, 8)} berhasil diklasifikasikan sebagai "${status}".`,
+        message: `Alert #${id.slice(0, 8)} berhasil dicatat sebagai "${status}".`,
       });
       setTimeout(() => {
         setFeedback(null);
@@ -78,7 +78,7 @@ export default function AlertVerificationPage() {
         message:
           err instanceof Error
             ? err.message
-            : "Gagal memperbarui status verifikasi alert.",
+            : "Gagal menyimpan catatan tinjauan alert.",
       });
     }
   };

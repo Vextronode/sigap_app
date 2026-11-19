@@ -48,9 +48,11 @@ Operasi
   logs [service]            Ikuti log (200 baris terakhir)
   status                    Tag aktif/sebelumnya, status container, 10 baris deploy.log
   migrate                   Backup (mode local), tampilkan migrasi pending, konfirmasi, jalankan
-  seed                      Isi data awal: role, permission, akun admin, data contoh (perlu konfirmasi).
-                            Opsi env: SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD (kosong = password acak
-                            ditampilkan sekali), SEED_SAMPLE_DATA=true|false (default true)
+  seed                      Isi data awal yang belum ada: role, permission, akun admin, data inti desa
+                            (perlu konfirmasi). Tidak menimpa data yang sudah ada.
+                            Opsi env: SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD (akun baru; akun yang sudah
+                            ada hanya di-reset bila diisi; kosong = password acak ditampilkan sekali),
+                            SEED_SAMPLE_DATA=true|false (default false; ditolak di production)
   health                   Cek /api/healthz dan /api/readyz lewat port web
   smoke                     health + beberapa endpoint publik dan halaman SPA
   shell <service>           Buka shell (sh) di container service
@@ -330,12 +332,12 @@ cmd_seed() {
   if has_pending_migrations; then
     die "Ada migrasi pending. Jalankan 'migrate' atau 'deploy <tag> --migrate' lebih dulu."
   fi
-  confirm "ya" "Seed akan membuat role, permission, akun admin, dan data contoh." || die "Dibatalkan."
+  confirm "ya" "Seed akan membuat role, permission, akun admin, dan data inti desa yang belum ada." || die "Dibatalkan."
   # Notifikasi update npm dimatikan agar tidak menutupi kotak kredensial di akhir output.
   compose run --rm --no-deps -e NPM_CONFIG_UPDATE_NOTIFIER=false \
     -e SEED_ADMIN_EMAIL -e SEED_ADMIN_PASSWORD -e SEED_SAMPLE_DATA \
     migrate npx tsx prisma/seed.ts
-  log_event "SEED tag=$SIGAP_IMAGE_TAG sample_data=${SEED_SAMPLE_DATA:-true}"
+  log_event "SEED tag=$SIGAP_IMAGE_TAG sample_data=${SEED_SAMPLE_DATA:-false}"
 }
 
 cmd_backup() {

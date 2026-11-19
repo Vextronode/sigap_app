@@ -79,6 +79,7 @@ export async function login(email: string, password: string, ip?: string) {
     roles,
     permissions,
     jti,
+    tokenVersion: user.tokenVersion,
   });
 
   return {
@@ -127,6 +128,7 @@ export async function changeSelfPassword(
       password: hashedPassword,
       failedLoginCount: 0,
       lockedUntil: null,
+      tokenVersion: { increment: 1 },
     },
   });
 

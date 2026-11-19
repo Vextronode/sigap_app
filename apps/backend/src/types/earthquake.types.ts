@@ -14,8 +14,8 @@ export interface BmkgEarthquakeItem {
   Magnitude: string; // "5.6"
   Kedalaman: string; // "18 km"
   Wilayah: string;
-  Potensi: string;
-  Dirasakan?: string;
+  Potensi?: string; // tidak ada di gempadirasakan.json
+  Dirasakan?: string; // tidak ada di gempaterkini.json
   Shakemap?: string; // nama file, mis. "20260709081500.mmi.jpg"
 }
 
@@ -33,6 +33,19 @@ export interface BmkgEarthquakeListResponse {
   };
 }
 
+/** Klasifikasi teks `Potensi` BMKG. `TIDAK_DIKENAL` untuk teks yang belum terverifikasi. */
+export type TsunamiPotential =
+  | "TIDAK_BERPOTENSI"
+  | "INFORMASI_DIRASAKAN"
+  | "BERPOTENSI"
+  | "TIDAK_DIKENAL";
+
+/** Satu wilayah pada teks `Dirasakan`, mis. "III Pangandaran" atau "II-III Ciamis". */
+export interface FeltArea {
+  area: string;
+  mmi: string | null;
+}
+
 /** Bentuk hasil parsing, sesuai API_SPEC.md §8.3 `GET /earthquakes/latest` */
 export interface EarthquakeInfo {
   magnitude: number;
@@ -44,7 +57,9 @@ export interface EarthquakeInfo {
   };
   distanceToVillage: number; // km, dihitung dari koordinat Desa Cibenda
   felt: string;
+  feltAreas: FeltArea[];
   potential: string;
+  tsunamiPotential: TsunamiPotential | null; // null bila teks Potensi kosong
   shakemap: string; // full URL
   updatedAt: string; // ISO 8601
 }
