@@ -23,11 +23,10 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspace=apps/frontend --include-workspace-root
 
 COPY apps/frontend apps/frontend
-COPY scripts/maps/fetch-basemap.mjs scripts/maps/fetch-basemap.mjs
+COPY scripts/maps/verify-basemap.mjs scripts/maps/verify-basemap.mjs
 
-# Peta dasar self-host: unduh file PMTiles dari GitHub Release sesuai manifest dan
-# verifikasi sha256 (build gagal bila tidak cocok).
-RUN node scripts/maps/fetch-basemap.mjs
+# Peta dasar self-host disimpan di repo; build gagal bila file tidak sesuai manifest.
+RUN node scripts/maps/verify-basemap.mjs
 
 # Hanya di stage build; tidak ikut ke image runtime.
 ARG VITE_API_BASE_URL=/api

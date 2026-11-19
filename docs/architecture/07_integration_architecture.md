@@ -90,8 +90,8 @@ Peta pada dashboard gempa, peta evakuasi warga dan admin, serta pemilih lokasi t
 | `indonesia-<versi>.pmtiles` | Indonesia | 0-8 | Peta sebaran gempa |
 | `pangandaran-z15-<versi>.pmtiles` | Kabupaten Pangandaran | 0-15 | Peta sebaran gempa, peta evakuasi, pemilih lokasi |
 
-- File dibuat oleh `scripts/maps/build-basemap.sh` dari build harian Protomaps (data OpenStreetMap), diunggah sebagai aset GitHub Release `basemap-<versi>`, dan dicatat beserta sha256 pada `apps/frontend/public/maps/manifest.json`.
-- Image web mengunduh file tersebut saat build lewat `scripts/maps/fetch-basemap.mjs` dan gagal bila sha256 tidak cocok. Caddy menyajikan `/maps/*` tanpa fallback SPA (file yang tidak ada dibalas `404`), file `.pmtiles` sebagai immutable, dan mendukung range request.
+- File dibuat oleh `scripts/maps/build-basemap.sh` dari build harian Protomaps (data OpenStreetMap), disimpan di repositori pada `apps/frontend/public/maps/` sebagai berkas biner, dan dicatat beserta sha256 pada `manifest.json` di folder yang sama.
+- `scripts/maps/verify-basemap.mjs` mencocokkan file dengan manifest di CI dan saat build image web; build gagal bila file hilang atau sha256 tidak cocok. Caddy menyajikan `/maps/*` tanpa fallback SPA (file yang tidak ada dibalas `404`), file `.pmtiles` sebagai immutable, dan mendukung range request.
 - Peta evakuasi dan pemilih lokasi dibatasi ke wilayah Kabupaten Pangandaran, zoom 11-18.
 - Setelah data dashboard selesai dimuat, browser menyimpan file Pangandaran utuh di cache `sigap-basemap` (sekali per versi, dilewati pada mode hemat data). Service worker melayani range request dari salinan itu, sehingga peta evakuasi tampil saat offline. Hanya respons yang ukurannya sesuai manifest dan diawali magic number PMTiles yang disimpan. Lapisan Indonesia tidak disimpan untuk offline.
 - Peta sebaran gempa memakai lapisan Indonesia sampai zoom 8 dan lapisan detail Pangandaran mulai zoom 9.

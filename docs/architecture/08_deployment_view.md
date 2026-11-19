@@ -57,7 +57,7 @@ Status scheduler terlihat di dashboard admin dan `/api/public/system-health`. `S
 | `release/<versi>` | Dibuat `scripts/release.sh` dari isi `dev` tanpa path pada `.release-exclude` |
 | `main` | Isi rilis; versi ditandai dengan tag |
 
-Image di-build di server dari tag rilis. Build image web mengunduh file peta dasar dari GitHub Release `basemap-<versi>` sesuai `apps/frontend/public/maps/manifest.json` (bagian 7.4), sehingga server build memerlukan akses ke GitHub.
+Image di-build di server dari tag rilis. File peta dasar ikut di repositori (bagian 7.4), sehingga build image web tidak mengunduh apa pun dari luar.
 
 ## 8.5 Migrasi Database
 
