@@ -1,0 +1,221 @@
+# =====================================================================
+# paths/users.yaml - path domain manajemen akun; seluruhnya butuh permission user.manage
+# =====================================================================
+
+users:
+  get:
+    tags: [Users]
+    summary: Daftar akun
+    parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: role
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/users.yaml#/UserSummary'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+  post:
+    tags: [Users]
+    summary: Buat akun baru
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users.yaml#/UserCreateRequest'
+    responses:
+      '201':
+        description: Berhasil dibuat
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/users.yaml#/UserSummary'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '422':
+        $ref: './shared.yaml#/ValidationFailed'
+
+user-stats:
+  get:
+    tags: [Users]
+    summary: Statistik akun
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/users.yaml#/UserStatistics'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+
+user-roles:
+  get:
+    tags: [Users]
+    summary: Daftar role dan permission
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/users.yaml#/Role'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+
+user-by-id:
+  get:
+    tags: [Users]
+    summary: Detail satu akun
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/users.yaml#/UserSummary'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+  put:
+    tags: [Users]
+    summary: Perbarui nama, role, atau status aktif
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users.yaml#/UserUpdateRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/users.yaml#/UserSummary'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+      '409':
+        $ref: './shared.yaml#/Conflict'
+      '422':
+        $ref: './shared.yaml#/ValidationFailed'
+
+user-reset-password:
+  post:
+    tags: [Users]
+    summary: Reset password akun lain
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users.yaml#/ResetPasswordRequest'
+    responses:
+      '200':
+        description: Password berhasil direset
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'
+      '422':
+        $ref: './shared.yaml#/ValidationFailed'
+
+user-unlock:
+  post:
+    tags: [Users]
+    summary: Buka kunci akun
+    parameters:
+      - $ref: '../schemas/shared.yaml#/IdParam'
+    responses:
+      '200':
+        description: Kunci akun dibuka
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/users.yaml#/UserSummary'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '403':
+        $ref: './shared.yaml#/Forbidden'
+      '404':
+        $ref: './shared.yaml#/NotFound'

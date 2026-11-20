@@ -1,0 +1,102 @@
+# =====================================================================
+# paths/shared.yaml - response error lintas domain, seluruhnya
+# mereferensikan ErrorEnvelope di schemas/shared.yaml
+# =====================================================================
+
+BadRequest:
+  description: Permintaan tidak valid
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "deviceCode wajib diisi."
+        errors: ["deviceCode: wajib diisi."]
+
+Unauthorized:
+  description: Kredensial tidak ada atau tidak valid
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "Token tidak valid atau kedaluwarsa."
+        errors: ["Token tidak valid atau kedaluwarsa."]
+
+Forbidden:
+  description: Permission atau role tidak mencukupi, atau akun terkunci pada login
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "Akses ditolak."
+        errors: ["Akun Anda tidak memiliki hak akses 'content.manage' untuk fitur ini."]
+
+NotFound:
+  description: Resource tidak ditemukan
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "Alert tidak ditemukan."
+        errors: ["Alert tidak ditemukan."]
+
+Conflict:
+  description: Permintaan bertentangan dengan aturan bisnis
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+
+ValidationFailed:
+  description: Validasi input gagal
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "Validasi gagal."
+        errors: ["Nama institusi wajib diisi."]
+
+RateLimited:
+  description: Melebihi batas permintaan
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "Terlalu banyak permintaan."
+        errors: ["Anda telah melebihi batas permintaan. Silakan coba lagi nanti."]
+
+InternalError:
+  description: Kesalahan pada server
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+
+UpstreamError:
+  description: Gagal mengambil data dari sumber eksternal
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
+      example:
+        success: false
+        message: "Gagal mengambil data gempa BMKG"
+        errors: ["Layanan data gempa BMKG sementara tidak dapat diakses. Silakan coba beberapa saat lagi."]
+
+ServiceUnavailable:
+  description: Konfigurasi autentikasi perangkat belum tersedia
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/shared.yaml#/ErrorEnvelope'
