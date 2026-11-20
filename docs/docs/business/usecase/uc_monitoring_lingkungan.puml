@@ -1,0 +1,20 @@
+@startuml uc_monitoring_lingkungan
+left to right direction
+title SIGAP - Use Case: Monitoring Lingkungan
+
+actor "Warga Desa" as Warga
+actor "BMKG / Open-Meteo" as ExtData
+
+rectangle "Sistem SIGAP" {
+  usecase "Lihat Dashboard Lingkungan" as UC1
+  usecase "Lihat Ringkasan AI" as UC2
+  usecase "Tarik Data Eksternal" as UC3
+}
+
+Warga --> UC1
+Warga --> UC2
+
+UC1 .> UC3 : <<include>>
+UC3 --> ExtData
+
+@enduml

@@ -1,0 +1,91 @@
+# =====================================================================
+# paths/device.yaml - path domain Device Gateway
+# =====================================================================
+
+device-status:
+  get:
+    tags: [Device Gateway]
+    summary: Level alert terkini dan ringkasan koneksi perangkat
+    security: []
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/device.yaml#/DeviceSystemStatus'
+      '429':
+        $ref: './shared.yaml#/RateLimited'
+      '500':
+        $ref: './shared.yaml#/InternalError'
+
+device-register:
+  post:
+    tags: [Device Gateway]
+    summary: Registrasi perangkat bila deviceCode belum ada
+    security:
+      - deviceToken: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/device.yaml#/DeviceRegisterRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/device.yaml#/Device'
+      '400':
+        $ref: './shared.yaml#/BadRequest'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '500':
+        $ref: './shared.yaml#/InternalError'
+      '503':
+        $ref: './shared.yaml#/ServiceUnavailable'
+
+device-heartbeat:
+  post:
+    tags: [Device Gateway]
+    summary: Heartbeat perangkat
+    security:
+      - deviceToken: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/device.yaml#/DeviceHeartbeatRequest'
+    responses:
+      '200':
+        description: OK
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/shared.yaml#/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/device.yaml#/Device'
+      '400':
+        $ref: './shared.yaml#/BadRequest'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
+      '500':
+        $ref: './shared.yaml#/InternalError'
+      '503':
+        $ref: './shared.yaml#/ServiceUnavailable'

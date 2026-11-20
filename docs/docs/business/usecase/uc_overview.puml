@@ -1,0 +1,58 @@
+@startuml uc_overview
+left to right direction
+skinparam packageStyle rectangle
+title SIGAP - Use Case Overview
+
+actor "Warga Desa" as Warga
+actor "Admin" as Admin
+actor "Operator" as Operator
+actor "BMKG / Open-Meteo" as Ext
+actor "Unit Utama" as UU
+
+rectangle "Sistem SIGAP" {
+  package "Monitoring Lingkungan" {
+    usecase "Lihat Dashboard Lingkungan" as UC1
+    usecase "Lihat Ringkasan AI" as UC2
+  }
+
+  package "Kesiapsiagaan" {
+    usecase "Lihat Info Kesiapsiagaan" as UC3
+    usecase "Terima Notifikasi Level Alert" as UC4
+    usecase "Baca Level dan Kirim Heartbeat" as UC5
+  }
+
+  package "Administrasi Konten dan Alert" {
+    usecase "Kelola Kontak Darurat" as UC6
+    usecase "Kelola Titik Evakuasi" as UC7
+    usecase "Kelola Panduan Kesiapsiagaan" as UC8
+    usecase "Catat Tinjauan Alert" as UC9
+    usecase "Lihat Dashboard Admin" as UC10
+  }
+
+  package "Administrasi Sistem" {
+    usecase "Manajemen Akun dan Role" as UC11
+  }
+}
+
+Warga --> UC1
+Warga --> UC2
+Warga --> UC3
+Warga --> UC4
+
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+
+Operator --> UC6
+Operator --> UC7
+Operator --> UC8
+Operator --> UC9
+Operator --> UC10
+
+Ext --> UC1
+UU --> UC5
+
+@enduml
