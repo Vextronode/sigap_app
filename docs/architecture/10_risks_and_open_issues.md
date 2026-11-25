@@ -4,7 +4,8 @@
 
 | Isu | Domain | Dampak | Pemilik |
 |---|---|---|---|
-| Kontrak perangkat: autentikasi, endpoint, interval, dan penanganan `UNKNOWN` pada firmware | IoT | Desain pada `sigap-phase-2/` belum dapat dimulai | Tech Lead |
+| Kontrak trigger sirine digital dan laporan aktivasi sirine | IoT | FS-08 dan FS-09 belum dapat dimulai | Tech Lead |
+| Pemetaan LED per level, pola mode tidak diketahui, dan firmware Sirine | IoT | Indikator fisik Unit Utama belum menampilkan level | Tim IoT |
 | `external_id` tetap untuk status tsunami resmi | Integrasi | Setiap pengingat harian status tsunami resmi menjadi peringatan baru di SID; ditetapkan saat integrasi InaTEWS diaktifkan | Tech Lead |
 | Hosting production | Deployment | Belum ada lingkungan production | Tim DevOps |
 | Fitur ringkasan AI | Produk | Kartu dashboard memakai konten sementara | Tech Lead |

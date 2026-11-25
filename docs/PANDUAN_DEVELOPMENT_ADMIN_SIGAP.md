@@ -129,7 +129,7 @@ ATURAN PENGEMBANGAN ADMIN PANEL SIGAP DESA CIBENDA (TAHAP 2)
    - Sirine hanya dapat di-trigger jika level ORANGE / RED.
    - Level RED wajib memicu modal konfirmasi 2 langkah sebelum eksekusi.
    - Menu "Manajemen Akun" (/admin/manajemen-akun) hanya boleh tampil untuk role ADMIN.
-   - Perangkat dihitung offline setelah 20 detik tanpa heartbeat.
+   - Perangkat dihitung offline setelah 45 detik tanpa laporan (poll status, heartbeat, atau registrasi).
 ================================================================================
 ```
 

@@ -80,7 +80,8 @@ Status: **Berjalan** tersedia di kode, **Sebagian** tersedia dengan batasan yang
 | Platform | PWA dengan cache data terakhir | Berjalan |
 | Pengumuman | Pengumuman desa melalui integrasi SID | Belum |
 | IoT | Registrasi, heartbeat, dan status level untuk perangkat | Berjalan |
-| IoT | Indikator fisik dan tombol sirine lokal pada perangkat | Di luar repositori ini; dikelola firmware Tim IoT |
+| IoT | Firmware Unit Utama: polling level, laporan aktif, mode tidak diketahui saat koneksi gagal | Berjalan (`firmware/main_device/`) |
+| IoT | Indikator LED per level dan tombol sirine lokal pada perangkat | Belum; rangkaian ditetapkan Tim IoT |
 | IoT | Kontrol sirine dari aplikasi dengan konfirmasi dan cooldown | Belum |
 
 ### 3.2 Roadmap

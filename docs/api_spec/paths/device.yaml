@@ -6,7 +6,22 @@ device-status:
   get:
     tags: [Device Gateway]
     summary: Level alert terkini dan ringkasan koneksi perangkat
-    security: []
+    description: >
+      Endpoint publik. Unit Utama memanggilnya setiap 15 detik dengan header
+      x-device-token dan query deviceCode; panggilan tersebut dicatat sebagai
+      laporan aktif perangkat (ADR-052). Kegagalan mencatat laporan, termasuk
+      deviceCode yang belum terdaftar, tidak mengubah respons.
+    security:
+      - {}
+      - deviceToken: []
+    parameters:
+      - name: deviceCode
+        in: query
+        required: false
+        description: Kode perangkat pemanggil; dipakai hanya bersama x-device-token yang valid.
+        schema:
+          type: string
+          maxLength: 64
     responses:
       '200':
         description: OK
@@ -19,6 +34,10 @@ device-status:
                   properties:
                     data:
                       $ref: '../schemas/device.yaml#/DeviceSystemStatus'
+      '400':
+        $ref: './shared.yaml#/BadRequest'
+      '401':
+        $ref: './shared.yaml#/Unauthorized'
       '429':
         $ref: './shared.yaml#/RateLimited'
       '500':
@@ -27,7 +46,10 @@ device-status:
 device-register:
   post:
     tags: [Device Gateway]
-    summary: Registrasi perangkat bila deviceCode belum ada
+    summary: Registrasi perangkat
+    description: >
+      Membuat perangkat bila deviceCode belum ada. Perangkat yang sudah ada
+      diperbarui waktu lapornya tanpa mengubah nama.
     security:
       - deviceToken: []
     requestBody:
@@ -61,6 +83,9 @@ device-heartbeat:
   post:
     tags: [Device Gateway]
     summary: Heartbeat perangkat
+    description: >
+      Dikirim Unit Utama setiap 60 detik. 404 bila deviceCode belum terdaftar;
+      firmware lalu melakukan registrasi ulang.
     security:
       - deviceToken: []
     requestBody:
@@ -85,6 +110,8 @@ device-heartbeat:
         $ref: './shared.yaml#/BadRequest'
       '401':
         $ref: './shared.yaml#/Unauthorized'
+      '404':
+        $ref: './shared.yaml#/NotFound'
       '500':
         $ref: './shared.yaml#/InternalError'
       '503':
