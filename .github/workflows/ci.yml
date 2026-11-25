@@ -1,7 +1,8 @@
 name: CI
 
 # PR ke branch mana pun dicek (feature -> dev, dst, sesuai konvensi PR di repo ini).
-# Push ke dev/main dicek ulang sebagai safety net setelah merge.
+# Job dijalankan sesuai bagian yang berubah (job `changes`). Push ke staging/main
+# menjalankan semua job sebagai safety net setelah merge; push ke dev ikut filter.
 on:
   pull_request:
   push:
@@ -23,10 +24,70 @@ env:
 
 jobs:
   # ==========================================================
+  # CHANGES — tentukan job yang perlu jalan dari berkas yang berubah.
+  # PR dibandingkan dengan branch tujuan, push ke dev dengan commit sebelum
+  # push. Push ke staging/main, perubahan workflow ini, atau base yang tidak
+  # dikenal menjalankan semua job. Job Docs dan Release guard tidak difilter.
+  # ==========================================================
+  changes:
+    name: Deteksi perubahan
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      docker: ${{ steps.filter.outputs.docker }}
+      firmware: ${{ steps.filter.outputs.firmware }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Bandingkan berkas yang berubah
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          jobs="frontend backend docker firmware"
+          run_all() {
+            echo "$1"
+            for job in $jobs; do echo "$job=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          }
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            base="origin/$BASE_REF"
+          elif [ "$REF_NAME" = "dev" ]; then
+            base="$BEFORE_SHA"
+          else
+            run_all "Push ke $REF_NAME: semua job dijalankan."
+          fi
+
+          files="$(git diff --name-only "$base"...HEAD 2>/dev/null)" || run_all "Base $base tidak dikenal: semua job dijalankan."
+          echo "Berkas berubah:"
+          printf '  %s\n' $files
+          if grep -qx '.github/workflows/ci.yml' <<< "$files"; then
+            run_all "Workflow CI berubah: semua job dijalankan."
+          fi
+
+          matches() { grep -qE "$1" <<< "$files" && echo true || echo false; }
+          {
+            echo "frontend=$(matches '^(apps/frontend/|scripts/maps/|package(-lock)?\.json$)')"
+            echo "backend=$(matches '^(apps/backend/|docs/api_spec/|package(-lock)?\.json$)')"
+            echo "firmware=$(matches '^firmware/')"
+            echo "docker=$(matches '^(apps/|deploy/|scripts/maps/verify-basemap\.mjs$|\.dockerignore$|package(-lock)?\.json$)')"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  # ==========================================================
   # FRONTEND — lint, typecheck, build
   # ==========================================================
   frontend:
     name: Frontend (lint, typecheck, build)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -80,6 +141,8 @@ jobs:
   # ==========================================================
   backend:
     name: Backend (prisma, typecheck, build)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -160,40 +223,21 @@ jobs:
         run: node scripts/check-doc-links.mjs
 
   # ==========================================================
-  # FIRMWARE — compile firmware Unit Utama (PlatformIO), hanya bila
-  # firmware/ atau workflow ini berubah; selain itu job lolos tanpa build.
+  # FIRMWARE — compile firmware Unit Utama (PlatformIO)
   # ==========================================================
   firmware:
     name: Firmware (build)
+    needs: changes
+    if: needs.changes.outputs.firmware == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Periksa perubahan firmware
-        id: changes
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="origin/${{ github.base_ref }}"
-          else
-            base="${{ github.event.before }}"
-          fi
-          # Base yang tidak dikenal (mis. branch baru) dianggap berubah.
-          if git diff --quiet "$base"...HEAD -- firmware/ .github/workflows/ci.yml 2>/dev/null; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Firmware tidak berubah, build dilewati."
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Install PlatformIO
-        if: steps.changes.outputs.changed == 'true'
         run: pipx install platformio==6.2.0
 
       - name: Build Unit Utama
-        if: steps.changes.outputs.changed == 'true'
         run: |
           cp firmware/main_device/include/secrets.example.h firmware/main_device/include/secrets.h
           pio run -d firmware/main_device
@@ -203,6 +247,8 @@ jobs:
   # ==========================================================
   docker:
     name: Docker images (build only)
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -282,18 +328,19 @@ jobs:
   ci-success:
     name: CI Success
     if: always()
-    needs: [frontend, backend, docs, firmware, docker, release-guard]
+    needs: [changes, frontend, backend, docs, firmware, docker, release-guard]
     runs-on: ubuntu-latest
     steps:
+      # Job yang tidak terdampak perubahan berstatus "skipped" dan dianggap lolos;
+      # job changes wajib berhasil.
       - name: Check all jobs passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
         run: |
-          if [ "${{ needs.frontend.result }}" != "success" ] || [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.docs.result }}" != "success" ] || [ "${{ needs.firmware.result }}" != "success" ] || [ "${{ needs.docker.result }}" != "success" ]; then
-            echo "::error::Salah satu job CI gagal."
-            exit 1
-          fi
-          # Release guard hanya berjalan untuk main; di branch lain statusnya "skipped".
-          if [ "${{ needs.release-guard.result }}" != "success" ] && [ "${{ needs.release-guard.result }}" != "skipped" ]; then
-            echo "::error::Release guard gagal."
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$RESULTS"
+          failed="$(jq -r 'to_entries[] | select(.value.result != "success" and (.key == "changes" or .value.result != "skipped")) | .key' <<< "$RESULTS")"
+          if [ -n "$failed" ]; then
+            echo "::error::Job CI gagal: $(echo $failed)"
             exit 1
           fi
           echo "Semua job CI lolos."
