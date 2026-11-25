@@ -1,12 +1,15 @@
 import { Router } from "express";
 import { DeviceController } from "../controllers/device.controller.js";
-import { deviceAuthMiddleware } from "../middleware/deviceAuth.middleware.js";
-import { validateHeartbeat, validateRegisterDevice } from "../validators/device.validator.js";
+import { deviceAuthMiddleware, optionalDeviceAuthMiddleware } from "../middleware/deviceAuth.middleware.js";
+import { validateHeartbeat, validateRegisterDevice, validateStatusQuery } from "../validators/device.validator.js";
 
 export const publicDeviceRouter = Router();
 
-/** GET /api/public/device/status: level alert terbaru untuk ESP32 */
-publicDeviceRouter.get("/status", DeviceController.getStatus);
+/**
+ * GET /api/public/device/status: level alert terbaru. Unit Utama memanggilnya dengan
+ * header x-device-token dan query deviceCode; tanpa header berlaku sebagai endpoint publik.
+ */
+publicDeviceRouter.get("/status", optionalDeviceAuthMiddleware, validateStatusQuery, DeviceController.getStatus);
 
 /**
  * POST /api/public/device/register

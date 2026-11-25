@@ -4,8 +4,16 @@ import { AlertService } from "../services/alert.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 export class DeviceController {
-  // level alert yang berlaku dan ringkasan koneksi perangkat
-  static getStatus = asyncHandler(async (_req: Request, res: Response) => {
+  // level alert yang berlaku dan ringkasan koneksi perangkat; poll dari perangkat
+  // terautentikasi dengan deviceCode sekaligus dicatat sebagai laporan aktif (ADR-052)
+  static getStatus = asyncHandler(async (req: Request, res: Response) => {
+    const deviceCode = req.query.deviceCode;
+    if (res.locals.deviceAuthenticated === true && typeof deviceCode === "string") {
+      // Gagal mencatat (mis. perangkat belum terdaftar) tidak boleh menahan level.
+      await DeviceService.recordSeen(deviceCode).catch((error: unknown) => {
+        console.warn(`[GET /device/status] laporan ${deviceCode} tidak tercatat:`, (error as Error).message);
+      });
+    }
     const systemStatus = await DeviceService.getSystemStatus();
     const currentAlert = await AlertService.getCurrentAlert();
     return res.status(200).json({
