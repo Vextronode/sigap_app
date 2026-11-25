@@ -289,18 +289,18 @@ async function main() {
     }
   }
 
-  // Perangkat Hardware Sirine IoT (ESP32)
+  // Unit Utama IoT (ESP32-C3); deviceCode dan nama sama dengan firmware/main_device/include/config.h
   await prisma.device.upsert({
-    where: { deviceCode: "ESP32-01" },
+    where: { deviceCode: "ESP32-CIBENDA-UTAMA" },
     update: {},
     create: {
-      deviceCode: "ESP32-01",
-      name: "Sirine Balai Desa Cibenda",
+      deviceCode: "ESP32-CIBENDA-UTAMA",
+      name: "Indikator Utama Balai Desa Cibenda",
       status: "OFFLINE",
       lastSeen: null,
     },
   });
-  console.log('Perangkat IoT baseline "ESP32-01" berhasil di-seed.');
+  console.log('Perangkat IoT baseline "ESP32-CIBENDA-UTAMA" berhasil di-seed.');
 
   console.log("Seed selesai.");
   console.log(adminSummary);
