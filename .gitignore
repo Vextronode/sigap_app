@@ -29,3 +29,7 @@ backend/prisma/dev.db-journal
 .env*
 !**/.env.example
 .direnv/
+
+# Firmware (PlatformIO): artefak build dan kredensial perangkat
+firmware/**/.pio/
+firmware/**/include/secrets.h
