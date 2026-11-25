@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma.js";
+import * as DeviceRepository from "../repositories/device.repository.js";
 
 export type DeviceOverviewResult = {
     status: "ONLINE" | "OFFLINE";
@@ -18,11 +18,7 @@ export class DeviceService {
      * Mencari device berdasarkan deviceCode
      */
     static async getByDeviceCode(deviceCode: string) {
-        return prisma.device.findUnique({
-            where: {
-                deviceCode,
-            },
-        });
+        return DeviceRepository.findByDeviceCode(deviceCode);
     }
 
     /**
@@ -30,24 +26,13 @@ export class DeviceService {
      */
     static async register(deviceCode: string, name: string) {
         cachedDeviceStatus = null; // Invalidate cache
-        const existingDevice = await prisma.device.findUnique({
-            where: {
-                deviceCode,
-            },
-        });
+        const existingDevice = await DeviceRepository.findByDeviceCode(deviceCode);
 
         if (existingDevice) {
             return existingDevice;
         }
 
-        return prisma.device.create({
-            data: {
-                deviceCode,
-                name,
-                status: "ONLINE",
-                lastSeen: new Date(),
-            },
-        });
+        return DeviceRepository.create({ deviceCode, name, lastSeen: new Date() });
     }
 
     /**
@@ -56,26 +41,14 @@ export class DeviceService {
      */
     static async heartbeat(deviceCode: string) {
         cachedDeviceStatus = null; // Invalidate cache
-        return prisma.device.update({
-            where: {
-                deviceCode,
-            },
-            data: {
-                status: "ONLINE",
-                lastSeen: new Date(),
-            },
-        });
+        return DeviceRepository.markSeen(deviceCode, new Date());
     }
 
     /**
      * Mengambil seluruh device
      */
     static async getAll() {
-        return prisma.device.findMany({
-            orderBy: {
-                createdAt: "asc",
-            },
-        });
+        return DeviceRepository.findAll();
     }
 
     /**
@@ -87,7 +60,7 @@ export class DeviceService {
             return cachedDeviceStatus.data;
         }
 
-        const devices = await prisma.device.findMany();
+        const devices = await DeviceRepository.findAll();
 
         if (devices.length === 0) {
             const result: DeviceOverviewResult = {

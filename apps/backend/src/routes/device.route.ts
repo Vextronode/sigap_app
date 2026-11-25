@@ -1,125 +1,21 @@
 import { Router } from "express";
-import { DeviceService } from "../services/device.service.js";
-import { AlertService } from "../services/alert.service.js";
+import { DeviceController } from "../controllers/device.controller.js";
 import { deviceAuthMiddleware } from "../middleware/deviceAuth.middleware.js";
-import type {
-    ApiErrorResponse,
-    ApiSuccessResponse,
-} from "../types/weather.types.js";
+import { validateHeartbeat, validateRegisterDevice } from "../validators/device.validator.js";
 
 export const publicDeviceRouter = Router();
 
-/**
- * GET /api/device/status
- * Mengambil status alert terbaru untuk ESP32
- */
-publicDeviceRouter.get("/status", async (_req, res) => {
-    try {
-        const systemStatus = await DeviceService.getSystemStatus();
-        const currentAlert = await AlertService.getCurrentAlert();
-        const level = currentAlert?.level ?? "UNKNOWN";
-
-        const response: ApiSuccessResponse<typeof systemStatus & { level: string }> = {
-            success: true,
-            message: "Status perangkat retrieved successfully.",
-            data: {
-                level,
-                ...systemStatus,
-            },
-        };
-
-        res.json(response);
-    } catch (error) {
-        console.error("[GET /device/status] error:", error);
-
-        const response: ApiErrorResponse = {
-            success: false,
-            message: "Gagal mengambil status perangkat.",
-            errors: ["Terjadi kesalahan pada server."],
-        };
-        res.status(500).json(response);
-    }
-});
+/** GET /api/public/device/status: level alert terbaru untuk ESP32 */
+publicDeviceRouter.get("/status", DeviceController.getStatus);
 
 /**
- * POST /api/device/register
+ * POST /api/public/device/register
  * SEC-07: Wajib menyertakan header x-device-token dari perangkat ESP32.
  */
-publicDeviceRouter.post("/register", deviceAuthMiddleware, async (req, res) => {
-    try {
-        const { deviceCode, name } = req.body;
-
-        if (!deviceCode || !name) {
-            const response: ApiErrorResponse = {
-                success: false,
-                message: "deviceCode dan name wajib diisi.",
-                errors: [
-                    ...(!deviceCode ? ["deviceCode: wajib diisi."] : []),
-                    ...(!name ? ["name: wajib diisi."] : []),
-                ],
-            };
-            res.status(400).json(response);
-            return;
-        }
-
-        const device = await DeviceService.register(deviceCode, name);
-
-        const response: ApiSuccessResponse<typeof device> = {
-            success: true,
-            message: "Device registered successfully.",
-            data: device,
-        };
-
-        res.status(200).json(response);
-    } catch (error) {
-        console.error("[POST /device/register] error:", error);
-
-        const response: ApiErrorResponse = {
-            success: false,
-            message: "Gagal meregistrasi perangkat.",
-            errors: ["Terjadi kesalahan pada server."],
-        };
-        res.status(500).json(response);
-    }
-});
+publicDeviceRouter.post("/register", deviceAuthMiddleware, validateRegisterDevice, DeviceController.register);
 
 /**
- * POST /api/device/heartbeat
+ * POST /api/public/device/heartbeat
  * SEC-07: Wajib menyertakan header x-device-token dari perangkat ESP32.
  */
-publicDeviceRouter.post("/heartbeat", deviceAuthMiddleware, async (req, res) => {
-    try {
-        const { deviceCode } = req.body;
-
-        if (!deviceCode) {
-            const response: ApiErrorResponse = {
-                success: false,
-                message: "deviceCode wajib diisi.",
-                errors: ["deviceCode: wajib diisi."],
-            };
-
-            res.status(400).json(response);
-            return;
-        }
-
-        const device = await DeviceService.heartbeat(deviceCode);
-
-        const response: ApiSuccessResponse<typeof device> = {
-            success: true,
-            message: "Heartbeat received successfully.",
-            data: device,
-        };
-
-        res.json(response);
-    } catch (error) {
-        console.error("[POST /device/heartbeat] error:", error);
-
-        const response: ApiErrorResponse = {
-            success: false,
-            message: "Gagal memperbarui heartbeat perangkat.",
-            errors: ["Terjadi kesalahan pada server."],
-        };
-
-        res.status(500).json(response);
-    }
-});
+publicDeviceRouter.post("/heartbeat", deviceAuthMiddleware, validateHeartbeat, DeviceController.heartbeat);
