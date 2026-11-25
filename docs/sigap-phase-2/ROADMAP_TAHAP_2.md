@@ -19,7 +19,7 @@
 | Area 4 - Integrasi SID | Notifikasi SIGAP ke SID dan pengumuman SID ke SIGAP | Sebagian selesai: peringatan SIGAP ke SID berjalan (ADR-049); pengumuman SID ke SIGAP belum dimulai |
 | Area 5 - Admin-Side | Fitur pada Bagian 2 | Sebagian selesai |
 | Area 6 - Data Historis dan Alert Cuaca | Bagian 3 | Belum dimulai |
-| Area 7 - Perangkat dan Sirine | Manajemen perangkat, riwayat, trigger sirine | Belum dimulai; menunggu ketetapan kontrak perangkat |
+| Area 7 - Perangkat dan Sirine | Manajemen perangkat, riwayat, trigger sirine | Sebagian: kontrak dan firmware Unit Utama berjalan (ADR-052); manajemen perangkat, riwayat, dan trigger sirine belum dimulai |
 | Area 8 - Ringkasan AI | Ringkasan cuaca dan gempa, rekomendasi aktivitas | Belum dimulai; kontrak di `planned_api/` |
 | Area 9 - Pembaruan Real-Time | Bagian 4 | Belum dimulai |
 
@@ -91,7 +91,7 @@ Dashboard saat ini memakai polling (`architecture/09_cross_cutting_concerns.md`)
 | Urutan | Pekerjaan |
 |---|---|
 | 1 | Area 4 - Integrasi SID |
-| 2 | Area 7 - Perangkat dan Sirine, setelah kontrak perangkat ditetapkan |
+| 2 | Area 7 - Perangkat dan Sirine |
 | 3 | Area 8 - Ringkasan AI |
 | 4 | Area 6 - Data Historis dan Alert Cuaca |
 | 5 | Area 9 - Pembaruan Real-Time |
@@ -100,7 +100,7 @@ Dashboard saat ini memakai polling (`architecture/09_cross_cutting_concerns.md`)
 
 | Isu | Area | Pemilik |
 |---|---|---|
-| Kontrak perangkat: autentikasi, endpoint, interval | 7 | Tech Lead |
+| Kontrak trigger sirine digital dan laporan aktivasi sirine | 7 | Tech Lead |
 | Kontrak pengumuman SID ke SIGAP | 4 | Tech Lead SIGAP dan SID |
 | Sumber klasifikasi alert cuaca | 6 | Tech Lead |
 | Hosting production | 9 | Tim DevOps |

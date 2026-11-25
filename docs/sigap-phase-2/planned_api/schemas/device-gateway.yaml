@@ -1,30 +1,12 @@
 # =====================================================================
 # schemas/device-gateway.yaml — schema domain Device Gateway (M2M)
 # Perangkat IoT memanggil endpoint ini langsung, autentikasi device
-# (X-Device-Key), bukan token pengguna. Sesuai ADR-013 (REST Polling).
+# (x-device-token, ADR-052), bukan token pengguna. Sesuai ADR-013 (REST Polling).
 # =====================================================================
-
-DeviceLevelResponse:
-  type: object
-  properties:
-    level:
-      $ref: '../../../api_spec/schemas/shared.yaml#/StatusLevel'
-    updatedAt:
-      type: string
-      format: date-time
-      description: Waktu terakhir level ini ditetapkan backend
-
-HeartbeatRequest:
-  type: object
-  properties:
-    firmwareVersion:
-      type: string
-      example: "1.0.3"
-      nullable: true
 
 SirenEventReportRequest:
   type: object
-  required: [levelAtTrigger, triggeredAt]
+  required: [deviceCode, levelAtTrigger, triggeredAt]
   description: >
     Dikirim Unit Utama untuk 2 skenario berbeda, dibedakan oleh
     relatedActionId: (1) melaporkan trigger BARU via jalur fisik
@@ -34,6 +16,9 @@ SirenEventReportRequest:
     /protected/devices/{id}/trigger-siren - relatedActionId diisi ID
     baris pending tsb, backend UPDATE executedAt & ackStatus baris itu.
   properties:
+    deviceCode:
+      type: string
+      description: Kode Unit Utama pelapor (ADR-052).
     relatedActionId:
       type: string
       format: uuid

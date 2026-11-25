@@ -15,8 +15,8 @@ Audit trail insert-only untuk setiap aktivasi sirine (Unit Utama di Kantor Desa 
 
 ## 3. Alur Fungsional
 
-1. Trigger terjadi (fisik di Unit Utama, atau digital dari dashboard via FS-09) → Unit Utama broadcast perintah ke Sirine via ESP-NOW.
-2. Sirine mengirim status ack balik ke Unit Utama via ESP-NOW (diterima & dieksekusi, atau tidak ada respons dalam window tertentu).
+1. Trigger terjadi (fisik di Unit Utama, atau digital dari dashboard via FS-09) → Unit Utama broadcast perintah ke Sirine via radio nRF24L01 (ADR-052).
+2. Sirine mengirim status ack balik ke Unit Utama via radio nRF24L01 (diterima & dieksekusi, atau tidak ada respons dalam window tertentu).
 3. Unit Utama melaporkan hasil (trigger + ack) ke backend pada siklus poll/heartbeat berikutnya.
 4. Backend menulis satu entri baru ke `siren_action_log` - entri tidak pernah diubah/dihapus setelah tercatat.
 5. Admin membuka riwayat, dapat memfilter berdasarkan sumber trigger dan rentang waktu.

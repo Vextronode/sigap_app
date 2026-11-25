@@ -1,59 +1,7 @@
 # =====================================================================
 # paths/device-gateway.yaml — path domain Device Gateway (M2M)
+# Poll level dan heartbeat sudah berjalan: api_spec/paths/device.yaml.
 # =====================================================================
-
-device-poll-level:
-  get:
-    tags: [Device Gateway]
-    summary: >
-      Unit Utama polling level kesiapsiagaan terkini, setiap 15 detik
-      (ADR-013). Response yang sama juga membawa pending command
-      trigger sirine digital jika ada - lihat catatan di FS-09 soal
-      latensi eksekusi <=15 detik.
-    security:
-      - deviceApiKey: []
-    parameters:
-      - $ref: '../../../api_spec/schemas/shared.yaml#/IdParam'
-    responses:
-      '200':
-        description: OK
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '../../../api_spec/schemas/shared.yaml#/SuccessEnvelope'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '../schemas/device-gateway.yaml#/DeviceLevelResponse'
-      '401':
-        $ref: '../../../api_spec/paths/shared.yaml#/Unauthorized'
-      '404':
-        $ref: '../../../api_spec/paths/shared.yaml#/NotFound'
-
-device-heartbeat:
-  post:
-    tags: [Device Gateway]
-    summary: >
-      Heartbeat setiap 60 detik agar backend menandai online &
-      memperbarui lastSeenAt.
-    security:
-      - deviceApiKey: []
-    parameters:
-      - $ref: '../../../api_spec/schemas/shared.yaml#/IdParam'
-    requestBody:
-      required: false
-      content:
-        application/json:
-          schema:
-            $ref: '../schemas/device-gateway.yaml#/HeartbeatRequest'
-    responses:
-      '204':
-        description: Heartbeat diterima (No Content)
-      '401':
-        $ref: '../../../api_spec/paths/shared.yaml#/Unauthorized'
-      '404':
-        $ref: '../../../api_spec/paths/shared.yaml#/NotFound'
 
 device-siren-events:
   post:
@@ -63,9 +11,7 @@ device-siren-events:
       (relatedActionId kosong) ATAU ack eksekusi command digital
       (relatedActionId diisi). Lihat deskripsi schema untuk detail.
     security:
-      - deviceApiKey: []
-    parameters:
-      - $ref: '../../../api_spec/schemas/shared.yaml#/IdParam'
+      - deviceToken: []
     requestBody:
       required: true
       content:
