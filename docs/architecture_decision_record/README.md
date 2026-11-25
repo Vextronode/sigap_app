@@ -22,7 +22,7 @@ ADR dikelompokkan per domain dalam satu file. Nomor ADR sekuensial lintas file d
 |---|---|---|
 | `ADR_data_architecture.md` | Arsitektur Data dan Skema | ADR-001, 002, 003, 004, 030 |
 | `ADR_security_access_control.md` | Keamanan dan Kontrol Akses | ADR-005, 006, 007, 008, 009, 010, 026, 039, 048, 050 |
-| `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029 |
+| `ADR_iot_siren_architecture.md` | Arsitektur IoT dan Sirine | ADR-011, 012, 013, 014, 015, 029, 052 |
 | `ADR_api_design.md` | Desain API | ADR-016, 017, 018, 019, 020, 021, 027, 028 |
 | `ADR_sigap_sid_integration.md` | Integrasi SIGAP dan SID | ADR-022, 023, 024, 025, 049 |
 | `ADR_scope_and_alert_policy.md` | Cakupan Produk dan Kebijakan Alert | ADR-031, 032, 033, 034, 035, 036, 037, 038, 040, 041, 042, 043, 044, 045, 046, 047, 051 |
@@ -84,6 +84,7 @@ Integrasi SID mengikuti kontrak integrasi SIDUTama v1 yang disepakati Tim SIDUTa
 | ADR-049 | Peringatan Bencana SIGAP Dikirim ke SIDUTama Mengikuti Kontrak Integrasi v1 | Berlaku | - |
 | ADR-050 | Batas Subscribe Notifikasi dan Pembatasan Dispatch Web Push | Berlaku | - |
 | ADR-051 | Peta Dasar Self-Host dari Data OpenStreetMap | Berlaku | - |
+| ADR-052 | Kontrak Perangkat Unit Utama dan Firmware di Repositori SIGAP | Berlaku | - |
 
 ## 5. Menambah ADR Baru
 

@@ -149,3 +149,42 @@ Opsi 2 - device_id dipertahankan.
 ### Dampak Terhadap Sistem
 - Skema `siren_action_log` (005_iot_kesiapsiagaan.sql) mempertahankan `device_id NOT NULL`, tidak berubah dari ADR-014.
 - Satu aksi trigger pengguna (satu klik/tekan tombol) dapat menghasilkan banyak baris log - frontend/laporan riwayat perlu mengelompokkan baris berdasarkan `triggeredAt` + `triggerSource` yang sama untuk merepresentasikan "satu kejadian", bukan menampilkan tiap baris sebagai kejadian terpisah.
+
+---
+
+## ADR-052: Kontrak Perangkat Unit Utama dan Firmware di Repositori SIGAP
+
+### Latar Belakang Keputusan
+Roadmap Tahap 2 mencatat kontrak perangkat (autentikasi, endpoint, interval) sebagai isu terbuka. Firmware Unit Utama yang diajukan Tim IoT (PR #132) memakai asumsi yang berbeda dari backend dan dari rancangan `planned_api`: poll status 5 detik dan heartbeat 60 detik, sementara backend menghitung perangkat offline setelah 20 detik dengan anggapan heartbeat 10 detik. Firmware juga mengambil konfigurasi Wi-Fi dari endpoint backend yang tidak ada, tidak memiliki cara mengisi token perangkat, dan tertahan tanpa batas waktu saat Wi-Fi tidak tersambung. Rancangan FS-06 menyebut Sirine terhubung lewat ESP-NOW, sedangkan firmware memakai modul nRF24L01.
+
+### Alternatif yang Dipertimbangkan
+1. **Status aktif perangkat:** (a) heartbeat 10 detik sesuai anggapan backend; (b) heartbeat 60 detik dengan batas offline sekitar 150 detik; (c) poll status 15 detik sekaligus menjadi laporan aktif, dengan heartbeat 60 detik untuk data tambahan.
+2. **Autentikasi:** satu kunci bersama `x-device-token` yang sudah berjalan, atau kunci per perangkat `X-Device-Key` sesuai rancangan `planned_api`.
+3. **Token dan Wi-Fi pada perangkat:** endpoint konfigurasi Wi-Fi di backend, berkas `secrets.h` yang diisi saat build, pengisian lewat serial, atau portal konfigurasi di perangkat.
+4. **Indikator saat data tidak dapat diambil:** tetap menampilkan level terakhir, menampilkan level terakhir dengan tanda kedip, atau mode "tidak diketahui" yang berbeda dari keempat level.
+5. **Letak dan build firmware:** repositori terpisah milik Tim IoT atau `firmware/` di repositori SIGAP; PlatformIO atau arduino-cli.
+
+### Keputusan yang Dipilih
+- **Status aktif:** opsi 1(c). Unit Utama memanggil `GET /api/public/device/status` setiap 15 detik dengan header `x-device-token` dan query `deviceCode`. Backend mencatat waktu lapor di memori pada setiap laporan dan menulis `lastSeen` ke database paling sering sekali per 60 detik. Perangkat dihitung aktif bila melapor dalam 45 detik terakhir (3 poll). `POST /heartbeat` dikirim setiap 60 detik dengan `deviceCode` dan `firmwareVersion`. Tanpa header, `GET /status` tetap endpoint publik.
+- **Perangkat belum terdaftar:** heartbeat dibalas `404` dan firmware melakukan registrasi ulang. Registrasi ulang perangkat yang sudah ada memperbarui `lastSeen` tanpa menimpa nama. Kegagalan mencatat laporan pada poll status tidak menahan level.
+- **Autentikasi:** satu kunci bersama `x-device-token` (`DEVICE_SHARED_KEY`) dipertahankan. Kunci per perangkat ditetapkan saat Unit Utama lebih dari satu.
+- **Token dan Wi-Fi:** keduanya diisi di `firmware/main_device/include/secrets.h` yang diabaikan git. Backend tidak menyimpan maupun mengirim kredensial Wi-Fi.
+- **Indikator:** setelah 3 poll gagal berturut-turut (sekitar 45 detik), atau saat backend memberikan level di luar `GREEN`, `YELLOW`, `ORANGE`, `RED` (termasuk `UNKNOWN`), indikator masuk mode "tidak diketahui" sesuai ADR-004. Level terakhir hanya dipakai untuk log. Sirine tidak pernah dibunyikan otomatis karena gangguan koneksi.
+- **Radio:** Unit Utama dan Sirine memakai nRF24L01 sesuai rangkaian yang terpasang, dengan kanal 90, 250 kbps, PA HIGH, CRC 16 bit, dan auto-ACK aktif.
+- **Firmware:** berada di `firmware/main_device/` pada repositori SIGAP, dibangun dengan PlatformIO dengan versi platform dan library terkunci, dan dikompilasi oleh CI saat `firmware/` berubah.
+
+### Alasan Pemilihan
+- Opsi 1(a) menulis database sekitar 8.640 kali per hari per perangkat, sedangkan opsi 1(b) membuat admin baru mengetahui perangkat mati setelah sekitar 2,5 menit. Opsi 1(c) mendeteksi perangkat mati dalam 45 detik dengan sekitar 1.440 penulisan per hari, dan memakai request poll yang memang sudah ada sesuai interval ADR-013.
+- Kunci per perangkat menambah kolom, alur penerbitan kunci, dan migrasi, padahal saat ini hanya ada satu Unit Utama dan Sirine tidak memanggil API.
+- Endpoint konfigurasi Wi-Fi memerlukan Wi-Fi untuk mengambil konfigurasi Wi-Fi, dan menyimpan kata sandi Wi-Fi desa di server.
+- ADR-004 menetapkan bahwa level dari perangkat yang tidak terhubung tidak boleh tampil sebagai level valid. Warna Hijau yang usang memberi rasa aman palsu.
+- Firmware di repositori yang sama membuat perubahan kontrak API dan firmware ditinjau dalam satu pull request dan dicek oleh CI yang sama. PlatformIO berjalan lintas sistem operasi dan mengunci versi dependensi, sedangkan skrip arduino-cli yang diajukan hanya berjalan di Windows dan mengunduh versi terbaru tanpa checksum.
+- Auto-ACK nRF24 memberi konfirmasi penerimaan di tingkat radio, yang dibutuhkan status ack per Sirine pada ADR-029.
+
+### Dampak Terhadap Sistem
+- Menetapkan isu terbuka "kontrak perangkat" pada roadmap Tahap 2 untuk Unit Utama. Kontrak trigger sirine digital (FS-09) dan laporan aktivasi sirine (FS-08) belum termasuk.
+- Status aktif perangkat bergantung pada memori proses backend. Setelah backend restart, status memakai `lastSeen` di database sampai poll berikutnya masuk.
+- Firmware Sirine wajib memakai konfigurasi radio yang sama, termasuk auto-ACK aktif.
+- Pemetaan LED dan buzzer per level (ADR-015), pola mode "tidak diketahui", dan tombol fisik pemicu sirine ditetapkan bersama Tim IoT.
+- Sertifikat akar server (GlobalSign Root CA R6, berlaku sampai 2034) tertanam di firmware. Pergantian penerbit sertifikat server memerlukan pembaruan firmware.
+- Rancangan `planned_api` dan FS-06 mengikuti header `x-device-token`, identitas `deviceCode` di body atau query, dan radio nRF24.
