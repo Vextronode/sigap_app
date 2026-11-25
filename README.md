@@ -19,8 +19,8 @@ Dibangun sebagai monorepo npm workspaces: frontend PWA React 19 (TypeScript, Vit
 | ORM & Database | Prisma 7 (`@prisma/adapter-pg`) + PostgreSQL 18 |
 | Scheduler Peringatan Dini | Polling BMKG di dalam proses backend (default setiap 60 detik), rule-based alert |
 | Sumber Data Eksternal | BMKG (gempa, tsunami, prakiraan cuaca) & Open-Meteo (cuaca) |
-| Maps | Leaflet + React Leaflet (tile Google Maps) |
-| IoT | Device gateway REST (`register`, `heartbeat`, `status`) dengan header `x-device-token` untuk perangkat ESP32-C3; kontrol sirine masih dalam pengembangan |
+| Maps | Leaflet + React Leaflet, peta dasar self-host PMTiles dari data OpenStreetMap (`protomaps-leaflet`, ADR-051), citra satelit Esri opsional |
+| IoT | Device gateway REST (`register`, `heartbeat`, `status`) dengan header `x-device-token`; firmware Unit Utama ESP32-C3 (PlatformIO) di `firmware/main_device/`; kontrol sirine masih dalam pengembangan |
 | Container & Web Server | Docker Compose, Caddy (menyajikan SPA dan meneruskan `/api` ke backend) |
 
 ---
@@ -227,4 +227,5 @@ Perintah lain: `npm run lint --workspace=<apps/frontend|apps/backend>`, `npm run
 - [`docs/Rules_Alerts.md`](./docs/Rules_Alerts.md) — aturan level dan notifikasi
 - [`docs/architecture/`](./docs/architecture/) — dokumen arsitektur (termasuk [arsitektur IoT](./docs/architecture/05_iot_architecture.md) dan [deployment view](./docs/architecture/08_deployment_view.md))
 - [`docs/api_spec/`](./docs/api_spec/) — spesifikasi API (OpenAPI)
+- [`docs/iot-connection.md`](./docs/iot-connection.md) — panduan firmware Unit Utama
 - [`docs/architecture_data_and_schema/`](./docs/architecture_data_and_schema/) — data dictionary dan skema

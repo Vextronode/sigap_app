@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Area Roadmap | Area 5 (Admin-Side) |
-| Bergantung Pada | Ketetapan kontrak perangkat |
+| Bergantung Pada | ADR-052 (kontrak perangkat Unit Utama) |
 
 ## 1. Ringkasan
 
@@ -23,12 +23,12 @@ Registry perangkat indikator fisik, mencakup CRUD metadata serta migrasi skema u
 ## 4. Functional Requirements
 
 - FR1: Migrasi schema - tambah kolom `latitude`, `longitude` (nullable, diisi admin manual karena device tidak mengirim GPS sendiri) ke `Device`.
-- FR2: Migrasi schema - tambah enum `DeviceType { UNIT_UTAMA, SIRINE }` + kolom `deviceType` di `Device`. Unit Utama self-register (FR-lama tetap berlaku); Sirine **tidak bisa self-register** (air-gapped, ESP-NOW only) - dibuat manual oleh admin via endpoint Protected baru.
+- FR2: Migrasi schema - tambah enum `DeviceType { UNIT_UTAMA, SIRINE }` + kolom `deviceType` di `Device`. Unit Utama self-register (FR-lama tetap berlaku); Sirine **tidak bisa self-register** (tanpa koneksi internet, hanya radio nRF24L01 ke Unit Utama, ADR-052) - dibuat manual oleh admin via endpoint Protected baru.
 - FR3: Payload `POST /device/heartbeat` diperluas membawa field opsional `sirensStatus: [{deviceCode, connectivity, rssi?, powerStatus?}]` - Unit Utama melaporkan status Sirine yang terjangkau olehnya, backend meng-upsert snapshot per Sirine (kolom baru, lihat FR4).
 - FR4: Migrasi schema - tambah kolom snapshot status (mis. JSON `sirenStatusSnapshot` atau tabel kecil terpisah - keputusan teknis ke Architecture, bukan dipatok di sini) untuk menyimpan hasil FR3.
 - FR5: Backend menolak (400/409) kalau `deviceCode` di `/register` atau `/heartbeat` terdaftar sebagai `deviceType=SIRINE` - safeguard karena Sirine secara fisik tidak mungkin memanggil endpoint ini sendiri.
 - FR6: CRUD metadata (lokasi, nama) untuk kedua tipe perangkat oleh admin/operator (`device.manage`).
-- FR7: Skema autentikasi perangkat mengikuti ketetapan kontrak perangkat.
+- FR7: Autentikasi perangkat memakai header `x-device-token` (ADR-052).
 
 ## 5. Acceptance Criteria
 

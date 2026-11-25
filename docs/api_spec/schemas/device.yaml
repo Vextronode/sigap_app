@@ -10,7 +10,7 @@ DeviceSystemStatus:
     status:
       type: string
       enum: [ONLINE, OFFLINE]
-      description: ONLINE bila minimal satu perangkat melapor dalam 20 detik terakhir
+      description: ONLINE bila minimal satu perangkat melapor dalam 45 detik terakhir
     tone:
       type: string
       enum: [safe, danger]
@@ -57,8 +57,10 @@ DeviceRegisterRequest:
   properties:
     deviceCode:
       type: string
+      maxLength: 64
     name:
       type: string
+      maxLength: 150
 
 DeviceHeartbeatRequest:
   type: object
@@ -66,3 +68,8 @@ DeviceHeartbeatRequest:
   properties:
     deviceCode:
       type: string
+      maxLength: 64
+    firmwareVersion:
+      type: string
+      description: Versi firmware; diterima dan belum disimpan.
+      example: "0.1.0"

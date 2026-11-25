@@ -9,7 +9,7 @@
 | Kebutuhan produk | Cakupan dan status kebutuhan | `PRD.md` |
 | Catatan keputusan | Alasan dan alternatif keputusan, termasuk yang menunggu implementasi | `architecture_decision_record/` |
 | Rencana | Fitur dan rancangan yang belum berjalan | `sigap-phase-2/` |
-| Pedoman kerja | Alur kerja tim dan desain | `GIT_WORKFLOW.md`, `Team Development Workflow.md`, `Environment Standardization.md`, `PANDUAN_DEVELOPMENT_ADMIN_SIGAP.md`, `DESIGN.md`, `DESIGN_ADMIN.md` |
+| Pedoman kerja | Alur kerja tim dan desain | `GIT_WORKFLOW.md`, `Team Development Workflow.md`, `Environment Standardization.md`, `PANDUAN_DEVELOPMENT_ADMIN_SIGAP.md`, `iot-connection.md`, `DESIGN.md`, `DESIGN_ADMIN.md` |
 
 ## 2. Urutan Acuan
 

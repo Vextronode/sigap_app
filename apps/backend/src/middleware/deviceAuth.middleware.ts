@@ -43,6 +43,7 @@ export function deviceAuthMiddleware(
   if (!DEVICE_SHARED_KEY) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[DEVICE AUTH] ⚠️  DEVICE_SHARED_KEY tidak diset — endpoint IoT terbuka (dev mode).");
+      res.locals.deviceAuthenticated = true;
       next();
       return;
     }
@@ -75,5 +76,23 @@ export function deviceAuthMiddleware(
     return;
   }
 
+  res.locals.deviceAuthenticated = true;
   next();
+}
+
+/**
+ * Untuk endpoint publik yang juga dipanggil perangkat (GET /device/status): tanpa header
+ * `x-device-token` request diteruskan sebagai request publik; dengan header, token wajib
+ * valid seperti deviceAuthMiddleware.
+ */
+export function optionalDeviceAuthMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (req.headers["x-device-token"] === undefined) {
+    next();
+    return;
+  }
+  deviceAuthMiddleware(req, res, next);
 }

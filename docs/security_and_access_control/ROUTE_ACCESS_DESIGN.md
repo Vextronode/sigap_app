@@ -51,7 +51,7 @@ Akun tidak dihapus, hanya dinonaktifkan melalui `isActive`.
 
 | Aksi | Route | Kategori | Syarat |
 |---|---|---|---|
-| Status level dan koneksi | GET `/api/public/device/status` | Public | - |
+| Status level dan koneksi | GET `/api/public/device/status` | Public | `x-device-token` opsional; bila dikirim harus valid |
 | Registrasi | POST `/api/public/device/register` | Device Gateway | `x-device-token` |
 | Heartbeat | POST `/api/public/device/heartbeat` | Device Gateway | `x-device-token` |
 
