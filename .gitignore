@@ -29,8 +29,3 @@ backend/prisma/dev.db-journal
 .env*
 !**/.env.example
 .direnv/
-
-# PlatformIO build artefacts
-/.pio/
-# Local tools (arduino-cli, scripts)
-/tools/
