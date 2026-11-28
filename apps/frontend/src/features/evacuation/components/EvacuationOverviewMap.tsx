@@ -9,6 +9,7 @@ import { BaseMapLayers } from "../../../components/map/BaseMapLayers";
 import { PANGANDARAN_BOUNDS } from "../../../components/map/basemap";
 import { MapTypeToggle } from "../../../components/map/MapTypeToggle";
 import { SATELLITE_AVAILABLE, useBaseMapMode } from "../../../components/map/useBaseMapMode";
+import { useTouchDragLock } from "../../../components/map/useTouchDragLock";
 
 interface EvacuationOverviewMapProps {
   points: EvacuationPoint[];
@@ -20,11 +21,14 @@ interface EvacuationOverviewMapProps {
 const MapZoomController = ({
   isInteractive,
   onActivate,
+  onDeactivate,
 }: {
   isInteractive: boolean;
   onActivate: () => void;
+  onDeactivate: () => void;
 }) => {
   const map = useMap();
+  useTouchDragLock(isInteractive, onDeactivate);
 
   useEffect(() => {
     // Pastikan zoom control bawaan di bagian atas dibersihkan agar tidak terduplikasi
@@ -131,6 +135,7 @@ export const EvacuationOverviewMap: React.FC<EvacuationOverviewMapProps> = ({
         <MapZoomController
           isInteractive={isZoomActive}
           onActivate={() => setIsZoomActive(true)}
+          onDeactivate={() => setIsZoomActive(false)}
         />
 
         {points.map((point) => {

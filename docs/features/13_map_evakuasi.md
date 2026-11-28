@@ -31,6 +31,7 @@ Seluruh pengunjung publik (warga, wisatawan) - tidak memerlukan login (kategori 
 - FR4: Jika browser mengizinkan akses lokasi, sistem menghitung jarak lurus (Haversine) dari posisi pengguna ke setiap titik, mengurutkan daftar dari terdekat, dan menandai titik terdekat secara visual di peta.
 - FR5: Permintaan izin lokasi untuk FR4 bersifat opsional dan tidak memblokir fungsi lain - penolakan izin tidak menampilkan error yang mengganggu, cukup daftar tetap tampil dengan urutan default (mis. alfabetis atau urutan input admin).
 - FR6: Data titik evakuasi berasal dari endpoint publik `evacuation-points`, yang dikelola melalui FS-04.
+- FR7: Peta tidak menahan scroll halaman. Zoom roda mouse aktif setelah peta diklik dan nonaktif saat kursor keluar dari peta. Di perangkat sentuh, geser satu jari aktif setelah peta diketuk dan nonaktif saat warga menyentuh di luar bingkai peta; zoom dua jari selalu aktif.
 
 ## 5. Acceptance Criteria
 

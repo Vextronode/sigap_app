@@ -25,6 +25,7 @@ import { BaseMapLayers } from "../../../components/map/BaseMapLayers";
 import { PANGANDARAN_BOUNDS } from "../../../components/map/basemap";
 import { MapTypeToggle } from "../../../components/map/MapTypeToggle";
 import { SATELLITE_AVAILABLE, useBaseMapMode } from "../../../components/map/useBaseMapMode";
+import { useTouchDragLock } from "../../../components/map/useTouchDragLock";
 
 interface CitizenEvacuationMapProps {
   points: PointWithDistance[];
@@ -39,11 +40,14 @@ interface CitizenEvacuationMapProps {
 const MapZoomController = ({
   isInteractive,
   onActivate,
+  onDeactivate,
 }: {
   isInteractive: boolean;
   onActivate: () => void;
+  onDeactivate: () => void;
 }) => {
   const map = useMap();
+  useTouchDragLock(isInteractive, onDeactivate);
 
   useEffect(() => {
     // Pastikan zoom control bawaan di bagian atas dibersihkan agar tidak terduplikasi
@@ -221,6 +225,7 @@ export const CitizenEvacuationMap: React.FC<CitizenEvacuationMapProps> = ({
         <MapZoomController
           isInteractive={isZoomActive}
           onActivate={() => setIsZoomActive(true)}
+          onDeactivate={() => setIsZoomActive(false)}
         />
 
         <UserLocationFollower coords={userCoords} />
