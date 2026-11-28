@@ -261,7 +261,6 @@
   box-shadow: 0 5px 14px rgba(220, 38, 38, 0.6), 0 0 0 2.5px #ffffff;
 }
 
-.earthquake-map-pin.is-today .pin-pulse,
 .earthquake-map-pin.has-pulse .pin-pulse,
 .earthquake-map-pin.is-nearest .pin-pulse {
   position: absolute;

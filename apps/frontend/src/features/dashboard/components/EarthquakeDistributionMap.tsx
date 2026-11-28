@@ -38,6 +38,9 @@ import { useTouchDragLock } from "../../../components/map/useTouchDragLock";
 const DEFAULT_MAP_CENTER: [number, number] = [-7.6838, 108.561]; // Koordinat Desa Cibenda / Jawa Barat
 const DEFAULT_MAP_ZOOM = 6;
 
+// Pin berdenyut selama masa aktif gempa terhadap level, 24 jam sejak kejadian (Rules_Alerts.md).
+const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 // Atribusi data gempa dengan logo BMKG (ukuran proporsional 16px); atribusi peta dasar
 // ditambahkan oleh BaseMapLayers.
 const BMKG_ATTRIBUTION =
@@ -187,9 +190,9 @@ export const EarthquakeDistributionMap: React.FC = () => {
     );
   }, [earthquakes]);
 
-  const getEarthquakeIcon = (magnitude: number, isToday: boolean): L.DivIcon => {
+  const getEarthquakeIcon = (magnitude: number, isActive: boolean): L.DivIcon => {
     const formattedMag = Number.isFinite(magnitude) ? magnitude.toFixed(1) : "0.0";
-    const key = `${formattedMag}-${isToday}`;
+    const key = `${formattedMag}-${isActive}`;
     const existing = earthquakeIconCache.get(key);
     if (existing) return existing;
 
@@ -202,10 +205,10 @@ export const EarthquakeDistributionMap: React.FC = () => {
     );
 
     const icon = L.divIcon({
-      className: `overview-map-pin leaflet-interactive earthquake-map-pin ${isToday ? "has-pulse is-today" : ""
+      className: `overview-map-pin leaflet-interactive earthquake-map-pin ${isActive ? "has-pulse" : ""
         }`,
       html: `
-        ${isToday ? '<div class="pin-pulse"></div>' : ""}
+        ${isActive ? '<div class="pin-pulse"></div>' : ""}
         <div class="pin-circle">
           ${svgIcon}
         </div>
@@ -302,14 +305,16 @@ export const EarthquakeDistributionMap: React.FC = () => {
           {validEarthquakes.map((quake) => {
             if (!quake.coordinates) return null;
             const daysAgoInfo = getDaysAgoInfo(quake.updatedAt);
-            const isToday = daysAgoInfo?.tone === "today";
+            // Diukur dari waktu data terakhir dimuat agar render tetap murni.
+            const isActive =
+              mapQuery.dataUpdatedAt - new Date(quake.updatedAt).getTime() < ACTIVE_WINDOW_MS;
             const dt = formatDateTime(quake.updatedAt);
 
             return (
               <Marker
                 key={`${quake.updatedAt}-${quake.coordinates.latitude}-${quake.coordinates.longitude}`}
                 position={[quake.coordinates.latitude, quake.coordinates.longitude]}
-                icon={getEarthquakeIcon(quake.magnitude, isToday)}
+                icon={getEarthquakeIcon(quake.magnitude, isActive)}
               >
                 <Popup
                   className="earthquake-map-popup"
