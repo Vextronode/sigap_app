@@ -72,6 +72,12 @@ earthquake-map:
   get:
     tags: [Earthquakes]
     summary: Titik sebaran gempa untuk peta
+    description: >
+      Gabungan feed BMKG yang disatukan per kejadian (autogempa, gempaterkini,
+      gempadirasakan) dan 15 rekaman terbaru earthquake_records yang berumur paling
+      lama PANGANDARAN_MAX_AGE_DAYS. Rekaman yang lebih tua hanya melengkapi
+      shakemap titik feed. Titik di luar wilayah Indonesia dibuang; urutan dari
+      kejadian terbaru. Di-cache 30 detik.
     security: []
     responses:
       '200':

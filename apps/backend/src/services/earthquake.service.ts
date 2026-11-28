@@ -299,10 +299,11 @@ export class EarthquakeService {
 
   /**
    * Mengambil kumpulan titik-titik sebaran gempa terkini untuk Peta Gempa:
-   * 1. Gempa nasional terbaru (autogempa)
-   * 2. 15 gempa M 5.0+ terkini (gempaterkini)
-   * 3. 15 gempa dirasakan terkini (gempadirasakan)
-   * 4. Riwayat gempa Pangandaran ber-shakemap di database
+   * 1. Feed BMKG yang disatukan per kejadian (autogempa, 15 gempa M 5.0+ terkini,
+   *    15 gempa dirasakan terkini; ADR-046)
+   * 2. Rekaman gempa relevan di earthquake_records (15 terbaru) yang berumur paling
+   *    lama PANGANDARAN_MAX_AGE_DAYS, sama dengan kartu gempa Pangandaran. Rekaman
+   *    yang lebih tua tetap melengkapi shakemap titik feed.
    *
    * Di-cache in-memory dan ter-deduplikasi agar hemat kuota database.
    */
@@ -314,29 +315,14 @@ export class EarthquakeService {
     }
 
     try {
-      const [autoRaw, listItems, dbRecords] = await Promise.all([
-        this.fetchCached<BmkgAutogempaResponse>(BMKG_AUTOGEMPA_URL).catch(() => null),
+      const [listItems, dbRecords] = await Promise.all([
         this.fetchCombinedList().catch(() => []),
         EarthquakeRecordRepository.findRecent(15).catch(() => []),
       ]);
 
       const pointsMap = new Map<string, EarthquakeInfo>();
 
-      // A. Masukkan autogempa nasional terbaru jika ada
-      if (autoRaw?.Infogempa?.gempa) {
-        const autoInfo = this.parse(autoRaw.Infogempa.gempa);
-        if (
-          autoInfo &&
-          isValidIndonesianCoordinate(
-            autoInfo.coordinates.latitude,
-            autoInfo.coordinates.longitude,
-          )
-        ) {
-          pointsMap.set(autoInfo.updatedAt, autoInfo);
-        }
-      }
-
-      // B. Masukkan data dari feed gabungan terkini & dirasakan
+      // A. Feed BMKG yang sudah disatukan per kejadian
       for (const item of listItems) {
         try {
           const parsed = this.parse(item);
@@ -355,7 +341,10 @@ export class EarthquakeService {
         }
       }
 
-      // C. Masukkan riwayat gempa Pangandaran ber-shakemap dari database
+      // B. Rekaman database: titik baru hanya dalam batas umur, shakemap dilengkapi untuk semua
+      const cutoffIso = new Date(
+        Date.now() - PANGANDARAN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
+      ).toISOString();
       for (const rec of dbRecords) {
         if (!isValidIndonesianCoordinate(rec.latitude, rec.longitude)) {
           continue;
@@ -363,7 +352,7 @@ export class EarthquakeService {
         const eventTime = rec.eventTime;
         const existing = pointsMap.get(eventTime);
         if (!existing) {
-          pointsMap.set(eventTime, fromRecord(rec));
+          if (eventTime >= cutoffIso) pointsMap.set(eventTime, fromRecord(rec));
         } else if (!existing.shakemap && rec.shakemap) {
           existing.shakemap = rec.shakemap;
         }
