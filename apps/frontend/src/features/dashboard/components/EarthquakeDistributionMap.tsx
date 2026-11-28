@@ -32,6 +32,7 @@ import {
   satelliteTitle,
   useBaseMapMode,
 } from "../../../components/map/useBaseMapMode";
+import { useTouchDragLock } from "../../../components/map/useTouchDragLock";
 
 // Titik tengah default kepulauan Jawa / Indonesia bagian barat
 const DEFAULT_MAP_CENTER: [number, number] = [-7.6838, 108.561]; // Koordinat Desa Cibenda / Jawa Barat
@@ -46,10 +47,10 @@ const BMKG_ATTRIBUTION =
 const MapInteractionController: React.FC<{
   isInteractive: boolean;
   onActivate: () => void;
-  resetTrigger: number;
-  points: Earthquake[];
-}> = ({ isInteractive, onActivate, resetTrigger, points }) => {
+  onDeactivate: () => void;
+}> = ({ isInteractive, onActivate, onDeactivate }) => {
   const map = useMap();
+  useTouchDragLock(isInteractive, onDeactivate);
 
   useEffect(() => {
     // Bersihkan zoom control bawaan Leaflet jika ada
@@ -66,28 +67,6 @@ const MapInteractionController: React.FC<{
       map.scrollWheelZoom.disable();
     }
   }, [isInteractive, map]);
-
-  useEffect(() => {
-    if (resetTrigger > 0) {
-      if (points.length > 0) {
-        const validCoords = points
-          .filter(
-            (p) =>
-              p.coordinates &&
-              Number.isFinite(p.coordinates.latitude) &&
-              Number.isFinite(p.coordinates.longitude)
-          )
-          .map((p) => [p.coordinates!.latitude, p.coordinates!.longitude] as [number, number]);
-
-        if (validCoords.length > 0) {
-          const bounds = L.latLngBounds(validCoords);
-          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 8 });
-          return;
-        }
-      }
-      map.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
-    }
-  }, [resetTrigger, map, points]);
 
   useMapEvents({
     click() {
@@ -112,13 +91,25 @@ const DataAttribution: React.FC<{ html: string }> = ({ html }) => {
 
 // Komponen tombol zoom dan navigasi kustom
 const CustomMapControls: React.FC<{
-  onReset: () => void;
+  points: Earthquake[];
   mapType: BaseMapMode;
   isOnline: boolean;
   satelliteUsable: boolean;
   onToggleMapType: () => void;
-}> = ({ onReset, mapType, isOnline, satelliteUsable, onToggleMapType }) => {
+}> = ({ points, mapType, isOnline, satelliteUsable, onToggleMapType }) => {
   const map = useMap();
+
+  // Hanya saat tombol ditekan, agar refetch data tidak memindahkan tampilan peta.
+  const resetView = () => {
+    const coords = points
+      .filter((p) => p.coordinates)
+      .map((p) => [p.coordinates!.latitude, p.coordinates!.longitude] as [number, number]);
+    if (coords.length > 0) {
+      map.fitBounds(L.latLngBounds(coords), { padding: [40, 40], maxZoom: 8 });
+    } else {
+      map.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
+    }
+  };
 
   return (
     <div className="absolute bottom-10 right-4 z-[400] flex flex-col gap-1.5 select-none pointer-events-auto">
@@ -145,7 +136,7 @@ const CustomMapControls: React.FC<{
 
       <button
         type="button"
-        onClick={onReset}
+        onClick={resetView}
         aria-label="Pusatkan kembali tampilan peta"
         title="Pusatkan kembali tampilan peta"
         className="p-2.5 rounded-xl shadow-md bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -181,7 +172,6 @@ export const EarthquakeDistributionMap: React.FC = () => {
   const { data: earthquakes = [], isLoading, isError } = mapQuery;
   const [isZoomActive, setIsZoomActive] = useState(false);
   const { mapType, setMapType, isOnline, satelliteUsable, onSatelliteError } = useBaseMapMode();
-  const [resetTrigger, setResetTrigger] = useState(0);
 
   // Saring gempa yang memiliki koordinat valid di kawasan Indonesia & palung tektonik sekitarnya
   const validEarthquakes = useMemo(() => {
@@ -237,7 +227,7 @@ export const EarthquakeDistributionMap: React.FC = () => {
         aria-label="Peta Sebaran Gempa Bumi"
         className="w-full mb-6"
       >
-        <div className="relative w-full h-[460px] sm:h-[500px] rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center gap-3">
+        <div className="relative w-full h-[440px] sm:h-[490px] lg:h-[520px] rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center gap-3">
           <Skeleton className="w-full h-full absolute inset-0 !rounded-none" />
           <div className="relative z-10 flex flex-col items-center gap-2 text-slate-500">
             <Radio size={28} className="animate-spin text-blue-600" />
@@ -295,12 +285,11 @@ export const EarthquakeDistributionMap: React.FC = () => {
           <MapInteractionController
             isInteractive={isZoomActive}
             onActivate={() => setIsZoomActive(true)}
-            resetTrigger={resetTrigger}
-            points={validEarthquakes}
+            onDeactivate={() => setIsZoomActive(false)}
           />
 
           <CustomMapControls
-            onReset={() => setResetTrigger((prev) => prev + 1)}
+            points={validEarthquakes}
             mapType={mapType}
             isOnline={isOnline}
             satelliteUsable={satelliteUsable}
