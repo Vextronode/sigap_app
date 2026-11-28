@@ -45,7 +45,7 @@ Gempa dianggap relevan untuk Desa Cibenda bila memenuhi salah satu syarat beriku
 1. Episentrum berada dalam `PANGANDARAN_RADIUS_KM` (default 100 km).
 2. Field `Dirasakan` menyebut wilayah Cibenda, Parigi, atau Pangandaran, berapa pun jaraknya. Pencocokan dilakukan per nama wilayah, sehingga "Kecamatan Parigi" terhitung tetapi "Parigi Moutong" tidak.
 
-Kartu gempa Pangandaran menampilkan gempa relevan terbaru yang berumur paling lama `PANGANDARAN_MAX_AGE_DAYS` (default 7 hari). Radius adalah filter relevansi, bukan penentu tingkat bahaya. Jarak dihitung dengan rumus Haversine dari koordinat `VILLAGE_LAT` dan `VILLAGE_LON` (default `-7.6838`, `108.5610`) ke episentrum.
+Kartu gempa Pangandaran menampilkan gempa relevan terbaru yang berumur paling lama `PANGANDARAN_MAX_AGE_DAYS` (default 7 hari). Batas umur yang sama berlaku untuk titik peta sebaran gempa yang berasal dari `earthquake_records`; titik dari feed BMKG ditampilkan apa adanya. Radius adalah filter relevansi, bukan penentu tingkat bahaya. Jarak dihitung dengan rumus Haversine dari koordinat `VILLAGE_LAT` dan `VILLAGE_LON` (default `-7.6838`, `108.5610`) ke episentrum.
 
 # 5. Status Tsunami
 
@@ -203,7 +203,7 @@ Bila integrasi SID aktif, scheduler meneruskan setiap keputusan alert ke SIDUTam
 | Variabel | Default | Fungsi |
 |---|---|---|
 | `PANGANDARAN_RADIUS_KM` | 100 | Radius relevansi gempa Pangandaran |
-| `PANGANDARAN_MAX_AGE_DAYS` | 7 | Umur maksimum gempa relevan |
+| `PANGANDARAN_MAX_AGE_DAYS` | 7 | Umur maksimum gempa relevan pada kartu Pangandaran dan titik riwayat peta sebaran gempa |
 | `WEST_JAVA_RADIUS_KM` | 350 | Radius tampilan gempa Jawa Barat; kartu ini tidak memiliki batas umur |
 | `VILLAGE_LAT`, `VILLAGE_LON` | `-7.6838`, `108.5610` | Koordinat acuan desa |
 | `BMKG_TSUNAMI_STATUS` | kosong | Status tsunami resmi |
